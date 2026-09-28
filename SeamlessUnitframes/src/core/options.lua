@@ -56,68 +56,71 @@ local options = {
                 end
             end,
         },
-        classColor = {
-            type = "group",
-            order = 30,
-            name = "Class Colors",
-            args = {
-                enabled = {
-                    type = "toggle",
-                    order = 10,
-                    width = "full",
-                    name = "Class colored health bars",
-                    desc = "Colors the health bar of a player in their class color. NPCs keep the default green.",
-                    get = function()
-                        return app.db.profile.classColor.enabled
-                    end,
-                    set = function(_, value)
-                        app.db.profile.classColor.enabled = value
-                        app.classColor:Refresh()
-                    end,
-                },
-                frames = {
-                    type = "group",
-                    inline = true,
-                    order = 20,
-                    name = "Unit frames",
-                    disabled = function()
-                        return not app.db.profile.classColor.enabled
-                    end,
-                    args = {}, -- one toggle per app.classColor.frames entry, added in OnInitialize
-                },
-            },
-        },
     },
 }
 
--- A toggle for every unit frame class colors can be switched on, in app.classColor.frames order.
-local function AddClassColorFrameToggles()
-    local args = options.args.classColor.args.frames.args
-    for i, entry in ipairs(app.classColor.frames) do
-        args[entry.key] = {
-            type = "toggle",
-            order = i,
-            name = entry.name,
-            desc = entry.key == "pet" and "A pet takes its owner's class color." or nil,
-            -- A frame this client doesn't have gets no option.
-            hidden = function()
-                return entry.frameName ~= nil and _G[entry.frameName] == nil
-            end,
-            get = function()
-                return app.db.profile.classColor.frames[entry.key]
-            end,
-            set = function(_, value)
-                app.db.profile.classColor.frames[entry.key] = value
-                app.classColor:Refresh()
-            end,
-        }
+-- The choices of the health bar color option (src/healthcolor), in this order.
+local healthBarColorNames = {
+    default = "Default",
+    class = "Class",
+    reaction = "Reaction",
+    classReaction = "Class, reaction for NPCs",
+}
+local healthBarColorOrder = { "default", "class", "reaction", "classReaction" }
+
+-- The options of one unit frame, stored in profile.unitFrames[entry.key]. A new per-frame option
+-- goes here.
+---@param entry SeamlessUnitframes.UnitFrame
+---@param order integer
+local function UnitFrameOptions(entry, order)
+    local function settings()
+        return app.db.profile.unitFrames[entry.key]
     end
+
+    local healthBarColorDesc = "Default: the game's green."
+        .. "\nClass: players in their class color, NPCs keep the default."
+        .. "\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob"
+        .. " someone else tagged."
+        .. "\nClass, reaction for NPCs: both."
+    if entry.key == "pet" then
+        healthBarColorDesc = healthBarColorDesc .. "\n\nA pet takes its owner's class color."
+    end
+
+    return {
+        type = "group",
+        order = order,
+        name = entry.name,
+        -- A frame this client doesn't have gets no options.
+        hidden = function()
+            return not app.unitFrames:Exists(entry)
+        end,
+        args = {
+            healthBarColor = {
+                type = "select",
+                order = 10,
+                name = "Health bar color",
+                desc = healthBarColorDesc,
+                values = healthBarColorNames,
+                sorting = healthBarColorOrder,
+                get = function()
+                    return settings().healthBarColor
+                end,
+                set = function(_, value)
+                    settings().healthBarColor = value
+                    app.healthColor:Refresh()
+                end,
+            },
+        },
+    }
+end
+
+-- A group per unit frame, after the general options and before the profiles.
+for i, entry in ipairs(app.unitFrames.list) do
+    options.args[entry.key] = UnitFrameOptions(entry, 30 + i)
 end
 
 -- Runs after addon:OnInitialize, so app.db is available.
 function module:OnInitialize()
-    AddClassColorFrameToggles()
-
     options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(app.db)
     options.args.profiles.order = 100
 

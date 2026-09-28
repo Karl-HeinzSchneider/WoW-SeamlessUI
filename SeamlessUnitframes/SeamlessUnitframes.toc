@@ -13,9 +13,10 @@ embeds.xml
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
+src\core\unitframes.lua
 src\core\options.lua
 src\core\minimapbutton.lua
 
-src\classcolor\classcolor.lua
+src\healthcolor\healthcolor.lua
 
 SeamlessUnitframes.lua

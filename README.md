@@ -4,9 +4,10 @@ A short description of SeamlessUnitframes.
 
 ## Features
 
-- **Class colors** — player health bars in their class color, switchable as a whole and per unit
-  frame (player, pet, target, target of target, focus, target of focus, party). A pet takes its
-  owner's class color; NPCs keep the default green.
+- **Health bar colors** — per unit frame (player, pet, target, target of target, focus, target of
+  focus, party): the default green, class color, reaction color (hostile, neutral, friendly, or
+  grey for a mob someone else tagged), or class color for players and reaction color for NPCs. A
+  pet takes its owner's class color.
 
 ## Installation
 

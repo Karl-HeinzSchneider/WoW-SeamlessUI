@@ -3,44 +3,36 @@ local _, app = ...
 
 local log = app.logger
 local addon = app.addon
+local unitFrames = app.unitFrames
 
--- Colors the health bars of the game's unit frames in the class color of the player they show.
--- The bar's green fill atlas is swapped for its white "-Status" variant (the one the game tints
--- for heal prediction), and the bar color tints that. NPCs keep the default green.
----@class SeamlessUnitframes.ClassColor : AceModule
+-- Colors the health bars of the game's unit frames by class or by reaction, chosen per unit frame
+-- (profile.unitFrames[key].healthBarColor). The bar's green fill atlas is swapped for its white
+-- "-Status" variant (the one the game tints for heal prediction), and the bar color tints that.
+---@class SeamlessUnitframes.HealthColor : AceModule, AceEvent-3.0
 local module = {}
-app.classColor = addon:NewModule("ClassColor", module) --[[@as SeamlessUnitframes.ClassColor]]
+app.healthColor = addon:NewModule("HealthColor", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.HealthColor]]
 
----@class SeamlessUnitframes.ClassColor.Frame
----@field key string  # the key in profile.classColor.frames
----@field name string  # the label in the options
----@field frameName? string  # the global unit frame; nil for the party frames
-
--- The unit frames that can be class colored, in the order of the options.
----@type SeamlessUnitframes.ClassColor.Frame[]
-module.frames = {
-    { key = "player", name = "Player", frameName = "PlayerFrame" },
-    { key = "pet", name = "Pet", frameName = "PetFrame" },
-    { key = "target", name = "Target", frameName = "TargetFrame" },
-    { key = "targettarget", name = "Target of Target", frameName = "TargetFrameToT" },
-    { key = "focus", name = "Focus", frameName = "FocusFrame" },
-    { key = "focustarget", name = "Target of Focus", frameName = "FocusFrameToT" },
-    { key = "party", name = "Party" },
-}
+-- The choices of profile.unitFrames[key].healthBarColor; the labels are in options.lua.
+---@alias SeamlessUnitframes.HealthBarColor "default"|"class"|"reaction"|"classReaction"
 
 -- The fields UnitFrame_Initialize puts on a unit frame's health bar.
----@class SeamlessUnitframes.ClassColor.HealthBar : StatusBar
+---@class SeamlessUnitframes.HealthColor.HealthBar : StatusBar
 ---@field unit string?
 ---@field unitFrame Frame?
 ---@field lockColor boolean?  # the game never recolors the bar; its atlas carries the color
 
 local STATUS_SUFFIX = "-Status"
 local STATUS_SUFFIX_LOWER = STATUS_SUFFIX:lower()
+-- What the target frame shows for a mob someone else tagged.
+local TAP_DENIED_COLOR = CreateColor(0.5, 0.5, 0.5)
+-- Reused for every UnitSelectionColor result; read right away by Apply.
+local reactionColor = CreateColor(0, 0, 0)
 
--- Every health bar seen (its texture is hooked once), and the ones showing a class color now.
----@type table<SeamlessUnitframes.ClassColor.HealthBar, true>
+-- Every health bar seen (its texture is hooked once) with its unit frame key, and the ones
+-- showing our color now.
+---@type table<SeamlessUnitframes.HealthColor.HealthBar, string>
 local known = {}
----@type table<SeamlessUnitframes.ClassColor.HealthBar, true>
+---@type table<SeamlessUnitframes.HealthColor.HealthBar, true>
 local colored = {}
 -- Health bar atlas -> its white variant, or false when there is none.
 ---@type table<string, string|false>
@@ -76,40 +68,40 @@ local function SetAtlas(texture, atlas)
     settingAtlas = false
 end
 
--- Which entry of module.frames a unit frame belongs to.
----@param unitFrame Frame?
----@return string?
-local function FrameKey(unitFrame)
-    if not unitFrame then
-        return nil
-    end
-    for _, entry in ipairs(module.frames) do
-        if entry.frameName and unitFrame == _G[entry.frameName] then
-            return entry.key
-        end
-    end
-    if PartyFrame and unitFrame:GetParent() == PartyFrame then
-        return "party"
-    end
+-- False for nil and for a secret value (the client hides a unit's identity in some situations).
+local function Readable(value)
+    return value ~= nil and (not canaccessvalue or canaccessvalue(value))
 end
 
--- The class color of a connected player, or nil. The class is secret while the unit's identity
--- is restricted; the bar keeps its default color then.
----@param unit string?
+---@param unit string
 ---@return ColorMixin?
-local function UnitClassColor(unit)
-    if not unit or not UnitIsPlayer(unit) or not UnitIsConnected(unit) then
+local function ClassColor(unit)
+    if not UnitIsPlayer(unit) then
         return nil
     end
     local _, class = UnitClass(unit)
-    if not class or (canaccessvalue and not canaccessvalue(class)) then
+    return Readable(class) and RAID_CLASS_COLORS[class] or nil
+end
+
+-- The reaction color the game uses for units (the target frame's name background, nameplates):
+-- red hostile, yellow neutral, green friendly. Not FACTION_BAR_COLORS: those are the muted
+-- reputation bar colors.
+---@param unit string
+---@return ColorMixin?
+local function ReactionColor(unit)
+    if not UnitPlayerControlled(unit) and UnitIsTapDenied(unit) then
+        return TAP_DENIED_COLOR
+    end
+    local r, g, b = UnitSelectionColor(unit)
+    if not Readable(r) then
         return nil
     end
-    return RAID_CLASS_COLORS[class]
+    reactionColor:SetRGB(r, g, b)
+    return reactionColor
 end
 
 -- The color the game gives a health bar (see UnitFrameHealthBar_Update).
----@param bar SeamlessUnitframes.ClassColor.HealthBar
+---@param bar SeamlessUnitframes.HealthColor.HealthBar
 local function DefaultColor(bar)
     if bar.lockColor then
         return 1, 1, 1
@@ -119,19 +111,27 @@ local function DefaultColor(bar)
     return 0, 1, 0
 end
 
----@param bar SeamlessUnitframes.ClassColor.HealthBar
+-- Our color for the bar, or nil to leave it to the game.
+---@param bar SeamlessUnitframes.HealthColor.HealthBar
 ---@param key string
 ---@return ColorMixin?
 local function BarColor(bar, key)
-    local db = app.db.profile.classColor
-    if not db.enabled or not db.frames[key] then
+    local mode = app.db.profile.unitFrames[key].healthBarColor
+    local unit = bar.unit
+    if mode == "default" or not unit or not UnitExists(unit) or not UnitIsConnected(unit) then
         return nil
     end
     -- A pet has no class; it takes its owner's. In a vehicle the pet frame shows the player.
-    return UnitClassColor(key == "pet" and "player" or bar.unit)
+    local classUnit = key == "pet" and "player" or unit
+    if mode == "class" then
+        return ClassColor(classUnit)
+    elseif mode == "reaction" then
+        return ReactionColor(unit)
+    end
+    return ClassColor(classUnit) or ReactionColor(unit)
 end
 
----@param bar SeamlessUnitframes.ClassColor.HealthBar
+---@param bar SeamlessUnitframes.HealthColor.HealthBar
 ---@param key string
 local function Apply(bar, key)
     local texture = bar:GetStatusBarTexture()
@@ -158,16 +158,17 @@ local function Apply(bar, key)
     end
 end
 
--- Colors one health bar if it belongs to a unit frame in module.frames.
----@param bar SeamlessUnitframes.ClassColor.HealthBar?
+-- Colors one health bar if it belongs to a unit frame in app.unitFrames.
+---@param bar StatusBar?
 local function Update(bar)
-    local key = bar and FrameKey(bar.unitFrame)
+    ---@cast bar SeamlessUnitframes.HealthColor.HealthBar?
+    local key = bar and unitFrames:KeyOf(bar.unitFrame)
     if not key then
         return
     end
-    ---@cast bar SeamlessUnitframes.ClassColor.HealthBar
+    ---@cast bar SeamlessUnitframes.HealthColor.HealthBar
     if not known[bar] then
-        known[bar] = true
+        known[bar] = key
         -- The game swaps the fill atlas on its own (target classification, vehicles, party art);
         -- put the white one back each time.
         hooksecurefunc(bar:GetStatusBarTexture(), "SetAtlas", function()
@@ -179,36 +180,31 @@ local function Update(bar)
     Apply(bar, key)
 end
 
+local function ApplyAll()
+    for bar, key in pairs(known) do
+        Apply(bar, key)
+    end
+end
+
 function module:OnInitialize()
     -- Every unit frame runs this on a unit change and on max health changes.
     hooksecurefunc("UnitFrameHealthBar_Update", Update)
 end
 
 function module:OnEnable()
+    -- A reaction changes without a health update: PvP flags, a mob turning hostile, tapping.
+    self:RegisterEvent("UNIT_FACTION", ApplyAll)
     self:Refresh()
 end
 
 -- Recolors every health bar, after a setting changed.
 function module:Refresh()
-    for _, entry in ipairs(module.frames) do
-        local frame = entry.frameName and _G[entry.frameName]
-        if frame then
-            Update(frame.healthbar)
-        end
-    end
-    if PartyFrame then
-        for i = 1, MAX_PARTY_MEMBERS or 4 do
-            local memberFrame = PartyFrame["MemberFrame" .. i]
-            if memberFrame then
-                Update(memberFrame.healthbar)
-            end
-        end
+    for _, frame in ipairs(unitFrames:All()) do
+        Update(frame.healthbar)
     end
     -- Party frames are pooled and may have been swapped; recolor every bar ever seen as well.
-    for bar in pairs(known) do
-        Update(bar)
-    end
-    log:debug("Class colors refreshed")
+    ApplyAll()
+    log:debug("Health bar colors refreshed")
 end
 
 function module:OnProfileRefresh()

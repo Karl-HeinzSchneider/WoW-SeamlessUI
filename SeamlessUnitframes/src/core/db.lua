@@ -4,21 +4,23 @@ local _, app = ...
 -- AceDB-3.0 defaults. Missing keys in the SavedVariables fall back to these values,
 -- and values equal to the default are not written to disk.
 
--- Class colored health bars (src/classcolor): the whole feature, then one switch per unit frame,
--- keyed like app.classColor.frames.
----@class SeamlessUnitframes.DB.ClassColor
-local classColor = {
-    enabled = true,
-    ---@type table<string, boolean>
-    frames = {
-        player = true,
-        pet = true,
-        target = true,
-        targettarget = true,
-        focus = true,
-        focustarget = true,
-        party = true,
-    },
+-- The settings of one unit frame. `["**"]` gives every key of profile.unitFrames (the keys of
+-- app.unitFrames.list) these defaults; a key of its own overrides some and gets the rest.
+---@class SeamlessUnitframes.DB.UnitFrame
+local unitFrame = {
+    -- src/healthcolor. Class plus reaction for NPCs by default; see the frames below.
+    ---@type SeamlessUnitframes.HealthBarColor
+    healthBarColor = "classReaction",
+}
+
+-- Player, pet and party only show players (a pet takes its owner's class), so reaction adds
+-- nothing there.
+---@type table<string, SeamlessUnitframes.DB.UnitFrame>
+local unitFrames = {
+    ["**"] = unitFrame,
+    player = { healthBarColor = "class" },
+    pet = { healthBarColor = "class" },
+    party = { healthBarColor = "class" },
 }
 
 -- User settings, switchable per character via AceDBOptions.
@@ -32,7 +34,7 @@ local profile = {
         -- all stack on one spot; start somewhere else instead.
         minimapPos = 200,
     },
-    classColor = classColor,
+    unitFrames = unitFrames,
 }
 
 -- Data tied to one character.

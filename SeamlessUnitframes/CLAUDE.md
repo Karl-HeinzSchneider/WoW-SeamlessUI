@@ -38,7 +38,9 @@ be listed**. The order follows these rules:
   profiles tab), registered in the game's Settings panel (`AddToBlizOptions`) and opened in a
   standalone AceConfigDialog window by `Open()`. A new option goes only here. `Refresh()` redraws
   them after a setting changed elsewhere. Besides the general options there is one group per
-  `app.unitFrames.list` entry, built by `UnitFrameOptions`; a new per-frame option goes there.
+  `app.unitFrames.list` entry, built by `UnitFrameOptions`; a new per-frame option goes there. The
+  target threat-percentage option directly exposes the client's `threatShowNumeric` CVar so the
+  secure stock widget performs the threat calculations.
 - `unitframes.lua` — `app.unitFrames`: the game's unit frames this addon changes (`list`: player,
   pet, target, target of target, focus, target of focus, party; `key` is the key in
   `profile.unitFrames`), `Exists(entry)`, `KeyOf(unitFrame)` (which entry a frame belongs to; the

@@ -110,6 +110,21 @@ local function UnitFrameOptions(entry, order)
                     app.healthColor:Refresh()
                 end,
             },
+            threatPercentage = {
+                type = "toggle",
+                order = 20,
+                name = "Show threat percentage",
+                desc = "Show the game's threat percentage badge above the target frame. This is"
+                    .. " the client-wide numeric threat setting and can also affect other stock"
+                    .. " frames that support it.",
+                hidden = entry.key ~= "target",
+                get = function()
+                    return GetCVarBool("threatShowNumeric")
+                end,
+                set = function(_, value)
+                    SetCVar("threatShowNumeric", value and "1" or "0")
+                end,
+            },
         },
     }
 end

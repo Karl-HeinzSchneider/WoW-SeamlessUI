@@ -1,0 +1,21 @@
+-- Type annotations only; this file is not listed in the TOC and never runs in-game.
+-- It exists so the Lua language server can type the `...` vararg every file receives.
+-- Every file should start with:
+--   ---@type string, SeamlessUnitframes
+--   local appName, app = ...
+-- When a file adds something to `app`, add a matching ---@field here.
+
+---@class SeamlessUnitframes
+---@field logger SeamlessUnitframes.Logger
+---@field addon SeamlessUnitframes.Addon
+---@field dbDefaults SeamlessUnitframes.DBDefaults
+---@field db SeamlessUnitframes.DB
+---@field options SeamlessUnitframes.Options  # the AceConfig options, in the Settings panel and a standalone window
+---@field minimapButton SeamlessUnitframes.MinimapButton
+
+-- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
+-- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.
+---@class SeamlessUnitframes.DB : AceDBObject-3.0
+---@field profile SeamlessUnitframes.DB.Profile
+---@field char SeamlessUnitframes.DB.Char
+---@field global SeamlessUnitframes.DB.Global

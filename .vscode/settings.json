@@ -72,7 +72,10 @@
     "REQUIRES_LABEL",
     "SKILL",
     "SOURCE",
-    "TRADE_SKILLS"
+    "TRADE_SKILLS",
+    "RAID_CLASS_COLORS",
+    "PartyFrame",
+    "MAX_PARTY_MEMBERS"
   ],
   "Lua.diagnostics.disable": [
     "assign-type-mismatch",

@@ -40,6 +40,19 @@ be listed**. The order follows these rules:
   options and honors `profile.minimap`. Optional: to drop it, delete the file, its TOC line, the
   `minimap` option and `profile.minimap`.
 
+### `src/classcolor/`
+
+- `classcolor.lua` — `app.classColor`: class colored health bars on the game's own unit frames
+  (player, pet, target, target of target, focus, target of focus, party). `module.frames` lists
+  them; `profile.classColor` has the master switch (`enabled`) and one switch per frame
+  (`frames[key]`), and `options.lua` builds the per-frame toggles from `module.frames`. It
+  post-hooks `UnitFrameHealthBar_Update`, swaps the bar's green fill atlas for the game's white
+  `…-Bar-Health-Status` variant and tints it; a hook on each bar texture's `SetAtlas` puts the
+  white atlas back when the game swaps it (target classification, vehicles). A pet takes the
+  player's class; NPCs, disconnected players and units whose identity is secret keep the default
+  color. Switched off, it restores only the bars it colored. `Refresh()` reapplies after a
+  setting changed.
+
 ### Annotations (not in the TOC)
 
 - `src/types.lua` — the private-table class `SeamlessUnitframes` (`app.*` fields) and

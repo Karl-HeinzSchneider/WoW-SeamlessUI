@@ -16,4 +16,6 @@ src\core\ace.lua
 src\core\options.lua
 src\core\minimapbutton.lua
 
+src\classcolor\classcolor.lua
+
 SeamlessUnitframes.lua

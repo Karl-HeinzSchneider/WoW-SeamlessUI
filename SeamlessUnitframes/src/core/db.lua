@@ -4,6 +4,23 @@ local _, app = ...
 -- AceDB-3.0 defaults. Missing keys in the SavedVariables fall back to these values,
 -- and values equal to the default are not written to disk.
 
+-- Class colored health bars (src/classcolor): the whole feature, then one switch per unit frame,
+-- keyed like app.classColor.frames.
+---@class SeamlessUnitframes.DB.ClassColor
+local classColor = {
+    enabled = true,
+    ---@type table<string, boolean>
+    frames = {
+        player = true,
+        pet = true,
+        target = true,
+        targettarget = true,
+        focus = true,
+        focustarget = true,
+        party = true,
+    },
+}
+
 -- User settings, switchable per character via AceDBOptions.
 ---@class SeamlessUnitframes.DB.Profile
 local profile = {
@@ -15,6 +32,7 @@ local profile = {
         -- all stack on one spot; start somewhere else instead.
         minimapPos = 200,
     },
+    classColor = classColor,
 }
 
 -- Data tied to one character.

@@ -12,6 +12,7 @@
 ---@field db SeamlessUnitframes.DB
 ---@field options SeamlessUnitframes.Options  # the AceConfig options, in the Settings panel and a standalone window
 ---@field minimapButton SeamlessUnitframes.MinimapButton
+---@field classColor SeamlessUnitframes.ClassColor
 
 -- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
 -- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.

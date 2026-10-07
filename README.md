@@ -25,6 +25,7 @@ Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `S
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
 
 - `/seamless`: open Settings > AddOns > Seamless.
+- `/rl`: reload the UI. Enabled by default; toggle it under Seamless > Tweaks in Settings.
 - `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
 - `/seamless reset`: reset the current core profile (shared preferences only).
 - `/seamlessunitframes`: open the Unit Frames subcategory.

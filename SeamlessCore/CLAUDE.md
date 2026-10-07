@@ -6,7 +6,8 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 
 - `embeds.xml` loads all shared vendored libraries from `lib/`, including LibSharedMedia and LibEditModeOverride. Never patch vendored code.
 - `src/core/logger.lua`: shared suite logger.
-- `db.lua`: defaults for `SeamlessCoreDB` (logging and minimap settings).
+- `db.lua`: defaults for `SeamlessCoreDB` (logging, minimap settings and tweaks).
+- `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `settings.lua`: native Settings panel helpers (namespaced proxy settings, search tags, controls and refresh).
 - `settings-actions.lua`: native input and details dialogs, input validation and confirmed actions.

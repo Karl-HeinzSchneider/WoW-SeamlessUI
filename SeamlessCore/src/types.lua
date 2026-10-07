@@ -7,6 +7,7 @@
 ---@field settings SeamlessCore.Settings
 ---@field options SeamlessCore.Options
 ---@field minimapButton SeamlessCore.MinimapButton
+---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
@@ -17,3 +18,4 @@
 ---@class SeamlessCore.Profile
 ---@field logLevel string
 ---@field minimap table
+---@field tweaks { reloadShortcut: boolean }

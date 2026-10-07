@@ -54,6 +54,20 @@ function module:OnInitialize()
         end,
         options = levels,
     })
+    panel:Header("Tweaks")
+    panel:Checkbox({
+        id = "tweaks.reloadShortcut",
+        name = "Enable /rl reload shortcut",
+        tooltip = "Use /rl in chat to reload the user interface, just like /reload.",
+        default = app.dbDefaults.profile.tweaks.reloadShortcut,
+        get = function()
+            return app.db.profile.tweaks.reloadShortcut
+        end,
+        set = function(value)
+            app.db.profile.tweaks.reloadShortcut = value
+            app.tweaks:OnProfileRefresh()
+        end,
+    })
     panel:Profiles(app.db)
 end
 

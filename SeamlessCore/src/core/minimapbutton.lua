@@ -1,4 +1,4 @@
----@type string, SeamlessUnitframes
+---@type string, SeamlessCore
 local appName, app = ...
 
 local log = app.logger
@@ -9,10 +9,10 @@ local ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
 -- Prototype: Ace attaches it to the real module object via __index, so methods are defined
 -- here but state (self.ldb, ...) lives on the object NewModule returns.
----@class SeamlessUnitframes.MinimapButton : AceModule
+---@class SeamlessCore.MinimapButton : AceModule
 ---@field ldb LibDataBroker.QuickLauncher
 local module = {}
-app.minimapButton = addon:NewModule("MinimapButton", module) --[[@as SeamlessUnitframes.MinimapButton]]
+app.minimapButton = addon:NewModule("MinimapButton", module) --[[@as SeamlessCore.MinimapButton]]
 
 -- Runs after addon:OnInitialize, so app.db is available.
 function module:OnInitialize()

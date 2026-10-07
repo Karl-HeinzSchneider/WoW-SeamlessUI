@@ -25,7 +25,10 @@ export const CLIENT_LOCALES = [
   "zhTW",
 ] as const;
 
-/** `package-as` in .pkgmeta: the name of the packaged zip and of the main addon. */
+/** Required shared addon, independent of the suite archive name. */
+export const CORE_ADDON = "SeamlessCore";
+
+/** `package-as` in .pkgmeta: the suite archive name. */
 export function packageName(): string {
   const pkgmeta = readFileSync(resolve(ROOT, ".pkgmeta"), "utf-8");
   const name = /^package-as:\s*(\S+)/m.exec(pkgmeta)?.[1];

@@ -1,8 +1,8 @@
 {
-  "name": "wow-seamlessunitframes",
+  "name": "wow-seamless",
   "private": true,
   "version": "0.1.0",
-  "description": "SeamlessUnitframes World of Warcraft addon and its dev tooling",
+  "description": "Seamless modular World of Warcraft addon suite and its dev tooling",
   "type": "module",
   "engines": {
     "node": ">=20"

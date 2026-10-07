@@ -1,21 +1,20 @@
 ## Interface: 16001
-## Title: SeamlessUnitframes
-## Notes: A short description of SeamlessUnitframes. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessUnitframes/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## Title: Seamless: Unit Frames
+## Notes: Configurable unit-frame health colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
 ## IconTexture: Interface\Icons\INV_Misc_QuestionMark
 ## Author: Karl-HeinzSchneider
 ## Version: |cff8080ff@project-version@|r
+## Dependencies: SeamlessCore
 ## SavedVariables: SeamlessUnitframesDB
 ## X-License: MIT
 ## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUnitframes
 
-embeds.xml
+src\core\bootstrap.lua
 
-src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
 src\core\unitframes.lua
 src\core\options.lua
-src\core\minimapbutton.lua
 
 src\healthcolor\healthcolor.lua
 

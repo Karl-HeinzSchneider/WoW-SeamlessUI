@@ -6,12 +6,12 @@
 -- When a file adds something to `app`, add a matching ---@field here.
 
 ---@class SeamlessUnitframes
----@field logger SeamlessUnitframes.Logger
+---@field core SeamlessCore.Addon
+---@field logger SeamlessCore.Logger
 ---@field addon SeamlessUnitframes.Addon
 ---@field dbDefaults SeamlessUnitframes.DBDefaults
 ---@field db SeamlessUnitframes.DB
 ---@field options SeamlessUnitframes.Options  # the AceConfig options, in the Settings panel and a standalone window
----@field minimapButton SeamlessUnitframes.MinimapButton
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
 

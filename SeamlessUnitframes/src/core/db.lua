@@ -26,14 +26,6 @@ local unitFrames = {
 -- User settings, switchable per character via AceDBOptions.
 ---@class SeamlessUnitframes.DB.Profile
 local profile = {
-    logLevel = "INFO",
-    minimap = {
-        hide = false,
-        -- Degrees around the minimap (0 = east, counter-clockwise), written by LibDBIcon on drag.
-        -- LibDBIcon puts every button at 225 when it has none, so buttons nobody has dragged yet
-        -- all stack on one spot; start somewhere else instead.
-        minimapPos = 200,
-    },
     unitFrames = unitFrames,
 }
 

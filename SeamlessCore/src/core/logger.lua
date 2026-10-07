@@ -1,7 +1,7 @@
----@type string, SeamlessUnitframes
+---@type string, SeamlessCore
 local appName, app = ...
 
----@class SeamlessUnitframes.Logger
+---@class SeamlessCore.Logger
 ---@operator call(...): nil
 local logger = {}
 app.logger = logger
@@ -13,10 +13,10 @@ setmetatable(logger, {
     end,
 })
 
----@alias SeamlessUnitframes.LogLevel integer
+---@alias SeamlessCore.LogLevel integer
 
 -- Higher number = more verbose. A message is shown when its level <= logger.threshold.
----@type table<string, SeamlessUnitframes.LogLevel>
+---@type table<string, SeamlessCore.LogLevel>
 logger.level = {
     NONE = -1,
     ERROR = 0,
@@ -55,7 +55,7 @@ local function resolveLevel(level)
     end
 end
 
----@param level SeamlessUnitframes.LogLevel|string
+---@param level SeamlessCore.LogLevel|string
 ---@return boolean
 function logger:setLevel(level)
     local resolved = resolveLevel(level)
@@ -71,7 +71,7 @@ function logger:getLevelName(level)
     return levelNames[level or self.threshold] or "UNKNOWN"
 end
 
----@param level SeamlessUnitframes.LogLevel
+---@param level SeamlessCore.LogLevel
 ---@return boolean
 function logger:isEnabled(level)
     return level <= self.threshold
@@ -79,7 +79,7 @@ end
 
 -- Core output. `fmt` is passed through string.format when extra args are given,
 -- otherwise it is printed as-is (so stray '%' in plain messages don't blow up).
----@param level SeamlessUnitframes.LogLevel
+---@param level SeamlessCore.LogLevel
 ---@param fmt any
 ---@param ... any
 function logger:print(level, fmt, ...)

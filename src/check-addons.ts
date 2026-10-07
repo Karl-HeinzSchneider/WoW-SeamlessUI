@@ -1,15 +1,15 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { requireAddons } from "./addons.js";
-import { CLIENT_LOCALES, packageName, ROOT } from "./config.js";
+import { CLIENT_LOCALES, CORE_ADDON, ROOT } from "./config.js";
 
-const core = packageName();
+const core = CORE_ADDON;
 const addons = requireAddons();
 const names = new Set(addons.map((addon) => addon.name));
 const failures: string[] = [];
 const dependencies = new Map<string, string[]>();
 
-if (!names.has(core)) failures.push(`missing the main addon ${core}/${core}.toc (package-as in .pkgmeta)`);
+if (!names.has(core)) failures.push(`missing the main addon ${core}/${core}.toc`);
 
 for (const addon of addons) {
   const toc = readFileSync(addon.toc, "utf-8");
@@ -23,9 +23,9 @@ for (const addon of addons) {
     deps.filter((dependency) => names.has(dependency)),
   );
 
-  // A companion addon (<Core>_Something) in the same repo is loaded on top of the main one.
-  if (addon.name.startsWith(`${core}_`) && !deps.includes(core)) {
-    failures.push(`${relative(ROOT, addon.toc)}: companion addons must depend on ${core}`);
+  // Every feature addon must load the shared core first.
+  if (addon.name !== core && !deps.includes(core)) {
+    failures.push(`${relative(ROOT, addon.toc)}: feature addons must depend on ${core}`);
   }
 
   for (const line of toc.split(/\r?\n/)) {

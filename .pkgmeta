@@ -1,22 +1,10 @@
-# BigWigs packager (https://github.com/BigWigsMods/packager), used by .github/workflows/ and
-# `npm run package:local`.
-#
-# The addon lives in SeamlessUnitframes/, not at the root. The packager copies the whole checkout into
-# .release/SeamlessUnitframes/, then move-folders lifts the addon to the top of the zip. Whatever the
-# ignore list below lets through at the root ends up inside the addon's folder, so every root
-# entry that is not an addon has to be ignored here. Dotfiles/dot-folders (.github, .vscode, ...)
-# and everything git ignores (node_modules, .cache, dist, .release) are skipped by the packager
-# on its own.
-#
-# A second addon in the same repo (e.g. SeamlessUnitframes_Options) gets its own move-folders line.
-#
-# The CurseForge / Wago / WoWInterface project ids are read from SeamlessUnitframes/SeamlessUnitframes.toc
-# (## X-Curse-Project-ID, ## X-Wago-ID, ## X-WoWI-ID).
-
-package-as: SeamlessUnitframes
+# Suite archive: each addon is a sibling folder in the zip.
+# Add a move-folders entry for each new addon; ignore all non-addon root files.
+package-as: Seamless
 
 move-folders:
-  SeamlessUnitframes/SeamlessUnitframes: SeamlessUnitframes
+  Seamless/SeamlessCore: SeamlessCore
+  Seamless/SeamlessUnitframes: SeamlessUnitframes
 
 ignore:
   # Root tooling (the root src/ would also collide with SeamlessUnitframes/src/ when the addon is moved).
@@ -34,3 +22,4 @@ ignore:
   - "*.md"
   # LuaLS annotation files; no TOC loads them.
   - SeamlessUnitframes/src/types.lua
+  - SeamlessCore/src/types.lua

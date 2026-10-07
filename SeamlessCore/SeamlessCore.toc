@@ -1,0 +1,17 @@
+## Interface: 16001
+## Title: Seamless: Core
+## Notes: Shared services and options for the Seamless addon suite. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## IconTexture: Interface\Icons\INV_Misc_QuestionMark
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## SavedVariables: SeamlessCoreDB
+## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUnitframes
+
+embeds.xml
+
+src\core\logger.lua
+src\core\db.lua
+src\core\ace.lua
+src\core\options.lua
+src\core\minimapbutton.lua

@@ -5,7 +5,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
-import { packageName, ROOT } from "./config.js";
+import { CORE_ADDON, packageName, ROOT } from "./config.js";
 import { createZip, directoryEntries, fileNamePart } from "./zip.js";
 
 // Same major version as `BigWigsMods/packager@v2` in .github/workflows/package.yml.
@@ -53,7 +53,7 @@ if (zipOurselves) {
     .filter((entry) => entry.isDirectory() && existsSync(resolve(releaseDir, entry.name, `${entry.name}.toc`)))
     .map((entry) => entry.name)
     .sort();
-  const toc = readFileSync(resolve(releaseDir, PACKAGE_NAME, `${PACKAGE_NAME}.toc`), "utf-8");
+  const toc = readFileSync(resolve(releaseDir, CORE_ADDON, `${CORE_ADDON}.toc`), "utf-8");
   const version = /^## Version:\s*(.+)$/m.exec(toc)?.[1] ?? "dev";
   const output = resolve(releaseDir, `${PACKAGE_NAME}-${fileNamePart(version)}.zip`);
   writeFileSync(output, createZip(directoryEntries(releaseDir, addons)));

@@ -5,27 +5,28 @@ that apply everywhere; the addon folder has its own `CLAUDE.md` with its load or
 
 ## What this is
 
-SeamlessUnitframes is a World of Warcraft addon (Lua 5.1 on top of Ace3) for the client set by the
-TOC's `## Interface` (`16001` = WoW Forever), plus the Node/TypeScript tooling that checks,
-links and packages it.
+Seamless is a modular World of Warcraft addon suite (Lua 5.1 / Ace3), targeting the
+client in the TOCs (`16001` = WoW Forever). Each direct child folder with a same-named
+TOC is an independently selectable addon.
 
-| Part                  | What it is                                                                                                                          | Details                                                      |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `SeamlessUnitframes/` | The addon: everything in it ships. Settings in `SeamlessUnitframesDB`.                                                              | [SeamlessUnitframes/CLAUDE.md](SeamlessUnitframes/CLAUDE.md) |
-| `src/`                | Root tooling (Node 20+, TypeScript run by `tsx`, no build): check the addons, link them into a client, package them. Never shipped. | see "Tooling" below                                          |
-| `.github/`            | The release workflows (BigWigs packager).                                                                                           | see "Releases" below                                         |
+- `SeamlessCore/`: required shared libraries, logger, AceDB core settings, minimap launcher,
+  `/seamless` and the suite options window. See its `CLAUDE.md` for the public API.
+- `SeamlessUnitframes/`: optional unit-frame features, depending on SeamlessCore. Keeps
+  `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
+- `src/`: Node 20+ / TypeScript tooling, never shipped.
+- `.github/`: release workflows using the BigWigs packager.
 
-A direct child directory with a same-named `.toc` is an addon; the tooling discovers addons that
-way, so a second addon (e.g. an `SeamlessUnitframes_Options` companion) needs no registration in the
-tooling — only a `move-folders` line in `.pkgmeta`. A companion named `SeamlessUnitframes_*` must
-declare `## Dependencies: SeamlessUnitframes` (`npm run check:addons` enforces it).
+Every feature addon must declare `## Dependencies: SeamlessCore`; `check:addons` enforces
+this and checks dependency cycles. Addons are discovered automatically by tooling; add each
+new addon to `.pkgmeta` move-folders for releases. Users enable or disable feature addons
+in the game's AddOns screen and reload. Core works without any feature addon enabled.
 
 ## Working on the code
 
 WoW addons are plain Lua/XML files loaded by the game; there is no build step. To try a change:
 `npm run dev:link -- "<WoW>/Interface/AddOns"` (once; links every addon directory, also honors
-`WOW_ADDONS_DIR`) and `/reload` in-game. `/seamlessunitframes` opens the options,
-`/seamlessunitframes loglevel debug` shows the debug log.
+`WOW_ADDONS_DIR`) and `/reload` in-game. `/seamless` opens the suite options,
+`/seamless loglevel debug` shows the debug log.
 
 ## Commands (Node 20+, run from the root after `npm install` once)
 
@@ -33,12 +34,12 @@ WoW addons are plain Lua/XML files loaded by the game; there is no build step. T
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run check`                    | Everything below that validates, in order: typecheck, addons, Lua syntax, XML schema, formatting. Run it before finishing a change.                                                                                                 |
 | `npm run format`                   | Prettier (`.prettierrc.json`, `.prettierignore`) on TS/JSON/Markdown/YAML, then StyLua (`stylua.toml`, `.styluaignore`) on Lua. Leaves XML to the editor. `npm run format:check` only reports.                                      |
-| `npm run check:addons`             | Every TOC load entry exists (a `[TextLocale]` entry for every client language), `SeamlessUnitframes_*` companions depend on `SeamlessUnitframes`, no dependency cycles.                                                             |
+| `npm run check:addons`             | Every TOC load entry exists (a `[TextLocale]` entry for every client language), all feature addons depend on `SeamlessCore`, no dependency cycles.                                                                                  |
 | `npm run check:lua`                | `luac -p` on every addon Lua file (needs a Lua 5.1 `luac` on PATH).                                                                                                                                                                 |
 | `npm run check:xml`                | Validates every addon XML against Blizzard's `UI.xsd` via python + lxml; skipped when `../_data/BlizzardInterfaceCode` is absent.                                                                                                   |
 | `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                                                                           |
 | `npm run dev:link -- <AddOns dir>` | Symlink (junction on Windows) every addon into a client; refuses to replace a path that isn't already our link.                                                                                                                     |
-| `npm run package:addons`           | Deterministic `dist/SeamlessUnitframes-<version>.zip` of all addons (gitignored), without `CLAUDE.md` files.                                                                                                                        |
+| `npm run package:addons`           | Deterministic `dist/Seamless-<version>.zip` of all addons (gitignored), without `CLAUDE.md` files.                                                                                                                                  |
 | `npm run package:local`            | The BigWigs packager the release workflows use (`.pkgmeta`), run locally without uploading: addon folders and zip in `.release/` (gitignored). Extra `release.sh` options go after `--`. On Windows it needs Git for Windows' bash. |
 
 Static checks also used ad hoc: `lua-language-server --check` (config in `.luarc.json`; `lib/` is
@@ -49,7 +50,7 @@ excluded from LuaLS, StyLua and Prettier).
 ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
 
 - `config.ts` — `ROOT`, `CLIENT_LOCALES` (every `[TextLocale]` value), `packageName()` (the
-  `package-as` of `.pkgmeta`, used for zip names and as the main addon's name).
+  `package-as` of `.pkgmeta`, used for zip names; `CORE_ADDON` identifies SeamlessCore).
 - `addons.ts` — `addonDirectories()` (every direct child with a same-named `.toc`),
   `addonVersion`, `walkFiles`.
 - `check-addons.ts`, `check-lua.ts`, `check-xml.ts`, `link-addons.ts`, `package-addons.ts`,
@@ -75,7 +76,7 @@ repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the proj
 - Lua 5.1 with Blizzard's restricted API. No `require`, `io`, `os`, or `loadstring` of external
   files; every code file must be listed in its addon's TOC, in dependency order, or it will not
   load.
-- Addons share one global namespace. Keep state in the private table passed to each file. A file
+- Addons share one global namespace. Keep state in the private table passed to each file. Each addon has its own private table. A Unitframes file
   that uses it starts with
 
   ```lua

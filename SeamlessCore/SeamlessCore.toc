@@ -13,5 +13,7 @@ embeds.xml
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
+src\core\settings.lua
+src\core\profiles.lua
 src\core\options.lua
 src\core\minimapbutton.lua

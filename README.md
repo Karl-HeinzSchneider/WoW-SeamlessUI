@@ -5,7 +5,7 @@ A modular World of Warcraft addon suite for WoW Forever.
 ## Addons
 
 - **SeamlessCore** (required): shared libraries, logging, profiles for shared settings, one
-  minimap button and the `/seamless` options window.
+  minimap button and a native **Seamless** category in WoW Settings.
 - **SeamlessUnitframes** (optional): per-frame health colors for player, pet, target, focus,
   their targets and party. Choose default, class, reaction or combined colors, and configure
   the client's numeric target threat display.
@@ -16,15 +16,19 @@ Extract both `SeamlessCore` and `SeamlessUnitframes` from the release zip into y
 `Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
 
-- `/seamless`: open suite options.
+- `/seamless`: open Settings > AddOns > Seamless.
 - `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
 - `/seamless reset`: reset the current core profile (shared preferences only).
-- `/seamlessunitframes`: open the Unit frames group.
+- `/seamlessunitframes`: open the Unit Frames subcategory.
 - `/seamlessunitframes reset`: reset the current Unitframes profile.
 
 Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`. Core preferences
 use `SeamlessCoreDB`; logging and minimap preferences initially use the core defaults.
 Each feature manages its own profiles, independently of the core profile.
+
+Settings use native checkboxes and dropdowns and participate in WoW's Settings search.
+Each category includes controls to select, create, copy, delete and reset its AceDB profiles.
+Copying, deletion and reset ask for confirmation. Native Defaults resets controls without switching profiles.
 
 ## Development
 

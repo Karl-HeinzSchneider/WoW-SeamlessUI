@@ -10,7 +10,7 @@ client in the TOCs (`16001` = WoW Forever). Each direct child folder with a same
 TOC is an independently selectable addon.
 
 - `SeamlessCore/`: required shared libraries, logger, AceDB core settings, minimap launcher,
-  `/seamless` and the suite options window. See its `CLAUDE.md` for the public API.
+  `/seamless` and the native Settings parent category. See its `CLAUDE.md` for the public API.
 - `SeamlessUnitframes/`: optional unit-frame features, depending on SeamlessCore. Keeps
   `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
@@ -49,13 +49,13 @@ excluded from LuaLS, StyLua and Prettier).
 
 ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
 
-- `config.ts` — `ROOT`, `CLIENT_LOCALES` (every `[TextLocale]` value), `packageName()` (the
+- `config.ts` â€” `ROOT`, `CLIENT_LOCALES` (every `[TextLocale]` value), `packageName()` (the
   `package-as` of `.pkgmeta`, used for zip names; `CORE_ADDON` identifies SeamlessCore).
-- `addons.ts` — `addonDirectories()` (every direct child with a same-named `.toc`),
+- `addons.ts` â€” `addonDirectories()` (every direct child with a same-named `.toc`),
   `addonVersion`, `walkFiles`.
 - `check-addons.ts`, `check-lua.ts`, `check-xml.ts`, `link-addons.ts`, `package-addons.ts`,
-  `package-local.ts` — one per `npm run` script above.
-- `zip.ts` — `createZip` (stored, fixed timestamps), `directoryEntries`, `fileNamePart` (a TOC
+  `package-local.ts` â€” one per `npm run` script above.
+- `zip.ts` â€” `createZip` (stored, fixed timestamps), `directoryEntries`, `fileNamePart` (a TOC
   version as a file name), shared by the two packaging scripts.
 
 ## Releases
@@ -66,7 +66,7 @@ first); all four call `package.yml`. The tag decides the type: `v1.1.0-beta1` is
 `v1.1.0-alpha1` an alpha, anything else a release. `## Version: @project-version@` in the TOC is
 filled in by the packager.
 
-What goes into the zip is set by `.pkgmeta` — **a new root file or folder that is not an addon
+What goes into the zip is set by `.pkgmeta` â€” **a new root file or folder that is not an addon
 must be added to its `ignore` list**, or it ships inside the addon's folder. Uploads need the
 repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the project ids in the TOC
 (`## X-Curse-Project-ID`, `## X-Wago-ID`, `## X-WoWI-ID`); a site without both is skipped.
@@ -89,17 +89,17 @@ repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the proj
   `---@field` to `SeamlessUnitframes/src/types.lua`.
 
 - The only sanctioned globals are the SavedVariables tables and XML-required mixins/frames, which
-  are prefixed `SeamlessUnitframes…`.
+  are prefixed `SeamlessUnitframesâ€¦`.
 - Persistent state lives only in tables declared via `## SavedVariables`; they are populated after
   `ADDON_LOADED`, not at file-load time (AceDB `OnInitialize` is the first safe place).
-- Ace3 types (`AceAddon`, `AceDBObject-3.0`, `AceDB.Schema`, …) come from the `ketho.wow-api`
-  VS Code extension (`.vscode/settings.json` → `Lua.workspace.library`), not from `lib/`;
+- Ace3 types (`AceAddon`, `AceDBObject-3.0`, `AceDB.Schema`, â€¦) come from the `ketho.wow-api`
+  VS Code extension (`.vscode/settings.json` â†’ `Lua.workspace.library`), not from `lib/`;
   inherit from them rather than redeclaring the API.
 
 ## XML files
 
 Every XML file starts with `<Ui xmlns="http://www.blizzard.com/wow/ui/">` and **no**
-`xsi:schemaLocation` — the client ignores it and a wrong path makes the VS Code XML extension
+`xsi:schemaLocation` â€” the client ignores it and a wrong path makes the VS Code XML extension
 report errors. Schema validation comes from `xml.fileAssociations` in `.vscode/settings.json`
 (mapping `**/*.xml` to `../_data/BlizzardInterfaceCode/.../Blizzard_SharedXML/UI.xsd`) and from
 `npm run check:xml`. Lua mixin files must be listed in the TOC _before_ the XML that references
@@ -114,11 +114,11 @@ script file with raw strings).
 ## Optional: Blizzard's own UI source and art for reference
 
 A developer may place Blizzard's exported interface files in `../_data/` (a sibling of the repo,
-`E:\Projects\_data\` here — outside the repo, so nothing needs gitignoring):
+`E:\Projects\_data\` here â€” outside the repo, so nothing needs gitignoring):
 
-- `../_data/BlizzardInterfaceCode/` — from `/run ExportInterfaceFiles("code")`: Lua/XML of all
+- `../_data/BlizzardInterfaceCode/` â€” from `/run ExportInterfaceFiles("code")`: Lua/XML of all
   FrameXML/AddOns.
-- `../_data/BlizzardInterfaceArt/` — from `/run ExportInterfaceFiles("art")`: every texture as
+- `../_data/BlizzardInterfaceArt/` â€” from `/run ExportInterfaceFiles("art")`: every texture as
   `.blp` under `BlizzardInterfaceArt/Interface/...`.
 
 If they exist, **read them, never edit them**:
@@ -127,7 +127,7 @@ If they exist, **read them, never edit them**:
   strings. Prefer it over memory; this client's API differs from retail and from Classic.
 - Art: verify that a texture path used in code exists (case-insensitive) and browse for suitable
   icons/textures by name. `.blp` can't be viewed; the file list is what matters. Atlas names
-  (`atlas="..."`) are _not_ in the export — find them in XML usages under `BlizzardInterfaceCode`.
+  (`atlas="..."`) are _not_ in the export â€” find them in XML usages under `BlizzardInterfaceCode`.
 
 Never list anything from these folders in a TOC or copy files out of them into the repo.
 

@@ -9,11 +9,8 @@
 	<Include file="lib\AceBucket-3.0\AceBucket-3.0.xml" />
 	<Include file="lib\AceHook-3.0\AceHook-3.0.xml" />
 	<Include file="lib\AceDB-3.0\AceDB-3.0.xml" />
-	<Include file="lib\AceDBOptions-3.0\AceDBOptions-3.0.xml" />
 	<Include file="lib\AceLocale-3.0\AceLocale-3.0.xml" />
 	<Include file="lib\AceConsole-3.0\AceConsole-3.0.xml" />
-	<Include file="lib\AceGUI-3.0\AceGUI-3.0.xml" />
-	<Include file="lib\AceConfig-3.0\AceConfig-3.0.xml" />
 	<Include file="lib\AceComm-3.0\AceComm-3.0.xml" />
 	<Include file="lib\AceSerializer-3.0\AceSerializer-3.0.xml" />
 	<Include file="lib\AceTab-3.0\AceTab-3.0.xml" />

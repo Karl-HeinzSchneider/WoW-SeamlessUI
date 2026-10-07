@@ -4,6 +4,7 @@
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema
 ---@field db SeamlessCore.DB
+---@field settings SeamlessCore.Settings
 ---@field options SeamlessCore.Options
 ---@field minimapButton SeamlessCore.MinimapButton
 

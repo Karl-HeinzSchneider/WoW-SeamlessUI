@@ -1,93 +1,74 @@
 ---@type string, SeamlessCore
 local appName, app = ...
 
-local log = app.logger
-local addon = app.addon
-
--- The addon's options as one AceConfig table, shown in the game's Settings panel (AddOns tab) and
--- in a standalone window (`/seamless`), so an option is added here once.
 ---@class SeamlessCore.Options : AceModule
+---@field root? SeamlessCore.SettingsPanel
 local module = {}
-app.options = addon:NewModule("Options", module) --[[@as SeamlessCore.Options]]
+app.options = app.addon:NewModule("Options", module) --[[@as SeamlessCore.Options]]
 
--- The log levels for the select, quietest first, shown as "Info" for "INFO".
-local levelNames, levelOrder = {}, {}
-for name in pairs(log.level) do
-    levelNames[name] = name:sub(1, 1) .. name:sub(2):lower()
-    levelOrder[#levelOrder + 1] = name
-end
-table.sort(levelOrder, function(a, b)
-    return log.level[a] < log.level[b]
-end)
-
-local options = {
-    type = "group",
-    name = "Seamless",
-    args = {
-        minimap = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = "Show minimap button",
-            desc = "The minimap button opens these options.",
-            get = function()
-                return not app.db.profile.minimap.hide
-            end,
-            set = function(_, value)
-                app.db.profile.minimap.hide = not value
-                app.minimapButton:OnProfileRefresh()
-            end,
-        },
-        logLevel = {
-            type = "select",
-            order = 20,
-            name = "Log level",
-            desc = "How much " .. appName .. " writes to the chat window. Same as /seamless loglevel <level>.",
-            values = levelNames,
-            sorting = levelOrder,
-            get = function()
-                return app.db.profile.logLevel
-            end,
-            set = function(_, value)
-                if log:setLevel(value) then
-                    app.db.profile.logLevel = log:getLevelName()
-                end
-            end,
-        },
-    },
-}
-
--- Each enabled addon contributes a group; disabled addons never load or register.
 ---@param name string
----@param group table
-function module:RegisterAddon(name, group)
-    assert(not options.args[name], "Duplicate Seamless options: " .. name)
-    options.args[name] = group
-    self:Refresh()
+---@param title string
+---@param build fun(panel: SeamlessCore.SettingsPanel)
+function module:RegisterAddon(name, title, build)
+    assert(self.root, "SeamlessCore settings must initialize before feature settings")
+    local panel = app.settings:CreatePanel(name, title, self.root)
+    build(panel)
+    return panel
 end
 
 function module:OnInitialize()
-    options.args.profiles = LibStub("AceDBOptions-3.0"):GetOptionsTable(app.db)
-    options.args.profiles.name = "Core profiles"
-    options.args.profiles.order = 1000
-    LibStub("AceConfig-3.0"):RegisterOptionsTable(appName, options)
-    LibStub("AceConfigDialog-3.0"):AddToBlizOptions(appName, "Seamless")
+    local panel = app.settings:CreatePanel(appName, "Seamless")
+    self.root = panel
+    panel:Checkbox({
+        id = "minimap",
+        name = "Show minimap button",
+        tooltip = "Open Seamless settings from the minimap.",
+        default = not app.dbDefaults.profile.minimap.hide,
+        get = function()
+            return not app.db.profile.minimap.hide
+        end,
+        set = function(value)
+            app.db.profile.minimap.hide = not value
+            app.minimapButton:OnProfileRefresh()
+        end,
+    })
+    local levels = {}
+    for name in pairs(app.logger.level) do
+        levels[#levels + 1] = { name, name:sub(1, 1) .. name:sub(2):lower() }
+    end
+    table.sort(levels, function(a, b)
+        return app.logger.level[a[1]] < app.logger.level[b[1]]
+    end)
+    panel:Dropdown({
+        id = "logLevel",
+        name = "Log level",
+        tooltip = "How much Seamless writes to chat. Also available through /seamless loglevel <level>.",
+        default = app.dbDefaults.profile.logLevel,
+        get = function()
+            return app.db.profile.logLevel
+        end,
+        set = function(value)
+            if app.logger:setLevel(value) then
+                app.db.profile.logLevel = value
+            end
+        end,
+        options = levels,
+    })
+    panel:Profiles(app.db)
 end
 
-function module:Open(group)
-    local dialog = LibStub("AceConfigDialog-3.0")
-    if not group and dialog.OpenFrames[appName] then
-        dialog:Close(appName)
-    else
-        dialog:Open(appName)
-        if group then
-            dialog:SelectGroup(appName, group)
-        end
+function module:Open(name)
+    local panel = app.settings.panels[name or appName]
+    if panel then
+        panel:Open()
     end
 end
 
-function module:Refresh()
-    LibStub("AceConfigRegistry-3.0"):NotifyChange(appName)
+function module:Refresh(name)
+    local panel = app.settings.panels[name or appName]
+    if panel then
+        panel:Refresh()
+    end
 end
 
 function module:OnProfileRefresh()

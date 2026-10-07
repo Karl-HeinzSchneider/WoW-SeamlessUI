@@ -11,7 +11,7 @@
 ---@field addon SeamlessUnitframes.Addon
 ---@field dbDefaults SeamlessUnitframes.DBDefaults
 ---@field db SeamlessUnitframes.DB
----@field options SeamlessUnitframes.Options  # the AceConfig options, in the Settings panel and a standalone window
+---@field options SeamlessUnitframes.Options  # native Settings subcategory
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
 

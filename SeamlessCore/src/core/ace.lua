@@ -72,9 +72,11 @@ end
 addon.logger = app.logger
 
 ---@param name string
----@param options table
-function addon:RegisterOptions(name, options)
-    app.options:RegisterAddon(name, options)
+---@param title string
+---@param build fun(panel: SeamlessCore.SettingsPanel)
+---@return SeamlessCore.SettingsPanel
+function addon:RegisterOptions(name, title, build)
+    return app.options:RegisterAddon(name, title, build)
 end
 
 ---@param name string?
@@ -82,6 +84,7 @@ function addon:OpenOptions(name)
     app.options:Open(name)
 end
 
-function addon:RefreshOptions()
-    app.options:Refresh()
+---@param name string?
+function addon:RefreshOptions(name)
+    app.options:Refresh(name)
 end

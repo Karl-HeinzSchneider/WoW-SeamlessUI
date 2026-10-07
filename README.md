@@ -10,9 +10,13 @@ A modular World of Warcraft addon suite for WoW Forever.
   their targets and party. Choose default, class, reaction or combined colors, and configure
   the client's numeric target threat display.
 
+- **SeamlessTooltip** (optional): 23 switchable tooltip enhancements, including cursor/action-button
+  anchoring, scale, shared-media backgrounds and borders, player/NPC text, status and raid markers,
+  targets, health bars, item details and vendor prices, spell IDs and aura casters.
+
 ## Installation and usage
 
-Extract both `SeamlessCore` and `SeamlessUnitframes` from the release zip into your client's
+Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`) from the release zip into your client's
 `Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
 
@@ -21,14 +25,21 @@ WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone
 - `/seamless reset`: reset the current core profile (shared preferences only).
 - `/seamlessunitframes`: open the Unit Frames subcategory.
 - `/seamlessunitframes reset`: reset the current Unitframes profile.
+- `/seamlesstooltip`: open the Tooltip subcategory.
+- `/seamlesstooltip reset`: reset the current Tooltip profile.
 
-Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`. Core preferences
+Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`; Tooltip keeps
+`SeamlessTooltipDB` and all feature keys from the standalone addon. Core preferences
 use `SeamlessCoreDB`; logging and minimap preferences initially use the core defaults.
 Each feature manages its own profiles, independently of the core profile.
 
 Settings use native checkboxes and dropdowns and participate in WoW's Settings search.
 Each category includes controls to select, create, copy, delete and reset its AceDB profiles.
 Copying, deletion and reset ask for confirmation. Native Defaults resets controls without switching profiles.
+
+When replacing standalone SeamlessTooltip, replace its existing AddOns folder with the suite version
+and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to
+the old repository must be replaced with one pointing to this repo; `dev:link` refuses to overwrite it.
 
 ## Development
 

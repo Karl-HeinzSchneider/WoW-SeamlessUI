@@ -13,6 +13,8 @@ TOC is an independently selectable addon.
   `/seamless` and the native Settings parent category. See its `CLAUDE.md` for the public API.
 - `SeamlessUnitframes/`: optional unit-frame features, depending on SeamlessCore. Keeps
   `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
+- `SeamlessTooltip/`: optional tooltip features, depending on SeamlessCore. Keeps
+  `SeamlessTooltipDB` and existing profiles. See its `CLAUDE.md`.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `.github/`: release workflows using the BigWigs packager.
 

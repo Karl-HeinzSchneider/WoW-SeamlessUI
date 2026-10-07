@@ -5,6 +5,7 @@ package-as: Seamless
 move-folders:
   Seamless/SeamlessCore: SeamlessCore
   Seamless/SeamlessUnitframes: SeamlessUnitframes
+  Seamless/SeamlessTooltip: SeamlessTooltip
 
 ignore:
   # Root tooling (the root src/ would also collide with SeamlessUnitframes/src/ when the addon is moved).
@@ -23,3 +24,4 @@ ignore:
   # LuaLS annotation files; no TOC loads them.
   - SeamlessUnitframes/src/types.lua
   - SeamlessCore/src/types.lua
+  - SeamlessTooltip/src/types.lua

@@ -17,6 +17,12 @@ app.settings = settings
 ---@field variableType? string # Dropdowns default to string.
 ---@field shown? fun(): boolean
 ---@field tags? string[]
+---@field enabled? fun(): boolean
+---@field dependencies? string[] # Panel-local IDs whose changes affect enabled state.
+---@field min? number
+---@field max? number
+---@field step? number
+---@field format? fun(value: number): string
 
 ---@class SeamlessCore.SettingsPanel
 ---@field name string
@@ -73,6 +79,12 @@ function Panel:Configure(initializer, spec)
     if spec.shown then
         initializer:AddShownPredicate(spec.shown)
     end
+    if spec.enabled then
+        initializer:AddModifyPredicate(spec.enabled)
+    end
+    for _, id in ipairs(spec.dependencies or {}) do
+        initializer:AddEvaluateStateCVar(self.name .. "." .. id)
+    end
     return initializer
 end
 
@@ -94,6 +106,22 @@ function Panel:Dropdown(spec)
         return container:GetData()
     end
     return self:Configure(Settings.CreateDropdown(self.category, setting, choices, spec.tooltip), spec)
+end
+
+---@param spec SeamlessCore.SettingSpec
+function Panel:Slider(spec)
+    local setting = self:RegisterSetting(spec, Settings.VarType.Number)
+    local options = Settings.CreateSliderOptions(spec.min, spec.max, spec.step)
+    options:SetLabelFormatter(MinimalSliderWithSteppersMixin.Label.Right, spec.format or tostring)
+    return self:Configure(Settings.CreateSlider(self.category, setting, options, spec.tooltip), spec)
+end
+
+-- Native swatches use ARGB hex strings. Alpha is edited separately because this client's
+-- stock swatch opens an RGB-only picker; callers retain their saved alpha when RGB changes.
+---@param spec SeamlessCore.SettingSpec
+function Panel:Color(spec)
+    local setting = self:RegisterSetting(spec, Settings.VarType.String)
+    return self:Configure(Settings.CreateColorSwatch(self.category, setting, spec.tooltip), spec)
 end
 
 ---@param name string

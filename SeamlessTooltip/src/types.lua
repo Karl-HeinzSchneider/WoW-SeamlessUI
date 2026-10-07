@@ -1,0 +1,26 @@
+-- Type annotations only; this file is not listed in the TOC and never runs in-game.
+-- It exists so the Lua language server can type the `...` vararg every file receives.
+-- Every file should start with:
+--   ---@type string, SeamlessTooltip
+--   local appName, app = ...
+-- When a file adds something to `app`, add a matching ---@field here.
+
+---@class SeamlessTooltip
+---@field core SeamlessCore.Addon
+---@field logger SeamlessCore.Logger
+---@field addon SeamlessTooltip.Addon
+---@field dbDefaults SeamlessTooltip.DBDefaults
+---@field db SeamlessTooltip.DB
+---@field media SeamlessTooltip.Media  # LibSharedMedia helpers for texture options
+---@field lines SeamlessTooltip.Lines  # the look of the "Label  value" lines features add
+---@field unitTooltip SeamlessTooltip.UnitTooltip  # the unit and line helpers of the unit text features
+---@field border SeamlessTooltip.Border  # the border color features paint by a tooltip's content
+---@field features SeamlessTooltip.Features  # the registry of tooltip features (src\features\), each switchable in the options
+---@field options SeamlessTooltip.Options  # native Settings child category
+
+-- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
+-- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.
+---@class SeamlessTooltip.DB : AceDBObject-3.0
+---@field profile SeamlessTooltip.DB.Profile
+---@field char SeamlessTooltip.DB.Char
+---@field global SeamlessTooltip.DB.Global

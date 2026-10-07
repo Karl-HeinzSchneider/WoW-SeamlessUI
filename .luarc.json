@@ -2,5 +2,5 @@
   "runtime.version": "Lua 5.1",
   "workspace.checkThirdParty": false,
   "workspace.ignoreDir": ["SeamlessCore/lib", ".release"],
-  "diagnostics.globals": ["SeamlessCoreDB", "SeamlessUnitframesDB", "LibStub"]
+  "diagnostics.globals": ["SeamlessCoreDB", "SeamlessUnitframesDB", "SeamlessTooltipDB", "LibStub"]
 }

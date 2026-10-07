@@ -1,0 +1,46 @@
+## Interface: 16001
+## Title: Seamless: Tooltip
+## Notes: Enhances the default tooltip; every enhancement can be switched on or off. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## IconTexture: Interface\Icons\INV_Misc_QuestionMark
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## Dependencies: SeamlessCore
+## SavedVariables: SeamlessTooltipDB
+## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUnitframes
+
+src\core\bootstrap.lua
+src\core\db.lua
+src\core\ace.lua
+src\core\features.lua
+src\core\media.lua
+src\core\lines.lua
+src\core\unittooltip.lua
+src\core\border.lua
+src\core\options.lua
+
+src\features\cursoranchor.lua
+src\features\actionbuttonanchor.lua
+src\features\backdrop.lua
+src\features\scale.lua
+src\features\playertext.lua
+src\features\npctext.lua
+src\features\hidetitle.lua
+src\features\statustags.lua
+src\features\raidicon.lua
+src\features\tappedname.lua
+src\features\targetline.lua
+src\features\targetedby.lua
+src\features\creaturefamily.lua
+src\features\healthbar.lua
+src\features\unitborder.lua
+src\features\hideunits.lua
+src\features\itemids.lua
+src\features\itemlevel.lua
+src\features\itemdetails.lua
+src\features\vendorprice.lua
+src\features\qualityborder.lua
+src\features\spellids.lua
+src\features\aurasource.lua
+
+SeamlessTooltip.lua

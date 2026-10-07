@@ -1,0 +1,33 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- The copy window; behavior in copywindow.lua (SeamlessChatCopyWindowMixin). -->
+	<Frame name="SeamlessChatCopyWindow" mixin="SeamlessChatCopyWindowMixin" inherits="DefaultPanelFlatTemplate" parent="UIParent" toplevel="true" movable="true" enableMouse="true" clampedToScreen="true" frameStrata="DIALOG" hidden="true">
+		<Size x="620" y="420"/>
+		<Anchors>
+			<Anchor point="CENTER"/>
+		</Anchors>
+		<Frames>
+			<Button parentKey="CloseButton" inherits="UIPanelCloseButtonDefaultAnchors"/>
+			<Frame parentKey="ScrollingEditBox" inherits="ScrollingEditBoxTemplate">
+				<KeyValues>
+					<KeyValue key="fontName" value="ChatFontNormal" type="string"/>
+				</KeyValues>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="16" y="-30"/>
+					<Anchor point="BOTTOMRIGHT" x="-28" y="12"/>
+				</Anchors>
+			</Frame>
+			<EventFrame parentKey="ScrollBar" inherits="MinimalScrollBar">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.ScrollingEditBox" relativePoint="TOPRIGHT" x="8" y="0"/>
+					<Anchor point="BOTTOMLEFT" relativeKey="$parent.ScrollingEditBox" relativePoint="BOTTOMRIGHT" x="8" y="0"/>
+				</Anchors>
+			</EventFrame>
+		</Frames>
+		<Scripts>
+			<OnLoad method="OnLoad"/>
+			<OnDragStart method="OnDragStart"/>
+			<OnDragStop method="OnDragStop"/>
+			<OnHide method="OnHide"/>
+		</Scripts>
+	</Frame>
+</Ui>

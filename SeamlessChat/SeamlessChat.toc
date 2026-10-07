@@ -1,0 +1,38 @@
+## Interface: 16001
+## Title: Seamless: Chat
+## Notes: The default chat, but the same on every character: tabs, their channels and message types, colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## IconTexture: Interface\Icons\INV_Misc_QuestionMark
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## Dependencies: SeamlessCore
+## SavedVariables: SeamlessChatDB
+## SavedVariablesPerCharacter: SeamlessChatHistoryDB, SeamlessChatLogDB
+## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUnitframes
+
+src\core\bootstrap.lua
+src\core\db.lua
+src\core\ace.lua
+src\core\options.lua
+
+src\chat\state.lua
+src\chat\sync.lua
+src\chat\lines.lua
+src\chat\input.lua
+
+src\features\features.lua
+src\features\timestamps.lua
+src\features\history.lua
+src\features\copy.lua
+src\features\copywindow.lua
+src\features\copywindow.xml
+src\features\log.lua
+src\features\logwindow.lua
+src\features\logwindow.xml
+src\features\urls.lua
+src\features\channels.lua
+src\features\classcolors.lua
+src\features\fading.lua
+src\features\background.lua
+
+SeamlessChat.lua

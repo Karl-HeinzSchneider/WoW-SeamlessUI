@@ -1,0 +1,138 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+	<!-- One row of the group list; behavior in logwindow.lua (SeamlessChatLogGroupMixin). -->
+	<Button name="SeamlessChatLogGroupTemplate" mixin="SeamlessChatLogGroupMixin" virtual="true">
+		<Size x="180" y="20"/>
+		<Layers>
+			<Layer level="BACKGROUND">
+				<Texture parentKey="Selected" hidden="true" setAllPoints="true">
+					<Color r="1" g="0.82" b="0" a="0.18"/>
+				</Texture>
+			</Layer>
+			<Layer level="ARTWORK">
+				<FontString parentKey="Label" inherits="GameFontHighlightSmall" justifyH="LEFT" wordwrap="false">
+					<Anchors>
+						<Anchor point="LEFT" x="8" y="0"/>
+						<Anchor point="RIGHT" x="-44" y="0"/>
+					</Anchors>
+				</FontString>
+				<FontString parentKey="Count" inherits="GameFontDisableSmall" justifyH="RIGHT">
+					<Anchors>
+						<Anchor point="RIGHT" x="-6" y="0"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<HighlightTexture setAllPoints="true">
+			<Color r="1" g="1" b="1" a="0.08"/>
+		</HighlightTexture>
+		<Scripts>
+			<OnClick method="OnClick"/>
+		</Scripts>
+	</Button>
+
+	<!-- The button beside the chat that opens the chat log: in the main chat window's button column,
+	     above the chat menu button, with the same art as the channel button above it. Behavior in
+	     logwindow.lua (SeamlessChatLogButtonMixin). -->
+	<Button name="SeamlessChatLogButton" mixin="SeamlessChatLogButtonMixin" parent="ChatFrame1ButtonFrame" frameStrata="MEDIUM">
+		<Size x="27" y="26"/>
+		<Anchors>
+			<Anchor point="BOTTOM" relativeTo="ChatFrameMenuButton" relativePoint="TOP" x="0" y="2"/>
+		</Anchors>
+		<Layers>
+			<Layer level="OVERLAY">
+				<Texture parentKey="Icon" atlas="common-search-magnifyingglass" useAtlasSize="false">
+					<Size x="15" y="15"/>
+					<Anchors>
+						<Anchor point="CENTER"/>
+					</Anchors>
+				</Texture>
+			</Layer>
+		</Layers>
+		<NormalTexture atlas="chatframe-button-up"/>
+		<PushedTexture atlas="chatframe-button-down"/>
+		<HighlightTexture atlas="chatframe-button-highlight" alphaMode="ADD"/>
+		<Scripts>
+			<OnClick method="OnClick"/>
+			<OnEnter method="OnEnter"/>
+			<OnLeave method="OnLeave"/>
+			<OnMouseDown method="OnMouseDown"/>
+			<OnMouseUp method="OnMouseUp"/>
+		</Scripts>
+	</Button>
+
+	<!-- The chat log window; behavior in logwindow.lua (SeamlessChatLogWindowMixin). -->
+	<Frame name="SeamlessChatLogWindow" mixin="SeamlessChatLogWindowMixin" inherits="DefaultPanelFlatTemplate" parent="UIParent" toplevel="true" movable="true" enableMouse="true" clampedToScreen="true" frameStrata="HIGH" hidden="true">
+		<Size x="900" y="540"/>
+		<Anchors>
+			<Anchor point="CENTER"/>
+		</Anchors>
+		<Layers>
+			<Layer level="OVERLAY">
+				<FontString parentKey="Status" inherits="GameFontNormalSmall" justifyH="LEFT">
+					<Anchors>
+						<Anchor point="BOTTOMLEFT" x="18" y="18"/>
+					</Anchors>
+				</FontString>
+			</Layer>
+		</Layers>
+		<Frames>
+			<Button parentKey="CloseButton" inherits="UIPanelCloseButtonDefaultAnchors"/>
+			<EditBox parentKey="SearchBox" inherits="SearchBoxTemplate">
+				<Size x="260" y="20"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="22" y="-32"/>
+				</Anchors>
+			</EditBox>
+			<Frame parentKey="GroupInset" inherits="InsetFrameTemplate">
+				<Size x="200" y="0"/>
+				<Anchors>
+					<Anchor point="TOPLEFT" x="12" y="-60"/>
+					<Anchor point="BOTTOMLEFT" x="12" y="42"/>
+				</Anchors>
+			</Frame>
+			<Frame parentKey="GroupList" inherits="WowScrollBoxList">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.GroupInset" relativePoint="TOPLEFT" x="4" y="-4"/>
+					<Anchor point="BOTTOMRIGHT" relativeKey="$parent.GroupInset" relativePoint="BOTTOMRIGHT" x="-4" y="4"/>
+				</Anchors>
+			</Frame>
+			<EventFrame parentKey="GroupScrollBar" inherits="MinimalScrollBar">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.GroupInset" relativePoint="TOPRIGHT" x="4" y="-4"/>
+					<Anchor point="BOTTOMLEFT" relativeKey="$parent.GroupInset" relativePoint="BOTTOMRIGHT" x="4" y="4"/>
+				</Anchors>
+			</EventFrame>
+			<Frame parentKey="ResultInset" inherits="InsetFrameTemplate">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.GroupInset" relativePoint="TOPRIGHT" x="20" y="0"/>
+					<Anchor point="BOTTOMRIGHT" x="-30" y="42"/>
+				</Anchors>
+			</Frame>
+			<ScrollingMessageFrame parentKey="Results">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.ResultInset" relativePoint="TOPLEFT" x="8" y="-6"/>
+					<Anchor point="BOTTOMRIGHT" relativeKey="$parent.ResultInset" relativePoint="BOTTOMRIGHT" x="-8" y="6"/>
+				</Anchors>
+			</ScrollingMessageFrame>
+			<EventFrame parentKey="ResultScrollBar" inherits="MinimalScrollBar">
+				<Anchors>
+					<Anchor point="TOPLEFT" relativeKey="$parent.ResultInset" relativePoint="TOPRIGHT" x="6" y="-4"/>
+					<Anchor point="BOTTOMLEFT" relativeKey="$parent.ResultInset" relativePoint="BOTTOMRIGHT" x="6" y="4"/>
+				</Anchors>
+			</EventFrame>
+			<Button parentKey="CopyButton" inherits="UIPanelButtonTemplate" text="Copy">
+				<Size x="110" y="22"/>
+				<Anchors>
+					<Anchor point="BOTTOMRIGHT" x="-30" y="12"/>
+				</Anchors>
+			</Button>
+		</Frames>
+		<Scripts>
+			<OnLoad method="OnLoad"/>
+			<OnShow method="OnShow"/>
+			<OnHide method="OnHide"/>
+			<OnDragStart method="OnDragStart"/>
+			<OnDragStop method="OnDragStop"/>
+		</Scripts>
+	</Frame>
+</Ui>

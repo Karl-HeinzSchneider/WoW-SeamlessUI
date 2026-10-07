@@ -4,11 +4,12 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 
 ## Ownership and load order
 
-- `embeds.xml` loads all shared vendored libraries from `lib/`, including LibSharedMedia. Never patch vendored code.
+- `embeds.xml` loads all shared vendored libraries from `lib/`, including LibSharedMedia and LibEditModeOverride. Never patch vendored code.
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessCoreDB` (logging and minimap settings).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `settings.lua`: native Settings panel helpers (namespaced proxy settings, search tags, controls and refresh).
+- `settings-actions.lua`: native input and details dialogs, input validation and confirmed actions.
 - `settings-options.lua`: adapter for declarative feature options, including typed selects, sliders
   and RGB/opacity controls backed by existing SavedVariables.
 - `profiles.lua`: shared native profile controls backed by AceDB, with confirmation dialogs.
@@ -28,7 +29,7 @@ core through `LibStub("AceAddon-3.0"):GetAddon("SeamlessCore")`; no new global i
 - `core:RefreshOptions(addonName)`: notify the panel's settings after external changes; omit for Core.
 
 The panel exposes `Checkbox(spec)`, `Dropdown(spec)`, `Button(name, buttonText, callback, tooltip)`,
-`Slider(spec)`, `Color(spec)`, `Header(name)`, and `Profiles(db)`. Checkbox/dropdown specs include `id`, `name`, `default`, `get`,
+`Slider(spec)`, `Color(spec)`, `Input(spec)`, `Description(name, text)`, `Action(spec, callback, confirmation)`, `Header(name)`, and `Profiles(db)`. Checkbox/dropdown specs include `id`, `name`, `default`, `get`,
 `set`, optional `tooltip`, `shown` and `tags`. Dropdowns also take an ordered `options` list of
 `{ value, label, tooltip? }` entries, or a function returning that list. Dropdown values are strings
 unless `variableType` is specified. IDs are unique within the panel and prefixed with the addon name.
@@ -74,9 +75,18 @@ The group supplies `id` (prefix), `name` (searchable label prefix), `options`, `
 (return current settings table), `changed` (apply feature settings), and optional `enabled`,
 `dependencies` (panel-local setting IDs) and `tags`. See Tooltip's `features.lua` for an example.
 This adapter supports the migrated option metadata without loading AceConfig. Unsupported types fail
-explicitly; custom AceConfig get/set callbacks are not supported.
+explicitly; custom get/set callbacks receive an info table with the option key and definition. Color callbacks
+use r/g/b/a arguments, preserving the migrated feature definitions.
 
 Primitive specs may use `enabled` plus `dependencies` for dependent controls. Sliders take min/max/step
 and an optional format function. Color specs use native ARGB hex strings. The declarative adapter
 preserves RGBA tables, converts only RGB for the stock swatch, and adds an opacity slider: this client's
 native color picker does not edit alpha. Late media providers are evaluated when menus open.
+
+The adapter also supports `input`, `execute`, `description` and `header`. Inputs use a prefilled
+native dialog (empty strings allowed), optional validation, and explicit `default` overrides for
+nested settings. Supply defaults from the schema, never the current saved value. Hidden predicates
+become disabled native controls so changing a sibling value does not require rebuilding the layout.
+Descriptions are evaluated on hover or opening Details; this avoids reading another module's state
+before initialization. Execute options honor `confirm` and `confirmText`. Input/action contexts guard
+against applying an old dialog to a newly selected profile. No AceConfig runtime is loaded.

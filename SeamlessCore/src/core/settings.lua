@@ -17,6 +17,9 @@ app.settings = settings
 ---@field variableType? string # Dropdowns default to string.
 ---@field shown? fun(): boolean
 ---@field tags? string[]
+---@field validate? fun(value: string): boolean|string
+---@field context? fun(): any
+---@field buttonText? string
 ---@field enabled? fun(): boolean
 ---@field dependencies? string[] # Panel-local IDs whose changes affect enabled state.
 ---@field min? number

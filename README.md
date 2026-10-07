@@ -14,9 +14,13 @@ A modular World of Warcraft addon suite for WoW Forever.
   anchoring, scale, shared-media backgrounds and borders, player/NPC text, status and raid markers,
   targets, health bars, item details and vendor prices, spell IDs and aura casters.
 
+- **SeamlessChat** (optional): shared chat layouts/colors/channels, input history, timestamps,
+  persistent message history, copy and searchable log windows, clickable URLs, short channel labels,
+  class colors, fading and backgrounds.
+
 ## Installation and usage
 
-Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`) from the release zip into your client's
+Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`, `SeamlessChat`) from the release zip into your client's
 `Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
 
@@ -27,17 +31,22 @@ WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone
 - `/seamlessunitframes reset`: reset the current Unitframes profile.
 - `/seamlesstooltip`: open the Tooltip subcategory.
 - `/seamlesstooltip reset`: reset the current Tooltip profile.
+- `/seamlesschat`: open the Chat subcategory; `save`/`apply` manage its shared chat setup.
+- `/seamlesschat log` or `/seamlesschat search <text>`: open the searchable chat log.
+- `/seamlesschat reset`: reset the current Chat profile.
 
 Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`; Tooltip keeps
 `SeamlessTooltipDB` and all feature keys from the standalone addon. Core preferences
 use `SeamlessCoreDB`; logging and minimap preferences initially use the core defaults.
 Each feature manages its own profiles, independently of the core profile.
+Chat retains `SeamlessChatDB`, `SeamlessChatHistoryDB` and `SeamlessChatLogDB`, including existing
+sync snapshots, input history and per-character message data.
 
 Settings use native checkboxes and dropdowns and participate in WoW's Settings search.
 Each category includes controls to select, create, copy, delete and reset its AceDB profiles.
 Copying, deletion and reset ask for confirmation. Native Defaults resets controls without switching profiles.
 
-When replacing standalone SeamlessTooltip, replace its existing AddOns folder with the suite version
+When replacing standalone SeamlessTooltip or SeamlessChat, replace its existing AddOns folder with the suite version
 and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to
 the old repository must be replaced with one pointing to this repo; `dev:link` refuses to overwrite it.
 

@@ -59,24 +59,48 @@ function Panel:Options(group)
         local option = group.options[key]
         local spec = {
             id = group.id .. "." .. key,
-            name = group.name .. ": " .. option.name,
+            name = group.name .. ": " .. (type(option.name) == "string" and option.name or key),
             tooltip = option.desc,
-            default = group.defaults[key],
+            default = option.default,
+            context = group.get,
             get = function()
+                if option.get then
+                    return option.get({ key, option = option })
+                end
                 return group.get()[key]
             end,
             set = function(value)
-                group.get()[key] = value
-                group.changed()
+                if option.set then
+                    option.set({ key, option = option }, value)
+                else
+                    group.get()[key] = value
+                    group.changed()
+                end
             end,
             enabled = function()
                 local disabled = type(option.disabled) == "function" and option.disabled() or option.disabled == true
-                return (not group.enabled or group.enabled()) and not disabled
+                local hidden = type(option.hidden) == "function" and option.hidden() or option.hidden == true
+                return (not group.enabled or group.enabled()) and not disabled and not hidden
             end,
             dependencies = dependencies,
             tags = group.tags,
         }
-        if option.type == "toggle" then
+        if spec.default == nil then
+            spec.default = group.defaults[key]
+        end
+        if option.type == "header" then
+            self:Header(spec.name)
+        elseif option.type == "description" then
+            self:Description(spec.name, option.name)
+        elseif option.type == "execute" then
+            self:Action(spec, option.func, option.confirm and (option.confirmText or (spec.name .. "?")))
+        elseif option.type == "input" then
+            spec.validate = option.validate
+                and function(value)
+                    return option.validate({ key, option = option }, value)
+                end
+            self:Input(spec)
+        elseif option.type == "toggle" then
             self:Checkbox(spec)
         elseif option.type == "select" then
             spec.variableType = type(spec.default)
@@ -93,13 +117,28 @@ function Panel:Options(group)
             self:Slider(spec)
         elseif option.type == "color" then
             spec.default = Hex(group.defaults[key])
+            local function colorValue()
+                if option.get then
+                    local r, g, b, a = option.get({ key, option = option })
+                    return { r = r, g = g, b = b, a = a }
+                end
+                return group.get()[key]
+            end
+            local function saveColor(color)
+                if option.set then
+                    option.set({ key, option = option }, color.r, color.g, color.b, color.a)
+                else
+                    group.get()[key] = color
+                    group.changed()
+                end
+            end
             spec.get = function()
-                return Hex(group.get()[key])
+                return Hex(colorValue())
             end
             spec.set = function(value)
-                local color = group.get()[key]
+                local color = colorValue()
                 color.r, color.g, color.b = CreateColorFromHexString(value):GetRGB()
-                group.changed()
+                saveColor(color)
             end
             self:Color(spec)
             if option.hasAlpha then
@@ -115,11 +154,12 @@ function Panel:Options(group)
                         return ("%.0f%%"):format(value * 100)
                     end,
                     get = function()
-                        return group.get()[key].a
+                        return colorValue().a
                     end,
                     set = function(value)
-                        group.get()[key].a = value
-                        group.changed()
+                        local color = colorValue()
+                        color.a = value
+                        saveColor(color)
                     end,
                     enabled = spec.enabled,
                     dependencies = dependencies,

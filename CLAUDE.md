@@ -15,6 +15,8 @@ TOC is an independently selectable addon.
   `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
 - `SeamlessTooltip/`: optional tooltip features, depending on SeamlessCore. Keeps
   `SeamlessTooltipDB` and existing profiles. See its `CLAUDE.md`.
+- `SeamlessChat/`: optional chat sync, history, copy/log windows and chat enhancements. Keeps
+  its profile and per-character SavedVariables. See its `CLAUDE.md`.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `.github/`: release workflows using the BigWigs packager.
 

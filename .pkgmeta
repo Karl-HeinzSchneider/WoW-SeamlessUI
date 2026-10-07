@@ -3,6 +3,7 @@
 package-as: Seamless
 
 move-folders:
+  Seamless/SeamlessChat: SeamlessChat
   Seamless/SeamlessCore: SeamlessCore
   Seamless/SeamlessUnitframes: SeamlessUnitframes
   Seamless/SeamlessTooltip: SeamlessTooltip
@@ -25,3 +26,4 @@ ignore:
   - SeamlessUnitframes/src/types.lua
   - SeamlessCore/src/types.lua
   - SeamlessTooltip/src/types.lua
+  - SeamlessChat/src/types.lua

@@ -1,0 +1,29 @@
+-- Type annotations only; this file is not listed in the TOC and never runs in-game.
+-- It exists so the Lua language server can type the `...` vararg every file receives.
+-- Every file should start with:
+--   ---@type string, SeamlessChat
+--   local appName, app = ...
+-- When a file adds something to `app`, add a matching ---@field here.
+
+---@class SeamlessChat
+---@field core SeamlessCore.Addon
+---@field logger SeamlessCore.Logger
+---@field addon SeamlessChat.Addon
+---@field dbDefaults SeamlessChat.DBDefaults
+---@field db SeamlessChat.DB
+---@field options SeamlessChat.Options  # native Settings child category
+---@field chatState SeamlessChat.ChatState  # reads and writes the game's chat setup
+---@field sync SeamlessChat.Sync  # keeps the chat setup the same on every character
+---@field features SeamlessChat.Features  # the optional features (src/features/)
+---@field copy SeamlessChat.Copy  # copying chat lines
+---@field chatLog SeamlessChat.ChatLog  # the searchable message database
+---@field lines SeamlessChat.Lines  # the chat line transforms (src/chat/lines.lua)
+---@field input SeamlessChat.Input  # chat edit box settings (src/chat/input.lua)
+---@field urls SeamlessChat.Urls  # clickable URLs
+
+-- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
+-- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.
+---@class SeamlessChat.DB : AceDBObject-3.0
+---@field profile SeamlessChat.DB.Profile
+---@field char SeamlessChat.DB.Char
+---@field global SeamlessChat.DB.Global

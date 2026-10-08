@@ -14,8 +14,10 @@ src\core\bootstrap.lua
 src\core\db.lua
 src\core\ace.lua
 src\core\unitframes.lua
+src\core\questicons.lua
 src\core\options.lua
 
 src\healthcolor\healthcolor.lua
+src\questicon\targetquesticon.lua
 
 SeamlessUnitframes.lua

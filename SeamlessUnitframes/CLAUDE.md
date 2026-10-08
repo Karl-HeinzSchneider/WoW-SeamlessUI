@@ -15,6 +15,9 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
 5. `options.lua`: native controls in Settings > AddOns > Seamless > Unit Frames, using Core's
    panel helpers. Getters follow the active profile; CVAR_UPDATE refreshes external threat changes.
 6. `src/healthcolor/healthcolor.lua`: feature implementation.
+   `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
+   objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.
+   The `targetQuestIcon` profile settings control enablement, scale and offsets (disabled by default).
 7. `SeamlessUnitframes.lua`: load diagnostic.
 
 Every new runtime Lua/XML file must be listed in dependency order in the TOC.

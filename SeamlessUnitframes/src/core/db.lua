@@ -27,6 +27,7 @@ local unitFrames = {
 ---@class SeamlessUnitframes.DB.Profile
 local profile = {
     unitFrames = unitFrames,
+    targetQuestIcon = { enabled = false, scale = 1.7, x = -30, y = 25 },
 }
 
 -- Data tied to one character.

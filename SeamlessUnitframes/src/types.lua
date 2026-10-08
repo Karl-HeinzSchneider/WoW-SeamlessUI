@@ -14,6 +14,8 @@
 ---@field options SeamlessUnitframes.Options  # native Settings subcategory
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
+---@field questIcons SeamlessUnitframes.QuestIcons
+---@field targetQuestIcon SeamlessUnitframes.TargetQuestIcon
 
 -- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
 -- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.

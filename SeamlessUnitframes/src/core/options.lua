@@ -61,12 +61,57 @@ local function UnitFrameOptions(panel, entry)
     end
 end
 
+---@param panel SeamlessCore.SettingsPanel
+local function TargetQuestIconOptions(panel)
+    local defaults = app.dbDefaults.profile.targetQuestIcon
+    local function enabled()
+        return app.db.profile.targetQuestIcon.enabled
+    end
+    panel:Header("Target quest icon")
+    panel:Checkbox({
+        id = "targetQuestIcon.enabled",
+        name = "Quest icon on target frame",
+        tooltip = "Show a slay icon for unfinished kill objectives or a loot icon for other unfinished quest objectives reported by the target's tooltip.",
+        default = defaults.enabled,
+        get = enabled,
+        set = function(value)
+            app.db.profile.targetQuestIcon.enabled = value
+            app.targetQuestIcon:OnProfileRefresh()
+        end,
+    })
+    for _, spec in ipairs({
+        { key = "scale", name = "Target quest icon scale", min = 0.5, max = 3, step = 0.1 },
+        { key = "x", name = "Target quest icon X offset", min = -150, max = 150, step = 1 },
+        { key = "y", name = "Target quest icon Y offset", min = -100, max = 100, step = 1 },
+    }) do
+        local key = spec.key
+        panel:Slider({
+            id = "targetQuestIcon." .. key,
+            name = spec.name,
+            min = spec.min,
+            max = spec.max,
+            step = spec.step,
+            default = defaults[key],
+            get = function()
+                return app.db.profile.targetQuestIcon[key]
+            end,
+            set = function(value)
+                app.db.profile.targetQuestIcon[key] = value
+                app.targetQuestIcon:ApplyLayout()
+            end,
+            enabled = enabled,
+            dependencies = { "targetQuestIcon.enabled" },
+        })
+    end
+end
+
 function module:OnInitialize()
     app.core:RegisterOptions(appName, "Unit Frames", function(panel)
         panel:Header("Health bars")
         for _, entry in ipairs(app.unitFrames.list) do
             UnitFrameOptions(panel, entry)
         end
+        TargetQuestIconOptions(panel)
         panel:Profiles(app.db)
     end)
 end

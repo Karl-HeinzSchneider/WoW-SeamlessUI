@@ -18,4 +18,4 @@
 ---@class SeamlessCore.Profile
 ---@field logLevel string
 ---@field minimap table
----@field tweaks { reloadShortcut: boolean }
+---@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean }

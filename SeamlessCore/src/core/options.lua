@@ -54,7 +54,14 @@ function module:OnInitialize()
         end,
         options = levels,
     })
-    panel:Header("Tweaks")
+    panel:Profiles(app.db)
+    self:RegisterAddon(appName .. ".Tweaks", "Tweaks", function(tweaksPanel)
+        self:BuildTweaks(tweaksPanel)
+    end)
+end
+
+---@param panel SeamlessCore.SettingsPanel
+function module:BuildTweaks(panel)
     panel:Checkbox({
         id = "tweaks.reloadShortcut",
         name = "Enable /rl reload shortcut",
@@ -68,7 +75,18 @@ function module:OnInitialize()
             app.tweaks:OnProfileRefresh()
         end,
     })
-    panel:Profiles(app.db)
+    panel:Checkbox({
+        id = "tweaks.showFramerateOnStartup",
+        name = "Show framerate on startup",
+        tooltip = "Show the FPS counter on login or UI reload. Changes apply at the next login or reload. Ctrl+R can still toggle it normally.",
+        default = app.dbDefaults.profile.tweaks.showFramerateOnStartup,
+        get = function()
+            return app.db.profile.tweaks.showFramerateOnStartup
+        end,
+        set = function(value)
+            app.db.profile.tweaks.showFramerateOnStartup = value
+        end,
+    })
 end
 
 function module:Open(name)
@@ -82,6 +100,12 @@ function module:Refresh(name)
     local panel = app.settings.panels[name or appName]
     if panel then
         panel:Refresh()
+    end
+    if not name then
+        local tweaksPanel = app.settings.panels[appName .. ".Tweaks"]
+        if tweaksPanel then
+            tweaksPanel:Refresh()
+        end
     end
 end
 

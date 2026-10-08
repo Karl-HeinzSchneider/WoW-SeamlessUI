@@ -8,6 +8,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessCoreDB` (logging, minimap settings and tweaks).
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
+  Shows the framerate once on startup by default; its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `settings.lua`: native Settings panel helpers (namespaced proxy settings, search tags, controls and refresh).
 - `settings-actions.lua`: native input and details dialogs, input validation and confirmed actions.
@@ -15,6 +16,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   and RGB/opacity controls backed by existing SavedVariables.
 - `profiles.lua`: shared native profile controls backed by AceDB, with confirmation dialogs.
 - `options.lua`: the native Seamless parent category, core controls and feature subcategory registration.
+  Core tweaks live in the `SeamlessCore.Tweaks` child category alongside feature addons; they use the Core profile.
 - `minimapbutton.lua`: the suite's single launcher.
 - `src/types.lua`: annotations only, not loaded by the TOC.
 

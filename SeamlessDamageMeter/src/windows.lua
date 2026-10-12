@@ -2,9 +2,27 @@
 local _, app = ...
 
 app.windows = {}
-local ROW_HEIGHT = 25
-local ROW_SPACING = 4
-local HEADER_HEIGHT = 32
+local ROW_HEIGHT = 20
+local ROW_SPACING = 1
+local HEADER_HEIGHT = 24
+local PADDING = 2
+local FLAT = "Interface\\Buttons\\WHITE8X8"
+-- Flat, dark palette: near-black panel, slightly darker header, thin cool accent line.
+local COLORS = {
+    panel = { 0.05, 0.055, 0.07, 0.82 },
+    header = { 0.02, 0.022, 0.03, 0.95 },
+    border = { 0, 0, 0, 1 },
+    accent = { 0.38, 0.48, 0.66, 0.9 },
+    rowBackground = { 1, 1, 1, 0.04 },
+    fallbackBar = { 0.35, 0.6, 0.8 },
+}
+local BAR_ALPHA = 0.78
+
+local function Flat(texture, color)
+    texture:SetTexture(FLAT)
+    texture:SetVertexColor(unpack(color))
+    return texture
+end
 
 local function Label(parent, font)
     return parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
@@ -29,15 +47,16 @@ end
 
 local function Selector(parent, callback)
     local button = Button(parent, "", 100, callback)
-    button.text = Label(button, "GameFontNormalMed1")
-    button.text:SetPoint("LEFT", 18, 0)
+    button.text = Label(button, "GameFontHighlightSmall")
+    button.text:SetPoint("LEFT", 14, 0)
     button.text:SetPoint("RIGHT", -2, 0)
     button.text:SetJustifyH("LEFT")
     button.text:SetWordWrap(false)
     local arrow = button:CreateTexture(nil, "ARTWORK")
     arrow:SetAtlas("common-dropdown-classic-a-buttonDown")
-    arrow:SetSize(20, 20)
+    arrow:SetSize(16, 16)
     arrow:SetPoint("LEFT", -2, 0)
+    arrow:SetAlpha(0.7)
     return button
 end
 
@@ -130,36 +149,33 @@ end
 
 local function CreateRow(frame, index)
     local row = CreateFrame("StatusBar", nil, frame)
-    row:SetHeight(ROW_HEIGHT - 2)
-    row:SetPoint("TOPLEFT", 25, -HEADER_HEIGHT - 1 - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
-    row:SetPoint("RIGHT", -4, 0)
-    local fill = row:CreateTexture(nil, "ARTWORK")
-    fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
-    row:SetStatusBarTexture(fill)
-    local background = row:CreateTexture(nil, "BACKGROUND")
-    background:SetPoint("TOPLEFT", -2, 2)
-    background:SetPoint("BOTTOMRIGHT", 2, -2)
-    background:SetAtlas("ui-damagemeters-bar-shadowbg")
-    local edge = row:CreateTexture(nil, "OVERLAY")
-    edge:SetPoint("TOPLEFT", -2, 2)
-    edge:SetPoint("BOTTOMRIGHT", 2, -2)
-    edge:SetAtlas("ui-damagemeters-bar-shadowedge")
+    row:SetHeight(ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", PADDING + ROW_HEIGHT, -HEADER_HEIGHT - PADDING - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
+    row:SetPoint("RIGHT", -PADDING, 0)
+    row:SetStatusBarTexture(FLAT)
+    Flat(row:CreateTexture(nil, "BACKGROUND"), COLORS.rowBackground):SetAllPoints()
     row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetSize(24, 24)
+    row.icon:SetSize(ROW_HEIGHT, ROW_HEIGHT)
     row.icon:SetPoint("RIGHT", row, "LEFT", 0, 0)
-    row.icon:SetTexCoord(0.0625, 0.9, 0.0626, 0.9)
-    row.rank = Label(row, "NumberFontNormal")
-    row.rank:SetPoint("LEFT", 2, 0)
-    row.rank:SetWidth(22)
-    row.name = Label(row, "NumberFontNormal")
-    row.name:SetPoint("LEFT", 28, 0)
+    row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    row.rank = Label(row, "GameFontHighlightSmall")
+    row.rank:SetPoint("LEFT", 4, 0)
+    row.rank:SetWidth(18)
+    row.rank:SetJustifyH("LEFT")
+    row.rank:SetTextColor(0.75, 0.75, 0.75)
+    row.name = Label(row, "GameFontHighlightSmall")
+    row.name:SetPoint("LEFT", 22, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
-    row.value = Label(row, "NumberFontNormal")
+    row.value = Label(row, "GameFontHighlightSmall")
     row.value:SetPoint("RIGHT", -4, 0)
     row.value:SetJustifyH("RIGHT")
-    row.value:SetWidth(110)
+    row.value:SetWidth(100)
     row.name:SetPoint("RIGHT", row.value, "LEFT", -5, 0)
+    for _, label in ipairs({ row.rank, row.name, row.value }) do
+        label:SetShadowColor(0, 0, 0, 1)
+        label:SetShadowOffset(1, -1)
+    end
     frame.rows[index] = row
     return row
 end
@@ -198,9 +214,9 @@ function app:RefreshWindow(frame, session, message)
         row:SetValue(source.totalAmount)
         local color = RAID_CLASS_COLORS[source.classFilename]
         if color then
-            row:SetStatusBarColor(color.r, color.g, color.b, 1)
+            row:SetStatusBarColor(color.r, color.g, color.b, BAR_ALPHA)
         else
-            row:SetStatusBarColor(0.35, 0.6, 0.8, 1)
+            row:SetStatusBarColor(COLORS.fallbackBar[1], COLORS.fallbackBar[2], COLORS.fallbackBar[3], BAR_ALPHA)
         end
         row:Show()
     end
@@ -231,13 +247,22 @@ function app:CreateWindow()
     frame:SetClampedToScreen(true)
     frame:SetMovable(true)
     frame:SetResizable(true)
-    frame:SetResizeBounds(320, 120, 800, 900)
+    frame:SetResizeBounds(220, 80, 800, 900)
     frame:EnableMouse(true)
-    local header = frame:CreateTexture(nil, "BACKGROUND")
-    header:SetAtlas("ui-damagemeters-header-bar")
+    Flat(frame:CreateTexture(nil, "BACKGROUND", nil, -8), COLORS.panel):SetAllPoints()
+    local border = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+    border:SetPoint("TOPLEFT", -1, 1)
+    border:SetPoint("BOTTOMRIGHT", 1, -1)
+    border:SetBackdrop({ edgeFile = FLAT, edgeSize = 1 })
+    border:SetBackdropBorderColor(unpack(COLORS.border))
+    local header = Flat(frame:CreateTexture(nil, "BACKGROUND", nil, -7), COLORS.header)
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
     header:SetHeight(HEADER_HEIGHT)
+    local accent = Flat(frame:CreateTexture(nil, "BORDER"), COLORS.accent)
+    accent:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
+    accent:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT")
+    accent:SetHeight(1)
 
     local title = CreateFrame("Frame", nil, frame)
     title:SetPoint("TOPLEFT")
@@ -258,8 +283,8 @@ function app:CreateWindow()
         frame.config.hidden = true
         frame:Hide()
     end)
-    close:SetSize(18, 19)
-    close:SetPoint("TOPRIGHT", -3, -5)
+    close:SetSize(16, 17)
+    close:SetPoint("TOPRIGHT", -3, -4)
     AtlasButton(
         close,
         "ui-questtrackerbutton-collapse-all",
@@ -279,8 +304,8 @@ function app:CreateWindow()
             end)
         end)
     end)
-    menu:SetSize(27, 27)
-    menu:SetPoint("RIGHT", close, "LEFT", -2, -2)
+    menu:SetSize(22, 22)
+    menu:SetPoint("RIGHT", close, "LEFT", -1, -1)
     AtlasButton(
         menu,
         "common-dropdown-a-button-settings-shadowless",
@@ -290,12 +315,13 @@ function app:CreateWindow()
     frame.statistic = Selector(frame, function()
         self:ShowStatisticMenu(frame)
     end)
-    frame.statistic:SetPoint("TOPLEFT", 2, -4)
+    frame.statistic:SetHeight(HEADER_HEIGHT - 4)
+    frame.statistic:SetPoint("TOPLEFT", 4, -2)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end)
-    frame.session:SetWidth(105)
-    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 2)
+    frame.session:SetSize(100, HEADER_HEIGHT - 4)
+    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 1)
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
         selector:RegisterForDrag("LeftButton")
@@ -303,13 +329,14 @@ function app:CreateWindow()
         selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))
     end
 
-    frame.message = Label(frame, "GameFontNormalMed1")
+    frame.message = Label(frame, "GameFontDisableSmall")
     frame.message:SetPoint("TOPLEFT", 20, -HEADER_HEIGHT)
     frame.message:SetPoint("BOTTOMRIGHT", -20, 0)
     frame.message:SetJustifyH("CENTER")
     local resize = Button(frame, "", 32, function() end)
-    resize:SetSize(32, 32)
-    resize:SetPoint("BOTTOMRIGHT", 4, -4)
+    resize:SetSize(20, 20)
+    resize:SetPoint("BOTTOMRIGHT", 2, -2)
+    resize:SetAlpha(0.6)
     AtlasButton(
         resize,
         "damagemeters-scalehandle",

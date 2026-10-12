@@ -5,6 +5,13 @@ app.windows = {}
 local ROW_HEIGHT = 25
 local ROW_SPACING = 4
 local HEADER_HEIGHT = 32
+local ICON_SIZE = 24
+-- The list starts just below the header bar, like the client's own meter.
+local LIST_LEFT, LIST_TOP, LIST_BOTTOM = 5, HEADER_HEIGHT + 2, 6
+local SESSION_SHORT = {
+    Current = DAMAGE_METER_CURRENT_SESSION_SHORT or "C",
+    Overall = DAMAGE_METER_OVERALL_SESSION_SHORT or "O",
+}
 
 local function Label(parent, font)
     return parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
@@ -27,17 +34,73 @@ local function Button(parent, text, width, callback)
     return button
 end
 
-local function Selector(parent, callback)
+-- Arrow button followed by the statistic name, as in the client's meter header.
+local function StatisticSelector(parent, callback)
     local button = Button(parent, "", 100, callback)
+    button:SetHeight(25)
+    local arrow = button:CreateTexture(nil, "OVERLAY")
+    arrow:SetAtlas("common-dropdown-a-button-shadowless", true)
+    arrow:SetPoint("CENTER", button, "LEFT", 12, -2)
     button.text = Label(button, "GameFontNormalMed1")
-    button.text:SetPoint("LEFT", 18, 0)
-    button.text:SetPoint("RIGHT", -2, 0)
+    button.text:SetPoint("LEFT", 25, 1)
+    button.text:SetPoint("RIGHT", -2, 1)
     button.text:SetJustifyH("LEFT")
     button.text:SetWordWrap(false)
-    local arrow = button:CreateTexture(nil, "ARTWORK")
-    arrow:SetAtlas("common-dropdown-classic-a-buttonDown")
-    arrow:SetSize(20, 20)
-    arrow:SetPoint("LEFT", -2, 0)
+    local function UpdateArrow()
+        local suffix = ""
+        if button:IsMouseOver() then
+            suffix = button.pressed and "-pressedhover" or "-hover"
+        elseif button.pressed then
+            suffix = "-pressed"
+        end
+        arrow:SetAtlas("common-dropdown-a-button" .. suffix .. "-shadowless", true)
+    end
+    button:SetScript("OnEnter", UpdateArrow)
+    button:SetScript("OnLeave", UpdateArrow)
+    button:SetScript("OnMouseDown", function()
+        button.pressed = true
+        UpdateArrow()
+    end)
+    button:SetScript("OnMouseUp", function()
+        button.pressed = false
+        UpdateArrow()
+    end)
+    return button
+end
+
+-- Small framed button holding the session's short name (C, O or a fight number).
+local function SessionSelector(parent, callback)
+    local button = Button(parent, "", 18, callback)
+    button:SetHeight(18)
+    local background = button:CreateTexture(nil, "BACKGROUND")
+    background:SetPoint("TOPLEFT", -7, 7)
+    background:SetPoint("BOTTOMRIGHT", 7, -7)
+    background:SetAtlas("common-dropdown-c-button")
+    button.text = Label(button, "GameFontNormalMed1")
+    button.text:SetAllPoints()
+    button.text:SetJustifyH("CENTER")
+    local function UpdateBackground()
+        local over = button:IsMouseOver()
+        if over and button.pressed then
+            background:SetAtlas("common-dropdown-c-button-pressedhover-1")
+        elseif over then
+            background:SetAtlas("common-dropdown-c-button-hover-1")
+        elseif button.pressed then
+            background:SetAtlas("common-dropdown-c-button-pressed-1")
+        else
+            background:SetAtlas("common-dropdown-c-button")
+        end
+    end
+    button:SetScript("OnEnter", UpdateBackground)
+    button:SetScript("OnLeave", UpdateBackground)
+    button:SetScript("OnMouseDown", function()
+        button.pressed = true
+        UpdateBackground()
+    end)
+    button:SetScript("OnMouseUp", function()
+        button.pressed = false
+        UpdateBackground()
+    end)
     return button
 end
 
@@ -129,37 +192,41 @@ function app:ShowSessionMenu(frame)
 end
 
 local function CreateRow(frame, index)
-    local row = CreateFrame("StatusBar", nil, frame)
-    row:SetHeight(ROW_HEIGHT - 2)
-    row:SetPoint("TOPLEFT", 25, -HEADER_HEIGHT - 1 - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
-    row:SetPoint("RIGHT", -4, 0)
-    local fill = row:CreateTexture(nil, "ARTWORK")
+    local row = CreateFrame("Frame", nil, frame)
+    row:SetHeight(ROW_HEIGHT)
+    row:SetPoint("TOPLEFT", LIST_LEFT, -LIST_TOP - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
+    row:SetPoint("RIGHT", -1, 0)
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.icon:SetSize(ICON_SIZE, ICON_SIZE)
+    row.icon:SetPoint("LEFT")
+    row.icon:SetTexCoord(0.0625, 0.9, 0.0626, 0.9)
+    local bar = CreateFrame("StatusBar", nil, row)
+    bar:SetPoint("LEFT", row.icon, "RIGHT")
+    bar:SetPoint("TOP", 0, -1)
+    bar:SetPoint("BOTTOMRIGHT", -4, 1)
+    local fill = bar:CreateTexture(nil, "ARTWORK")
     fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
-    row:SetStatusBarTexture(fill)
-    local background = row:CreateTexture(nil, "BACKGROUND")
+    bar:SetStatusBarTexture(fill)
+    local background = bar:CreateTexture(nil, "BACKGROUND")
     background:SetPoint("TOPLEFT", -2, 2)
     background:SetPoint("BOTTOMRIGHT", 2, -2)
     background:SetAtlas("ui-damagemeters-bar-shadowbg")
-    local edge = row:CreateTexture(nil, "OVERLAY")
+    local edge = bar:CreateTexture(nil, "OVERLAY")
     edge:SetPoint("TOPLEFT", -2, 2)
     edge:SetPoint("BOTTOMRIGHT", 2, -2)
     edge:SetAtlas("ui-damagemeters-bar-shadowedge")
-    row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetSize(24, 24)
-    row.icon:SetPoint("RIGHT", row, "LEFT", 0, 0)
-    row.icon:SetTexCoord(0.0625, 0.9, 0.0626, 0.9)
-    row.rank = Label(row, "NumberFontNormal")
+    row.bar = bar
+    -- Rank and name read as "1. Name"; the rank is separate so secret names are never concatenated.
+    row.rank = Label(bar, "NumberFontNormal")
     row.rank:SetPoint("LEFT", 2, 0)
-    row.rank:SetWidth(22)
-    row.name = Label(row, "NumberFontNormal")
-    row.name:SetPoint("LEFT", 28, 0)
+    row.name = Label(bar, "NumberFontNormal")
+    row.name:SetPoint("LEFT", row.rank, "RIGHT", 3, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
-    row.value = Label(row, "NumberFontNormal")
-    row.value:SetPoint("RIGHT", -4, 0)
-    row.value:SetJustifyH("RIGHT")
-    row.value:SetWidth(110)
-    row.name:SetPoint("RIGHT", row.value, "LEFT", -5, 0)
+    row.value = Label(bar, "NumberFontNormal")
+    row.value:SetPoint("RIGHT", -3, 0)
+    row.value:SetJustifyH("LEFT")
+    row.name:SetPoint("RIGHT", row.value, "LEFT", -25, 0)
     frame.rows[index] = row
     return row
 end
@@ -168,9 +235,13 @@ function app:RefreshWindow(frame, session, message)
     local config = frame.config
     local statistic = self:GetStatistic(config.statistic)
     frame.statistic.text:SetText(statistic.label)
-    frame.session.text:SetText(config.sessionName or config.session)
+    local shortName = config.sessionID and tostring(config.sessionID) or SESSION_SHORT[config.session] or "?"
+    frame.session.text:SetText(shortName)
+    frame.session:SetWidth(#shortName > 1 and 32 or 18)
+    self:UpdateSessionTimer(frame)
     local sources = session and session.combatSources or {}
-    local capacity = math.max(1, math.floor((frame:GetHeight() - HEADER_HEIGHT) / (ROW_HEIGHT + ROW_SPACING)))
+    local listHeight = frame:GetHeight() - LIST_TOP - LIST_BOTTOM + ROW_SPACING
+    local capacity = math.max(1, math.floor(listHeight / (ROW_HEIGHT + ROW_SPACING)))
     frame.offset = math.max(0, math.min(frame.offset, #sources - capacity))
     for _, row in ipairs(frame.rows) do
         row:Hide()
@@ -180,7 +251,7 @@ function app:RefreshWindow(frame, session, message)
         local sourceIndex = index + frame.offset
         local source = sources[sourceIndex]
         local row = frame.rows[index] or CreateRow(frame, index)
-        row.rank:SetText(sourceIndex)
+        row.rank:SetFormattedText("%d.", sourceIndex)
         row.name:SetText(source.name)
         if source.specIconID and source.specIconID ~= 0 then
             row.icon:SetTexture(source.specIconID)
@@ -194,18 +265,33 @@ function app:RefreshWindow(frame, session, message)
         else
             row.value:SetFormattedText("%.0f", source.totalAmount)
         end
-        row:SetMinMaxValues(0, session.maxAmount)
-        row:SetValue(source.totalAmount)
-        local color = RAID_CLASS_COLORS[source.classFilename]
+        row.bar:SetMinMaxValues(0, session.maxAmount)
+        row.bar:SetValue(source.totalAmount)
+        local color = RAID_CLASS_COLORS[source.classFilename] or DAMAGE_METER_STATUS_BAR_DEFAULT_COLOR
         if color then
-            row:SetStatusBarColor(color.r, color.g, color.b, 1)
+            row.bar:SetStatusBarColor(color.r, color.g, color.b, 1)
         else
-            row:SetStatusBarColor(0.35, 0.6, 0.8, 1)
+            row.bar:SetStatusBarColor(0.35, 0.6, 0.8, 1)
         end
         row:Show()
     end
     frame.message:SetText(message or "No combat data yet.")
     frame.message:SetShown(#sources == 0)
+end
+
+-- "[m:ss] " before the statistic while the current fight runs, or for a saved fight.
+function app:UpdateSessionTimer(frame)
+    local config, seconds = frame.config, nil
+    if self:IsAvailable() and C_DamageMeter.GetSessionDurationSeconds then
+        if not config.sessionID and config.session == "Current" and UnitAffectingCombat("player") then
+            seconds = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
+        end
+    end
+    if seconds and seconds > 0 then
+        frame.timer:SetFormattedText("[%d:%02d] ", math.floor(seconds / 60), math.floor(seconds % 60))
+    else
+        frame.timer:SetText("")
+    end
 end
 
 function app:RefreshWindows()
@@ -287,15 +373,17 @@ function app:CreateWindow()
         "common-dropdown-a-button-settings-pressed-shadowless",
         "common-dropdown-a-button-settings-hover-shadowless"
     )
-    frame.statistic = Selector(frame, function()
-        self:ShowStatisticMenu(frame)
-    end)
-    frame.statistic:SetPoint("TOPLEFT", 2, -4)
-    frame.session = Selector(frame, function()
+    frame.timer = Label(frame, "GameFontNormalMed1")
+    frame.timer:SetPoint("TOPLEFT", header, "TOPLEFT", 1, -9)
+    frame.timer:SetJustifyH("LEFT")
+    frame.session = SessionSelector(frame, function()
         self:ShowSessionMenu(frame)
     end)
-    frame.session:SetWidth(105)
-    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 2)
+    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
+    frame.statistic = StatisticSelector(frame, function()
+        self:ShowStatisticMenu(frame)
+    end)
+    frame.statistic:SetPoint("TOPLEFT", frame.timer, "TOPRIGHT", 0, 6)
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
         selector:RegisterForDrag("LeftButton")
@@ -307,9 +395,10 @@ function app:CreateWindow()
     frame.message:SetPoint("TOPLEFT", 20, -HEADER_HEIGHT)
     frame.message:SetPoint("BOTTOMRIGHT", -20, 0)
     frame.message:SetJustifyH("CENTER")
-    local resize = Button(frame, "", 32, function() end)
-    resize:SetSize(32, 32)
-    resize:SetPoint("BOTTOMRIGHT", 4, -4)
+    local resize = Button(frame, "", 60, function() end)
+    resize:SetSize(60, 60)
+    resize:SetPoint("BOTTOMRIGHT", 9, -8)
+    resize:SetAlpha(0)
     AtlasButton(
         resize,
         "damagemeters-scalehandle",
@@ -318,15 +407,33 @@ function app:CreateWindow()
     )
     resize:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" and not self.db.profile.locked then
+            frame.sizing = true
             frame:StartSizing("BOTTOMRIGHT")
         end
     end)
     resize:SetScript("OnMouseUp", function()
+        frame.sizing = false
         SaveGeometry(frame)
         self:RefreshWindows()
     end)
+    -- The resize handle fades in only while the window is hovered.
+    local function WatchHover()
+        if frame:IsMouseOver() or resize:IsMouseOver() or frame.sizing then
+            return
+        end
+        frame:SetScript("OnUpdate", nil)
+        UIFrameFadeOut(resize, 0.25, resize:GetAlpha(), 0)
+    end
+    frame:SetScript("OnEnter", function()
+        if not self.db.profile.locked and not frame:GetScript("OnUpdate") then
+            UIFrameFadeIn(resize, 0.25, resize:GetAlpha(), 1)
+        end
+        frame:SetScript("OnUpdate", WatchHover)
+    end)
     frame:SetScript("OnHide", function()
         frame:StopMovingOrSizing()
+        frame:SetScript("OnUpdate", nil)
+        resize:SetAlpha(0)
     end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta)

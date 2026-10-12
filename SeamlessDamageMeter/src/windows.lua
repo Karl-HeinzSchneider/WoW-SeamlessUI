@@ -66,9 +66,14 @@ local function StatisticSelector(parent, callback)
     end
     button:SetScript("OnEnter", UpdateArrow)
     button:SetScript("OnLeave", UpdateArrow)
-    button:SetScript("OnMouseDown", function()
+    -- Open on mouse down, as the client's dropdowns do; a drag over the header never clicks.
+    button:SetScript("OnClick", nil)
+    button:SetScript("OnMouseDown", function(_, mouseButton)
         button.pressed = true
         UpdateArrow()
+        if mouseButton == "LeftButton" then
+            callback(button)
+        end
     end)
     button:SetScript("OnMouseUp", function()
         button.pressed = false
@@ -102,9 +107,14 @@ local function SessionSelector(parent, callback)
     end
     button:SetScript("OnEnter", UpdateBackground)
     button:SetScript("OnLeave", UpdateBackground)
-    button:SetScript("OnMouseDown", function()
+    -- Open on mouse down, as the client's dropdowns do; a drag over the header never clicks.
+    button:SetScript("OnClick", nil)
+    button:SetScript("OnMouseDown", function(_, mouseButton)
         button.pressed = true
         UpdateBackground()
+        if mouseButton == "LeftButton" then
+            callback(button)
+        end
     end)
     button:SetScript("OnMouseUp", function()
         button.pressed = false
@@ -427,6 +437,8 @@ function app:CreateWindow()
     frame.statistic:SetPoint("TOPLEFT", frame.timer, "TOPRIGHT", 0, 6)
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
+        -- Keep both above the drag area that covers the header.
+        selector:SetFrameLevel(title:GetFrameLevel() + 2)
         selector:RegisterForDrag("LeftButton")
         selector:SetScript("OnDragStart", title:GetScript("OnDragStart"))
         selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))

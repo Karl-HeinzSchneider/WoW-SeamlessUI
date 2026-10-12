@@ -1,10 +1,12 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
--- A flatter look for the buttons beside the chat, made to sit with the default UI: each button gets
--- a dark plate behind its own icon, and the strip behind them has its art faded out (alpha 0, never
--- hidden, so the game's own Show/Hide calls stay harmless). Nothing is saved on the game's frames,
--- and disabling puts the art back.
+-- The button bar left of the main chat window: the game's chat buttons and ours, one style, stacked
+-- from the bottom without gaps. A button the game hides (voice buttons outside voice chat) or the
+-- user switches off leaves no hole; the ones above it move down. Each button gets the same size and
+-- a dark plate behind its own icon, and the strips behind the buttons of every chat window have their
+-- art faded out (alpha 0, never hidden, so the game's own Show/Hide calls stay harmless).
+-- Disabling puts sizes, places and art back.
 ---@class SeamlessChat.Skin : SeamlessChat.Feature
 local module = {}
 
@@ -12,26 +14,100 @@ local module = {}
 local defaults = {
     enabled = true,
     accent = { r = 1, g = 0.82, b = 0 }, -- the game's gold
+    -- Which buttons the bar shows, by BUTTONS key (the log button's switch is the log feature's).
+    show = {
+        social = true,
+        channels = true,
+        tts = true,
+        voiceDeafen = true,
+        voiceMute = true,
+        copy = true,
+        menu = true,
+    },
 }
 
 app.features:New(
     "skin",
     module,
     "Chat buttons",
-    "A flatter, darker look for the buttons beside the chat.",
+    "The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap.",
     defaults
 )
 
 local PLATE = { 0.04, 0.04, 0.05, 0.72 }
 local EDGE = { 0.32, 0.32, 0.34, 0.55 }
+local BUTTON_SIZE = 26
+local GAP = 2
+local COPY_ICON = "Interface\\Buttons\\UI-GuildButton-PublicNote-Up"
 
--- The Blizzard buttons beside the chat, by global name; missing ones are skipped.
-local BUTTON_NAMES = {
-    "ChatFrameMenuButton",
-    "ChatFrameChannelButton",
-    "ChatFrameToggleVoiceDeafenButton",
-    "ChatFrameToggleVoiceMuteButton",
-    "SeamlessChatLogButton",
+---@class SeamlessChat.BarButton
+---@field key string
+---@field name string shown in the options
+---@field frame fun(): Button?
+---@field game boolean? shown and hidden by the game itself (voice chat, text to speech)
+
+-- Top to bottom, as stacked in the bar. Buttons the client doesn't have are skipped.
+---@type SeamlessChat.BarButton[]
+local BUTTONS = {
+    {
+        key = "social",
+        name = "Social",
+        frame = function()
+            return QuickJoinToastButton
+        end,
+    },
+    {
+        key = "channels",
+        name = "Channels",
+        frame = function()
+            return ChatFrameChannelButton
+        end,
+    },
+    {
+        key = "tts",
+        game = true,
+        name = "Text to speech",
+        frame = function()
+            return TextToSpeechButton
+        end,
+    },
+    {
+        key = "voiceDeafen",
+        game = true,
+        name = "Voice: deafen",
+        frame = function()
+            return ChatFrameToggleVoiceDeafenButton
+        end,
+    },
+    {
+        key = "voiceMute",
+        game = true,
+        name = "Voice: mute",
+        frame = function()
+            return ChatFrameToggleVoiceMuteButton
+        end,
+    },
+    {
+        key = "log",
+        name = "Chat log",
+        frame = function()
+            return SeamlessChatLogButton
+        end,
+    },
+    {
+        key = "copy",
+        name = "Copy chat",
+        frame = function()
+            return module.copyButton
+        end,
+    },
+    {
+        key = "menu",
+        name = "Chat menu",
+        frame = function()
+            return ChatFrameMenuButton
+        end,
+    },
 }
 
 ---@class SeamlessChat.SkinParts
@@ -42,10 +118,28 @@ local BUTTON_NAMES = {
 ---@type table<Frame, SeamlessChat.SkinParts>
 local skinned = {}
 
+---@class SeamlessChat.BarOriginal
+---@field width number
+---@field height number
+---@field points table[]
+
+-- Size and anchors of every bar button before the bar took it over.
+---@type table<Frame, SeamlessChat.BarOriginal>
+local originals = {}
+
+-- The bar button entry of each frame, once seen.
+---@type table<Frame, SeamlessChat.BarButton>
+local entryOf = {}
+
+-- Set while the bar moves buttons, so the hooks don't answer our own calls.
+local arranging = false
+
 ---@return SeamlessChat.SkinSettings
 function module:Settings()
     return self:GetSettings() --[[@as SeamlessChat.SkinSettings]]
 end
+
+-- Style -------------------------------------------------------------------------------------------
 
 -- A 1 px edge with a fill inside it, behind everything else on `frame`.
 local function makePlate(frame)
@@ -76,8 +170,6 @@ local function setFaded(parts, faded)
     parts.edge:SetShown(faded)
     parts.fill:SetShown(faded)
 end
-
--- Buttons ----------------------------------------------------------------------------------------
 
 function module:SkinButton(button)
     local parts = skinned[button]
@@ -112,10 +204,145 @@ function module:SkinButtonFrame(buttonFrame)
     parts.edge:Hide()
     parts.fill:Hide()
     for _, child in ipairs({ buttonFrame:GetChildren() }) do
-        if child:IsObjectType("Button") then
+        if child:IsObjectType("Button") and not entryOf[child] then
             self:SkinButton(child)
         end
     end
+end
+
+-- Copy button -------------------------------------------------------------------------------------
+
+-- Opens the copy window with the selected chat tab's lines; made like the log button.
+function module:CreateCopyButton()
+    local button = CreateFrame("Button", nil, ChatFrame1ButtonFrame)
+    button:SetFrameStrata("MEDIUM")
+    button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
+    button:SetNormalAtlas("chatframe-button-up")
+    button:SetPushedAtlas("chatframe-button-down")
+    button:SetHighlightAtlas("chatframe-button-highlight", "ADD")
+    local icon = button:CreateTexture(nil, "OVERLAY")
+    icon:SetTexture(COPY_ICON)
+    icon:SetSize(16, 16)
+    icon:SetPoint("CENTER")
+    button:SetScript("OnClick", function()
+        local chatFrame = SELECTED_CHAT_FRAME or DEFAULT_CHAT_FRAME
+        if chatFrame then
+            app.copy:OpenWindow(chatFrame)
+        end
+    end)
+    button:SetScript("OnEnter", function()
+        GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+        GameTooltip:SetText("Copy chat")
+        GameTooltip:Show()
+    end)
+    button:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
+    -- The icon moves with the pushed art, as on the chat's other buttons.
+    button:SetScript("OnMouseDown", function()
+        icon:SetPoint("CENTER", -1, -2)
+        icon:SetAlpha(0.75)
+    end)
+    button:SetScript("OnMouseUp", function()
+        icon:SetPoint("CENTER", 0, 0)
+        icon:SetAlpha(1)
+    end)
+    self.copyButton = button
+end
+
+-- Bar ---------------------------------------------------------------------------------------------
+
+-- Whether the user wants `entry` in the bar.
+function module:Wanted(entry)
+    if entry.key == "log" then
+        return true -- shown or hidden by the log feature's own switch
+    end
+    if entry.key == "copy" then
+        return self:Settings().show.copy and app.copy:IsEnabled()
+    end
+    return self:Settings().show[entry.key] ~= false
+end
+
+-- Takes `button` into the bar once: remembers its size and anchors, and keeps it hidden while the
+-- user doesn't want it and the bar in order when the game shows or hides it.
+function module:Adopt(entry, button)
+    if entryOf[button] then
+        return
+    end
+    entryOf[button] = entry
+    local width, height = button:GetSize()
+    local points = {}
+    for i = 1, button:GetNumPoints() do
+        points[i] = { button:GetPoint(i) }
+    end
+    originals[button] = { width = width, height = height, points = points }
+    button:HookScript("OnShow", function()
+        if not arranging and self:IsEnabled() and not self:Wanted(entry) then
+            button:Hide() -- OnHide arranges
+            return
+        end
+        self:Arrange()
+    end)
+    button:HookScript("OnHide", function()
+        self:Arrange()
+    end)
+end
+
+-- Stacks the shown buttons from the bottom of the main chat window's button strip up.
+function module:Arrange()
+    if arranging or not self:IsEnabled() or not ChatFrame1ButtonFrame then
+        return
+    end
+    arranging = true
+    local below
+    for i = #BUTTONS, 1, -1 do
+        local entry = BUTTONS[i]
+        local button = entry.frame()
+        if button then
+            self:Adopt(entry, button)
+            if entry.key == "copy" then
+                button:SetShown(self:Wanted(entry))
+            elseif not self:Wanted(entry) then
+                button:Hide()
+            end
+            if button:IsShown() then
+                button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
+                button:ClearAllPoints()
+                if below then
+                    button:SetPoint("BOTTOM", below, "TOP", 0, GAP)
+                else
+                    button:SetPoint("BOTTOM", ChatFrame1ButtonFrame, "BOTTOM", 0, 0)
+                end
+                self:SkinButton(button)
+                below = button
+            end
+        end
+    end
+    arranging = false
+end
+
+-- Gives every bar button its own size and place back.
+function module:Release()
+    arranging = true
+    for button, original in pairs(originals) do
+        button:SetSize(original.width, original.height)
+        button:ClearAllPoints()
+        for _, point in ipairs(original.points) do
+            button:SetPoint(unpack(point))
+        end
+    end
+    if self.copyButton then
+        self.copyButton:Hide()
+    end
+    arranging = false
+    -- Buttons hidden by the bar come back; the log button follows its own switch, the game decides
+    -- for its own.
+    for button, entry in pairs(entryOf) do
+        if entry.key ~= "copy" and entry.key ~= "log" and not entry.game then
+            button:Show()
+        end
+    end
+    app.chatLog:UpdateButton()
 end
 
 -- Everything --------------------------------------------------------------------------------------
@@ -124,16 +351,14 @@ function module:Refresh()
     if not self:IsEnabled() then
         return
     end
+    if not self.copyButton and ChatFrame1ButtonFrame then
+        self:CreateCopyButton()
+    end
+    self:Arrange()
     for _, name in ipairs(CHAT_FRAMES) do
         local buttonFrame = _G[name .. "ButtonFrame"]
         if buttonFrame then
             self:SkinButtonFrame(buttonFrame)
-        end
-    end
-    for _, name in ipairs(BUTTON_NAMES) do
-        local button = _G[name]
-        if button then
-            self:SkinButton(button)
         end
     end
 end
@@ -156,10 +381,11 @@ function module:OnDisable()
     for _, parts in pairs(skinned) do
         setFaded(parts, false)
     end
+    self:Release()
 end
 
 function module:GetOptions()
-    return {
+    local options = {
         accent = {
             type = "color",
             order = 10,
@@ -175,4 +401,35 @@ function module:GetOptions()
             end,
         },
     }
+    for i, entry in ipairs(BUTTONS) do
+        options["show_" .. entry.key] = {
+            type = "toggle",
+            order = 20 + i,
+            name = entry.name,
+            desc = entry.key == "log" and "Same as the Chat log setting of the same name."
+                or entry.key == "copy" and "Opens the copy window for the selected chat tab. Needs Copy to be enabled."
+                or "Show this button in the bar.",
+            get = function()
+                if entry.key == "log" then
+                    return app.chatLog:GetSettings().showButton
+                end
+                return self:Settings().show[entry.key] ~= false
+            end,
+            set = function(_, value)
+                if entry.key == "log" then
+                    app.chatLog:GetSettings().showButton = value
+                    app.chatLog:UpdateButton()
+                else
+                    self:Settings().show[entry.key] = value
+                    -- A button switched back on comes back; the game decides for its own.
+                    local button = entry.frame()
+                    if value and button and entry.key ~= "copy" and not entry.game then
+                        button:Show()
+                    end
+                end
+                self:Arrange()
+            end,
+        }
+    end
+    return options
 end

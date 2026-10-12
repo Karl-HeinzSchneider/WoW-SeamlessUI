@@ -149,6 +149,10 @@ after `features.lua`.
   window, display only: `FCF_SetWindowColor` / `FCF_SetWindowAlpha` with `doNotSave`, so the
   windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
   hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
+- `skin.lua` — the buttons beside the chat get a dark plate (1 px edge + fill, our own textures,
+  the edge in `accent` on hover); the button strips' own art is faded with `SetAlpha(0)` (never
+  hidden, so the game's Show/Hide stays harmless) and set back to 1 when disabled. New windows via
+  `FCF_OpenNewWindow` / `FCF_OpenTemporaryWindow`.
 
 To add a feature: a new `src/features/<name>.lua` calling `app.features:New`, its TOC line, a README
 entry. Nothing else needs registering.

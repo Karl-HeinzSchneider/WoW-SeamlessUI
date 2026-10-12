@@ -31,13 +31,14 @@ local defaults = {
     },
 }
 
-app.features:New(
+-- The running module; `module` is only its prototype, so the buttons it makes live here.
+local feature = app.features:New(
     "skin",
     module,
     "Chat buttons",
     "The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap.",
     defaults
-)
+) --[[@as SeamlessChat.Skin]]
 
 local PLATE = { 0.04, 0.04, 0.05, 0.72 }
 local EDGE = { 0.32, 0.32, 0.34, 0.55 }
@@ -119,7 +120,7 @@ local BUTTONS = {
         own = true,
         name = "Copy chat",
         frame = function()
-            return module.copyButton
+            return feature.copyButton
         end,
     },
     {
@@ -127,7 +128,7 @@ local BUTTONS = {
         own = true,
         name = "Options",
         frame = function()
-            return module.optionsButton
+            return feature.optionsButton
         end,
     },
 }

@@ -5,7 +5,7 @@ function app:RegisterOptions()
     self.core:RegisterOptions(appName, "Damage Meter", function(panel)
         panel:Description(
             "Meter windows",
-            "Each window has its own statistic and session. Drag its title to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The + button adds a window; x hides it. Combat history is owned by the game and is not saved by this addon."
+            "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu adds or removes windows; the collapse button hides a window. Combat history is owned by the game and is not saved by this addon."
         )
         panel:Button("New meter window", "Add window", function()
             self:AddWindow()

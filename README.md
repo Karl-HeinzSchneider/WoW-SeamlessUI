@@ -25,8 +25,9 @@ the client's `C_DamageMeter` combat statistics. Each window independently select
 DPS, healing, HPS, absorbs, interrupts, dispels or damage taken, and current, overall or a
 retained fight. Layouts and selections are saved in its own AceDB profiles.
 Install its folder alongside Core. `/sdm` opens settings, `/sdm new` adds a window, and
-`/sdm show` restores hidden windows. The title's `+` adds a window, `x` hides it, and `...`
-offers removal. Drag the title or bottom-right corner to move or resize; mouse-wheel over
+`/sdm show` restores hidden windows. Windows use Blizzard's default meter art and fonts.
+The gear menu adds or removes windows; the collapse button hides a window.
+Drag the header or bottom-right corner to move or resize; mouse-wheel over
 the window to scroll players. Enable Blizzard combat tracking in its settings if needed.
 The built-in meter's visibility remains controlled by the game's own settings; keep tracking
 enabled for data. Fight history belongs to Blizzard and may expire or reset independently

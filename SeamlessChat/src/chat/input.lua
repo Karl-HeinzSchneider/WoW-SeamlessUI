@@ -18,7 +18,9 @@ local function remember(editBox, text)
         return -- Recalling secure slash commands with SetText can block them in combat.
     end
     local lines = history[editBox]
-    lines[#lines + 1] = text
+    if lines[#lines] ~= text then -- Sending the same line again doesn't repeat it in the history.
+        lines[#lines + 1] = text
+    end
     if #lines > editBox:GetHistoryLines() then
         table.remove(lines, 1)
     end
@@ -37,11 +39,13 @@ local function onArrowPressed(editBox, key)
     if key == "UP" then
         index = math.max(1, index - 1)
     elseif key == "DOWN" then
-        if index > #lines then
+        if index >= #lines then
+            -- Past the newest line: back to an empty input, as before browsing.
+            selected[editBox] = #lines + 1
             editBox:SetText("")
             return
         end
-        index = math.min(#lines, index + 1)
+        index = index + 1
     else
         return
     end

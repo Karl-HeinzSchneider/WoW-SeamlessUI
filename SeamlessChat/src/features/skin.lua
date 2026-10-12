@@ -11,6 +11,7 @@ local _, app = ...
 ---@class SeamlessChat.Skin : SeamlessChat.Feature
 ---@field bar Frame? SeamlessChatButtonBar
 ---@field copyButton Button?
+---@field optionsButton Button?
 local module = {}
 
 ---@class SeamlessChat.SkinSettings : SeamlessChat.FeatureSettings
@@ -26,6 +27,7 @@ local defaults = {
         voiceMute = true,
         copy = true,
         menu = true,
+        options = true,
     },
 }
 
@@ -42,30 +44,19 @@ local EDGE = { 0.32, 0.32, 0.34, 0.55 }
 local BUTTON_SIZE = 26
 local GAP = 2
 local COPY_ICON = "Interface\\Buttons\\UI-GuildButton-PublicNote-Up"
+local OPTIONS_ICON = "Interface\\Buttons\\UI-OptionsButton"
 
 ---@class SeamlessChat.BarButton
 ---@field key string
 ---@field name string shown in the options
 ---@field frame fun(): Button?
+---@field own boolean? made by this feature, not the game
 ---@field game boolean? shown and hidden by the game itself (voice chat, text to speech)
 
--- Top to bottom, as stacked in the bar. Buttons the client doesn't have are skipped.
+-- Top to bottom, as stacked in the bar: from the bottom options, copy, chat log, chat menu, channels,
+-- social, then the buttons the game only shows now and then. Buttons the client doesn't have are skipped.
 ---@type SeamlessChat.BarButton[]
 local BUTTONS = {
-    {
-        key = "social",
-        name = "Social",
-        frame = function()
-            return QuickJoinToastButton
-        end,
-    },
-    {
-        key = "channels",
-        name = "Channels",
-        frame = function()
-            return ChatFrameChannelButton
-        end,
-    },
     {
         key = "tts",
         game = true,
@@ -91,6 +82,27 @@ local BUTTONS = {
         end,
     },
     {
+        key = "social",
+        name = "Social",
+        frame = function()
+            return QuickJoinToastButton
+        end,
+    },
+    {
+        key = "channels",
+        name = "Channels",
+        frame = function()
+            return ChatFrameChannelButton
+        end,
+    },
+    {
+        key = "menu",
+        name = "Chat menu",
+        frame = function()
+            return ChatFrameMenuButton
+        end,
+    },
+    {
         key = "log",
         name = "Chat log",
         frame = function()
@@ -99,16 +111,18 @@ local BUTTONS = {
     },
     {
         key = "copy",
+        own = true,
         name = "Copy chat",
         frame = function()
             return module.copyButton
         end,
     },
     {
-        key = "menu",
-        name = "Chat menu",
+        key = "options",
+        own = true,
+        name = "Options",
         frame = function()
-            return ChatFrameMenuButton
+            return module.optionsButton
         end,
     },
 }
@@ -238,10 +252,10 @@ function module:CreateBar()
     self.bar = bar
 end
 
--- Copy button -------------------------------------------------------------------------------------
+-- Our buttons -----------------------------------------------------------------------------------
 
--- Opens the copy window with the selected chat tab's lines; made like the log button.
-function module:CreateCopyButton()
+-- A bar button of our own, made like the log button: the chat buttons' art with an icon on top.
+function module:CreateBarButton(title, iconFile, onClick)
     local button = CreateFrame("Button", nil, self.bar)
     button:SetFrameStrata("MEDIUM")
     button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
@@ -249,18 +263,13 @@ function module:CreateCopyButton()
     button:SetPushedAtlas("chatframe-button-down")
     button:SetHighlightAtlas("chatframe-button-highlight", "ADD")
     local icon = button:CreateTexture(nil, "OVERLAY")
-    icon:SetTexture(COPY_ICON)
+    icon:SetTexture(iconFile)
     icon:SetSize(16, 16)
     icon:SetPoint("CENTER")
-    button:SetScript("OnClick", function()
-        local chatFrame = SELECTED_CHAT_FRAME or DEFAULT_CHAT_FRAME
-        if chatFrame then
-            app.copy:OpenWindow(chatFrame)
-        end
-    end)
+    button:SetScript("OnClick", onClick)
     button:SetScript("OnEnter", function()
         GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
-        GameTooltip:SetText("Copy chat")
+        GameTooltip:SetText(title)
         GameTooltip:Show()
     end)
     button:SetScript("OnLeave", function()
@@ -275,7 +284,20 @@ function module:CreateCopyButton()
         icon:SetPoint("CENTER", 0, 0)
         icon:SetAlpha(1)
     end)
-    self.copyButton = button
+    return button
+end
+
+function module:CreateOwnButtons()
+    -- Opens the copy window with the selected chat tab's lines.
+    self.copyButton = self:CreateBarButton("Copy chat", COPY_ICON, function()
+        local chatFrame = SELECTED_CHAT_FRAME or DEFAULT_CHAT_FRAME
+        if chatFrame then
+            app.copy:OpenWindow(chatFrame)
+        end
+    end)
+    self.optionsButton = self:CreateBarButton("Chat options", OPTIONS_ICON, function()
+        app.options:Open()
+    end)
 end
 
 -- Bar ---------------------------------------------------------------------------------------------
@@ -328,7 +350,7 @@ function module:Arrange()
         local button = entry.frame()
         if button then
             self:Adopt(entry, button)
-            if entry.key == "copy" then
+            if entry.own then
                 button:SetShown(self:Wanted(entry))
             elseif not self:Wanted(entry) then
                 button:Hide()
@@ -365,6 +387,7 @@ function module:Release()
     end
     if self.copyButton then
         self.copyButton:Hide()
+        self.optionsButton:Hide()
     end
     if self.bar then
         self.bar:Hide()
@@ -373,7 +396,7 @@ function module:Release()
     -- Buttons hidden by the bar come back; the log button follows its own switch, the game decides
     -- for its own.
     for button, entry in pairs(entryOf) do
-        if entry.key ~= "copy" and entry.key ~= "log" and not entry.game then
+        if not entry.own and entry.key ~= "log" and not entry.game then
             button:Show()
         end
     end
@@ -391,7 +414,7 @@ function module:Refresh()
     end
     self.bar:Show()
     if not self.copyButton then
-        self:CreateCopyButton()
+        self:CreateOwnButtons()
     end
     self:Arrange()
     for _, name in ipairs(CHAT_FRAMES) do
@@ -447,6 +470,7 @@ function module:GetOptions()
             name = entry.name,
             desc = entry.key == "log" and "Same as the Chat log setting of the same name."
                 or entry.key == "copy" and "Opens the copy window for the selected chat tab. Needs Copy to be enabled."
+                or entry.key == "options" and "Opens the Chat settings."
                 or "Show this button in the bar.",
             get = function()
                 if entry.key == "log" then
@@ -462,7 +486,7 @@ function module:GetOptions()
                     self:Settings().show[entry.key] = value
                     -- A button switched back on comes back; the game decides for its own.
                     local button = entry.frame()
-                    if value and button and entry.key ~= "copy" and not entry.game then
+                    if value and button and not entry.own and not entry.game then
                         button:Show()
                     end
                 end

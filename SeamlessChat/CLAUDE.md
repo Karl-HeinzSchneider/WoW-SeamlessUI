@@ -154,8 +154,10 @@ after `features.lua`.
   into `SeamlessChatButtonBar` (on UIParent where the game puts ChatFrame1's strip, so it stays while
   another docked tab hides ChatFrame1) and stacks them from the bottom up at one size, so hidden ones leave no gap (re-run from
   each button's OnShow/OnHide). `show[key]` hides a button (the log button uses the log feature's
-  `showButton`; `game` buttons are still shown and hidden by the game). The bar's own copy button
-  opens the copy window for `SELECTED_CHAT_FRAME`. Every button gets a dark plate (1 px edge + fill,
+  `showButton`; `game` buttons are still shown and hidden by the game). Its own buttons (`own`): copy
+  (copy window for `SELECTED_CHAT_FRAME`) and options (Chat settings). Bottom up: options, copy, log,
+  chat menu, channels, social, then text to speech and voice. Its settings are on their own page,
+  "Chat Buttons" (`options.lua` registers `<appName>.Buttons` and leaves `skin` off the Chat page). Every button gets a dark plate (1 px edge + fill,
   the edge in `accent` on hover); the button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
   whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors and
   hidden buttons back when disabled.

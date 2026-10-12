@@ -65,6 +65,9 @@ secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argum
   feature's switch; secret lines only reach `secretSafe` transforms, which may only concatenate.
   Orders: URLs 10, channel names 20, timestamps 1000 (last, so its copy link holds the final line).
   Never wrap AddMessage anywhere else.
+- `input.lua` — `app.input`: plain arrow keys browse the chat input's sent lines (not secure slash
+  commands, no consecutive repeats; Down past the newest empties the input), `inputHistoryLines`
+  deep, per window; with `persistInputHistory` kept in `db.char.inputHistory` (temporary windows not).
 
 ### `src/features/` — optional features
 
@@ -146,6 +149,10 @@ after `features.lua`.
   window, display only: `FCF_SetWindowColor` / `FCF_SetWindowAlpha` with `doNotSave`, so the
   windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
   hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
+- `skin.lua` — the buttons beside the chat get a dark plate (1 px edge + fill, our own textures,
+  the edge in `accent` on hover); the button strips' own art is faded with `SetAlpha(0)` (never
+  hidden, so the game's Show/Hide stays harmless) and set back to 1 when disabled. New windows via
+  `FCF_OpenNewWindow` / `FCF_OpenTemporaryWindow`.
 
 To add a feature: a new `src/features/<name>.lua` calling `app.features:New`, its TOC line, a README
 entry. Nothing else needs registering.

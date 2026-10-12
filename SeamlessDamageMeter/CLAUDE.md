@@ -5,6 +5,7 @@ Optional feature addon for WoW Forever (`16001`), requiring SeamlessCore.
 statistic/session selections. Combat data stays owned by `C_DamageMeter`.
 
 Load order: `core.lua` (lifecycle/database), `data.lua` (client API adapter),
+`blizzard.lua` (turns tracking on, keeps the game's meter window hidden),
 `windows.lua` (pooled frames and menus), `options.lua` (native Core settings).
 `types.lua` contains annotations only and is not shipped.
 

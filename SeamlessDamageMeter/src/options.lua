@@ -28,7 +28,7 @@ function app:RegisterOptions()
             panel:Checkbox({
                 id = "tracking",
                 name = "Enable Blizzard combat tracking",
-                tooltip = "Shared game setting. Required to receive combat statistics; also enables the built-in meter. Its visibility can be adjusted in the game's Damage Meter settings.",
+                tooltip = "Shared game setting. Required to receive combat statistics, so this addon turns it on when it loads.",
                 default = C_CVar.GetCVarDefault("damageMeterEnabled") == "1",
                 get = function()
                     return C_CVar.GetCVarBool("damageMeterEnabled")
@@ -38,6 +38,19 @@ function app:RegisterOptions()
                 end,
             })
         end
+        panel:Checkbox({
+            id = "hideBlizzard",
+            name = "Hide Blizzard's damage meter",
+            tooltip = "Keeps the game's own meter window hidden while this addon is enabled. It still appears in Edit Mode.",
+            default = true,
+            get = function()
+                return self.db.profile.hideBlizzard
+            end,
+            set = function(value)
+                self.db.profile.hideBlizzard = value
+                self:UpdateBlizzardMeter()
+            end,
+        })
         panel:Profiles(self.db)
     end)
 end

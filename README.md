@@ -20,6 +20,20 @@ A modular World of Warcraft addon suite for WoW Forever.
 
 ## Installation and usage
 
+**SeamlessDamageMeter** (optional) provides multiple movable, resizable meter windows using
+the client's `C_DamageMeter` combat statistics. Each window independently selects damage,
+DPS, healing, HPS, absorbs, interrupts, dispels or damage taken, and current, overall or a
+retained fight. Layouts and selections are saved in its own AceDB profiles.
+Install its folder alongside Core. `/sdm` opens settings, `/sdm new` adds a window, and
+`/sdm show` restores hidden windows. Windows use Blizzard's default meter art and fonts.
+The gear menu adds or removes windows; the collapse button hides a window.
+Drag the header or bottom-right corner to move or resize; mouse-wheel over
+the window to scroll players. Enable Blizzard combat tracking in its settings if needed.
+The built-in meter's visibility remains controlled by the game's own settings; keep tracking
+enabled for data. Fight history belongs to Blizzard and may expire or reset independently
+of saved layouts. This first version intentionally focuses on the base windows, without
+spell drilldowns or an independent combat recorder.
+
 Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`, `SeamlessChat`) from the release zip into your client's
 `Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.

@@ -4,6 +4,7 @@
   "workspace.ignoreDir": ["SeamlessCore/lib", ".release"],
   "diagnostics.globals": [
     "SeamlessCoreDB",
+    "SeamlessDamageMeterDB",
     "SeamlessChatDB",
     "SeamlessChatHistoryDB",
     "SeamlessChatLogDB",

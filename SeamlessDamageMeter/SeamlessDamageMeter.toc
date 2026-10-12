@@ -1,0 +1,13 @@
+## Interface: 16001
+## Title: Seamless: Damage Meter
+## Notes: Multiple independent windows for the client's combat statistics.
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## Dependencies: SeamlessCore
+## SavedVariables: SeamlessDamageMeterDB
+## X-License: MIT
+
+src\core.lua
+src\data.lua
+src\windows.lua
+src\options.lua

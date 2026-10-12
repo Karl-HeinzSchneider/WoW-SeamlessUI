@@ -1,18 +1,12 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+-- Each window is laid out like the client's own meter window (Blizzard_DamageMeter, which WoW
+-- Forever loads) and uses its templates: the type, session and settings dropdowns, the source
+-- entry bars and the minimal scroll bar. Bar settings follow the client's Edit Mode values.
 app.windows = {}
-local ROW_HEIGHT = 25
-local ROW_SPACING = 4
 local HEADER_HEIGHT = 32
-local ICON_SIZE = 24
--- The list starts just below the header bar, like the client's own meter.
-local LIST_LEFT, LIST_TOP, LIST_BOTTOM = 5, HEADER_HEIGHT + 2, 6
-local SOURCE_NAME_FORMAT = DAMAGE_METER_SOURCE_NAME or "%d. %s"
-local VALUE_FORMAT_COMPACT = DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)"
-local VALUE_FORMAT_MINIMAL = DAMAGE_METER_ENTRY_FORMAT_MINIMAL or "%s"
--- Default edit mode layout of the client's meter: background at 50% transparency.
-local BACKGROUND_ALPHA = 0.5
+local SCROLLBAR_OFFSET = 15
 local SESSION_NAMES = {
     Current = DAMAGE_METER_CURRENT_SESSION or "Current Combat",
     Overall = DAMAGE_METER_OVERALL_SESSION or "Overall",
@@ -22,105 +16,36 @@ local SESSION_SHORT = {
     Overall = DAMAGE_METER_OVERALL_SESSION_SHORT or "O",
 }
 
-local function Label(parent, font)
-    return parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
-end
-
-local function AtlasButton(button, normal, pressed, highlight)
-    button:SetText("")
-    button:SetNormalAtlas(normal)
-    button:SetPushedAtlas(pressed)
-    button:SetHighlightAtlas(highlight)
-end
-
-local function Button(parent, text, width, callback)
-    local button = CreateFrame("Button", nil, parent)
-    button:SetSize(width, 22)
-    button:SetNormalFontObject("GameFontHighlightSmall")
-    button:SetHighlightFontObject("GameFontNormalSmall")
-    button:SetText(text)
-    button:SetScript("OnClick", callback)
-    return button
-end
-
--- Arrow button followed by the statistic name, as in the client's meter header.
-local function StatisticSelector(parent, callback)
-    local button = Button(parent, "", 100, callback)
-    button:SetHeight(25)
-    local arrow = button:CreateTexture(nil, "OVERLAY")
-    arrow:SetAtlas("common-dropdown-a-button-shadowless", true)
-    arrow:SetPoint("CENTER", button, "LEFT", 12, -2)
-    button.text = Label(button, "GameFontNormalMed1")
-    button.text:SetPoint("LEFT", 25, 1)
-    button.text:SetPoint("RIGHT", -2, 1)
-    button.text:SetJustifyH("LEFT")
-    button.text:SetWordWrap(false)
-    local function UpdateArrow()
-        local suffix = ""
-        if button:IsMouseOver() then
-            suffix = button.pressed and "-pressedhover" or "-hover"
-        elseif button.pressed then
-            suffix = "-pressed"
-        end
-        arrow:SetAtlas("common-dropdown-a-button" .. suffix .. "-shadowless", true)
-    end
-    button:SetScript("OnEnter", UpdateArrow)
-    button:SetScript("OnLeave", UpdateArrow)
-    -- Open on mouse down, as the client's dropdowns do; a drag over the header never clicks.
-    button:SetScript("OnClick", nil)
-    button:SetScript("OnMouseDown", function(_, mouseButton)
-        button.pressed = true
-        UpdateArrow()
-        if mouseButton == "LeftButton" then
-            callback(button)
-        end
-    end)
-    button:SetScript("OnMouseUp", function()
-        button.pressed = false
-        UpdateArrow()
-    end)
-    return button
-end
-
--- Small framed button holding the session's short name (C, O or a fight number).
-local function SessionSelector(parent, callback)
-    local button = Button(parent, "", 18, callback)
-    button:SetHeight(18)
-    local background = button:CreateTexture(nil, "BACKGROUND")
-    background:SetPoint("TOPLEFT", -7, 7)
-    background:SetPoint("BOTTOMRIGHT", 7, -7)
-    background:SetAtlas("common-dropdown-c-button")
-    button.text = Label(button, "GameFontNormalMed1")
-    button.text:SetAllPoints()
-    button.text:SetJustifyH("CENTER")
-    local function UpdateBackground()
-        local over = button:IsMouseOver()
-        if over and button.pressed then
-            background:SetAtlas("common-dropdown-c-button-pressedhover-1")
-        elseif over then
-            background:SetAtlas("common-dropdown-c-button-hover-1")
-        elseif button.pressed then
-            background:SetAtlas("common-dropdown-c-button-pressed-1")
-        else
-            background:SetAtlas("common-dropdown-c-button")
+-- The client's meter frame holds the Edit Mode settings; defaults match its default layout.
+local function MeterSetting(method, default)
+    local meter = DamageMeter
+    if type(meter) == "table" and type(meter[method]) == "function" then
+        local value = meter[method](meter)
+        if value ~= nil then
+            return value
         end
     end
-    button:SetScript("OnEnter", UpdateBackground)
-    button:SetScript("OnLeave", UpdateBackground)
-    -- Open on mouse down, as the client's dropdowns do; a drag over the header never clicks.
-    button:SetScript("OnClick", nil)
-    button:SetScript("OnMouseDown", function(_, mouseButton)
-        button.pressed = true
-        UpdateBackground()
-        if mouseButton == "LeftButton" then
-            callback(button)
-        end
-    end)
-    button:SetScript("OnMouseUp", function()
-        button.pressed = false
-        UpdateBackground()
-    end)
-    return button
+    return default
+end
+
+local function BarHeight()
+    return MeterSetting("GetBarHeight", DAMAGE_METER_DEFAULT_BAR_HEIGHT or 25)
+end
+
+local function BarSpacing()
+    return MeterSetting("GetBarSpacing", DAMAGE_METER_DEFAULT_BAR_SPACING or 4)
+end
+
+local function SetupEntry(entry)
+    entry:SetUseClassColor(MeterSetting("ShouldUseClassColor", true))
+    entry:SetBarHeight(BarHeight())
+    entry:SetTextScale(MeterSetting("GetTextScale", 1))
+    entry:SetShowBarIcons(MeterSetting("ShouldShowBarIcons", true))
+    entry:SetStyle(MeterSetting("GetStyle", Enum.DamageMeterStyle.Default))
+    entry:SetNumberDisplayType(MeterSetting("GetNumberDisplayType", Enum.DamageMeterNumbers.Compact))
+    entry:SetBackgroundAlpha(MeterSetting("GetBackgroundAlpha", 0.5))
+    -- No source breakdown window here; let drags and the wheel reach the window.
+    entry:EnableMouse(false)
 end
 
 local function SaveGeometry(frame)
@@ -146,7 +71,7 @@ function app:AddWindow()
         statistic = "DamageDone",
         session = "Current",
         width = 400,
-        height = 200,
+        height = 140,
         x = offset,
         y = -offset,
     }
@@ -166,21 +91,18 @@ function app:RemoveWindow(config)
     self:RebuildWindows()
 end
 
-local function SelectStatistic(self, frame, key)
-    frame.config.statistic = key
-    frame.offset = 0
-    self:RefreshWindows()
-end
-
-local function SelectSession(self, frame, session, sessionID, sessionName)
-    frame.config.session, frame.config.sessionID, frame.config.sessionName = session, sessionID, sessionName
-    frame.offset = 0
+local function Select(self, frame, changes)
+    for key, value in pairs(changes) do
+        frame.config[key] = value
+    end
+    frame.discardScroll = true
     self:RefreshWindows()
 end
 
 -- One submenu per category (Damage, Healing, Actions), like the client's meter.
-function app:ShowStatisticMenu(frame)
-    MenuUtil.CreateContextMenu(frame.statistic, function(_, root)
+function app:SetupStatisticMenu(frame)
+    frame.statistic:SetupMenu(function(_, root)
+        root:SetTag("MENU_SEAMLESS_DAMAGE_METER_TYPE")
         for _, category in ipairs(self.categories) do
             local submenu
             for _, statistic in ipairs(self.statistics) do
@@ -189,7 +111,7 @@ function app:ShowStatisticMenu(frame)
                     submenu:CreateRadio(statistic.label, function()
                         return frame.config.statistic == statistic.key
                     end, function()
-                        SelectStatistic(self, frame, statistic.key)
+                        Select(self, frame, { statistic = statistic.key })
                     end)
                 end
             end
@@ -197,138 +119,54 @@ function app:ShowStatisticMenu(frame)
     end)
 end
 
-local function FormatDuration(seconds)
-    return string.format("%d:%02d", math.floor(seconds / 60), math.floor(seconds % 60))
-end
-
 -- Past fights first, then Current and Overall below a divider, like the client's meter.
-function app:ShowSessionMenu(frame)
-    MenuUtil.CreateContextMenu(frame.session, function(_, root)
+function app:SetupSessionMenu(frame)
+    frame.session:SetupMenu(function(_, root)
+        root:SetTag("MENU_SEAMLESS_DAMAGE_METER_SESSIONS")
         if self:IsAvailable() then
             for _, session in ipairs(C_DamageMeter.GetAvailableCombatSessions()) do
                 local name = session.name
                 if not name or name == "" then
-                    name = string.format(DAMAGE_METER_COMBAT_NUMBER or "Combat %d", session.sessionID)
+                    name = (DAMAGE_METER_COMBAT_NUMBER or "Combat %d"):format(session.sessionID)
                 end
                 local label = name
                 if session.durationSeconds then
-                    label = string.format("%s [%s]", name, FormatDuration(session.durationSeconds))
+                    label = ("%s [%s]"):format(name, SecondsToClock(session.durationSeconds))
                 end
                 root:CreateRadio(label, function()
                     return frame.config.sessionID == session.sessionID
                 end, function()
-                    SelectSession(self, frame, "Current", session.sessionID, name)
+                    Select(self, frame, { session = "Current", sessionID = session.sessionID, sessionName = name })
                 end)
             end
-            root:CreateDivider()
         end
+        root:CreateDivider()
         for _, key in ipairs({ "Current", "Overall" }) do
             root:CreateRadio(SESSION_NAMES[key], function()
                 return not frame.config.sessionID and frame.config.session == key
             end, function()
-                SelectSession(self, frame, key)
+                Select(self, frame, { session = key, sessionID = false, sessionName = false })
             end)
         end
     end)
 end
 
-local function CreateRow(frame, index)
-    local row = CreateFrame("Frame", nil, frame.container)
-    row:SetHeight(ROW_HEIGHT)
-    row:SetPoint("TOPLEFT", LIST_LEFT, -LIST_TOP - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
-    row:SetPoint("RIGHT", -1, 0)
-    row.icon = row:CreateTexture(nil, "ARTWORK")
-    row.icon:SetSize(ICON_SIZE, ICON_SIZE)
-    row.icon:SetPoint("LEFT")
-    row.icon:SetTexCoord(0.0625, 0.9, 0.0626, 0.9)
-    local bar = CreateFrame("StatusBar", nil, row)
-    bar:SetPoint("LEFT", row.icon, "RIGHT")
-    bar:SetPoint("TOP", 0, -1)
-    bar:SetPoint("BOTTOMRIGHT", -4, 1)
-    local fill = bar:CreateTexture(nil, "ARTWORK")
-    fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
-    bar:SetStatusBarTexture(fill)
-    local background = bar:CreateTexture(nil, "BACKGROUND")
-    background:SetPoint("TOPLEFT", -2, 2)
-    background:SetPoint("BOTTOMRIGHT", 2, -2)
-    background:SetAtlas("ui-damagemeters-bar-shadowbg")
-    local edge = bar:CreateTexture(nil, "OVERLAY")
-    edge:SetPoint("TOPLEFT", -2, 2)
-    edge:SetPoint("BOTTOMRIGHT", 2, -2)
-    edge:SetAtlas("ui-damagemeters-bar-shadowedge")
-    row.bar = bar
-    row.name = Label(bar, "NumberFontNormal")
-    row.name:SetPoint("LEFT", 2, 0)
-    row.name:SetJustifyH("LEFT")
-    row.name:SetWordWrap(false)
-    row.value = Label(bar, "NumberFontNormal")
-    row.value:SetPoint("RIGHT", -3, 0)
-    row.value:SetJustifyH("LEFT")
-    row.name:SetPoint("RIGHT", row.value, "LEFT", -25, 0)
-    frame.rows[index] = row
-    return row
+function app:SetupSettingsMenu(frame)
+    frame.settings:SetupMenu(function(_, root)
+        root:SetTag("MENU_SEAMLESS_DAMAGE_METER_SETTINGS")
+        root:CreateButton(DAMAGE_METER_OPEN_SETTINGS or "Damage Meter settings", function()
+            self.core:OpenOptions("SeamlessDamageMeter")
+        end)
+        root:CreateButton("Add window", function()
+            self:AddWindow()
+        end)
+        root:CreateButton("Remove this window", function()
+            self:RemoveWindow(frame.config)
+        end)
+    end)
 end
 
-function app:RefreshWindow(frame, session, message)
-    local config = frame.config
-    local statistic = self:GetStatistic(config.statistic)
-    frame.statistic.text:SetText(statistic.label)
-    local shortName = config.sessionID and tostring(config.sessionID) or SESSION_SHORT[config.session] or "?"
-    frame.session.text:SetText(shortName)
-    frame.session:SetWidth(#shortName > 1 and 32 or 18)
-    self:UpdateSessionTimer(frame)
-    local sources = session and session.combatSources or {}
-    local listHeight = frame:GetHeight() - LIST_TOP - LIST_BOTTOM + ROW_SPACING
-    local capacity = math.max(1, math.floor(listHeight / (ROW_HEIGHT + ROW_SPACING)))
-    frame.offset = math.max(0, math.min(frame.offset, #sources - capacity))
-    for _, row in ipairs(frame.rows) do
-        row:Hide()
-    end
-    -- Preserve the client's ordering. Never compare, sort or calculate with secret combat values.
-    for index = 1, math.min(capacity, #sources - frame.offset) do
-        local sourceIndex = index + frame.offset
-        local source = sources[sourceIndex]
-        local row = frame.rows[index] or CreateRow(frame, index)
-        -- Formatting through the setter keeps secret names secret, as the client's meter does.
-        row.name:SetFormattedText(SOURCE_NAME_FORMAT, sourceIndex, source.name)
-        if statistic.noIcon then
-            row.icon:SetTexture(nil)
-        elseif source.specIconID and source.specIconID ~= 0 then
-            row.icon:SetTexture(source.specIconID)
-        elseif source.classFilename ~= "" then
-            row.icon:SetAtlas(GetClassAtlas(source.classFilename))
-        else
-            row.icon:SetTexture(nil)
-        end
-        -- The client's default "Compact" numbers: main value with the other one in parentheses.
-        local main, other = source.totalAmount, source.amountPerSecond
-        if statistic.rate then
-            main, other = other, main
-        end
-        if statistic.count then
-            row.value:SetFormattedText(VALUE_FORMAT_MINIMAL, AbbreviateLargeNumbers(main))
-        else
-            row.value:SetFormattedText(
-                VALUE_FORMAT_COMPACT,
-                AbbreviateLargeNumbers(main),
-                AbbreviateLargeNumbers(other)
-            )
-        end
-        row.bar:SetMinMaxValues(0, session.maxAmount)
-        row.bar:SetValue(source.totalAmount)
-        local color = RAID_CLASS_COLORS[source.classFilename] or DAMAGE_METER_STATUS_BAR_DEFAULT_COLOR
-        if color then
-            row.bar:SetStatusBarColor(color.r, color.g, color.b, 1)
-        else
-            row.bar:SetStatusBarColor(0.35, 0.6, 0.8, 1)
-        end
-        row:Show()
-    end
-    frame.message:SetText(message or "No combat data yet.")
-    frame.message:SetShown(#sources == 0)
-end
-
--- "[m:ss] " before the statistic while the current fight runs, or for a saved fight.
+-- "[m:ss] " before the type name while the current fight runs, as the client's meter does.
 function app:UpdateSessionTimer(frame)
     local config, seconds = frame.config, nil
     if self:IsAvailable() and C_DamageMeter.GetSessionDurationSeconds then
@@ -336,11 +174,51 @@ function app:UpdateSessionTimer(frame)
             seconds = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
         end
     end
-    if seconds and seconds > 0 then
-        frame.timer:SetFormattedText("[%d:%02d] ", math.floor(seconds / 60), math.floor(seconds % 60))
+    if seconds and seconds ~= 0 then
+        frame.timer:SetText(("[%s] "):format(SecondsToClock(seconds)))
     else
         frame.timer:SetText("")
     end
+end
+
+-- Copies each source, as the client's window does, without touching the API's tables.
+-- Values may be secret; they are only copied, never compared or calculated with.
+local function BuildDataProvider(session, statistic)
+    local provider = CreateDataProvider()
+    if not session then
+        return provider
+    end
+    local meterType = Enum.DamageMeterType and Enum.DamageMeterType[statistic.key]
+    for index, source in ipairs(session.combatSources or {}) do
+        local entry = {}
+        for key, value in pairs(source) do
+            entry[key] = value
+        end
+        entry.maxAmount = session.maxAmount
+        entry.sessionTotalAmount = session.totalAmount
+        entry.index = index
+        entry.showsValuePerSecondAsPrimary = statistic.rate == true
+        entry.suppressIcon = statistic.noIcon == true
+        entry.suppressValuePerSecond = statistic.count == true
+        entry.damageMeterType = meterType
+        provider:Insert(entry)
+    end
+    return provider
+end
+
+function app:RefreshWindow(frame, session, message)
+    local config = frame.config
+    local statistic = self:GetStatistic(config.statistic)
+    frame.typeName:SetText(statistic.label)
+    frame.sessionName:SetText(config.sessionID and tostring(config.sessionID) or SESSION_SHORT[config.session] or "?")
+    self:UpdateSessionTimer(frame)
+    local provider = BuildDataProvider(session, statistic)
+    local retain = frame.discardScroll and ScrollBoxConstants.DiscardScrollPosition
+        or ScrollBoxConstants.RetainScrollPosition
+    frame.discardScroll = nil
+    frame.scrollBox:SetDataProvider(provider, retain)
+    frame.notActive:SetText(message or "")
+    frame.notActive:SetShown(provider:IsEmpty() and message ~= nil)
 end
 
 function app:RefreshWindows()
@@ -358,106 +236,111 @@ function app:RefreshWindows()
     end
 end
 
-function app:CreateWindow()
-    local frame = CreateFrame("Frame", nil, UIParent)
-    frame:Hide()
-    frame.rows, frame.offset = {}, 0
-    frame:SetFrameStrata("MEDIUM")
-    frame:SetClampedToScreen(true)
-    frame:SetMovable(true)
-    frame:SetResizable(true)
-    frame:SetResizeBounds(320, 120, 800, 900)
-    frame:EnableMouse(true)
+local function CreateHeader(self, frame)
     local header = frame:CreateTexture(nil, "BACKGROUND")
     header:SetAtlas("ui-damagemeters-header-bar")
+    header:SetHeight(HEADER_HEIGHT)
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
-    header:SetHeight(HEADER_HEIGHT)
-    -- Everything below the header; minimizing hides it and keeps the header bar.
-    frame.container = CreateFrame("Frame", nil, frame)
-    frame.container:SetAllPoints()
-    local background = frame.container:CreateTexture(nil, "BACKGROUND", nil, -1)
-    background:SetAtlas("damagemeters-background")
-    background:SetAllPoints()
-    background:SetAlpha(BACKGROUND_ALPHA)
+    frame.header = header
 
-    local title = CreateFrame("Frame", nil, frame)
-    title:SetPoint("TOPLEFT")
-    title:SetPoint("TOPRIGHT", -52, 0)
-    title:SetHeight(HEADER_HEIGHT)
-    -- Dragging also works over either selector in the compact header.
-    title:EnableMouse(true)
-    title:RegisterForDrag("LeftButton")
-    title:SetScript("OnDragStart", function()
-        if not app.db.profile.locked then
-            frame:StartMoving()
-        end
-    end)
-    title:SetScript("OnDragStop", function()
-        SaveGeometry(frame)
-    end)
-    local close = Button(frame, "", 18, function()
+    frame.timer = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+    frame.timer:SetJustifyH("LEFT")
+    frame.timer:SetPoint("TOPLEFT", header, "TOPLEFT", 1, -9)
+
+    local minimize = CreateFrame("Button", nil, frame)
+    minimize:SetSize(18, 19)
+    minimize:SetPoint("TOPRIGHT", header, "TOPRIGHT", -3, -5)
+    minimize:SetNormalAtlas("ui-questtrackerbutton-collapse-all", true)
+    minimize:SetPushedAtlas("ui-questtrackerbutton-collapse-all-pressed", true)
+    minimize:SetHighlightAtlas("ui-questtrackerbutton-red-highlight", "ADD")
+    minimize:SetScript("OnClick", function()
         frame.config.minimized = not frame.config.minimized
         self:UpdateMinimized(frame)
     end)
-    close:SetSize(18, 19)
-    close:SetPoint("TOPRIGHT", -3, -5)
-    frame.minimize = close
-    local menu = Button(frame, "", 27, function(button)
-        MenuUtil.CreateContextMenu(button, function(_, root)
-            root:CreateButton("Add window", function()
-                self:AddWindow()
-            end)
-            root:CreateButton("Damage Meter settings", function()
-                self.core:OpenOptions("SeamlessDamageMeter")
-            end)
-            root:CreateButton("Remove this window", function()
-                self:RemoveWindow(frame.config)
-            end)
-        end)
-    end)
-    menu:SetSize(27, 27)
-    menu:SetPoint("RIGHT", close, "LEFT", -2, -2)
-    AtlasButton(
-        menu,
-        "common-dropdown-a-button-settings-shadowless",
-        "common-dropdown-a-button-settings-pressed-shadowless",
-        "common-dropdown-a-button-settings-hover-shadowless"
-    )
-    frame.timer = Label(frame, "GameFontNormalMed1")
-    frame.timer:SetPoint("TOPLEFT", header, "TOPLEFT", 1, -9)
-    frame.timer:SetJustifyH("LEFT")
-    frame.session = SessionSelector(frame, function()
-        self:ShowSessionMenu(frame)
-    end)
-    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
-    frame.statistic = StatisticSelector(frame, function()
-        self:ShowStatisticMenu(frame)
-    end)
-    frame.statistic:SetPoint("TOPLEFT", frame.timer, "TOPRIGHT", 0, 6)
-    frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
-    for _, selector in ipairs({ frame.statistic, frame.session }) do
-        -- Keep both above the drag area that covers the header.
-        selector:SetFrameLevel(title:GetFrameLevel() + 2)
-        selector:RegisterForDrag("LeftButton")
-        selector:SetScript("OnDragStart", title:GetScript("OnDragStart"))
-        selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))
-    end
+    frame.minimize = minimize
 
-    frame.message = Label(frame.container, "GameFontNormalMed1")
-    frame.message:SetPoint("TOPLEFT", 20, -HEADER_HEIGHT)
-    frame.message:SetPoint("BOTTOMRIGHT", -20, 0)
-    frame.message:SetJustifyH("CENTER")
-    local resize = Button(frame.container, "", 60, function() end)
+    frame.settings = CreateFrame("DropdownButton", nil, frame, "DamageMeterSettingsDropdownButtonTemplate")
+    frame.settings:SetPoint("RIGHT", minimize, "LEFT", -2, -2)
+
+    local session = CreateFrame("DropdownButton", nil, frame, "WowStyle2DropdownTemplate")
+    session:SetSize(18, 18)
+    session:SetPoint("RIGHT", frame.settings, "LEFT", -2, 3)
+    frame.sessionName = session:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+    frame.sessionName:SetJustifyH("CENTER")
+    frame.sessionName:SetAllPoints()
+    frame.session = session
+
+    local statistic = CreateFrame("DropdownButton", nil, frame, "WowStyle1ArrowDropdownTemplate")
+    statistic.hasShadow = false
+    statistic:OnButtonStateChanged()
+    statistic:SetPoint("TOPLEFT", frame.timer, "TOPRIGHT", 0, 6)
+    frame.typeName = statistic:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+    frame.typeName:SetJustifyH("LEFT")
+    frame.typeName:SetPoint("LEFT", statistic.Arrow, "RIGHT", 0, 3)
+    frame.typeName:SetPoint("RIGHT", session, "LEFT", -5, 0)
+    frame.statistic = statistic
+
+    -- Session names in some languages need two characters, as in the client's window.
+    if #SESSION_SHORT.Current > 1 or #SESSION_SHORT.Overall > 1 then
+        session:SetWidth(32)
+    end
+    self:SetupStatisticMenu(frame)
+    self:SetupSessionMenu(frame)
+    self:SetupSettingsMenu(frame)
+end
+
+local function CreateContainer(self, frame)
+    -- Everything below the header; minimizing hides it and keeps the header bar.
+    local container = CreateFrame("Frame", nil, frame)
+    container:SetAllPoints()
+    frame.container = container
+
+    local background = container:CreateTexture(nil, "BACKGROUND")
+    background:SetAtlas("damagemeters-background")
+    background:SetAllPoints()
+    frame.background = background
+
+    frame.notActive = container:CreateFontString(nil, "OVERLAY", "GameFontNormalMed1")
+    frame.notActive:SetJustifyH("CENTER")
+    frame.notActive:SetPoint("TOPLEFT", frame.header, "BOTTOMLEFT", 20, 0)
+    frame.notActive:SetPoint("BOTTOMRIGHT", background, "BOTTOMRIGHT", -20, 0)
+
+    local scrollBox = CreateFrame("Frame", nil, container, "WowScrollBoxList")
+    local scrollBar = CreateFrame("EventFrame", nil, container, "MinimalScrollBar")
+    scrollBar:SetPoint("TOPLEFT", scrollBox, "TOPRIGHT", 0, 0)
+    scrollBar:SetPoint("BOTTOMLEFT", scrollBox, "BOTTOMRIGHT", 0, 8)
+    scrollBar:SetAlpha(0.3)
+    frame.scrollBox, frame.scrollBar = scrollBox, scrollBar
+
+    local view = CreateScrollBoxListLinearView()
+    view:SetElementExtent(BarHeight())
+    view:SetElementInitializer("DamageMeterSourceEntryTemplate", function(entry, data)
+        if not entry.seamlessSetup then
+            entry.seamlessSetup = true
+            SetupEntry(entry)
+        end
+        entry:Init(data)
+    end)
+    view:SetPadding(0, 0, 0, 0, BarSpacing())
+    ScrollUtil.InitScrollBoxListWithScrollBar(scrollBox, scrollBar, view)
+    local withBar = {
+        CreateAnchor("TOPLEFT", frame.header, "BOTTOMLEFT", 5, -2),
+        CreateAnchor("BOTTOMRIGHT", -1 - SCROLLBAR_OFFSET, 6),
+    }
+    local withoutBar = {
+        CreateAnchor("TOPLEFT", frame.header, "BOTTOMLEFT", 5, -2),
+        CreateAnchor("BOTTOMRIGHT", -1, 6),
+    }
+    ScrollUtil.AddManagedScrollBarVisibilityBehavior(scrollBox, scrollBar, withBar, withoutBar)
+
+    local resize = CreateFrame("Button", nil, container)
     resize:SetSize(60, 60)
     resize:SetPoint("BOTTOMRIGHT", 9, -8)
+    resize:SetNormalAtlas("damagemeters-scalehandle")
+    resize:SetHighlightAtlas("damagemeters-scalehandle-hover")
+    resize:SetPushedAtlas("damagemeters-scalehandle-pressed")
     resize:SetAlpha(0)
-    AtlasButton(
-        resize,
-        "damagemeters-scalehandle",
-        "damagemeters-scalehandle-pressed",
-        "damagemeters-scalehandle-hover"
-    )
     resize:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" and not self.db.profile.locked then
             frame.sizing = true
@@ -467,40 +350,82 @@ function app:CreateWindow()
     resize:SetScript("OnMouseUp", function()
         frame.sizing = false
         SaveGeometry(frame)
-        self:RefreshWindows()
     end)
-    -- The resize handle fades in only while the window is hovered.
-    local function WatchHover()
-        if frame:IsMouseOver() or resize:IsMouseOver() or frame.sizing then
-            return
+    frame.resize = resize
+end
+
+-- On hover the resize handle fades in and the scroll bar brightens, as in the client's window.
+local function SetupHover(self, frame)
+    local hovered = false
+    local function Fade(region, to)
+        UIFrameFadeIn(region, 0.25, region:GetAlpha(), to)
+    end
+    local function Watch()
+        local over = frame:IsMouseOver() or frame.resize:IsMouseOver() or frame.sizing
+        if over and not hovered then
+            hovered = true
+            Fade(frame.scrollBar, 1)
+            if not self.db.profile.locked then
+                Fade(frame.resize, 1)
+            end
+        elseif not over then
+            hovered = false
+            Fade(frame.scrollBar, 0.3)
+            Fade(frame.resize, 0)
+            frame:SetScript("OnUpdate", nil)
         end
-        frame:SetScript("OnUpdate", nil)
-        UIFrameFadeOut(resize, 0.25, resize:GetAlpha(), 0)
     end
     frame:SetScript("OnEnter", function()
-        if not self.db.profile.locked and not frame:GetScript("OnUpdate") then
-            UIFrameFadeIn(resize, 0.25, resize:GetAlpha(), 1)
-        end
-        frame:SetScript("OnUpdate", WatchHover)
+        frame:SetScript("OnUpdate", Watch)
     end)
     frame:SetScript("OnHide", function()
         frame:StopMovingOrSizing()
         frame:SetScript("OnUpdate", nil)
-        resize:SetAlpha(0)
+        hovered = false
+        frame.resize:SetAlpha(0)
+        frame.scrollBar:SetAlpha(0.3)
     end)
-    frame:EnableMouseWheel(true)
-    frame:SetScript("OnMouseWheel", function(_, delta)
-        frame.offset = math.max(0, frame.offset - delta * 3)
-        self:RefreshWindows()
+end
+
+function app:CreateWindow()
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:Hide()
+    frame:SetFrameStrata("MEDIUM")
+    frame:SetClampedToScreen(true)
+    frame:SetMovable(true)
+    frame:SetResizable(true)
+    frame:SetResizeBounds(200, 120, 600, 400)
+    frame:EnableMouse(true)
+    frame:RegisterForDrag("LeftButton")
+    frame:SetScript("OnDragStart", function()
+        if not self.db.profile.locked then
+            frame:StartMoving()
+        end
     end)
+    frame:SetScript("OnDragStop", function()
+        SaveGeometry(frame)
+    end)
+    CreateHeader(self, frame)
+    CreateContainer(self, frame)
+    SetupHover(self, frame)
     return frame
 end
 
 function app:UpdateMinimized(frame)
-    local minimized = frame.config.minimized
-    local atlas = minimized and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all"
-    AtlasButton(frame.minimize, atlas, atlas .. "-pressed", "ui-questtrackerbutton-red-highlight")
-    frame.container:SetShown(not minimized)
+    local atlas = frame.config.minimized and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all"
+    frame.minimize:SetNormalAtlas(atlas, true)
+    frame.minimize:SetPushedAtlas(atlas .. "-pressed", true)
+    frame.container:SetShown(not frame.config.minimized)
+end
+
+-- Picks up Edit Mode changes to the client's meter (bar height, spacing, text, style).
+function app:ApplyMeterSettings(frame)
+    frame.background:SetAlpha(MeterSetting("GetBackgroundAlpha", 0.5))
+    frame:SetAlpha(MeterSetting("GetWindowAlpha", 1))
+    local view = frame.scrollBox:GetView()
+    view:SetElementExtent(BarHeight())
+    view:SetPadding(0, 0, 0, 0, BarSpacing())
+    frame.scrollBox:ForEachFrame(SetupEntry)
 end
 
 function app:RebuildWindows()
@@ -510,16 +435,20 @@ function app:RebuildWindows()
         return
     end
     for index, config in ipairs(self.db.profile.windows) do
+        -- Choosing Current or Overall stores false; normalize it so the saved profile stays clean.
+        config.sessionID = config.sessionID or nil
+        config.sessionName = config.sessionName or nil
         local frame = self.windows[index]
         if not frame then
             frame = self:CreateWindow()
             self.windows[index] = frame
         end
-        frame.config, frame.offset = config, 0
+        frame.config, frame.discardScroll = config, true
         frame:ClearAllPoints()
         frame:SetSize(config.width, config.height)
         frame:SetPoint("CENTER", UIParent, "CENTER", config.x, config.y)
         self:UpdateMinimized(frame)
+        self:ApplyMeterSettings(frame)
         frame:SetShown(not config.hidden)
     end
     self:RefreshWindows()

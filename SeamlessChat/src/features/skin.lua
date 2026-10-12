@@ -43,6 +43,7 @@ local BUTTON_NAMES = {
 ---@field fill Texture
 ---@field accent Texture?
 ---@field faded Texture[] the frame's own textures, faded out while skinned
+---@field selected boolean? tabs: as last told by FCFTab_UpdateColors
 
 ---@type table<Frame, SeamlessChat.SkinParts>
 local skinned = {}
@@ -103,7 +104,10 @@ function module:PaintTab(tab, hover)
     if not parts or not self:IsEnabled() then
         return
     end
-    local selected = isSelected(tab)
+    local selected = parts.selected
+    if selected == nil then
+        selected = isSelected(tab)
+    end
     local color = hover and PLATE_HOVER or selected and PLATE_SELECTED or PLATE
     parts.fill:SetColorTexture(unpack(color))
     local accent = self:Settings().accent
@@ -124,7 +128,7 @@ function module:SkinTab(tab)
         edge:SetPoint("LEFT", tab, "LEFT", 2, 0)
         edge:SetPoint("RIGHT", tab, "RIGHT", -2, 0)
         edge:SetHeight(TAB_HEIGHT)
-        local text = tab.Text or _G[tab:GetName() .. "Text"]
+        local text = tab:GetFontString()
         if text then
             edge:SetPoint("TOP", text, "CENTER", 0, TAB_HEIGHT / 2)
         else
@@ -237,8 +241,12 @@ function module:OnInitialize()
         end)
     end
     if FCFTab_UpdateColors then
-        hooksecurefunc("FCFTab_UpdateColors", function()
-            self:RepaintTabs()
+        -- The game's own call says whether the tab is the selected one.
+        hooksecurefunc("FCFTab_UpdateColors", function(tab, selected)
+            if skinned[tab] and self:IsEnabled() then
+                skinned[tab].selected = selected and true or false
+                self:PaintTab(tab, tab:IsMouseOver())
+            end
         end)
     end
     if FCFDock_SelectWindow then

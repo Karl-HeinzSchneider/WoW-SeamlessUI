@@ -2,20 +2,41 @@
 local _, app = ...
 
 -- Keep the client API behind this adapter; windows never collect combat logs.
+-- Categories and order follow the client's meter; labels use its strings when present.
+app.categories = {
+    { key = "Damage", label = DAMAGE_METER_CATEGORY_DAMAGE or "Damage" },
+    { key = "Healing", label = DAMAGE_METER_CATEGORY_HEALING or "Healing" },
+    { key = "Actions", label = DAMAGE_METER_CATEGORY_ACTIONS or "Actions" },
+}
+
 app.statistics = {
-    { key = "DamageDone", label = "Damage done" },
-    { key = "Dps", label = "Damage per second", rate = true },
-    { key = "HealingDone", label = "Healing done" },
-    { key = "Hps", label = "Healing per second", rate = true },
-    { key = "Absorbs", label = "Absorbs" },
-    { key = "Interrupts", label = "Interrupts" },
-    { key = "Dispels", label = "Dispels" },
-    { key = "DamageTaken", label = "Damage taken" },
-    { key = "AvoidableDamageTaken", label = "Avoidable damage taken" },
+    { key = "DamageDone", category = "Damage", label = DAMAGE_METER_TYPE_DAMAGE_DONE or "Damage done" },
+    { key = "Dps", category = "Damage", label = DAMAGE_METER_TYPE_DPS or "Damage per second", rate = true },
+    { key = "DamageTaken", category = "Damage", label = DAMAGE_METER_TYPE_DAMAGE_TAKEN or "Damage taken" },
+    {
+        key = "AvoidableDamageTaken",
+        category = "Damage",
+        label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken",
+    },
+    {
+        key = "EnemyDamageTaken",
+        category = "Damage",
+        label = DAMAGE_METER_TYPE_ENEMY_DAMAGE_TAKEN or "Enemy damage taken",
+        noIcon = true,
+    },
+    { key = "HealingDone", category = "Healing", label = DAMAGE_METER_TYPE_HEALING_DONE or "Healing done" },
+    { key = "Hps", category = "Healing", label = DAMAGE_METER_TYPE_HPS or "Healing per second", rate = true },
+    { key = "Absorbs", category = "Healing", label = DAMAGE_METER_TYPE_ABSORBS or "Absorbs" },
+    { key = "Interrupts", category = "Actions", label = DAMAGE_METER_TYPE_INTERRUPTS or "Interrupts", count = true },
+    { key = "Dispels", category = "Actions", label = DAMAGE_METER_TYPE_DISPELS or "Dispels", count = true },
 }
 
 function app:IsAvailable()
     return C_DamageMeter ~= nil and Enum.DamageMeterType ~= nil
+end
+
+function app:IsStatisticAvailable(statistic)
+    return self:IsAvailable() and Enum.DamageMeterType[statistic.key] ~= nil
 end
 
 function app:GetStatistic(key)

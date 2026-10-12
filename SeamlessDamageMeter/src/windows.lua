@@ -13,6 +13,10 @@ local VALUE_FORMAT_COMPACT = DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)"
 local VALUE_FORMAT_MINIMAL = DAMAGE_METER_ENTRY_FORMAT_MINIMAL or "%s"
 -- Default edit mode layout of the client's meter: background at 50% transparency.
 local BACKGROUND_ALPHA = 0.5
+local SESSION_NAMES = {
+    Current = DAMAGE_METER_CURRENT_SESSION or "Current Combat",
+    Overall = DAMAGE_METER_OVERALL_SESSION or "Overall",
+}
 local SESSION_SHORT = {
     Current = DAMAGE_METER_CURRENT_SESSION_SHORT or "C",
     Overall = DAMAGE_METER_OVERALL_SESSION_SHORT or "O",
@@ -152,52 +156,74 @@ function app:RemoveWindow(config)
     self:RebuildWindows()
 end
 
+local function SelectStatistic(self, frame, key)
+    frame.config.statistic = key
+    frame.offset = 0
+    self:RefreshWindows()
+end
+
+local function SelectSession(self, frame, session, sessionID, sessionName)
+    frame.config.session, frame.config.sessionID, frame.config.sessionName = session, sessionID, sessionName
+    frame.offset = 0
+    self:RefreshWindows()
+end
+
+-- One submenu per category (Damage, Healing, Actions), like the client's meter.
 function app:ShowStatisticMenu(frame)
     MenuUtil.CreateContextMenu(frame.statistic, function(_, root)
-        root:CreateTitle("Statistic")
-        for _, statistic in ipairs(self.statistics) do
-            if self:IsAvailable() and Enum.DamageMeterType[statistic.key] ~= nil then
-                root:CreateRadio(statistic.label, function()
-                    return frame.config.statistic == statistic.key
-                end, function()
-                    frame.config.statistic = statistic.key
-                    frame.offset = 0
-                    self:RefreshWindows()
-                end)
+        for _, category in ipairs(self.categories) do
+            local submenu
+            for _, statistic in ipairs(self.statistics) do
+                if statistic.category == category.key and self:IsStatisticAvailable(statistic) then
+                    submenu = submenu or root:CreateButton(category.label)
+                    submenu:CreateRadio(statistic.label, function()
+                        return frame.config.statistic == statistic.key
+                    end, function()
+                        SelectStatistic(self, frame, statistic.key)
+                    end)
+                end
             end
         end
     end)
 end
 
+local function FormatDuration(seconds)
+    return string.format("%d:%02d", math.floor(seconds / 60), math.floor(seconds % 60))
+end
+
+-- Past fights first, then Current and Overall below a divider, like the client's meter.
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
-        root:CreateTitle("Combat session")
-        for _, key in ipairs({ "Current", "Overall" }) do
-            root:CreateRadio(key, function()
-                return not frame.config.sessionID and frame.config.session == key
-            end, function()
-                frame.config.session, frame.config.sessionID, frame.config.sessionName = key, nil, nil
-                frame.offset = 0
-                self:RefreshWindows()
-            end)
-        end
         if self:IsAvailable() then
-            root:CreateDivider()
             for _, session in ipairs(C_DamageMeter.GetAvailableCombatSessions()) do
-                root:CreateRadio(session.name, function()
+                local name = session.name
+                if not name or name == "" then
+                    name = string.format(DAMAGE_METER_COMBAT_NUMBER or "Combat %d", session.sessionID)
+                end
+                local label = name
+                if session.durationSeconds then
+                    label = string.format("%s [%s]", name, FormatDuration(session.durationSeconds))
+                end
+                root:CreateRadio(label, function()
                     return frame.config.sessionID == session.sessionID
                 end, function()
-                    frame.config.sessionID, frame.config.sessionName = session.sessionID, session.name
-                    frame.offset = 0
-                    self:RefreshWindows()
+                    SelectSession(self, frame, "Current", session.sessionID, name)
                 end)
             end
+            root:CreateDivider()
+        end
+        for _, key in ipairs({ "Current", "Overall" }) do
+            root:CreateRadio(SESSION_NAMES[key], function()
+                return not frame.config.sessionID and frame.config.session == key
+            end, function()
+                SelectSession(self, frame, key)
+            end)
         end
     end)
 end
 
 local function CreateRow(frame, index)
-    local row = CreateFrame("Frame", nil, frame)
+    local row = CreateFrame("Frame", nil, frame.container)
     row:SetHeight(ROW_HEIGHT)
     row:SetPoint("TOPLEFT", LIST_LEFT, -LIST_TOP - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
     row:SetPoint("RIGHT", -1, 0)
@@ -255,7 +281,9 @@ function app:RefreshWindow(frame, session, message)
         local row = frame.rows[index] or CreateRow(frame, index)
         -- Formatting through the setter keeps secret names secret, as the client's meter does.
         row.name:SetFormattedText(SOURCE_NAME_FORMAT, sourceIndex, source.name)
-        if source.specIconID and source.specIconID ~= 0 then
+        if statistic.noIcon then
+            row.icon:SetTexture(nil)
+        elseif source.specIconID and source.specIconID ~= 0 then
             row.icon:SetTexture(source.specIconID)
         elseif source.classFilename ~= "" then
             row.icon:SetAtlas(GetClassAtlas(source.classFilename))
@@ -263,16 +291,11 @@ function app:RefreshWindow(frame, session, message)
             row.icon:SetTexture(nil)
         end
         -- The client's default "Compact" numbers: main value with the other one in parentheses.
-        local meterType = Enum.DamageMeterType and Enum.DamageMeterType[statistic.key]
         local main, other = source.totalAmount, source.amountPerSecond
         if statistic.rate then
             main, other = other, main
         end
-        if
-            meterType
-            and DAMAGE_METER_TYPE_SUPPRESS_VALUE_PER_SECOND
-            and DAMAGE_METER_TYPE_SUPPRESS_VALUE_PER_SECOND[meterType]
-        then
+        if statistic.count then
             row.value:SetFormattedText(VALUE_FORMAT_MINIMAL, AbbreviateLargeNumbers(main))
         else
             row.value:SetFormattedText(
@@ -340,7 +363,10 @@ function app:CreateWindow()
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
     header:SetHeight(HEADER_HEIGHT)
-    local background = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    -- Everything below the header; minimizing hides it and keeps the header bar.
+    frame.container = CreateFrame("Frame", nil, frame)
+    frame.container:SetAllPoints()
+    local background = frame.container:CreateTexture(nil, "BACKGROUND", nil, -1)
     background:SetAtlas("damagemeters-background")
     background:SetAllPoints()
     background:SetAlpha(BACKGROUND_ALPHA)
@@ -361,17 +387,12 @@ function app:CreateWindow()
         SaveGeometry(frame)
     end)
     local close = Button(frame, "", 18, function()
-        frame.config.hidden = true
-        frame:Hide()
+        frame.config.minimized = not frame.config.minimized
+        self:UpdateMinimized(frame)
     end)
     close:SetSize(18, 19)
     close:SetPoint("TOPRIGHT", -3, -5)
-    AtlasButton(
-        close,
-        "ui-questtrackerbutton-collapse-all",
-        "ui-questtrackerbutton-collapse-all-pressed",
-        "ui-questtrackerbutton-red-highlight"
-    )
+    frame.minimize = close
     local menu = Button(frame, "", 27, function(button)
         MenuUtil.CreateContextMenu(button, function(_, root)
             root:CreateButton("Add window", function()
@@ -411,11 +432,11 @@ function app:CreateWindow()
         selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))
     end
 
-    frame.message = Label(frame, "GameFontNormalMed1")
+    frame.message = Label(frame.container, "GameFontNormalMed1")
     frame.message:SetPoint("TOPLEFT", 20, -HEADER_HEIGHT)
     frame.message:SetPoint("BOTTOMRIGHT", -20, 0)
     frame.message:SetJustifyH("CENTER")
-    local resize = Button(frame, "", 60, function() end)
+    local resize = Button(frame.container, "", 60, function() end)
     resize:SetSize(60, 60)
     resize:SetPoint("BOTTOMRIGHT", 9, -8)
     resize:SetAlpha(0)
@@ -463,6 +484,13 @@ function app:CreateWindow()
     return frame
 end
 
+function app:UpdateMinimized(frame)
+    local minimized = frame.config.minimized
+    local atlas = minimized and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all"
+    AtlasButton(frame.minimize, atlas, atlas .. "-pressed", "ui-questtrackerbutton-red-highlight")
+    frame.container:SetShown(not minimized)
+end
+
 function app:RebuildWindows()
     self:HideWindows()
     if not self.db.profile.initialized then
@@ -479,6 +507,7 @@ function app:RebuildWindows()
         frame:ClearAllPoints()
         frame:SetSize(config.width, config.height)
         frame:SetPoint("CENTER", UIParent, "CENTER", config.x, config.y)
+        self:UpdateMinimized(frame)
         frame:SetShown(not config.hidden)
     end
     self:RefreshWindows()

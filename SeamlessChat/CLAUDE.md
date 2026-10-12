@@ -129,7 +129,7 @@ after `features.lua`.
   (hyperlinks go to `SetItemRef`, like the chat). Searching is debounced; new messages refresh the
   counts, and the results only while scrolled to the bottom. Copy sends `FormatRecord` lines to
   the copy window (`ShowText(text, title)`). `SeamlessChatLogButton` opens it: parented to
-  `ChatFrame1ButtonFrame` above `ChatFrameMenuButton`, remade with the chat buttons' atlases
+  `ChatFrame1ButtonFrame` above `ChatFrameMenuButton` (placed by `skin.lua` while it is on), remade with the chat buttons' atlases
   (`chatframe-button-*`, not `VoiceToggleButtonTemplate`, which brings voice behavior); shown per
   `showButton` (`log.lua` `UpdateButton`).
 
@@ -149,10 +149,18 @@ after `features.lua`.
   window, display only: `FCF_SetWindowColor` / `FCF_SetWindowAlpha` with `doNotSave`, so the
   windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
   hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
-- `skin.lua` — the buttons beside the chat get a dark plate (1 px edge + fill, our own textures,
-  the edge in `accent` on hover); the button strips' own art is faded with `SetAlpha(0)` (never
-  hidden, so the game's Show/Hide stays harmless) and set back to 1 when disabled. New windows via
-  `FCF_OpenNewWindow` / `FCF_OpenTemporaryWindow`.
+- `skin.lua` — the button bar left of the main chat window (feature key `skin`, "Chat buttons").
+  `BUTTONS` lists the game's chat buttons and ours top to bottom; `Arrange` reparents the shown ones
+  into `SeamlessChatButtonBar` (on UIParent where the game puts ChatFrame1's strip, so it stays while
+  another docked tab hides ChatFrame1) and stacks them from the bottom up at one size, so hidden ones leave no gap (re-run from
+  each button's OnShow/OnHide). `show[key]` hides a button (the log button uses the log feature's
+  `showButton`; `game` buttons are still shown and hidden by the game). Its own buttons (`own`): copy
+  (copy window for `SELECTED_CHAT_FRAME`) and options (Chat settings). Bottom up: options, copy, log,
+  chat menu, channels, social, then text to speech and voice. Its settings are on their own page,
+  "Chat Buttons" (`options.lua` registers `<appName>.Buttons` and leaves `skin` off the Chat page). Every button gets a dark plate (1 px edge + fill,
+  the edge in `accent` on hover); the button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
+  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors and
+  hidden buttons back when disabled.
 
 To add a feature: a new `src/features/<name>.lua` calling `app.features:New`, its TOC line, a README
 entry. Nothing else needs registering.

@@ -5,6 +5,9 @@ local appName, app = ...
 local module = {}
 app.options = app.addon:NewModule("Options", module) --[[@as SeamlessChat.Options]]
 
+-- The feature shown on its own page instead of the Chat page.
+local BUTTON_BAR = "skin"
+
 local syncOptions = {
     { "windows", "Chat tabs", "Share tabs, names, order, font size, background, message types and channels." },
     { "colors", "Chat colors", "Share message and channel colors and class-colored names." },
@@ -19,6 +22,47 @@ local syncOptions = {
         "Share the main chat window's Edit Mode position and size. Characters using a preset layout keep their own position because presets cannot be changed.",
     },
 }
+
+-- A feature's section: header, the Enable toggle, then its own options.
+---@param panel SeamlessCore.SettingsPanel
+local function addFeature(panel, feature)
+    local key = feature.featureKey
+    local prefix = "features." .. key
+    local enabledID = prefix .. ".enabled"
+    panel:Header(feature.featureName)
+    panel:Checkbox({
+        id = enabledID,
+        name = "Enable " .. feature.featureName,
+        tooltip = feature.featureDesc,
+        default = app.dbDefaults.profile.features[key].enabled,
+        get = function()
+            return feature:GetSettings().enabled
+        end,
+        set = function(value)
+            feature:GetSettings().enabled = value
+            feature:OnProfileRefresh()
+        end,
+    })
+    panel:Options({
+        id = prefix,
+        name = feature.featureName,
+        options = feature:GetOptions(),
+        defaults = app.dbDefaults.profile.features[key],
+        get = function()
+            return feature:GetSettings()
+        end,
+        changed = function()
+            if feature:IsEnabled() then
+                feature:Refresh()
+            end
+        end,
+        enabled = function()
+            return feature:GetSettings().enabled
+        end,
+        dependencies = { enabledID },
+        tags = { feature.featureName },
+    })
+end
 
 function module:OnInitialize()
     app.core:RegisterOptions(appName, "Chat", function(panel)
@@ -88,44 +132,19 @@ function module:OnInitialize()
             end,
         })
         for _, feature in ipairs(app.features.list) do
-            local key = feature.featureKey
-            local prefix = "features." .. key
-            local enabledID = prefix .. ".enabled"
-            panel:Header(feature.featureName)
-            panel:Checkbox({
-                id = enabledID,
-                name = "Enable " .. feature.featureName,
-                tooltip = feature.featureDesc,
-                default = app.dbDefaults.profile.features[key].enabled,
-                get = function()
-                    return feature:GetSettings().enabled
-                end,
-                set = function(value)
-                    feature:GetSettings().enabled = value
-                    feature:OnProfileRefresh()
-                end,
-            })
-            panel:Options({
-                id = prefix,
-                name = feature.featureName,
-                options = feature:GetOptions(),
-                defaults = app.dbDefaults.profile.features[key],
-                get = function()
-                    return feature:GetSettings()
-                end,
-                changed = function()
-                    if feature:IsEnabled() then
-                        feature:Refresh()
-                    end
-                end,
-                enabled = function()
-                    return feature:GetSettings().enabled
-                end,
-                dependencies = { enabledID },
-                tags = { feature.featureName },
-            })
+            if feature.featureKey ~= BUTTON_BAR then
+                addFeature(panel, feature)
+            end
         end
         panel:Profiles(app.db)
+    end)
+    -- The chat button bar has its own page.
+    app.core:RegisterOptions(appName .. ".Buttons", "Chat Buttons", function(panel)
+        for _, feature in ipairs(app.features.list) do
+            if feature.featureKey == BUTTON_BAR then
+                addFeature(panel, feature)
+            end
+        end
     end)
 end
 
@@ -134,6 +153,7 @@ function module:Open()
 end
 function module:Refresh()
     app.core:RefreshOptions(appName)
+    app.core:RefreshOptions(appName .. ".Buttons")
 end
 function module:OnProfileRefresh()
     self:Refresh()

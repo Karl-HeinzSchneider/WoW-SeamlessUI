@@ -8,6 +8,11 @@ local HEADER_HEIGHT = 32
 local ICON_SIZE = 24
 -- The list starts just below the header bar, like the client's own meter.
 local LIST_LEFT, LIST_TOP, LIST_BOTTOM = 5, HEADER_HEIGHT + 2, 6
+local SOURCE_NAME_FORMAT = DAMAGE_METER_SOURCE_NAME or "%d. %s"
+local VALUE_FORMAT_COMPACT = DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)"
+local VALUE_FORMAT_MINIMAL = DAMAGE_METER_ENTRY_FORMAT_MINIMAL or "%s"
+-- Default edit mode layout of the client's meter: background at 50% transparency.
+local BACKGROUND_ALPHA = 0.5
 local SESSION_SHORT = {
     Current = DAMAGE_METER_CURRENT_SESSION_SHORT or "C",
     Overall = DAMAGE_METER_OVERALL_SESSION_SHORT or "O",
@@ -216,11 +221,8 @@ local function CreateRow(frame, index)
     edge:SetPoint("BOTTOMRIGHT", 2, -2)
     edge:SetAtlas("ui-damagemeters-bar-shadowedge")
     row.bar = bar
-    -- Rank and name read as "1. Name"; the rank is separate so secret names are never concatenated.
-    row.rank = Label(bar, "NumberFontNormal")
-    row.rank:SetPoint("LEFT", 2, 0)
     row.name = Label(bar, "NumberFontNormal")
-    row.name:SetPoint("LEFT", row.rank, "RIGHT", 3, 0)
+    row.name:SetPoint("LEFT", 2, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
     row.value = Label(bar, "NumberFontNormal")
@@ -251,8 +253,8 @@ function app:RefreshWindow(frame, session, message)
         local sourceIndex = index + frame.offset
         local source = sources[sourceIndex]
         local row = frame.rows[index] or CreateRow(frame, index)
-        row.rank:SetFormattedText("%d.", sourceIndex)
-        row.name:SetText(source.name)
+        -- Formatting through the setter keeps secret names secret, as the client's meter does.
+        row.name:SetFormattedText(SOURCE_NAME_FORMAT, sourceIndex, source.name)
         if source.specIconID and source.specIconID ~= 0 then
             row.icon:SetTexture(source.specIconID)
         elseif source.classFilename ~= "" then
@@ -260,10 +262,24 @@ function app:RefreshWindow(frame, session, message)
         else
             row.icon:SetTexture(nil)
         end
+        -- The client's default "Compact" numbers: main value with the other one in parentheses.
+        local meterType = Enum.DamageMeterType and Enum.DamageMeterType[statistic.key]
+        local main, other = source.totalAmount, source.amountPerSecond
         if statistic.rate then
-            row.value:SetFormattedText("%.0f/s", source.amountPerSecond)
+            main, other = other, main
+        end
+        if
+            meterType
+            and DAMAGE_METER_TYPE_SUPPRESS_VALUE_PER_SECOND
+            and DAMAGE_METER_TYPE_SUPPRESS_VALUE_PER_SECOND[meterType]
+        then
+            row.value:SetFormattedText(VALUE_FORMAT_MINIMAL, AbbreviateLargeNumbers(main))
         else
-            row.value:SetFormattedText("%.0f", source.totalAmount)
+            row.value:SetFormattedText(
+                VALUE_FORMAT_COMPACT,
+                AbbreviateLargeNumbers(main),
+                AbbreviateLargeNumbers(other)
+            )
         end
         row.bar:SetMinMaxValues(0, session.maxAmount)
         row.bar:SetValue(source.totalAmount)
@@ -324,6 +340,10 @@ function app:CreateWindow()
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
     header:SetHeight(HEADER_HEIGHT)
+    local background = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    background:SetAtlas("damagemeters-background")
+    background:SetAllPoints()
+    background:SetAlpha(BACKGROUND_ALPHA)
 
     local title = CreateFrame("Frame", nil, frame)
     title:SetPoint("TOPLEFT")

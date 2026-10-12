@@ -7,7 +7,7 @@ local addon = app.addon
 
 function addon:OnInitialize()
     app.db = LibStub("AceDB-3.0"):New("SeamlessDamageMeterDB", {
-        profile = { windows = {}, nextID = 1, initialized = false, locked = false },
+        profile = { windows = {}, nextID = 1, initialized = false, locked = false, hideBlizzard = true },
     }, true)
     app.db.RegisterCallback(self, "OnProfileChanged", "RefreshProfile")
     app.db.RegisterCallback(self, "OnProfileCopied", "RefreshProfile")
@@ -19,10 +19,12 @@ end
 
 function addon:RefreshProfile()
     app:RebuildWindows()
+    app:UpdateBlizzardMeter()
     app.core:RefreshOptions(appName)
 end
 
 function addon:OnEnable()
+    app:EnsureTracking()
     self:RefreshProfile()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "RefreshData")
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
@@ -47,6 +49,7 @@ end
 function addon:OnDisable()
     self:CancelAllTimers()
     app:HideWindows()
+    app:UpdateBlizzardMeter()
 end
 
 function addon:SlashCommand(input)

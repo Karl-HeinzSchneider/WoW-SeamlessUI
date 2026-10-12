@@ -2,21 +2,28 @@
 local _, app = ...
 
 app.windows = {}
-local ROW_HEIGHT = 20
-local ROW_SPACING = 1
-local HEADER_HEIGHT = 24
-local PADDING = 2
+local ROW_HEIGHT = 24
+local ROW_SPACING = 2
+local HEADER_HEIGHT = 30
+local PADDING = 4
 local FLAT = "Interface\\Buttons\\WHITE8X8"
--- Flat, dark palette: near-black panel, slightly darker header, thin cool accent line.
+-- Deep navy panel, darker header with a faint gold rule, muted class-colored bars.
 local COLORS = {
-    panel = { 0.05, 0.055, 0.07, 0.82 },
-    header = { 0.02, 0.022, 0.03, 0.95 },
-    border = { 0, 0, 0, 1 },
-    accent = { 0.38, 0.48, 0.66, 0.9 },
-    rowBackground = { 1, 1, 1, 0.04 },
+    panel = { 0.1, 0.11, 0.22, 0.9 },
+    header = { 0.06, 0.07, 0.15, 0.95 },
+    border = { 0.25, 0.27, 0.45, 1 },
+    accent = { 0.85, 0.68, 0.2, 0.55 },
+    rowBackground = { 0.05, 0.06, 0.14, 0.9 },
     fallbackBar = { 0.35, 0.6, 0.8 },
 }
-local BAR_ALPHA = 0.78
+local BAR_ALPHA = 0.85
+-- Blend class colors toward grey so long rows stay readable under white text.
+local MUTE = 0.3
+
+local function MutedColor(r, g, b)
+    local grey = (r + g + b) / 3
+    return r + (grey - r) * MUTE, g + (grey - g) * MUTE, b + (grey - b) * MUTE
+end
 
 local function Flat(texture, color)
     texture:SetTexture(FLAT)
@@ -45,9 +52,9 @@ local function Button(parent, text, width, callback)
     return button
 end
 
-local function Selector(parent, callback)
+local function Selector(parent, callback, font)
     local button = Button(parent, "", 100, callback)
-    button.text = Label(button, "GameFontHighlightSmall")
+    button.text = Label(button, font or "GameFontHighlightSmall")
     button.text:SetPoint("LEFT", 14, 0)
     button.text:SetPoint("RIGHT", -2, 0)
     button.text:SetJustifyH("LEFT")
@@ -156,21 +163,23 @@ local function CreateRow(frame, index)
     Flat(row:CreateTexture(nil, "BACKGROUND"), COLORS.rowBackground):SetAllPoints()
     row.icon = row:CreateTexture(nil, "ARTWORK")
     row.icon:SetSize(ROW_HEIGHT, ROW_HEIGHT)
-    row.icon:SetPoint("RIGHT", row, "LEFT", 0, 0)
+    row.icon:SetPoint("RIGHT", row, "LEFT", -1, 0)
+    local iconBorder = Flat(row:CreateTexture(nil, "BORDER"), { 0, 0, 0, 1 })
+    iconBorder:SetPoint("TOPLEFT", row.icon, -1, 1)
+    iconBorder:SetPoint("BOTTOMRIGHT", row.icon, 1, -1)
     row.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    row.rank = Label(row, "GameFontHighlightSmall")
+    row.rank = Label(row, "GameFontHighlight")
     row.rank:SetPoint("LEFT", 4, 0)
-    row.rank:SetWidth(18)
+    row.rank:SetWidth(22)
     row.rank:SetJustifyH("LEFT")
-    row.rank:SetTextColor(0.75, 0.75, 0.75)
-    row.name = Label(row, "GameFontHighlightSmall")
-    row.name:SetPoint("LEFT", 22, 0)
+    row.name = Label(row, "GameFontHighlight")
+    row.name:SetPoint("LEFT", row.rank, "RIGHT", 2, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
-    row.value = Label(row, "GameFontHighlightSmall")
+    row.value = Label(row, "GameFontHighlight")
     row.value:SetPoint("RIGHT", -4, 0)
     row.value:SetJustifyH("RIGHT")
-    row.value:SetWidth(100)
+    row.value:SetWidth(150)
     row.name:SetPoint("RIGHT", row.value, "LEFT", -5, 0)
     for _, label in ipairs({ row.rank, row.name, row.value }) do
         label:SetShadowColor(0, 0, 0, 1)
@@ -196,7 +205,7 @@ function app:RefreshWindow(frame, session, message)
         local sourceIndex = index + frame.offset
         local source = sources[sourceIndex]
         local row = frame.rows[index] or CreateRow(frame, index)
-        row.rank:SetText(sourceIndex)
+        row.rank:SetFormattedText("%d.", sourceIndex)
         row.name:SetText(source.name)
         if source.specIconID and source.specIconID ~= 0 then
             row.icon:SetTexture(source.specIconID)
@@ -205,16 +214,14 @@ function app:RefreshWindow(frame, session, message)
         else
             row.icon:SetTexture(nil)
         end
-        if statistic.rate then
-            row.value:SetFormattedText("%.0f/s", source.amountPerSecond)
-        else
-            row.value:SetFormattedText("%.0f", source.totalAmount)
-        end
+        -- Total with the per-second rate in brackets; formatting only, no arithmetic.
+        row.value:SetFormattedText("%.0f (%.0f)", source.totalAmount, source.amountPerSecond)
         row:SetMinMaxValues(0, session.maxAmount)
         row:SetValue(source.totalAmount)
         local color = RAID_CLASS_COLORS[source.classFilename]
         if color then
-            row:SetStatusBarColor(color.r, color.g, color.b, BAR_ALPHA)
+            local r, g, b = MutedColor(color.r, color.g, color.b)
+            row:SetStatusBarColor(r, g, b, BAR_ALPHA)
         else
             row:SetStatusBarColor(COLORS.fallbackBar[1], COLORS.fallbackBar[2], COLORS.fallbackBar[3], BAR_ALPHA)
         end
@@ -260,8 +267,8 @@ function app:CreateWindow()
     header:SetPoint("TOPRIGHT")
     header:SetHeight(HEADER_HEIGHT)
     local accent = Flat(frame:CreateTexture(nil, "BORDER"), COLORS.accent)
-    accent:SetPoint("TOPLEFT", header, "BOTTOMLEFT")
-    accent:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT")
+    accent:SetPoint("TOPLEFT", header, "BOTTOMLEFT", PADDING, 0)
+    accent:SetPoint("TOPRIGHT", header, "BOTTOMRIGHT", -PADDING, 0)
     accent:SetHeight(1)
 
     local title = CreateFrame("Frame", nil, frame)
@@ -314,7 +321,7 @@ function app:CreateWindow()
     )
     frame.statistic = Selector(frame, function()
         self:ShowStatisticMenu(frame)
-    end)
+    end, "GameFontNormalLarge")
     frame.statistic:SetHeight(HEADER_HEIGHT - 4)
     frame.statistic:SetPoint("TOPLEFT", 4, -2)
     frame.session = Selector(frame, function()

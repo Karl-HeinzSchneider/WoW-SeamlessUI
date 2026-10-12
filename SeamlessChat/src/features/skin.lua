@@ -44,7 +44,12 @@ local EDGE = { 0.32, 0.32, 0.34, 0.55 }
 local BUTTON_SIZE = 26
 local GAP = 2
 local COPY_ICON = "Interface\\Buttons\\UI-GuildButton-PublicNote-Up"
-local OPTIONS_ICON = "Interface\\Buttons\\UI-OptionsButton"
+-- The game's own settings (gear) button art, as on its damage meter's settings button.
+local OPTIONS_ART = {
+    normal = "common-dropdown-a-button-settings-shadowless",
+    pushed = "common-dropdown-a-button-settings-pressed-shadowless",
+    highlight = "common-dropdown-a-button-settings-hover-shadowless",
+}
 
 ---@class SeamlessChat.BarButton
 ---@field key string
@@ -254,18 +259,12 @@ end
 
 -- Our buttons -----------------------------------------------------------------------------------
 
--- A bar button of our own, made like the log button: the chat buttons' art with an icon on top.
-function module:CreateBarButton(title, iconFile, onClick)
+-- A bar button of our own, made like the log button: the chat buttons' art with an icon on top, or
+-- with `art` (normal, pushed, highlight atlases) a button whose art already shows its icon.
+function module:CreateBarButton(title, iconFile, onClick, art)
     local button = CreateFrame("Button", nil, self.bar)
     button:SetFrameStrata("MEDIUM")
     button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
-    button:SetNormalAtlas("chatframe-button-up")
-    button:SetPushedAtlas("chatframe-button-down")
-    button:SetHighlightAtlas("chatframe-button-highlight", "ADD")
-    local icon = button:CreateTexture(nil, "OVERLAY")
-    icon:SetTexture(iconFile)
-    icon:SetSize(16, 16)
-    icon:SetPoint("CENTER")
     button:SetScript("OnClick", onClick)
     button:SetScript("OnEnter", function()
         GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
@@ -275,6 +274,19 @@ function module:CreateBarButton(title, iconFile, onClick)
     button:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
+    if art then
+        button:SetNormalAtlas(art.normal)
+        button:SetPushedAtlas(art.pushed)
+        button:SetHighlightAtlas(art.highlight)
+        return button
+    end
+    button:SetNormalAtlas("chatframe-button-up")
+    button:SetPushedAtlas("chatframe-button-down")
+    button:SetHighlightAtlas("chatframe-button-highlight", "ADD")
+    local icon = button:CreateTexture(nil, "OVERLAY")
+    icon:SetTexture(iconFile)
+    icon:SetSize(16, 16)
+    icon:SetPoint("CENTER")
     -- The icon moves with the pushed art, as on the chat's other buttons.
     button:SetScript("OnMouseDown", function()
         icon:SetPoint("CENTER", -1, -2)
@@ -295,9 +307,9 @@ function module:CreateOwnButtons()
             app.copy:OpenWindow(chatFrame)
         end
     end)
-    self.optionsButton = self:CreateBarButton("Chat options", OPTIONS_ICON, function()
+    self.optionsButton = self:CreateBarButton("Chat options", nil, function()
         app.options:Open()
-    end)
+    end, OPTIONS_ART)
 end
 
 -- Bar ---------------------------------------------------------------------------------------------

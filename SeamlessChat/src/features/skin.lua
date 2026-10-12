@@ -2,12 +2,15 @@
 local _, app = ...
 
 -- The button bar left of the main chat window: the game's chat buttons and ours, one style, stacked
--- from the bottom without gaps. A button the game hides (voice buttons outside voice chat) or the
+-- from the bottom without gaps, in a frame of our own (SeamlessChatButtonBar). The game's own button
+-- strip belongs to ChatFrame1 and hides with it whenever another docked tab is selected; ours stays. A button the game hides (voice buttons outside voice chat) or the
 -- user switches off leaves no hole; the ones above it move down. Each button gets the same size and
 -- a dark plate behind its own icon, and the strips behind the buttons of every chat window have their
--- art faded out (alpha 0, never hidden, so the game's own Show/Hide calls stay harmless).
+-- art hidden (the game only fades those textures, it never shows them again).
 -- Disabling puts sizes, places and art back.
 ---@class SeamlessChat.Skin : SeamlessChat.Feature
+---@field bar Frame? SeamlessChatButtonBar
+---@field copyButton Button?
 local module = {}
 
 ---@class SeamlessChat.SkinSettings : SeamlessChat.FeatureSettings
@@ -114,11 +117,13 @@ local BUTTONS = {
 ---@field edge Texture
 ---@field fill Texture
 ---@field faded Texture[] the frame's own textures, faded out while skinned
+---@field hideArt boolean? hide `faded` instead of setting their alpha (the game sets it)
 
 ---@type table<Frame, SeamlessChat.SkinParts>
 local skinned = {}
 
 ---@class SeamlessChat.BarOriginal
+---@field parent Frame
 ---@field width number
 ---@field height number
 ---@field points table[]
@@ -165,7 +170,11 @@ end
 
 local function setFaded(parts, faded)
     for _, texture in ipairs(parts.faded) do
-        texture:SetAlpha(faded and 0 or 1)
+        if parts.hideArt then
+            texture:SetShown(not faded)
+        else
+            texture:SetAlpha(faded and 0 or 1)
+        end
     end
     parts.edge:SetShown(faded)
     parts.fill:SetShown(faded)
@@ -192,12 +201,17 @@ function module:SkinButton(button)
     setFaded(parts, true)
 end
 
--- The strip of buttons left of a chat window: its own background goes, its buttons get plates.
+-- The strip of buttons beside a chat window: its own background goes, its buttons get plates.
 function module:SkinButtonFrame(buttonFrame)
     local parts = skinned[buttonFrame]
     if not parts then
         local edge, fill = makePlate(buttonFrame)
-        parts = { edge = edge, fill = fill, faded = ownTextures(buttonFrame, { [edge] = true, [fill] = true }) }
+        parts = {
+            edge = edge,
+            fill = fill,
+            faded = ownTextures(buttonFrame, { [edge] = true, [fill] = true }),
+            hideArt = true,
+        }
         skinned[buttonFrame] = parts
     end
     setFaded(parts, true)
@@ -210,11 +224,25 @@ function module:SkinButtonFrame(buttonFrame)
     end
 end
 
+-- Bar frame -------------------------------------------------------------------------------------
+
+-- Where the game puts the main chat window's button strip, but not a child of the chat window, so it
+-- stays while another docked tab is selected. No background of its own.
+function module:CreateBar()
+    local bar = CreateFrame("Frame", "SeamlessChatButtonBar", UIParent)
+    bar:SetFrameStrata("MEDIUM")
+    bar:SetSize(BUTTON_SIZE + 3, BUTTON_SIZE)
+    local anchor = ChatFrame1.Background or ChatFrame1
+    bar:SetPoint("TOPRIGHT", anchor, "TOPLEFT", -3, -3)
+    bar:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMLEFT", -3, 6)
+    self.bar = bar
+end
+
 -- Copy button -------------------------------------------------------------------------------------
 
 -- Opens the copy window with the selected chat tab's lines; made like the log button.
 function module:CreateCopyButton()
-    local button = CreateFrame("Button", nil, ChatFrame1ButtonFrame)
+    local button = CreateFrame("Button", nil, self.bar)
     button:SetFrameStrata("MEDIUM")
     button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
     button:SetNormalAtlas("chatframe-button-up")
@@ -275,7 +303,7 @@ function module:Adopt(entry, button)
     for i = 1, button:GetNumPoints() do
         points[i] = { button:GetPoint(i) }
     end
-    originals[button] = { width = width, height = height, points = points }
+    originals[button] = { parent = button:GetParent(), width = width, height = height, points = points }
     button:HookScript("OnShow", function()
         if not arranging and self:IsEnabled() and not self:Wanted(entry) then
             button:Hide() -- OnHide arranges
@@ -290,7 +318,7 @@ end
 
 -- Stacks the shown buttons from the bottom of the main chat window's button strip up.
 function module:Arrange()
-    if arranging or not self:IsEnabled() or not ChatFrame1ButtonFrame then
+    if arranging or not self:IsEnabled() or not self.bar then
         return
     end
     arranging = true
@@ -306,12 +334,15 @@ function module:Arrange()
                 button:Hide()
             end
             if button:IsShown() then
+                if button:GetParent() ~= self.bar then
+                    button:SetParent(self.bar)
+                end
                 button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
                 button:ClearAllPoints()
                 if below then
                     button:SetPoint("BOTTOM", below, "TOP", 0, GAP)
                 else
-                    button:SetPoint("BOTTOM", ChatFrame1ButtonFrame, "BOTTOM", 0, 0)
+                    button:SetPoint("BOTTOM", self.bar, "BOTTOM", 0, 0)
                 end
                 self:SkinButton(button)
                 below = button
@@ -325,6 +356,7 @@ end
 function module:Release()
     arranging = true
     for button, original in pairs(originals) do
+        button:SetParent(original.parent)
         button:SetSize(original.width, original.height)
         button:ClearAllPoints()
         for _, point in ipairs(original.points) do
@@ -333,6 +365,9 @@ function module:Release()
     end
     if self.copyButton then
         self.copyButton:Hide()
+    end
+    if self.bar then
+        self.bar:Hide()
     end
     arranging = false
     -- Buttons hidden by the bar come back; the log button follows its own switch, the game decides
@@ -351,7 +386,11 @@ function module:Refresh()
     if not self:IsEnabled() then
         return
     end
-    if not self.copyButton and ChatFrame1ButtonFrame then
+    if not self.bar then
+        self:CreateBar()
+    end
+    self.bar:Show()
+    if not self.copyButton then
         self:CreateCopyButton()
     end
     self:Arrange()

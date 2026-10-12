@@ -150,13 +150,15 @@ after `features.lua`.
   windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
   hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
 - `skin.lua` — the button bar left of the main chat window (feature key `skin`, "Chat buttons").
-  `BUTTONS` lists the game's chat buttons and ours top to bottom; `Arrange` stacks the shown ones
-  from the bottom of `ChatFrame1ButtonFrame` up at one size, so hidden ones leave no gap (re-run from
+  `BUTTONS` lists the game's chat buttons and ours top to bottom; `Arrange` reparents the shown ones
+  into `SeamlessChatButtonBar` (on UIParent where the game puts ChatFrame1's strip, so it stays while
+  another docked tab hides ChatFrame1) and stacks them from the bottom up at one size, so hidden ones leave no gap (re-run from
   each button's OnShow/OnHide). `show[key]` hides a button (the log button uses the log feature's
   `showButton`; `game` buttons are still shown and hidden by the game). The bar's own copy button
   opens the copy window for `SELECTED_CHAT_FRAME`. Every button gets a dark plate (1 px edge + fill,
-  the edge in `accent` on hover); the button strips' own art is faded with `SetAlpha(0)`. `Release`
-  puts sizes, anchors and hidden buttons back when disabled.
+  the edge in `accent` on hover); the button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
+  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors and
+  hidden buttons back when disabled.
 
 To add a feature: a new `src/features/<name>.lua` calling `app.features:New`, its TOC line, a README
 entry. Nothing else needs registering.

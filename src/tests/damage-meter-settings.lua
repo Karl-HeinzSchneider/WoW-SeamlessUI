@@ -14,10 +14,13 @@ local function copy(t)
     end
     return result
 end
-local old = { id = 1, width = 450, height = 230, x = 12.5, y = -25 }
-local fresh = { id = 2, overrides = {} }
+local old = { id = 1, width = 450, height = 230, x = 12.5, y = -25, favorites = { "Dps" } }
+local fresh = { id = 2, overrides = {}, favorites = { "DamageDone", "HealingDone" } }
 app.db = { profile = { windows = { old, fresh }, windowDefaults = copy(app.windowDefaults) } }
 app:PrepareWindowSettings()
+assert(app.db.profile.maxVisibleFavorites == 6)
+assert(app.db.profile.favorites[1] == "Dps" and app.db.profile.favorites[2] == "HealingDone")
+assert(old.favorites == nil and fresh.favorites == nil)
 assert(old.width == nil and old.overrides.width == 450)
 assert(app:GetWindowSetting(fresh, "width") == 400)
 app.db.profile.windowDefaults.width = 500
@@ -37,6 +40,7 @@ C_CVar = {
 }
 app.core = {
     RegisterOptions = function(_, name, spec)
+        app.optionSpec = spec
         local args =
             { general = { type = "group", name = "General", args = spec.general }, windows = spec.tabs.windows }
         args.windows.type = "group"
@@ -45,6 +49,13 @@ app.core = {
 }
 assert(loadfile(root .. "options.lua"))("SeamlessDamageMeter", app)
 app:RegisterOptions()
+local refreshed = 0
+app.RefreshWindows = function()
+    refreshed = refreshed + 1
+end
+local favoriteLimit = app.optionSpec.general.windows.args.maxVisibleFavorites
+favoriteLimit.set(nil, 3)
+assert(favoriteLimit.get() == 3 and refreshed == 1 and app.db.profile.favorites[2] == "HealingDone")
 local values = app.windowOptions.args.window2.args
 local defaults = app.windowOptions.args.defaults.args
 app.RebuildWindows = function() end

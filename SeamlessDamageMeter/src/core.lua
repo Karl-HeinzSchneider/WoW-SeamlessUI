@@ -13,6 +13,8 @@ function addon:OnInitialize()
             locked = false,
             hideBlizzard = true,
             windowDefaults = app.windowDefaults,
+            favorites = {},
+            maxVisibleFavorites = 6,
         },
     }, true)
     app.db.RegisterCallback(self, "OnProfileChanged", "RefreshProfile")

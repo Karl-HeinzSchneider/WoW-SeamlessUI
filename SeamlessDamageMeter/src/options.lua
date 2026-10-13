@@ -323,6 +323,24 @@ function app:RegisterOptions()
                             self.db.profile.locked = value
                         end,
                     },
+                    maxVisibleFavorites = {
+                        type = "range",
+                        order = 40,
+                        width = "full",
+                        name = "Maximum visible favorites",
+                        desc = "Favorites are shared by all windows. Hidden slots stay saved; Select type is always last.",
+                        min = 0,
+                        max = 20,
+                        step = 1,
+                        get = function()
+                            return self.db.profile.maxVisibleFavorites
+                        end,
+                        set = function(_, value)
+                            self.db.profile.maxVisibleFavorites = value
+                            self:PrepareWindowSettings()
+                            self:RefreshWindows()
+                        end,
+                    },
                 },
             },
             game = {

@@ -187,7 +187,7 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                 if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
                     menu:CreateRadio(statistic.label, function()
                         if favoriteSlot then
-                            return config.favorites[favoriteSlot] == key
+                            return self.db.profile.favorites[favoriteSlot] == key
                         end
                         return config.statistic == key
                     end, function()
@@ -195,7 +195,7 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                             return
                         end
                         if favoriteSlot then
-                            config.favorites[favoriteSlot] = key
+                            self.db.profile.favorites[favoriteSlot] = key
                             self:UpdateFavorites(frame)
                             return
                         end
@@ -207,11 +207,11 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                 end
             end
         end
-        if favoriteSlot and config.favorites[favoriteSlot] then
+        if favoriteSlot and self.db.profile.favorites[favoriteSlot] then
             root:CreateDivider()
             root:CreateButton("Clear favorite", function()
                 if frame.config == config then
-                    config.favorites[favoriteSlot] = nil
+                    self.db.profile.favorites[favoriteSlot] = nil
                     self:UpdateFavorites(frame)
                 end
             end)
@@ -222,8 +222,12 @@ end
 function app:UpdateFavorites(frame)
     local rowHeight = self:GetWindowSetting(frame.config, "rowHeight")
     local spacing = self:GetWindowSetting(frame.config, "rowSpacing")
-    for slot = 1, 6 do
-        local isSelector = slot == 6
+    local count = self.db.profile.maxVisibleFavorites + 1
+    for _, button in ipairs(frame.favorites.buttons) do
+        button.row.entry:Hide()
+    end
+    for slot = 1, count do
+        local isSelector = slot == count
         local button = frame.favorites.buttons[slot]
         if not button then
             local row = CreateRow(frame, -1)
@@ -239,13 +243,12 @@ function app:UpdateFavorites(frame)
             row:SetValue(1)
             local number = Label(row.entry)
             number:SetPoint("LEFT", 4, 0)
-            number:SetText(isSelector and "" or slot)
             button = Button(row.entry, "", 1, function(owner, mouseButton)
-                if isSelector then
+                if slot == self.db.profile.maxVisibleFavorites + 1 then
                     self:ShowStatisticMenu(frame, nil, owner)
                     return
                 end
-                local key = frame.config.favorites[slot]
+                local key = self.db.profile.favorites[slot]
                 if mouseButton == "RightButton" or not key then
                     self:ShowStatisticMenu(frame, slot, owner)
                 elseif self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
@@ -267,7 +270,8 @@ function app:UpdateFavorites(frame)
             button.row, button.number = row, number
             frame.favorites.buttons[slot] = button
         end
-        local key = not isSelector and frame.config.favorites[slot]
+        button.number:SetText(isSelector and "" or slot)
+        local key = not isSelector and self.db.profile.favorites[slot]
         local row = button.row
         row.entry:SetHeight(rowHeight)
         row:SetHeight(rowHeight)
@@ -490,7 +494,7 @@ function app:RefreshWindow(frame, session, message)
         )
     )
     local favoritesShown = frame.favorites:IsShown()
-    local count = favoritesShown and 6 or #sources
+    local count = favoritesShown and (self.db.profile.maxVisibleFavorites + 1) or #sources
     local offsetKey = ScrollOffsetKey(frame)
     local scrollable = count > capacity
     frame.body:SetPoint("BOTTOMRIGHT", scrollable and -16 or -1, 6)

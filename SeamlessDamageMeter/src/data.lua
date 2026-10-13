@@ -73,7 +73,10 @@ function app:GetSourceDetails(config, source)
     end
     if config.statistic == "Deaths" then
         if C_DeathRecap and source.deathRecapID and source.deathRecapID ~= 0 then
-            return { deathEvents = C_DeathRecap.GetRecapEvents(source.deathRecapID) or {} }
+            return {
+                deathEvents = C_DeathRecap.GetRecapEvents(source.deathRecapID) or {},
+                maxAmount = C_DeathRecap.GetRecapMaxHealth(source.deathRecapID),
+            }
         end
         return { deathEvents = {} }
     end

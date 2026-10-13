@@ -78,6 +78,12 @@ end
 function methods:SetTexture(texture)
     self.texture = texture
 end
+function methods:SetStatusBarTexture(texture)
+    self.fill = texture
+end
+function methods:SetStatusBarColor(...)
+    self.color = { ... }
+end
 function methods:SetWidth(width)
     self.width = width
 end
@@ -303,43 +309,24 @@ assert(frame.rows[1].value.args[2] == secret, "Restricted rates must also go dir
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
 assert(frame.localRow:IsShown(), "Offscreen local player must stay visible")
 -- Hover details use the selected source/session and accept restricted values unchanged.
-GameTooltip = object()
-GameTooltip.lines = {}
-function GameTooltip:IsOwned(owner)
-    return self.owner == owner
-end
-function GameTooltip:SetOwner(owner)
-    self.owner = owner
-end
-function GameTooltip:GetName()
-    return "TestMeterTooltip"
-end
-function GameTooltip:ClearLines()
-    self.lines = {}
-end
-function GameTooltip:NumLines()
-    return #self.lines
-end
-function GameTooltip:AddLine(text)
-    table.insert(self.lines, text)
-end
-function GameTooltip:AddDoubleLine()
-    table.insert(self.lines, "columns")
-    _G[self:GetName() .. "TextLeft" .. #self.lines] = object()
-    _G[self:GetName() .. "TextRight" .. #self.lines] = object()
-end
 C_Spell = {
     GetSpellName = function()
         return "Fireball"
+    end,
+    GetSpellTexture = function(id)
+        return 1000 + id
     end,
 }
 local sourceReads, detailGUID, detailCreature = 0
 local details = {
     totalAmount = secret,
+    maxAmount = secret,
     combatSpells = { { spellID = 1, totalAmount = secret, amountPerSecond = secret } },
 }
 C_DamageMeter.GetCombatSessionSourceFromType = function(sessionType, meterType, guid, creature)
-    assert(sessionType == Enum.DamageMeterSessionType.Current and meterType == Enum.DamageMeterType.DamageDone)
+    assert(
+        sessionType == Enum.DamageMeterSessionType.Current and meterType == Enum.DamageMeterType[frame.config.statistic]
+    )
     sourceReads = sourceReads + 1
     detailGUID, detailCreature = guid, creature
     return details
@@ -347,22 +334,66 @@ end
 session.combatSources[1].sourceGUID = "player-1"
 frame.rows[1].entry.scripts.OnEnter()
 assert(sourceReads == 1 and detailGUID == "player-1")
-assert(GameTooltip.lines[1] == secret, "Restricted source names go directly to the tooltip")
-assert(TestMeterTooltipTextRight3.args[1] == secret and TestMeterTooltipTextRight3.args[2] == secret)
+local tooltip = app.detailTooltip
+local detailBar = tooltip.rows[1]
+assert(tooltip.owner == frame.rows[1] and tooltip:GetFrameStrata() == "TOOLTIP")
+assert(tooltip.header == nil and tooltip.title == nil, "The detail panel has no header")
+assert(tooltip.points.BOTTOMLEFT[2] == frame.rows[1].entry and tooltip.points.BOTTOMLEFT[3] == "TOPLEFT")
+assert(tooltip.points.BOTTOMRIGHT[2] == frame.rows[1].entry and tooltip.points.BOTTOMRIGHT[3] == "TOPRIGHT")
+assert(tooltip.points.BOTTOMLEFT[4] == 0 and tooltip.points.BOTTOMLEFT[5] == 0)
+assert(
+    tooltip.points.BOTTOMRIGHT[4] == 0 and tooltip.points.BOTTOMRIGHT[5] == 0,
+    "Panel matches the bar edges above it"
+)
+assert(detailBar.value.args[1] == secret and detailBar.value.args[2] == secret)
+assert(detailBar.maximum == secret and detailBar.statusValue == secret, "Restricted bar scales go to widget setters")
+assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main bars share the exact texture")
+assert(detailBar.icon.texture == 1001, "Spell icons come from C_Spell")
+assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.icon:GetWidth() == 24)
+assert(detailBar.color[1] == RAID_CLASS_COLORS.MAGE.r)
+assert(detailBar.entry.points.TOPLEFT[3] == 0, "First bar begins at the top with no header gap")
+assert(
+    not tooltip.mouseEnabled and not detailBar.entry.mouseEnabled,
+    "The hover panel does not steal the owner's mouse"
+)
 app:RefreshWindows()
-assert(GameTooltip:IsShown() and sourceReads == 2, "Live refresh preserves and updates the hover")
+assert(tooltip:IsShown() and sourceReads == 2, "Live refresh preserves and updates the hover")
 frame.rows[1].entry.scripts.OnLeave()
-assert(not GameTooltip:IsShown())
+assert(not tooltip:IsShown() and tooltip.owner == nil)
 app:RefreshWindows()
-assert(not GameTooltip:IsShown(), "Refresh must not reopen a tooltip after leaving")
+assert(not tooltip:IsShown(), "Refresh must not reopen a tooltip after leaving")
 session.combatSources[12].sourceCreatureID = 42
 frame.localRow.entry.scripts.OnEnter()
 assert(detailCreature == 42, "Pinned rows support creature source IDs")
+assert(tooltip.points.BOTTOMLEFT[2] == frame.localRow.entry and tooltip.points.BOTTOMRIGHT[2] == frame.localRow.entry)
 frame.localRow.entry.scripts.OnLeave()
 details.totalAmount = 100
 details.combatSpells[1].totalAmount, details.combatSpells[1].amountPerSecond = 25, 5
 frame.rows[1].entry.scripts.OnEnter()
-assert(TestMeterTooltipTextRight3.args[3] == 25, "Public values include the spell's percentage share")
+assert(detailBar.value.args[3] == 25, "Public values include the spell's percentage share")
+assert(app.detailTooltip == tooltip and tooltip.rows[1] == detailBar, "The panel and its bars are pooled")
+details.combatSpells[1].combatSpellDetails = { specIconID = 777, unitClassFilename = "MAGE", unitName = secret }
+app:RefreshWindows()
+assert(detailBar.icon.texture == 777, "API specialization icon takes precedence")
+assert(detailBar.name.args[2] == secret, "Restricted detail names go directly to labels")
+details.combatSpells[1].combatSpellDetails.specIconID = 0
+app:RefreshWindows()
+assert(detailBar.icon.atlas == "MAGE", "API unit class supplies an icon when there is no specialization")
+details.combatSpells[1].combatSpellDetails = nil
+frame.config.statistic = "Dps"
+app:RefreshWindows()
+assert(detailBar.value.args[1] == "5" and detailBar.value.args[2] == "25", "DPS uses rate before total")
+frame.config.statistic = "DamageDone"
+frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing = 30, 6
+frame.config.overrides.classColors = false
+app:RefreshWindows()
+assert(
+    detailBar:GetHeight() == 30 and detailBar.icon:GetWidth() == 30,
+    "Detail rows inherit owner appearance overrides"
+)
+assert(detailBar.color[1] == app:GetWindowSetting(frame.config, "barColor")[1])
+frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing, frame.config.overrides.classColors = nil, nil, nil
+app:RefreshWindows()
 frame.rows[1].entry.scripts.OnLeave()
 assert(details.combatSpells[1].name == nil, "Returned spell tables stay untouched")
 history = { { sessionID = 77 } }
@@ -372,18 +403,62 @@ C_DamageMeter.GetCombatSessionSourceFromID = function(id, meterType, guid)
 end
 frame.config.sessionID = 77
 frame.rows[1].entry.scripts.OnEnter()
-assert(GameTooltip:IsShown(), "History hover uses the ID API")
+assert(tooltip:IsShown(), "History hover uses the ID API")
 history = {}
 app:RefreshWindows()
-assert(not GameTooltip:IsShown(), "Expired history dismisses hover details")
+assert(not tooltip:IsShown(), "Expired history dismisses hover details")
 frame.config.sessionID = nil
 app:RefreshWindows()
 frame.rows[1].preview = true
 local beforePreview = sourceReads
 frame.rows[1].entry.scripts.OnEnter()
-assert(sourceReads == beforePreview and not GameTooltip:IsShown(), "Preview hover never reads live details")
+assert(sourceReads == beforePreview and not tooltip:IsShown(), "Preview hover never reads live details")
 frame.rows[1].preview = nil
-GameTooltip = nil
+local firstSpell = details.combatSpells[1]
+for index = 2, 20 do
+    details.combatSpells[index] = { spellID = index, totalAmount = 25, amountPerSecond = 5 }
+end
+frame.rows[1].entry.scripts.OnEnter()
+assert(tooltip.capacity < tooltip.count and tooltip:GetHeight() <= UIParent:GetHeight() * 0.75)
+local mainOffset = frame.offset
+frame.rows[1].entry.scripts.OnMouseWheel(frame.rows[1].entry, -1)
+assert(tooltip.offset == 3 and tooltip.rows[1].icon.texture == 1004, "Wheel reaches later detail bars in API order")
+assert(frame.offset == mainOffset, "Scrolling a long breakdown keeps its source row in place")
+app:RefreshWindows()
+assert(tooltip.offset == 3, "Live refresh preserves detail scrolling")
+details.combatSpells = { firstSpell }
+app:RefreshWindows()
+assert(tooltip.offset == 0 and not tooltip.rows[2]:IsShown(), "Shrinking detail lists hide pooled surplus bars")
+details.combatSpells = {}
+app:RefreshWindows()
+assert(not tooltip:IsShown(), "Empty data hides the headerless panel")
+details.combatSpells = { firstSpell }
+frame.rows[1].entry.scripts.OnEnter()
+frame.rows[1].entry.scripts.OnHide()
+assert(not tooltip:IsShown(), "Hiding the owner entry dismisses the panel")
+local recapID
+C_DeathRecap = {
+    GetRecapEvents = function(id)
+        recapID = id
+        return { { event = "SWING_DAMAGE", amount = secret, sourceName = secret } }
+    end,
+    GetRecapMaxHealth = function(id)
+        assert(id == 99)
+        return secret
+    end,
+}
+Enum.DamageMeterType.Deaths = 3
+frame.config.statistic = "Deaths"
+session.combatSources[1].deathRecapID = 99
+app:RefreshWindows()
+frame.rows[1].entry.scripts.OnEnter()
+assert(recapID == 99 and detailBar.maximum == secret and detailBar.statusValue == secret)
+assert(detailBar.icon.texture == 89163, "Recap melee bars use the attack spell icon")
+assert(detailBar.name.args[2] == secret and detailBar.value.args[1] == secret)
+frame.rows[1].entry.scripts.OnLeave()
+frame.config.statistic = "DamageDone"
+app:RefreshWindows()
+C_DeathRecap = nil
 assert(frame.statistic:GetFrameLevel() == 2 and frame.session:GetFrameLevel() == 2)
 -- Exercise the actual button callbacks, menu selection and API routing together.
 local menuRoot

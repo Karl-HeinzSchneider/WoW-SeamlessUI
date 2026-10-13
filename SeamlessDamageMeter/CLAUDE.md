@@ -20,7 +20,12 @@ One shared timer refreshes visible windows, with per-refresh caching for matchin
 Frames and rows are reused. Removing all windows must leave the profile empty; only a
 fresh/reset profile creates a default window. Hidden windows are restored via `/sdm show`.
 
-The Windows tab uses a tree with Defaults and one category per active window (up to 10).
+The Windows tab uses a tree with Defaults and one category per active window slot (1–10).
+Adding activates the lowest unused slot with fresh defaults; hiding retains its configuration
+and reserves the slot. Removing clears its configuration and hides its retained frame. Frames
+are created lazily and reused, so at most ten meter frames exist. Old increasing IDs migrate
+to free slots while preserving settings and remapping anchors; valid existing slot IDs stay
+unchanged. Excess windows from very old profiles are retained in `profile.legacyWindows`.
 `profile.windowDefaults` supplies appearance and geometry; `config.overrides` stores only
 explicit overrides (nil inherits; false is a valid toggle override). Old width/height/x/y
 fields migrate into overrides. Dragging overrides X/Y, resizing also overrides width/height.
@@ -39,10 +44,11 @@ Rows clip the fixed-size icon and bar art to their entry bounds. Amount-based st
 show total and rate in compact form; DPS/HPS swap their order, and action counts omit rates.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`
-(for example `SeamlessDamageMeterWindow1`). The suffix is the saved window ID, not its
-position in the list. Frames are retained by ID and reused across profile changes; deleting
-another window never renames them. Removed windows remain allocated but hidden. The frame's
-`windowID` is stable; `config` reflects its currently bound profile. This is an authorized
+(for example `SeamlessDamageMeterWindow1`). The suffix is the fixed slot number, not its
+position in the active list. Frames are retained by slot and reused across profile changes;
+deleting another window never renames them. Removed windows remain allocated but hidden.
+The frame's `windowID` is stable; `config` is nil for a removed slot and otherwise reflects
+its currently bound profile. A reused slot represents a fresh window. This is an authorized
 exception to the repository's default rule against additional globals.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.

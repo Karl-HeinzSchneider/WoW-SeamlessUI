@@ -173,9 +173,9 @@ function app:BuildWindowOptions()
             args = {
                 info = {
                     type = "description",
-                    name = "Create up to "
+                    name = "Use up to "
                         .. self.MAX_WINDOWS
-                        .. " windows. Each new window inherits the shared defaults.",
+                        .. " window slots. Add activates the lowest unused slot with shared defaults. Hide preserves its settings; remove clears them and frees the slot.",
                     order = 1,
                 },
                 add = {

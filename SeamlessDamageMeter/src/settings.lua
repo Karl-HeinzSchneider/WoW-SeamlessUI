@@ -31,6 +31,52 @@ function app:GetWindowSetting(config, key)
 end
 
 function app:PrepareWindowSettings()
+    local profile = self.db.profile
+    if not profile.fixedWindowSlots then
+        local used, remapped, assigned, pending = {}, {}, {}, {}
+        -- Preserve existing slot IDs first, then move old increasing IDs into free slots.
+        for _, config in ipairs(profile.windows) do
+            local id = config.id
+            if
+                type(id) == "number"
+                and id >= 1
+                and id <= self.MAX_WINDOWS
+                and id == math.floor(id)
+                and not used[id]
+            then
+                used[id], assigned[config], remapped[id] = true, true, id
+            else
+                pending[#pending + 1] = config
+            end
+        end
+        for _, config in ipairs(pending) do
+            for id = 1, self.MAX_WINDOWS do
+                if not used[id] then
+                    if config.id ~= nil and remapped[config.id] == nil then
+                        remapped[config.id] = id
+                    end
+                    config.id = id
+                    used[id], assigned[config] = true, true
+                    break
+                end
+            end
+        end
+        for index = #profile.windows, 1, -1 do
+            local config = profile.windows[index]
+            if not assigned[config] then
+                -- Very old profiles could have more than ten windows; retain excess data.
+                profile.legacyWindows = profile.legacyWindows or {}
+                table.insert(profile.legacyWindows, 1, table.remove(profile.windows, index))
+            elseif config.anchorTo then
+                config.anchorTo = remapped[config.anchorTo]
+            end
+        end
+        profile.fixedWindowSlots = true
+        profile.nextID = nil
+    end
+    table.sort(profile.windows, function(a, b)
+        return a.id < b.id
+    end)
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
         -- Keep old layouts while all new windows inherit the profile defaults.
@@ -39,6 +85,18 @@ function app:PrepareWindowSettings()
                 config.overrides[key] = config[key]
                 config[key] = nil
             end
+        end
+    end
+end
+
+function app:GetUnusedWindowSlot()
+    local used = {}
+    for _, config in ipairs(self.db.profile.windows) do
+        used[config.id] = true
+    end
+    for id = 1, self.MAX_WINDOWS do
+        if not used[id] then
+            return id
         end
     end
 end

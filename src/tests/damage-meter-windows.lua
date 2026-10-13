@@ -291,7 +291,7 @@ assert(
 assert(second.config.width == nil and second.config.overrides.width == 400, "Legacy geometry must migrate")
 app.db.profile.windowDefaults.width = 480
 app:AddWindow()
-local inherited = app.windows[2]
+local inherited = app.windowFrames[1]
 assert(inherited:GetWidth() == 480 and next(inherited.config.overrides) == nil)
 assert(second:GetWidth() == 400, "Migrated geometry must remain an override")
 app.db.profile.windowDefaults.width = 520
@@ -310,4 +310,32 @@ for _ = 1, 12 do
     app:AddWindow()
 end
 assert(#app.db.profile.windows == 10, "All creation paths must enforce the window limit")
+local slot = app.windowFrames[3]
+slot.config.hidden = true
+slot.config.collapsed = true
+slot.config.statistic = "Dps"
+slot.config.sessionID = 99
+slot.config.overrides.fontSize = 20
+app:RebuildWindows()
+assert(not slot:IsShown() and app:GetUnusedWindowSlot() == nil, "Hidden windows must retain their slot")
+local previousConfig = slot.config
+app:RemoveWindow(previousConfig)
+assert(slot.config == nil and not slot:IsShown())
+assert(app:GetUnusedWindowSlot() == 3)
+app:AddWindow()
+assert(app.windowFrames[3] == slot and slot:IsShown(), "Reactivation must reuse the slot's frame")
+assert(slot.config ~= previousConfig and next(slot.config.overrides) == nil)
+assert(slot.config.statistic == "DamageDone" and slot.config.session == "Current")
+assert(not slot.config.hidden and not slot.config.collapsed and not slot.config.sessionID)
+for _ = 1, 25 do
+    app:RemoveWindow(slot.config)
+    app:AddWindow()
+    assert(app.windowFrames[3] == slot)
+end
+local allocated = 0
+for id in pairs(app.windowFrames) do
+    assert(id >= 1 and id <= 10)
+    allocated = allocated + 1
+end
+assert(allocated == 10, "Repeated removal and creation must not grow the frame pool")
 print("Damage meter window regressions OK")

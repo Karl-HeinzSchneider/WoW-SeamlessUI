@@ -132,17 +132,18 @@ end
 
 function app:AddWindow()
     local profile = self.db.profile
-    if #profile.windows >= self.MAX_WINDOWS then
+    self:PrepareWindowSettings()
+    local id = self:GetUnusedWindowSlot()
+    if not id then
         self.core.logger:chat("You can create up to " .. self.MAX_WINDOWS .. " meter windows.")
         return
     end
     local config = {
-        id = profile.nextID,
+        id = id,
         statistic = "DamageDone",
         session = "Current",
         overrides = {},
     }
-    profile.nextID = profile.nextID + 1
     profile.initialized = true
     table.insert(profile.windows, config)
     self:RebuildWindows()
@@ -164,6 +165,11 @@ function app:RemoveWindow(config)
     for index, candidate in ipairs(self.db.profile.windows) do
         if candidate == config then
             table.remove(self.db.profile.windows, index)
+            local frame = self.windowFrames[config.id]
+            if frame then
+                frame:Hide()
+                frame.config, frame.anchorTarget = nil, nil
+            end
             break
         end
     end

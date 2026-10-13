@@ -64,6 +64,24 @@ app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
 app:BuildWindowOptions()
 assert(app.windowOptions.args.window1 == nil)
 assert(defaults.width.get() == 400)
+local highID = { id = 18, anchorTo = 27, overrides = { fontSize = 19 } }
+local anchor = { id = 27, overrides = {} }
+local existing = { id = 1, anchorTo = 18, overrides = {} }
+app.db.profile = { windows = { highID, existing, anchor }, nextID = 28, windowDefaults = copy(app.windowDefaults) }
+app:PrepareWindowSettings()
+assert(existing.id == 1 and highID.id == 2 and anchor.id == 3)
+assert(highID.anchorTo == 3 and existing.anchorTo == 2 and highID.overrides.fontSize == 19)
+assert(app.db.profile.nextID == nil and app.db.profile.fixedWindowSlots)
+assert(app:GetUnusedWindowSlot() == 4)
+app:PrepareWindowSettings()
+assert(highID.id == 2 and highID.anchorTo == 3, "Migration must be idempotent")
+app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
+for id = 1, 12 do
+    table.insert(app.db.profile.windows, { id = id + 20, overrides = {} })
+end
+app:PrepareWindowSettings()
+assert(#app.db.profile.windows == 10 and #app.db.profile.legacyWindows == 2)
+assert(app:GetUnusedWindowSlot() == nil)
 print(
     "PASS: migration, inheritance, false overrides, independent colors, anchor cycles, numeric validation, profile switching and AceConfig schema"
 )

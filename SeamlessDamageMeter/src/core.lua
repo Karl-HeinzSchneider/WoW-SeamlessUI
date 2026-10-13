@@ -9,7 +9,6 @@ function addon:OnInitialize()
     app.db = LibStub("AceDB-3.0"):New("SeamlessDamageMeterDB", {
         profile = {
             windows = {},
-            nextID = 1,
             initialized = false,
             locked = false,
             hideBlizzard = true,

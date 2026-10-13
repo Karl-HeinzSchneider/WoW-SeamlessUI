@@ -488,7 +488,6 @@ local function CreateDetailTooltip()
     tooltip.targetMessage:SetJustifyH("LEFT")
     tooltip.targetMessage:SetWordWrap(true)
     tooltip:Hide()
-    app.detailTooltip = tooltip
     return tooltip
 end
 
@@ -504,8 +503,9 @@ local function ShowRowTooltip(row, frame)
     for _, spell in ipairs(spells) do
         entries[#entries + 1] = spell
     end
+    local inCombat = UnitAffectingCombat("player")
     local targetDetails, targetReason
-    if frame.config.statistic == "DamageDone" or frame.config.statistic == "Dps" then
+    if not inCombat and (frame.config.statistic == "DamageDone" or frame.config.statistic == "Dps") then
         targetDetails, targetReason = app:GetTargetBreakdown(frame.config, row.source)
         if targetDetails and #targetDetails.entries > 0 then
             entries[#entries + 1] = { isTargetHeading = true }
@@ -517,7 +517,7 @@ local function ShowRowTooltip(row, frame)
                 entries[#entries + 1] = { isTargetMessage = true }
             end
         end
-    elseif frame.config.statistic == "EnemyDamageTaken" then
+    elseif not inCombat and frame.config.statistic == "EnemyDamageTaken" then
         targetDetails, targetReason = app.combatService:GetEnemyContributors(frame.config, row.source)
         if targetDetails and #targetDetails.entries > 0 then
             entries = { { isTargetHeading = true } }
@@ -534,7 +534,17 @@ local function ShowRowTooltip(row, frame)
         targetReason = detailReason or "No details available."
         entries[1] = { isTargetMessage = true }
     end
-    local tooltip = app.detailTooltip or CreateDetailTooltip()
+    local poolKey = inCombat and "combatSpellTooltip" or "postCombatTooltip"
+    local tooltip = app[poolKey]
+    if not tooltip then
+        tooltip = CreateDetailTooltip()
+        app[poolKey] = tooltip
+    end
+    if app.detailTooltip and app.detailTooltip ~= tooltip then
+        app.detailTooltip.owner = nil
+        app.detailTooltip:Hide()
+    end
+    app.detailTooltip = tooltip
     local config = frame.config
     local rowHeight = app:GetWindowSetting(config, "rowHeight")
     local spacing = app:GetWindowSetting(config, "rowSpacing")

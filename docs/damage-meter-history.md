@@ -14,7 +14,9 @@ character-scoped SavedVariables independently of appearance profiles.
 - Hover damage/DPS bars for targets, or enemy damage taken for contributors. Target percentages
   mean **share of your damage / share of enemy damage received**. Contributor percentages mean
   **share of that enemy's damage received**.
-- Combat hover keeps the normal spell breakdown. Target sections appear only when data is available.
+- Combat hover uses a spell-only panel and never queries target or contributor analysis.
+  After combat, a separate pooled panel adds target sections when data is available.
+  The panel switches automatically when combat starts or ends while a row stays hovered.
   Main and hover bars align amounts, rates and percentages in separate columns; restricted
   percentages stay blank. DPS/HPS views put rates first, including target rows.
 - Saved session menus offer pinning, comparisons and deletion. Comparisons show first fight →

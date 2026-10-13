@@ -378,12 +378,15 @@ app:RefreshWindows()
 assert(not tooltip:IsShown(), "Refresh must not reopen a tooltip after leaving")
 session.combatSources[12].sourceCreatureID = 42
 frame.localRow.entry.scripts.OnEnter()
+assert(app.detailTooltip ~= tooltip and app.detailTooltip == app.postCombatTooltip)
+tooltip = app.detailTooltip
 assert(detailCreature == 42, "Pinned rows support creature source IDs")
 assert(tooltip.points.BOTTOMLEFT[2] == frame.localRow.entry and tooltip.points.BOTTOMRIGHT[2] == frame.localRow.entry)
 frame.localRow.entry.scripts.OnLeave()
 details.totalAmount = 100
 details.combatSpells[1].totalAmount, details.combatSpells[1].amountPerSecond = 25, 5
 frame.rows[1].entry.scripts.OnEnter()
+detailBar = tooltip.rows[1]
 assert(detailBar.percentageValue.args[1] == 25, "Public spell shares occupy a separate percentage column")
 assert(app.detailTooltip == tooltip and tooltip.rows[1] == detailBar, "The panel and its bars are pooled")
 details.combatSpells[1].combatSpellDetails = { specIconID = 777, unitClassFilename = "MAGE", unitName = secret }
@@ -551,22 +554,30 @@ end
 enemySession.combatSources[1].totalAmount = secret
 app.combatService:Invalidate()
 app:RefreshWindows()
+local richTooltip = tooltip
+tooltip = app.detailTooltip
+assert(tooltip == app.combatSpellTooltip and tooltip ~= richTooltip and not richTooltip:IsShown())
 assert(
     tooltip.count == 3 and not tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown(),
     "Entering combat removes available targets without replacing spell bars"
 )
-assert(enemyReads > availableEnemyReads, "Target availability is checked from actual API fields")
+assert(enemyReads == availableEnemyReads, "Combat hover never queries target analysis")
 assert(
-    not tooltip.rows[1].enemyPercentageValue:IsShown() and not tooltip.rows[5]:IsShown(),
+    not tooltip.rows[1].enemyPercentageValue:IsShown() and not richTooltip:IsShown(),
     "Pooled target columns and rows disappear in combat"
 )
 enemySession.combatSources[1].totalAmount = 50
 app.combatService:Invalidate()
 app:RefreshWindows()
-assert(tooltip.count == 6 and tooltip.targetLabel:IsShown(), "Public targets can appear without leaving combat")
+assert(
+    tooltip.count == 3 and not tooltip.targetLabel:IsShown(),
+    "Combat hover stays spell-only even with public targets"
+)
 UnitAffectingCombat = hoverCombatState
 frame.config.statistic = "Dps"
 app:RefreshWindows()
+assert(not tooltip:IsShown() and app.detailTooltip == richTooltip, "Leaving combat switches back to the richer pool")
+tooltip = app.detailTooltip
 assert(
     tooltip.rows[5].value.text == "5" and tooltip.rows[5].secondaryValue.text == "50",
     "Targets preserve the same rate/amount column order as spells in DPS view"

@@ -90,7 +90,10 @@ contribution index. Combine public contributor rows by name, preserve client cre
 label incomplete reconciliation. Targets show share of player damage / share of enemy damage
 received; contributor percentages use enemy damage received. Units already combined by the API
 cannot be separated. Never infer complete target totals from player spell summaries.
-Normal API spell breakdowns stay visible in combat. Append target headings/rows only when target
+Use separate pooled combat and post-combat hover frames. Combat hover queries only the normal
+source spell breakdown and never requests target/contributor analysis. Switch pools on refresh
+when combat state changes, hiding the former owner and resetting the new pool's scroll offset.
+Normal API spell breakdowns stay visible in combat. After combat, append target headings/rows only when target
 data exists; unavailable targets never replace spells or add a restriction warning to the hover.
 Target availability is determined from the required public enemy/contributor fields, not a blanket
 combat flag. Optional secret GUIDs/spell IDs are ignored and unavailable rates remain blank.

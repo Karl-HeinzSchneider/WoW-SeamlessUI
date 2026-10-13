@@ -114,7 +114,7 @@ RAID_CLASS_COLORS = { MAGE = { r = 0.2, g = 0.5, b = 1 } }
 DAMAGE_METER_CURRENT_SESSION_SHORT = "C"
 DAMAGE_METER_OVERALL_SESSION_SHORT = "O"
 DAMAGE_METER_SOURCE_NAME = "%d. %s"
-Enum = { DamageMeterSessionType = { Current = 0, Overall = 1 }, DamageMeterType = { DamageDone = 0 } }
+Enum = { DamageMeterSessionType = { Current = 0, Overall = 1 }, DamageMeterType = { DamageDone = 0, Dps = 1 } }
 function GetClassAtlas(class)
     return class
 end
@@ -204,6 +204,7 @@ app:RefreshWindows()
 assert(frame.rows[1].value.text == "12345")
 frame.config.statistic = "Dps"
 app:RefreshWindows()
+assert(frame.rows[1]:IsShown())
 assert(frame.rows[1].value.args[1] == secret, "Rate display must use amountPerSecond")
 frame.config.statistic = "DamageDone"
 app:AddWindow()

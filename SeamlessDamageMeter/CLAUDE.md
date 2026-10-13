@@ -68,7 +68,10 @@ through number abbreviation. An offscreen local player stays visible in a separa
 Hovering a combat row (including the pinned player) shows its selected session's spell
 breakdown in a headerless, pooled hover panel. Each entry is a bar using the main window's
 texture, row height/spacing, font and color settings, with totals, rates and public percentage
-shares. Icons follow the API's specialization/class metadata, falling back to the spell
+shares in separate right-aligned columns. The same numeric columns are used in main meter rows.
+Widths depend only on public window/font settings, never combat text measurements. Keep columns
+aligned across pooled rows; clear unavailable percentages and hide rate columns for action counts.
+Icons follow the API's specialization/class metadata, falling back to the spell
 texture from `C_Spell`. Deaths show recap event bars scaled against recap max health.
 Preserve API ordering and send restricted names/amounts directly to labels and status bars;
 omit percentages when their inputs are secret. Refresh the owned tooltip with its pooled
@@ -83,6 +86,9 @@ contribution index. Combine public contributor rows by name, preserve client cre
 label incomplete reconciliation. Targets show share of player damage / share of enemy damage
 received; contributor percentages use enemy damage received. Units already combined by the API
 cannot be separated. Never infer complete target totals from player spell summaries.
+Normal API spell breakdowns stay visible in combat. Append target headings/rows only when target
+data exists; unavailable targets never replace spells or add a restriction warning to the hover.
+Enemy hover likewise retains its normal API details until public contributor analysis is available.
 Left-click a public row for spell flags, target analysis, saved metadata and copyable reports.
 Saved session menus expose pin/delete/compare. History defaults to 50 unpinned fights per
 character; pins survive retention. Clearing archives does not reset the client meter.
@@ -90,7 +96,7 @@ Rows use full square icons sized to the row height and an original grayscale sha
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
 the generator uses only our own formula and reads no reference assets. Amount-based statistics
-show total and rate in compact form; DPS/HPS swap their order, and action counts omit rates.
+show total and rate in separate columns; DPS/HPS swap their order, and action counts omit rates.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`
 (for example `SeamlessDamageMeterWindow1`). The suffix is the fixed slot number, not its

@@ -404,6 +404,68 @@ local function IsPublic(value)
     return not (issecretvalue and issecretvalue(value))
 end
 
+local function Percentage(amount, total)
+    if IsPublic(amount) and IsPublic(total) and type(amount) == "number" and type(total) == "number" and total > 0 then
+        return math.floor(amount / total * 100 + 0.5)
+    end
+end
+
+local function SetNumericText(label, value, rate)
+    if not IsPublic(value) then
+        label:SetFormattedText(rate and "%.1f" or "%.0f", value)
+    else
+        label:SetText(value ~= nil and AbbreviateLargeNumbers(value) or "")
+    end
+end
+
+-- Fixed columns use public layout settings, never the width of restricted combat text.
+local function SetRowValues(row, config, amount, rate, percentage, enemyPercentage, showRate, rateFirst, showEnemy)
+    local labels = { row.value, row.secondaryValue, row.percentageValue, row.enemyPercentageValue }
+    local fontSize = app:GetWindowSetting(config, "fontSize")
+    local gap = math.max(3, fontSize * 0.35)
+    local widths = { fontSize * 6, fontSize * 5.5, fontSize * 3.5, fontSize * 3.5 }
+    local shown = { true, showRate, true, showEnemy }
+    local total, count = 0, 0
+    for index = 1, 4 do
+        if shown[index] then
+            total, count = total + widths[index], count + 1
+        end
+    end
+    local available = app:GetWindowSetting(config, "width") - app:GetWindowSetting(config, "rowHeight") - 30
+    local factor = math.min(1, math.max(1, available * 0.7 - gap * (count - 1)) / total)
+    local offset = 3
+    for index = 4, 1, -1 do
+        local label = labels[index]
+        app:StyleWindowLabel(label, config)
+        label:ClearAllPoints()
+        label:SetWidth(widths[index] * factor)
+        label:SetShown(shown[index] and true or false)
+        if shown[index] then
+            label:SetPoint("RIGHT", row, "RIGHT", -offset, 0)
+            offset = offset + widths[index] * factor + gap
+        end
+    end
+    row.name:ClearAllPoints()
+    row.name:SetPoint("LEFT", 2, 0)
+    row.name:SetPoint("RIGHT", row.value, "LEFT", -gap, 0)
+    local primary, secondary = amount, rate
+    if rateFirst then
+        primary, secondary = rate, amount
+    end
+    SetNumericText(row.value, primary, rateFirst)
+    SetNumericText(row.secondaryValue, secondary, not rateFirst)
+    if percentage ~= nil then
+        row.percentageValue:SetFormattedText("%d%%", percentage)
+    else
+        row.percentageValue:SetText("")
+    end
+    if enemyPercentage ~= nil then
+        row.enemyPercentageValue:SetFormattedText("%d%%", enemyPercentage)
+    else
+        row.enemyPercentageValue:SetText("")
+    end
+end
+
 local function CreateDetailTooltip()
     local tooltip = CreateFrame("Frame", nil, UIParent)
     tooltip:SetFrameStrata("TOOLTIP")
@@ -445,8 +507,8 @@ local function ShowRowTooltip(row, frame)
     local targetDetails, targetReason
     if frame.config.statistic == "DamageDone" or frame.config.statistic == "Dps" then
         targetDetails, targetReason = app:GetTargetBreakdown(frame.config, row.source)
-        entries[#entries + 1] = { isTargetHeading = true }
-        if targetDetails then
+        if targetDetails and #targetDetails.entries > 0 then
+            entries[#entries + 1] = { isTargetHeading = true }
             for _, target in ipairs(targetDetails.entries) do
                 entries[#entries + 1] = target
             end
@@ -454,13 +516,11 @@ local function ShowRowTooltip(row, frame)
                 targetReason = targetDetails.message
                 entries[#entries + 1] = { isTargetMessage = true }
             end
-        else
-            entries[#entries + 1] = { isTargetMessage = true }
         end
     elseif frame.config.statistic == "EnemyDamageTaken" then
         targetDetails, targetReason = app.combatService:GetEnemyContributors(frame.config, row.source)
-        entries = { { isTargetHeading = true } }
-        if targetDetails then
+        if targetDetails and #targetDetails.entries > 0 then
+            entries = { { isTargetHeading = true } }
             for _, contributor in ipairs(targetDetails.entries) do
                 entries[#entries + 1] = contributor
             end
@@ -468,8 +528,6 @@ local function ShowRowTooltip(row, frame)
                 targetReason = "Available contributions only; totals do not fully reconcile."
                 entries[#entries + 1] = { isTargetMessage = true }
             end
-        else
-            entries[#entries + 1] = { isTargetMessage = true }
         end
     end
     if #entries == 0 then
@@ -496,6 +554,8 @@ local function ShowRowTooltip(row, frame)
     tooltip:SetPoint("BOTTOMLEFT", row.entry, "TOPLEFT", 0, 0)
     tooltip:SetPoint("BOTTOMRIGHT", row.entry, "TOPRIGHT", 0, 0)
     local statistic = app:GetStatistic(frame.config.statistic)
+    local showRate = not details.deathEvents and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
+    local showEnemy = targetDetails and #targetDetails.entries > 0 and statistic.key ~= "EnemyDamageTaken"
     tooltip.targetLabel:Hide()
     tooltip.targetMessage:Hide()
     app:StyleWindowLabel(tooltip.targetLabel, config)
@@ -573,62 +633,10 @@ local function ShowRowTooltip(row, frame)
                 amount = 0
             end
             local rate = spell.amountPerSecond
-            local percentage
-            if
-                IsPublic(amount)
-                and IsPublic(details.totalAmount)
-                and details.totalAmount
-                and details.totalAmount > 0
-            then
-                percentage = math.floor(amount / details.totalAmount * 100 + 0.5)
-            end
-            if (not IsPublic(rate) or rate ~= nil) and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" then
-                local primary, secondary = amount, rate
-                if statistic.rate then
-                    primary, secondary = rate, amount
-                end
-                if IsPublic(primary) and IsPublic(secondary) then
-                    if percentage then
-                        bar.value:SetFormattedText(
-                            "%s (%s) %d%%",
-                            AbbreviateLargeNumbers(primary),
-                            AbbreviateLargeNumbers(secondary),
-                            percentage
-                        )
-                    else
-                        bar.value:SetFormattedText(
-                            "%s (%s)",
-                            AbbreviateLargeNumbers(primary),
-                            AbbreviateLargeNumbers(secondary)
-                        )
-                    end
-                elseif percentage then
-                    bar.value:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
-                else
-                    bar.value:SetFormattedText("%.1f (%.1f)", primary, secondary)
-                end
-            elseif IsPublic(amount) then
-                if percentage then
-                    bar.value:SetFormattedText("%s %d%%", AbbreviateLargeNumbers(amount), percentage)
-                else
-                    bar.value:SetText(AbbreviateLargeNumbers(amount))
-                end
-            else
-                bar.value:SetFormattedText("%.0f", amount)
-            end
-            if
-                spell.isTarget
-                and spell.enemyShare
-                and frame.config.statistic ~= "EnemyDamageTaken"
-                and IsPublic(amount)
-            then
-                bar.value:SetFormattedText(
-                    "%s %d%% / %d%%",
-                    AbbreviateLargeNumbers(amount),
-                    percentage or 0,
-                    math.floor(spell.enemyShare + 0.5)
-                )
-            end
+            local total = spell.isTarget and targetDetails.totalAmount or details.totalAmount
+            local percentage = Percentage(amount, total)
+            local enemyPercentage = spell.isTarget and spell.enemyShare and math.floor(spell.enemyShare + 0.5) or nil
+            SetRowValues(bar, config, amount, rate, percentage, enemyPercentage, showRate, statistic.rate, showEnemy)
             -- The API provides the scale; restricted amounts go directly to the widgets.
             local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
             if IsPublic(maximum) and maximum == nil then
@@ -718,6 +726,13 @@ CreateRow = function(frame, index)
     row.value = Label(row, "NumberFontNormal")
     row.value:SetPoint("RIGHT", -3, 0)
     row.value:SetJustifyH("RIGHT")
+    row.value:SetWordWrap(false)
+    for _, key in ipairs({ "secondaryValue", "percentageValue", "enemyPercentageValue" }) do
+        row[key] = Label(row, "NumberFontNormal")
+        row[key]:SetJustifyH("RIGHT")
+        row[key]:SetWordWrap(false)
+        row[key]:Hide()
+    end
     row.name:SetPoint("RIGHT", row.value, "LEFT", -25, 0)
     if index > 0 then
         frame.rows[index] = row
@@ -742,26 +757,18 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     else
         row.icon:SetTexture(nil)
     end
-    local amount = source.totalAmount
-    local secondary = source.amountPerSecond
-    if statistic.rate then
-        amount = source.amountPerSecond
-        secondary = source.totalAmount
-    end
-    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
-    if showRate and issecretvalue and (issecretvalue(amount) or issecretvalue(secondary)) then
-        row.value:SetFormattedText(statistic.rate and "%.1f (%.0f)" or "%.0f (%.1f)", amount, secondary)
-    elseif showRate then
-        row.value:SetFormattedText(
-            DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)",
-            AbbreviateLargeNumbers(amount),
-            AbbreviateLargeNumbers(secondary)
-        )
-    elseif issecretvalue and issecretvalue(amount) then
-        row.value:SetFormattedText("%.0f", amount)
-    else
-        row.value:SetText(AbbreviateLargeNumbers(amount))
-    end
+    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" and statistic.key ~= "Deaths"
+    SetRowValues(
+        row,
+        config,
+        source.totalAmount,
+        source.amountPerSecond,
+        Percentage(source.totalAmount, session.totalAmount),
+        nil,
+        showRate,
+        statistic.rate,
+        false
+    )
     row:SetMinMaxValues(0, session.maxAmount)
     row:SetValue(source.totalAmount)
     local color = RAID_CLASS_COLORS[source.classFilename]

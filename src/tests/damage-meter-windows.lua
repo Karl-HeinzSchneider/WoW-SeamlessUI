@@ -309,7 +309,7 @@ assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() ==
 assert(frame:IsShown() and frame.scrollbar:IsShown())
 assert(frame.rows[1].name.args[2] == secret)
 assert(frame.rows[1].value.args[1] == secret)
-assert(frame.rows[1].value.args[2] == secret, "Restricted rates must also go directly to the widget")
+assert(frame.rows[1].secondaryValue.args[1] == secret, "Restricted rates must go directly to their column")
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
 assert(frame.localRow:IsShown(), "Offscreen local player must stay visible")
 -- Hover details use the selected source/session and accept restricted values unchanged.
@@ -336,6 +336,10 @@ C_DamageMeter.GetCombatSessionSourceFromType = function(sessionType, meterType, 
     return details
 end
 session.combatSources[1].sourceGUID = "player-1"
+local hoverCombatState = UnitAffectingCombat
+UnitAffectingCombat = function()
+    return true
+end
 frame.rows[1].entry.scripts.OnEnter()
 assert(sourceReads == 1 and detailGUID == "player-1")
 local tooltip = app.detailTooltip
@@ -349,14 +353,17 @@ assert(
     tooltip.points.BOTTOMRIGHT[4] == 0 and tooltip.points.BOTTOMRIGHT[5] == 0,
     "Panel matches the bar edges above it"
 )
-assert(detailBar.value.args[1] == secret and detailBar.value.args[2] == secret)
+assert(detailBar.value.args[1] == secret and detailBar.secondaryValue.args[1] == secret)
+assert(detailBar.percentageValue.text == "", "Restricted percentage inputs stay blank")
 assert(detailBar.maximum == secret and detailBar.statusValue == secret, "Restricted bar scales go to widget setters")
 assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main bars share the exact texture")
 assert(detailBar.icon.texture == 1001, "Spell icons come from C_Spell")
 assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.icon:GetWidth() == 24)
 assert(detailBar.color[1] == RAID_CLASS_COLORS.MAGE.r)
-assert(tooltip.targetLabel:IsShown() and tooltip.targetLabel.text == "Targets (% of yours; % of enemy)")
-assert(tooltip.targetMessage:IsShown() and tooltip.targetMessage.text == "Target data restricted.")
+assert(
+    not tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown() and tooltip.count == 1,
+    "Combat hover shows only normal spells, without an unavailable target section"
+)
 assert(detailBar.entry.points.TOPLEFT[3] == 0, "First bar begins at the top with no header gap")
 assert(
     not tooltip.mouseEnabled and not detailBar.entry.mouseEnabled,
@@ -364,6 +371,7 @@ assert(
 )
 app:RefreshWindows()
 assert(tooltip:IsShown() and sourceReads == 2, "Live refresh preserves and updates the hover")
+UnitAffectingCombat = hoverCombatState
 frame.rows[1].entry.scripts.OnLeave()
 assert(not tooltip:IsShown() and tooltip.owner == nil)
 app:RefreshWindows()
@@ -376,7 +384,7 @@ frame.localRow.entry.scripts.OnLeave()
 details.totalAmount = 100
 details.combatSpells[1].totalAmount, details.combatSpells[1].amountPerSecond = 25, 5
 frame.rows[1].entry.scripts.OnEnter()
-assert(detailBar.value.args[3] == 25, "Public values include the spell's percentage share")
+assert(detailBar.percentageValue.args[1] == 25, "Public spell shares occupy a separate percentage column")
 assert(app.detailTooltip == tooltip and tooltip.rows[1] == detailBar, "The panel and its bars are pooled")
 details.combatSpells[1].combatSpellDetails = { specIconID = 777, unitClassFilename = "MAGE", unitName = secret }
 app:RefreshWindows()
@@ -388,7 +396,7 @@ assert(detailBar.icon.atlas == "MAGE", "API unit class supplies an icon when the
 details.combatSpells[1].combatSpellDetails = nil
 frame.config.statistic = "Dps"
 app:RefreshWindows()
-assert(detailBar.value.args[1] == "5" and detailBar.value.args[2] == "25", "DPS uses rate before total")
+assert(detailBar.value.text == "5" and detailBar.secondaryValue.text == "25", "DPS uses rate before total")
 frame.config.statistic = "DamageDone"
 frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing = 30, 6
 frame.config.overrides.classColors = false
@@ -468,6 +476,7 @@ local enemySession = {
         { name = "Bear", sourceCreatureID = 2, totalAmount = 50, amountPerSecond = 5 },
     },
 }
+local enemyReads = 0
 Enum.DamageMeterType.EnemyDamageTaken = 10
 local enemyDetails = {
     {
@@ -503,12 +512,14 @@ local enemyDetails = {
 }
 C_DamageMeter.GetCombatSessionFromType = function(kind, meterType)
     if meterType == 10 then
+        enemyReads = enemyReads + 1
         return enemySession
     end
     return oldSessionAPI(kind, meterType)
 end
 C_DamageMeter.GetCombatSessionSourceFromType = function(kind, meterType, guid, creature)
     if meterType == 10 then
+        enemyReads = enemyReads + 1
         return enemyDetails[creature]
     end
     return oldDetailsAPI(kind, meterType, guid, creature)
@@ -525,11 +536,37 @@ frame.rows[1].entry.scripts.OnEnter()
 assert(tooltip.count == 6 and tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown())
 assert(tooltip.rows[5].name.text == "Bear" and tooltip.rows[6].name.text == "Wolf")
 assert(tooltip.rows[5].statusValue == 50 and tooltip.rows[6].statusValue == 50)
-assert(tooltip.rows[5].value.args[2] == 50 and tooltip.rows[5].value.args[3] == 100)
+assert(tooltip.rows[5].value.text == "50" and tooltip.rows[5].secondaryValue.text == "5")
+assert(tooltip.rows[5].percentageValue.args[1] == 50 and tooltip.rows[5].enemyPercentageValue.args[1] == 100)
+assert(
+    tooltip.rows[1].value:GetWidth() == tooltip.rows[5].value:GetWidth()
+        and tooltip.rows[1].value.points.RIGHT[4] == tooltip.rows[5].value.points.RIGHT[4],
+    "Spells and targets share numeric column widths and offsets"
+)
 assert(tooltip.rows[6].icon.texture == 777)
+local availableEnemyReads = enemyReads
+UnitAffectingCombat = function()
+    return true
+end
+app:RefreshWindows()
+assert(
+    tooltip.count == 3 and not tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown(),
+    "Entering combat removes available targets without replacing spell bars"
+)
+assert(enemyReads == availableEnemyReads, "Combat fallback does not query enemy data")
+assert(
+    not tooltip.rows[1].enemyPercentageValue:IsShown() and not tooltip.rows[5]:IsShown(),
+    "Pooled target columns and rows disappear in combat"
+)
+UnitAffectingCombat = hoverCombatState
+app:RefreshWindows()
+assert(tooltip.count == 6 and tooltip.targetLabel:IsShown(), "Available targets return after combat")
 frame.config.statistic = "Dps"
 app:RefreshWindows()
-assert(tooltip.rows[5].value.args[1] == "50", "Targets show damage even in DPS view")
+assert(
+    tooltip.rows[5].value.text == "5" and tooltip.rows[5].secondaryValue.text == "50",
+    "Targets preserve the same rate/amount column order as spells in DPS view"
+)
 frame.config.statistic = "DamageDone"
 session.combatSources[1].totalAmount = 120
 assert(not app:GetTargetBreakdown(frame.config, session.combatSources[1]).complete, "Partial totals are labelled")
@@ -545,7 +582,13 @@ assert(
     "Restricted contributions cannot be added"
 )
 app:RefreshWindows()
-assert(tooltip.targetMessage:IsShown() and not tooltip.rows[5]:IsShown(), "Unavailable data clears stale targets")
+assert(
+    not tooltip.targetLabel:IsShown()
+        and not tooltip.targetMessage:IsShown()
+        and not tooltip.rows[5]:IsShown()
+        and tooltip.count == 3,
+    "Unavailable targets disappear while the normal spell breakdown remains"
+)
 session.combatSources[1].name, session.combatSources[1].totalAmount = savedName, savedAmount
 C_DamageMeter.GetCombatSessionFromType, C_DamageMeter.GetCombatSessionSourceFromType = oldSessionAPI, oldDetailsAPI
 app.combatService:Invalidate()
@@ -708,18 +751,37 @@ assert(frame.offset == 7 and not frame.localRow:IsShown())
 session.combatSources[8].totalAmount = 12345
 session.combatSources[8].amountPerSecond = 2.8
 app:RefreshWindows()
-assert(frame.rows[1].value.args[1] == "12345" and frame.rows[1].value.args[2] == "2.8")
+assert(frame.rows[1].value.text == "12345" and frame.rows[1].secondaryValue.text == "2.8")
+assert(
+    frame.rows[1].value:GetWidth() == frame.rows[2].value:GetWidth()
+        and frame.rows[1].value.points.RIGHT[4] == frame.rows[2].value.points.RIGHT[4],
+    "Main meter columns align independently of public or restricted value text"
+)
+assert(
+    frame.rows[1].name.points.RIGHT[2] == frame.rows[1].value
+        and frame.rows[1].value.points.RIGHT[4] < frame.rows[1].secondaryValue.points.RIGHT[4]
+        and frame.rows[1].secondaryValue.points.RIGHT[4] < frame.rows[1].percentageValue.points.RIGHT[4],
+    "Name, amount, rate and percentage occupy non-overlapping columns"
+)
+session.totalAmount = 24690
+app:RefreshWindows()
+assert(frame.rows[1].percentageValue.args[1] == 50)
+session.totalAmount = secret
+app:RefreshWindows()
+assert(frame.rows[1].percentageValue.text == "", "Restricted totals clear a previously visible public percentage")
+session.totalAmount = nil
 frame.config.statistic = "Dps"
 app:RefreshWindows()
 assert(frame.rows[1]:IsShown())
 assert(
-    frame.rows[1].value.args[1] == "2.8" and frame.rows[1].value.args[2] == "12345",
+    frame.rows[1].value.text == "2.8" and frame.rows[1].secondaryValue.text == "12345",
     "Rate display must swap primary and secondary values"
 )
 frame.config.statistic = "Interrupts"
 Enum.DamageMeterType.Interrupts = 2
 app:RefreshWindows()
 assert(frame.rows[1].value.text == "12345", "Action counts must not show a rate")
+assert(not frame.rows[1].secondaryValue:IsShown(), "Switching to action counts hides the pooled rate column")
 frame.config.statistic = "DamageDone"
 app:AddWindow()
 local second = app.windows[2]

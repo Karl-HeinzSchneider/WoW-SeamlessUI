@@ -17,6 +17,9 @@ local anchors = {
 local settings = {
     { key = "width", name = "Width", type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = "Height", type = "range", min = 120, max = 900, step = 1 },
+    { key = "fixedHeight", name = "Fix height by visible lines", type = "toggle" },
+    { key = "visibleLines", name = "Visible lines", type = "range", min = 1, max = 30, step = 0.25 },
+    { key = "showResizeHandle", name = "Show resize handle", type = "toggle" },
     { key = "scale", name = "Scale", type = "range", min = 0.5, max = 2, step = 0.01 },
     {
         key = "font",

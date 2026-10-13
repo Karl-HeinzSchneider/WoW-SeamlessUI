@@ -58,6 +58,19 @@ favoriteLimit.set(nil, 3)
 assert(favoriteLimit.get() == 3 and refreshed == 1 and app.db.profile.favorites[2] == "HealingDone")
 local values = app.windowOptions.args.window2.args
 local defaults = app.windowOptions.args.defaults.args
+assert(defaults.fixedHeight.get() == false and defaults.visibleLines.get() == 7)
+assert(defaults.visibleLines.step == 0.25 and defaults.showResizeHandle.get() == true)
+fresh.overrides.fixedHeight = true
+for _, lines in ipairs({ 7, 7.25, 7.5, 7.75 }) do
+    fresh.overrides.visibleLines = lines
+    assert(app:GetWindowSetting(fresh, "height") == 40 + lines * 28 - 4)
+end
+fresh.overrides.rowHeight, fresh.overrides.rowSpacing = 20, 2
+assert(app:GetWindowSetting(fresh, "height") == 40 + 7.75 * 22 - 2)
+fresh.overrides.fixedHeight = false
+assert(app:GetWindowSetting(fresh, "height") == app.db.profile.windowDefaults.height)
+fresh.overrides.fixedHeight, fresh.overrides.visibleLines = nil, nil
+fresh.overrides.rowHeight, fresh.overrides.rowSpacing = nil, nil
 app.RebuildWindows = function() end
 app.db.profile.windowDefaults.classColors = false
 assert(defaults.classColors.get() == false)

@@ -99,10 +99,17 @@ Check sample names/classes/amounts for every statistic, and checkbox activation/
 persisting after exit and reload. Preview sessions are never saved.
 Width/Height custom sliders (EME setting 18) update existing size overrides immediately.
 Sync slider values from meter settings on rebuild and ignore callbacks outside Edit Mode.
-The resize grip stays visible and above the EME selection overlay while editing, including
+The resize grip, when enabled, stays visible and above the EME selection overlay while editing, including
 when normal dragging is locked. Synchronize its frame level on every layout refresh and use
 HIGH strata during Edit Mode so the top-level selection cannot cover it after being raised.
 Restore the window's strata on exit. Verify slider/grip resizing and persistence after exit/reload.
+
+`fixedHeight` defaults to false; `visibleLines` defaults to 7 and accepts 1–30 in quarter-line
+steps. Expanded height includes the header, body padding, row heights and spacing. Fixed
+height follows row appearance changes and constrains grip resizing to width; Edit Mode's
+height slider is ignored. Manual height is preserved for when fixed height is disabled.
+`showResizeHandle` defaults to true and hides/disables the grip in normal and Edit Mode.
+Both settings and the line count support shared defaults and per-window overrides.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone

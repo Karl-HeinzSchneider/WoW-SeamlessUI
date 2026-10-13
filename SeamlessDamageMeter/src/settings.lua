@@ -5,6 +5,9 @@ app.MAX_WINDOWS = 10
 app.windowDefaults = {
     width = 400,
     height = 200,
+    fixedHeight = false,
+    visibleLines = 7,
+    showResizeHandle = true,
     scale = 1,
     point = "CENTER",
     relativePoint = "CENTER",
@@ -25,6 +28,11 @@ app.windowDefaults = {
 }
 
 function app:GetWindowSetting(config, key)
+    if key == "height" and self:GetWindowSetting(config, "fixedHeight") then
+        local lines = self:GetWindowSetting(config, "visibleLines")
+        local spacing = self:GetWindowSetting(config, "rowSpacing")
+        return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
+    end
     local value = config.overrides and config.overrides[key]
     if value ~= nil then
         return value

@@ -33,6 +33,7 @@ function addon:OnEnable()
     app:EnsureTracking()
     self:RefreshProfile()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "RefreshData")
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", "RefreshProfile")
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
         if name:lower() == "damagemeterenabled" then
             self:RefreshData()

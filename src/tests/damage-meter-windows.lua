@@ -204,6 +204,7 @@ C_DamageMeter = {
         return history
     end,
 }
+local liveAPI = C_DamageMeter
 C_CVar = {
     GetCVarBool = function()
         return true
@@ -228,7 +229,8 @@ for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
 end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
-assert(frame.rows[1]:GetHeight() == 16 and frame.rows[1].entry:GetHeight() == 18)
+assert(frame.rows[1]:GetHeight() == 24 and frame.rows[1].entry:GetHeight() == 24)
+assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() == 24)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
 assert(frame.rows[1].name.args[2] == secret)
 assert(frame.rows[1].value.args[1] == secret)
@@ -346,10 +348,10 @@ app:RebuildWindows()
 assert(frame:GetHeight() == 32 and app:GetWindowSetting(frame.config, "height") == fullHeight)
 frame.collapse.scripts.OnClick()
 assert(frame:GetHeight() == fullHeight, "Expanding must not overwrite saved height with resize minimum")
-frame.scrollbar:SetValue(5)
-assert(frame.offset == 5 and not frame.localRow:IsShown())
-session.combatSources[6].totalAmount = 12345
-session.combatSources[6].amountPerSecond = 2.8
+frame.scrollbar:SetValue(7)
+assert(frame.offset == 7 and not frame.localRow:IsShown())
+session.combatSources[8].totalAmount = 12345
+session.combatSources[8].amountPerSecond = 2.8
 app:RefreshWindows()
 assert(frame.rows[1].value.args[1] == "12345" and frame.rows[1].value.args[2] == "2.8")
 frame.config.statistic = "Dps"
@@ -468,3 +470,231 @@ for id in pairs(app.windowFrames) do
 end
 assert(allocated == 10, "Repeated removal and creation must not grow the frame pool")
 print("Damage meter window regressions OK")
+
+-- Exercise the adapter against the library's exposed database contract and callbacks.
+local registered = 0
+local eme = { baseFramesDB = {}, framesDB = {} }
+function methods:HookScript(event, callback)
+    local original = self.scripts[event]
+    self.scripts[event] = function(...)
+        if original then
+            original(...)
+        end
+        callback(...)
+    end
+end
+function methods:SetChecked(value)
+    self.checked = value
+end
+function methods:GetChecked()
+    return self.checked
+end
+function eme:IsRegistered(frame)
+    return frame.system ~= nil
+end
+function eme:RegisterFrame(frame, name, db)
+    assert(name == "Seamless Damage " .. frame.windowID, "Edit Mode labels must use the compact slot name")
+    registered = registered + 1
+    frame.system = 100 + registered
+    frame.EMECheckButtonFrame = object(frame)
+    frame.Selection = object(frame)
+    self.baseFramesDB[frame.system], self.framesDB[frame.system] = db, db
+    frame.EMECheckButtonFrame:SetScript("OnClick", function(button, mouseButton)
+        if mouseButton == "LeftButton" then
+            self.framesDB[frame.system].enabled = button:GetChecked()
+            frame:SetShown(button:GetChecked())
+        end
+    end)
+    frame.SetScaleOverride = frame.SetScale
+end
+function eme:RegisterResizable(frame, minimum, maximum, step)
+    assert(minimum == 50 and maximum == 200 and step == 5)
+end
+function eme:RegisterSlider(frame, name, key, callback, minimum, maximum, step)
+    assert(name == (key == "width" and "Width" or "Height"))
+    assert(minimum == (key == "width" and 200 or 120))
+    assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    frame.editModeSliders = frame.editModeSliders or {}
+    frame.editModeSliders[key] = callback
+end
+function eme:SetDontResize(frame)
+    frame.EMEDontResize = true
+end
+function eme:IsFrameEnabled(frame)
+    return self.framesDB[frame.system].enabled
+end
+function methods:GetRect()
+    return self:GetLeft(), self:GetBottom(), self:GetSize()
+end
+function methods:GetScale()
+    return self.scale or 1
+end
+local combat = false
+function InCombatLockdown()
+    return combat
+end
+function hooksecurefunc(target, key, callback)
+    local original = target[key]
+    target[key] = function(...)
+        original(...)
+        callback(...)
+    end
+end
+Enum.EditModeLayoutType = { Character = 2 }
+EditModeManagerFrame = {
+    GetActiveLayoutInfo = function()
+        return { layoutType = 1, layoutName = "Test" }
+    end,
+    ExitEditMode = function(self)
+        self.editModeActive = false
+    end,
+    EnterEditMode = function(self)
+        self.editModeActive = true
+    end,
+}
+local originalLibStub = LibStub
+LibStub = function(name)
+    if name == "EditModeExpanded-1.0" then
+        return eme
+    end
+    return originalLibStub(name)
+end
+app.core.RefreshOptions = function() end
+app.addon = {
+    IsEnabled = function()
+        return true
+    end,
+}
+assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
+app:RebuildWindows()
+assert(registered == 10, "Every slot must register once, including inactive slots")
+local meter = app.windowFrames[1]
+assert(meter.EMEDontResize)
+assert(meter.resize:GetFrameLevel() > meter.Selection:GetFrameLevel(), "The drag grip must stay above selection")
+assert(eme.baseFramesDB[meter.system] == meter.config.editMode)
+assert(eme.framesDB[meter.system] == meter.config.editMode.profiles["1-Test"])
+meter.config.enabled = false
+meter.config.hidden = true
+EditModeManagerFrame.editModeActive = true
+app:RebuildWindows()
+assert(not meter:IsShown(), "Deactivated slots must default to hidden in Edit Mode")
+assert(not eme.framesDB[meter.system].enabled)
+local function ClickWindow(frame, enabled, mouseButton)
+    local button = frame.EMECheckButtonFrame
+    button:SetChecked(enabled)
+    button:GetScript("OnClick")(button, mouseButton or "LeftButton")
+end
+ClickWindow(meter, true)
+assert(meter:IsShown(), "Checking a slot must show its preview")
+assert(meter.config.enabled and not meter.config.hidden, "Checking must activate and unhide the real slot")
+meter.config.enabled = true
+app:RebuildWindows()
+meter.config.editMode.profiles["1-Other"] = { enabled = true, settings = {} }
+meter.config.enabled = false
+app:RebuildWindows()
+assert(not meter:IsShown(), "Deactivating a slot must reset its Edit Mode preview")
+assert(not meter.config.editMode.profiles["1-Other"].enabled, "Deactivation must update other native layouts")
+ClickWindow(meter, true)
+app:RebuildWindows()
+assert(meter:IsShown() and meter.config.enabled, "Activation survives ordinary rebuilds")
+meter:SetScaleOverride(1.25)
+assert(meter.config.overrides.scale == 1.25)
+assert(eme.framesDB[meter.system].settings[16] ~= nil)
+local originalDatabase = meter.config.editMode
+app.db.profile = { windows = {}, initialized = false, windowDefaults = app.windowDefaults }
+app:RebuildWindows()
+assert(registered == 10, "Profile changes must reuse library registrations")
+assert(meter.config.editMode ~= originalDatabase)
+assert(eme.baseFramesDB[meter.system] == meter.config.editMode, "Rebind the active AceDB profile")
+assert(meter.config.overrides.scale == nil, "Profile changes must preserve inheritance")
+assert(meter.config.overrides.x == nil and meter.config.overrides.y == nil)
+assert(meter:IsShown(), "The active default slot must be visible in Edit Mode")
+assert(not app.windowFrames[10]:IsShown(), "Fresh inactive slots must be unchecked")
+meter:SetScaleOverride(meter:GetScale())
+assert(meter.config.overrides.scale == nil, "An unchanged library scale must remain inherited")
+assert(
+    meter.config.overrides.x == nil and meter.config.overrides.y == nil,
+    "An unchanged library position stays inherited"
+)
+ClickWindow(meter, false)
+assert(not meter:IsShown() and not meter.config.enabled, "Unchecking must deactivate the real slot")
+ClickWindow(meter, true)
+ClickWindow(meter, false, "RightButton")
+assert(meter.config.enabled, "The library's right-click reset must not deactivate a slot")
+EditModeManagerFrame:ExitEditMode()
+assert(meter:IsShown() and meter.config.enabled, "A checked slot must remain usable after Edit Mode")
+
+local realAPI = liveAPI
+C_DamageMeter = setmetatable({}, {
+    __index = function(_, key)
+        return function()
+            error("Edit Mode must never query live damage data: " .. key)
+        end
+    end,
+})
+meter.config.collapsed = true
+local normalCombatState = UnitAffectingCombat
+UnitAffectingCombat = function()
+    return true
+end
+EditModeManagerFrame:EnterEditMode()
+assert(meter.config.collapsed and meter.body:IsShown(), "Collapsed slots must temporarily expand for preview")
+assert(meter:GetHeight() == app:GetWindowSetting(meter.config, "height"))
+assert(meter.session.text.text == "Preview")
+assert(meter.rows[1].name.args[2] == "Jaina" and meter.rows[1].icon.atlas == "MAGE")
+assert(meter.rows[1].statusValue == 125000 and meter.rows[2].statusValue == 112000)
+app.db.profile.locked = true
+meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
+assert(meter.editing, "Edit Mode must allow the resize grip even when normal dragging is locked")
+meter.editing = nil
+local inheritedWidth = app:GetWindowSetting(meter.config, "width")
+meter.editModeSliders.width(inheritedWidth)
+assert(meter.config.overrides.width == nil, "Unchanged sliders must preserve inheritance")
+meter.editModeSliders.width(650)
+meter.editModeSliders.height(450)
+assert(meter:GetWidth() == 650 and meter:GetHeight() == 450, "Sliders must resize the preview immediately")
+assert(meter.config.overrides.width == 650 and meter.config.overrides.height == 450)
+assert(eme.framesDB[meter.system].settings[18].width == 650)
+assert(eme.framesDB[meter.system].settings[18].height == 450)
+for _, statistic in ipairs(app.statistics) do
+    meter.config.statistic = statistic.key
+    meter.config.sessionID = 999
+    app:RefreshWindows()
+    local sample = app:GetSession(meter.config)
+    assert(sample.isPreview and #sample.combatSources == 9)
+    assert(sample.combatSources[9].classFilename == "PRIEST")
+    if statistic.key == "Interrupts" or statistic.key == "Dispels" then
+        assert(sample.maxAmount == 27 and sample.combatSources[1].totalAmount == 27)
+    end
+end
+meter.config.sessionID = nil
+meter.config.statistic = "DamageDone"
+C_DamageMeter = realAPI
+UnitAffectingCombat = normalCombatState
+EditModeManagerFrame:ExitEditMode()
+assert(meter.config.collapsed and not meter.body:IsShown() and meter:GetHeight() == 32)
+assert(meter.session.text.text ~= "Preview", "Exiting must clear sample labels")
+assert(meter:GetWidth() == 650 and app:GetWindowSetting(meter.config, "height") == 450)
+meter.editModeSliders.width(700)
+assert(meter:GetWidth() == 650, "Native layout callbacks outside Edit Mode must not overwrite meter size")
+assert(not app:GetSession(meter.config).isPreview, "Exiting must restore live data")
+meter.config.hidden = true
+EditModeManagerFrame:ExitEditMode()
+assert(not meter:IsShown(), "Exit must restore the profile's normal visibility")
+local savedX = meter.config.overrides.x
+local originalCenter = methods.GetCenter
+function methods:GetCenter()
+    if self.testCenter then
+        return self.testCenter, 0
+    end
+    return originalCenter(self)
+end
+meter.testCenter = 200
+meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 10, 10)
+assert(meter.config.overrides.x ~= savedX, "Library movement must update meter overrides")
+assert(meter.point[1] == "BOTTOMLEFT", "Saving library movement must not recursively reposition")
+combat = true
+savedX = meter.config.overrides.x
+meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 20, 20)
+assert(meter.config.overrides.x == savedX, "Do not inspect restricted geometry in combat")
+print("Damage meter Edit Mode regressions OK")

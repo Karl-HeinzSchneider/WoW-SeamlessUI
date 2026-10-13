@@ -30,6 +30,9 @@ function app:GetStatistic(key)
 end
 
 function app:GetSession(config)
+    if self.IsEditingWindows and self:IsEditingWindows() then
+        return self:GetPreviewSession(config)
+    end
     if not self:IsAvailable() then
         return nil, "This client does not provide the damage meter API."
     end
@@ -58,4 +61,37 @@ function app:GetSession(config)
         Enum.DamageMeterSessionType[config.session] or Enum.DamageMeterSessionType.Current,
         meterType
     )
+end
+
+local previewCharacters = {
+    { "Jaina", "MAGE", 125000 },
+    { "Thrall", "SHAMAN", 112000 },
+    { "Grommash", "WARRIOR", 98000 },
+    { "Rexxar", "HUNTER", 85000 },
+    { "Gul'dan", "WARLOCK", 71000 },
+    { "Garona", "ROGUE", 59000 },
+    { "Uther", "PALADIN", 46000 },
+    { "Malfurion", "DRUID", 33000 },
+    { "Tyrande", "PRIEST", 21000 },
+}
+local previewSessions = {}
+
+function app:GetPreviewSession(config)
+    local key = config.statistic
+    if not previewSessions[key] then
+        local session = { combatSources = {}, durationSeconds = 60, isPreview = true }
+        local counts = key == "Interrupts" or key == "Dispels"
+        for index, character in ipairs(previewCharacters) do
+            local amount = counts and (30 - index * 3) or character[3]
+            session.combatSources[index] = {
+                name = character[1],
+                classFilename = character[2],
+                totalAmount = amount,
+                amountPerSecond = amount / session.durationSeconds,
+            }
+        end
+        session.maxAmount = session.combatSources[1].totalAmount
+        previewSessions[key] = session
+    end
+    return previewSessions[key]
 end

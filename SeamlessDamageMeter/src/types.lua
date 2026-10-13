@@ -8,3 +8,4 @@
 ---@field MAX_WINDOWS integer
 ---@field windowDefaults table
 ---@field windowOptions table
+---@field editModeHooked boolean?

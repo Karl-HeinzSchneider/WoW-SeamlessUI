@@ -7,6 +7,7 @@ statistic/session selections. Combat data stays owned by `C_DamageMeter`.
 Load order: `core.lua` (lifecycle/database), `data.lua` (client API adapter),
 `blizzard.lua` (turns tracking on, keeps the game's meter window hidden),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
+`editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
 `windows.lua` (pooled frames and menus), `options.lua` (General, Windows, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
@@ -36,14 +37,17 @@ fields migrate into overrides. Dragging overrides X/Y, resizing also overrides w
 anchor target preserves the attachment and its geometry. Defaults are profile scoped.
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
-mixins. Reuse client art and fonts. The header is 32 pixels tall; rows are 18 pixels with
+mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default to 24 pixels with
 4 pixels between them. The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
 from hiding a window. Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass
 through number abbreviation. An offscreen local player stays visible in a separate row.
-Rows clip the fixed-size icon and bar art to their entry bounds. Amount-based statistics
+Rows use full square icons sized to the row height and an original grayscale shaded fill
+with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
+is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
+the generator uses only our own formula and reads no reference assets. Amount-based statistics
 show total and rate in compact form; DPS/HPS swap their order, and action counts omit rates.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`
@@ -62,6 +66,29 @@ statistic keys by slot, independently per window and profile; all slots start em
 Empty slots open the type menu to assign a favorite without changing the displayed type.
 Assigned slots switch the displayed type immediately; right-click them to replace or clear.
 Only one favorites view is open at a time. Hide, collapse and profile rebuild dismiss it.
+
+All ten slots register with EditModeExpanded-1.0, embedded unchanged from `_libs` in
+Core. Each window's `editMode` table stores native layout settings inside its AceDB
+profile. The adapter rebinds the library's exposed `baseFramesDB`/`framesDB` tables
+(minor 121) because RegisterFrame cannot replace a pooled frame's database. Meter
+settings seed the current native layout on rebuild; library moves and scale changes
+update meter overrides while preserving independent anchor points and collapse offsets.
+Inactive slots default to unchecked in Edit Mode. Left-clicking the Expanded checkbox
+activates/unhides or deactivates the real addon slot; right-click remains the library's
+position reset. Synchronize checkbox state from real slot activation across native layouts.
+Edit Mode uses only local classic-character sample sessions, even when tracking is off,
+the API is absent or the selected history expired. Never read live combat data or duration
+while editing. Collapsed windows expand visually without changing their saved collapse
+flag; entering and exiting immediately refreshes content and geometry. Labels are
+"Seamless Damage 1" through "Seamless Damage 10". Exit restores normal
+visibility and movability. Verify Edit Mode dragging, arrow keys, scaling, native layout
+changes, collapsed windows, linked anchors, AceDB switch/copy/reset and reload in game.
+Check sample names/classes/amounts for every statistic, and checkbox activation/deactivation
+persisting after exit and reload. Preview sessions are never saved.
+Width/Height custom sliders (EME setting 18) update existing size overrides immediately.
+Sync slider values from meter settings on rebuild and ignore callbacks outside Edit Mode.
+The resize grip stays visible and above the EME selection overlay while editing, including
+when normal dragging is locked. Verify slider/grip resizing and persistence after exit/reload.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone

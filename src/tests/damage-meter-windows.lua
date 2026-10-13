@@ -29,7 +29,10 @@ function methods:SetParent(parent)
     self.parent = parent
 end
 function methods:GetFrameLevel()
-    return 1
+    return self.frameLevel or 1
+end
+function methods:SetFrameLevel(level)
+    self.frameLevel = level
 end
 function methods:SetPoint(...)
     self.point = { ... }
@@ -378,6 +381,7 @@ function eme:RegisterFrame(frame, name, db)
     registered = registered + 1
     frame.system = 100 + registered
     frame.EMECheckButtonFrame = object(frame)
+    frame.Selection = object(frame)
     self.baseFramesDB[frame.system], self.framesDB[frame.system] = db, db
     frame.EMECheckButtonFrame:SetScript("OnClick", function(button, mouseButton)
         if mouseButton == "LeftButton" then
@@ -389,6 +393,13 @@ function eme:RegisterFrame(frame, name, db)
 end
 function eme:RegisterResizable(frame, minimum, maximum, step)
     assert(minimum == 50 and maximum == 200 and step == 5)
+end
+function eme:RegisterSlider(frame, name, key, callback, minimum, maximum, step)
+    assert(name == (key == "width" and "Width" or "Height"))
+    assert(minimum == (key == "width" and 200 or 120))
+    assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    frame.editModeSliders = frame.editModeSliders or {}
+    frame.editModeSliders[key] = callback
 end
 function eme:SetDontResize(frame)
     frame.EMEDontResize = true
@@ -443,6 +454,7 @@ app:RebuildWindows()
 assert(registered == 10, "Every slot must register once, including inactive slots")
 local meter = app.windowFrames[1]
 assert(meter.EMEDontResize)
+assert(meter.resize:GetFrameLevel() > meter.Selection:GetFrameLevel(), "The drag grip must stay above selection")
 assert(eme.baseFramesDB[meter.system] == meter.config.editMode)
 assert(eme.framesDB[meter.system] == meter.config.editMode.profiles["1-Test"])
 meter.config.enabled = false
@@ -515,6 +527,19 @@ assert(meter:GetHeight() == app:GetWindowSetting(meter.config, "height"))
 assert(meter.session.text.text == "Preview")
 assert(meter.rows[1].name.args[2] == "Jaina" and meter.rows[1].icon.atlas == "MAGE")
 assert(meter.rows[1].statusValue == 125000 and meter.rows[2].statusValue == 112000)
+app.db.profile.locked = true
+meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
+assert(meter.editing, "Edit Mode must allow the resize grip even when normal dragging is locked")
+meter.editing = nil
+local inheritedWidth = app:GetWindowSetting(meter.config, "width")
+meter.editModeSliders.width(inheritedWidth)
+assert(meter.config.overrides.width == nil, "Unchanged sliders must preserve inheritance")
+meter.editModeSliders.width(650)
+meter.editModeSliders.height(450)
+assert(meter:GetWidth() == 650 and meter:GetHeight() == 450, "Sliders must resize the preview immediately")
+assert(meter.config.overrides.width == 650 and meter.config.overrides.height == 450)
+assert(eme.framesDB[meter.system].settings[18].width == 650)
+assert(eme.framesDB[meter.system].settings[18].height == 450)
 for _, statistic in ipairs(app.statistics) do
     meter.config.statistic = statistic.key
     meter.config.sessionID = 999
@@ -533,6 +558,9 @@ UnitAffectingCombat = normalCombatState
 EditModeManagerFrame:ExitEditMode()
 assert(meter.config.collapsed and not meter.body:IsShown() and meter:GetHeight() == 32)
 assert(meter.session.text.text ~= "Preview", "Exiting must clear sample labels")
+assert(meter:GetWidth() == 650 and app:GetWindowSetting(meter.config, "height") == 450)
+meter.editModeSliders.width(700)
+assert(meter:GetWidth() == 650, "Native layout callbacks outside Edit Mode must not overwrite meter size")
 assert(not app:GetSession(meter.config).isPreview, "Exiting must restore live data")
 meter.config.hidden = true
 EditModeManagerFrame:ExitEditMode()

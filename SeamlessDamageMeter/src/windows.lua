@@ -541,7 +541,10 @@ function app:CreateWindow(id)
         "damagemeters-scalehandle-hover"
     )
     resize:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" and not self.db.profile.locked then
+        if
+            button == "LeftButton"
+            and (not self.db.profile.locked or (self.IsEditingWindows and self:IsEditingWindows()))
+        then
             frame.editing = true
             frame:StartSizing("BOTTOMRIGHT")
         end
@@ -599,7 +602,8 @@ function app:CreateWindow(id)
     frame.scrollbar = scrollbar
     frame:SetScript("OnUpdate", function(_, elapsed)
         local hover = frame:IsMouseOver() and not self:IsWindowCollapsed(frame.config)
-        local resizeTarget = hover and not self.db.profile.locked and 1 or 0
+        local editing = self.IsEditingWindows and self:IsEditingWindows()
+        local resizeTarget = (editing or (hover and not self.db.profile.locked)) and 1 or 0
         local scrollTarget = hover and 1 or 0.3
         local step = math.min(1, elapsed / 0.25)
         resize:SetAlpha(resize:GetAlpha() + (resizeTarget - resize:GetAlpha()) * step)

@@ -3,6 +3,23 @@ local _, app = ...
 
 local lib = LibStub("EditModeExpanded-1.0")
 local SCALE_SETTING = 16 -- EditModeExpanded's FrameSize setting.
+local SLIDER_SETTING = 18 -- EditModeExpanded's custom sliders.
+
+local function ResizeWindow(frame, key, value)
+    if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
+        return
+    end
+    if value == app:GetWindowSetting(frame.config, key) then
+        return
+    end
+    frame.config.overrides[key] = value
+    frame.applyingLayout = true
+    frame:SetSize(app:GetWindowSetting(frame.config, "width"), app:GetWindowSetting(frame.config, "height"))
+    frame.applyingLayout = nil
+    app:ApplyWindowLayout(frame)
+    app:RefreshWindows()
+    app.core:RefreshOptions("SeamlessDamageMeter")
+end
 
 function app:IsEditingWindows()
     return EditModeManagerFrame and EditModeManagerFrame.editModeActive
@@ -35,7 +52,15 @@ function app:SyncWindowEditMode(frame)
     if not lib:IsRegistered(frame) then
         lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
         lib:RegisterResizable(frame, 50, 200, 5)
+        lib:RegisterSlider(frame, "Width", "width", function(value)
+            ResizeWindow(frame, "width", value)
+        end, 200, 800, 1)
+        lib:RegisterSlider(frame, "Height", "height", function(value)
+            ResizeWindow(frame, "height", value)
+        end, 120, 900, 1)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
+        -- Keep the drag grip above the library's selection overlay.
+        frame.resize:SetFrameLevel(frame.Selection:GetFrameLevel() + 1)
         frame.EMECheckButtonFrame:HookScript("OnClick", function(button, mouseButton)
             if mouseButton == "LeftButton" and app:IsEditingWindows() and not InCombatLockdown() then
                 app:SetWindowEnabled(frame.config, button:GetChecked())
@@ -96,6 +121,9 @@ function app:SyncWindowEditMode(frame)
     db.defaultX, db.defaultY = db.x, db.y
     db.defaultScale = frame:GetScale()
     db.settings[SCALE_SETTING] = frame:GetScale() * 100
+    db.settings[SLIDER_SETTING] = db.settings[SLIDER_SETTING] or {}
+    db.settings[SLIDER_SETTING].width = self:GetWindowSetting(config, "width")
+    db.settings[SLIDER_SETTING].height = self:GetWindowSetting(config, "height")
     if db.enabled == nil then
         db.enabled = config.enabled
     end

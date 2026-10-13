@@ -35,7 +35,8 @@ are unchecked by default; checking an entry activates and unhides that window fo
 play, while unchecking deactivates it. Edit Mode displays sample bars with classic WoW
 characters, class colors and example amounts instead of reading live combat data.
 Collapsed windows temporarily expand to show the preview. Select a window to move it
-or adjust its scale. Leaving Edit Mode restores live data and the saved collapse state.
+or adjust its scale. Use the Width/Height sliders in its Edit Mode dialog or drag the
+visible bottom-right grip to resize it. Leaving Edit Mode restores live data and the saved collapse state.
 Edit Mode changes update
 the window's position and scale overrides in the current Damage Meter profile.
 The built-in meter's visibility remains controlled by the game's own settings; keep tracking

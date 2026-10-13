@@ -149,8 +149,9 @@ function app:SetWindowEnabled(config, enabled)
     self:RebuildWindows()
 end
 
-function app:ShowStatisticMenu(frame)
-    MenuUtil.CreateContextMenu(frame.statistic, function(_, root)
+function app:ShowStatisticMenu(frame, favoriteSlot, owner)
+    local config = frame.config
+    MenuUtil.CreateContextMenu(owner or frame.statistic, function(_, root)
         local categories = {
             {
                 DAMAGE_METER_CATEGORY_DAMAGE or "Damage",
@@ -165,16 +166,97 @@ function app:ShowStatisticMenu(frame)
                 local statistic = self:GetStatistic(key)
                 if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
                     menu:CreateRadio(statistic.label, function()
-                        return frame.config.statistic == key
+                        if favoriteSlot then
+                            return config.favorites[favoriteSlot] == key
+                        end
+                        return config.statistic == key
                     end, function()
-                        frame.config.statistic = key
+                        if frame.config ~= config then
+                            return
+                        end
+                        if favoriteSlot then
+                            config.favorites[favoriteSlot] = key
+                            self:UpdateFavorites(frame)
+                            return
+                        end
+                        config.statistic = key
                         frame.offset = 0
+                        frame.favorites:Hide()
                         self:RefreshWindows()
                     end)
                 end
             end
         end
+        if favoriteSlot and config.favorites[favoriteSlot] then
+            root:CreateDivider()
+            root:CreateButton("Clear favorite", function()
+                if frame.config == config then
+                    config.favorites[favoriteSlot] = nil
+                    self:UpdateFavorites(frame)
+                end
+            end)
+        end
     end)
+end
+
+function app:UpdateFavorites(frame)
+    for slot, button in ipairs(frame.favorites.buttons) do
+        local key = frame.config.favorites[slot]
+        button:SetText(key and self:GetStatistic(key).label or ("+ Set favorite %d"):format(slot))
+    end
+end
+
+function app:ToggleFavorites(frame)
+    if frame.favorites:IsShown() then
+        frame.favorites:Hide()
+        return
+    end
+    for _, other in ipairs(self.windows) do
+        other.favorites:Hide()
+    end
+    self:UpdateFavorites(frame)
+    frame.favorites:Show()
+end
+
+local function CreateFavorites(frame)
+    local overlay = CreateFrame("Frame", nil, frame)
+    frame.favorites = overlay
+    overlay:SetSize(190, 212)
+    overlay:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -HEADER_HEIGHT)
+    overlay:SetFrameLevel(frame:GetFrameLevel() + 20)
+    overlay:EnableMouse(true)
+    local background = overlay:CreateTexture(nil, "BACKGROUND")
+    background:SetAtlas("damagemeters-background")
+    background:SetAllPoints()
+    background:SetVertexColor(0.12, 0.12, 0.12, 1)
+    local heading = Label(overlay, "GameFontNormalSmall")
+    heading:SetPoint("TOPLEFT", 10, -10)
+    heading:SetText("Favorites")
+    local close = Button(overlay, "X", 22, function()
+        overlay:Hide()
+    end)
+    close:SetPoint("TOPRIGHT", -4, -4)
+    overlay.buttons = {}
+    for slot = 1, 6 do
+        local button = Button(overlay, "", 170, function(owner, mouseButton)
+            local key = frame.config.favorites[slot]
+            if mouseButton == "RightButton" or not key then
+                app:ShowStatisticMenu(frame, slot, owner)
+            elseif app:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                frame.config.statistic = key
+                frame.offset = 0
+                overlay:Hide()
+                app:RefreshWindows()
+            end
+        end)
+        button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        button:SetPoint("TOPLEFT", 10, -30 - (slot - 1) * 25)
+        overlay.buttons[slot] = button
+    end
+    local hint = Label(overlay)
+    hint:SetPoint("BOTTOMLEFT", 10, 8)
+    hint:SetText("Right-click a favorite to edit")
+    overlay:Hide()
 end
 
 function app:ShowSessionMenu(frame)
@@ -615,10 +697,26 @@ function app:CreateWindow(id)
     frame.body:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
     scrollbar:EnableMouseWheel(true)
     scrollbar:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
+    CreateFavorites(frame)
+    -- Mouse-enabled children consume clicks, so route their right-clicks too.
+    for _, region in ipairs({ frame, frame.body, title, frame.statistic, frame.session, close, menu, scrollbar, resize }) do
+        local mouseUp = region:GetScript("OnMouseUp")
+        region:SetScript("OnMouseUp", function(owner, button)
+            if button == "RightButton" then
+                self:ToggleFavorites(frame)
+            elseif mouseUp then
+                mouseUp(owner, button)
+            end
+        end)
+    end
+    frame:SetScript("OnHide", function()
+        frame.favorites:Hide()
+    end)
     return frame
 end
 
 function app:ApplyWindowLayout(frame)
+    frame.favorites:Hide()
     local config = frame.config
     frame.applyingLayout = true
     frame:SetResizeBounds(200, config.collapsed and HEADER_HEIGHT or 120, 800, 900)

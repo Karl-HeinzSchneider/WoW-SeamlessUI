@@ -93,6 +93,7 @@ function app:PrepareWindowSettings()
     end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
+        config.favorites = config.favorites or {}
         -- Keep old layouts while all new windows inherit the profile defaults.
         for _, key in ipairs({ "width", "height", "x", "y" }) do
             if config[key] ~= nil then

@@ -53,6 +53,12 @@ The frame's `windowID` is stable; `config` always reflects its currently bound p
 including while inactive. This is an authorized
 exception to the repository's default rule against additional globals.
 
+Right-click a window to toggle its six-slot favorites overlay. `config.favorites` stores
+statistic keys by slot, independently per window and profile; all slots start empty.
+Empty slots open the type menu to assign a favorite without changing the displayed type.
+Assigned slots switch the displayed type immediately; right-click them to replace or clear.
+Only one favorites overlay is open at a time. Hide, collapse and profile rebuild dismiss it.
+
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone
 window regression harness (template independence, restricted data, collapse persistence,

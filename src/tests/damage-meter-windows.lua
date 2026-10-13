@@ -240,8 +240,9 @@ assert(frame.statistic:GetFrameLevel() == 2 and frame.session:GetFrameLevel() ==
 local menuRoot
 local function menuDescription(label)
     local description = { label = label, entries = {} }
-    function description:CreateButton(text)
+    function description:CreateButton(text, choose)
         local child = menuDescription(text)
+        child.choose = choose
         table.insert(self.entries, child)
         return child
     end
@@ -297,6 +298,31 @@ deaths.choose()
 assert(lastMeterType == Enum.DamageMeterType.Deaths)
 damage.choose()
 local fullHeight = app:GetWindowSetting(frame.config, "height")
+assert(next(frame.config.favorites) == nil and not frame.favorites:IsShown())
+frame.scripts.OnMouseUp(frame, "LeftButton")
+assert(not frame.favorites:IsShown())
+frame.scripts.OnMouseUp(frame, "RightButton")
+assert(frame.favorites:IsShown() and #frame.favorites.buttons == 6)
+local favorite = frame.favorites.buttons[1]
+favorite.scripts.OnClick(favorite, "LeftButton")
+assert(not menuRoot.entries[1].entries[1].selected(), "Empty favorites have no selected type")
+menuRoot.entries[1].entries[2].choose()
+assert(frame.config.favorites[1] == "Dps" and frame.config.statistic == "DamageDone")
+assert(favorite.text == "DPS" and frame.favorites:IsShown())
+frame.offset = 5
+favorite.scripts.OnClick(favorite, "LeftButton")
+assert(frame.config.statistic == "Dps" and frame.offset == 0 and not frame.favorites:IsShown())
+assert(lastMeterType == Enum.DamageMeterType.Dps)
+app:RebuildWindows()
+assert(frame.config.favorites[1] == "Dps", "Rebuilding must preserve assigned favorites")
+frame.scripts.OnMouseUp(frame, "RightButton")
+favorite.scripts.OnClick(favorite, "RightButton")
+assert(menuRoot.entries[1].entries[2].selected())
+menuRoot.entries[#menuRoot.entries].choose()
+assert(frame.config.favorites[1] == nil and favorite.text == "+ Set favorite 1")
+frame.scripts.OnMouseUp(frame, "RightButton")
+assert(not frame.favorites:IsShown(), "Right-clicking again dismisses the overlay")
+damage.choose()
 frame.collapse.scripts.OnClick()
 assert(frame:IsShown() and not frame.body:IsShown())
 assert(app:GetWindowSetting(frame.config, "height") == fullHeight and frame:GetHeight() == 32)
@@ -327,6 +353,13 @@ frame.config.statistic = "DamageDone"
 app:AddWindow()
 local second = app.windows[2]
 assert(SeamlessDamageMeterWindow2 == second)
+frame.config.favorites[1] = "Dps"
+assert(next(second.config.favorites) == nil, "Favorites belong to each window independently")
+app:ToggleFavorites(frame)
+app:ToggleFavorites(second)
+assert(not frame.favorites:IsShown() and second.favorites:IsShown())
+app:ApplyWindowLayout(second)
+assert(not second.favorites:IsShown())
 reads = 0
 app:RefreshWindows()
 assert(reads == 1, "Matching windows should share one API read")

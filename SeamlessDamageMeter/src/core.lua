@@ -7,7 +7,14 @@ local addon = app.addon
 
 function addon:OnInitialize()
     app.db = LibStub("AceDB-3.0"):New("SeamlessDamageMeterDB", {
-        profile = { windows = {}, nextID = 1, initialized = false, locked = false, hideBlizzard = true },
+        profile = {
+            windows = {},
+            nextID = 1,
+            initialized = false,
+            locked = false,
+            hideBlizzard = true,
+            windowDefaults = app.windowDefaults,
+        },
     }, true)
     app.db.RegisterCallback(self, "OnProfileChanged", "RefreshProfile")
     app.db.RegisterCallback(self, "OnProfileCopied", "RefreshProfile")

@@ -4,3 +4,6 @@
 ---@field db AceDBObject-3.0
 ---@field windows table[]
 ---@field statistics table[]
+---@field MAX_WINDOWS integer
+---@field windowDefaults table
+---@field windowOptions table

@@ -2,8 +2,6 @@
 local _, app = ...
 
 app.windows = {}
-local ROW_HEIGHT = 25
-local ROW_SPACING = 4
 local HEADER_HEIGHT = 32
 
 local function Label(parent, font)
@@ -41,13 +39,30 @@ local function Selector(parent, callback)
     return button
 end
 
-local function SaveGeometry(frame)
+local function AnchorCoordinates(frame, point)
+    local x = point:find("LEFT") and frame:GetLeft() or point:find("RIGHT") and frame:GetRight() or frame:GetCenter()
+    local _, centerY = frame:GetCenter()
+    local y = point:find("TOP") and frame:GetTop() or point:find("BOTTOM") and frame:GetBottom() or centerY
+    return x * frame:GetEffectiveScale(), y * frame:GetEffectiveScale()
+end
+
+local function SaveGeometry(frame, resizing)
     frame:StopMovingOrSizing()
-    local x, y = frame:GetCenter()
-    local centerX, centerY = UIParent:GetCenter()
-    frame.config.x, frame.config.y = x - centerX, y - centerY
-    frame.config.width, frame.config.height = frame:GetSize()
+    if not frame.editing then
+        return
+    end
+    frame.editing = nil
+    local config = frame.config
+    local x, y = AnchorCoordinates(frame, app:GetWindowSetting(config, "point"))
+    local targetX, targetY =
+        AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
+    config.overrides.x, config.overrides.y =
+        (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale()
+    if resizing then
+        config.overrides.width, config.overrides.height = frame:GetSize()
+    end
     frame:SetUserPlaced(false)
+    app:RebuildWindows()
 end
 
 function app:HideWindows()
@@ -58,15 +73,15 @@ end
 
 function app:AddWindow()
     local profile = self.db.profile
-    local offset = (#profile.windows % 6) * 28
+    if #profile.windows >= self.MAX_WINDOWS then
+        self.core.logger:chat("You can create up to " .. self.MAX_WINDOWS .. " meter windows.")
+        return
+    end
     local config = {
         id = profile.nextID,
         statistic = "DamageDone",
         session = "Current",
-        width = 400,
-        height = 200,
-        x = offset,
-        y = -offset,
+        overrides = {},
     }
     profile.nextID = profile.nextID + 1
     profile.initialized = true
@@ -75,6 +90,18 @@ function app:AddWindow()
 end
 
 function app:RemoveWindow(config)
+    -- Preserve the screen position of windows whose anchor is being removed.
+    for index, dependent in ipairs(self.db.profile.windows) do
+        local frame = self.windows[index]
+        if frame and dependent.anchorTo == config.id then
+            local x, y = AnchorCoordinates(frame, "CENTER")
+            local centerX, centerY = AnchorCoordinates(UIParent, "CENTER")
+            frame.config.anchorTo = nil
+            frame.config.overrides.point, frame.config.overrides.relativePoint = "CENTER", "CENTER"
+            frame.config.overrides.x = (x - centerX) / frame:GetEffectiveScale()
+            frame.config.overrides.y = (y - centerY) / frame:GetEffectiveScale()
+        end
+    end
     for index, candidate in ipairs(self.db.profile.windows) do
         if candidate == config then
             table.remove(self.db.profile.windows, index)
@@ -130,8 +157,6 @@ end
 
 local function CreateRow(frame, index)
     local row = CreateFrame("StatusBar", nil, frame)
-    row:SetHeight(ROW_HEIGHT - 2)
-    row:SetPoint("TOPLEFT", 25, -HEADER_HEIGHT - 1 - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
     row:SetPoint("RIGHT", -4, 0)
     local fill = row:CreateTexture(nil, "ARTWORK")
     fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
@@ -140,6 +165,7 @@ local function CreateRow(frame, index)
     background:SetPoint("TOPLEFT", -2, 2)
     background:SetPoint("BOTTOMRIGHT", 2, -2)
     background:SetAtlas("ui-damagemeters-bar-shadowbg")
+    row.background = background
     local edge = row:CreateTexture(nil, "OVERLAY")
     edge:SetPoint("TOPLEFT", -2, 2)
     edge:SetPoint("BOTTOMRIGHT", 2, -2)
@@ -170,7 +196,9 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:SetText(statistic.label)
     frame.session.text:SetText(config.sessionName or config.session)
     local sources = session and session.combatSources or {}
-    local capacity = math.max(1, math.floor((frame:GetHeight() - HEADER_HEIGHT) / (ROW_HEIGHT + ROW_SPACING)))
+    local rowHeight = self:GetWindowSetting(config, "rowHeight")
+    local rowSpacing = self:GetWindowSetting(config, "rowSpacing")
+    local capacity = math.max(1, math.floor((frame:GetHeight() - HEADER_HEIGHT) / (rowHeight + rowSpacing)))
     frame.offset = math.max(0, math.min(frame.offset, #sources - capacity))
     for _, row in ipairs(frame.rows) do
         row:Hide()
@@ -180,6 +208,14 @@ function app:RefreshWindow(frame, session, message)
         local sourceIndex = index + frame.offset
         local source = sources[sourceIndex]
         local row = frame.rows[index] or CreateRow(frame, index)
+        row:SetHeight(rowHeight - 2)
+        row:ClearAllPoints()
+        row:SetPoint("TOPLEFT", rowHeight, -HEADER_HEIGHT - 1 - (index - 1) * (rowHeight + rowSpacing))
+        row:SetPoint("RIGHT", -4, 0)
+        row.icon:SetSize(rowHeight - 1, rowHeight - 1)
+        for _, label in ipairs({ row.rank, row.name, row.value }) do
+            self:StyleWindowLabel(label, config)
+        end
         row.rank:SetText(sourceIndex)
         row.name:SetText(source.name)
         if source.specIconID and source.specIconID ~= 0 then
@@ -197,10 +233,10 @@ function app:RefreshWindow(frame, session, message)
         row:SetMinMaxValues(0, session.maxAmount)
         row:SetValue(source.totalAmount)
         local color = RAID_CLASS_COLORS[source.classFilename]
-        if color then
+        if color and self:GetWindowSetting(config, "classColors") then
             row:SetStatusBarColor(color.r, color.g, color.b, 1)
         else
-            row:SetStatusBarColor(0.35, 0.6, 0.8, 1)
+            row:SetStatusBarColor(unpack(self:GetWindowSetting(config, "barColor")))
         end
         row:Show()
     end
@@ -233,11 +269,15 @@ function app:CreateWindow()
     frame:SetResizable(true)
     frame:SetResizeBounds(320, 120, 800, 900)
     frame:EnableMouse(true)
+    local background = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    background:SetAllPoints()
+    frame.background = background
     local header = frame:CreateTexture(nil, "BACKGROUND")
     header:SetAtlas("ui-damagemeters-header-bar")
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
     header:SetHeight(HEADER_HEIGHT)
+    frame.header = header
 
     local title = CreateFrame("Frame", nil, frame)
     title:SetPoint("TOPLEFT")
@@ -248,6 +288,7 @@ function app:CreateWindow()
     title:RegisterForDrag("LeftButton")
     title:SetScript("OnDragStart", function()
         if not app.db.profile.locked then
+            frame.editing = true
             frame:StartMoving()
         end
     end)
@@ -257,6 +298,7 @@ function app:CreateWindow()
     local close = Button(frame, "", 18, function()
         frame.config.hidden = true
         frame:Hide()
+        self:UpdateWindowOptions()
     end)
     close:SetSize(18, 19)
     close:SetPoint("TOPRIGHT", -3, -5)
@@ -272,7 +314,7 @@ function app:CreateWindow()
                 self:AddWindow()
             end)
             root:CreateButton("Damage Meter settings", function()
-                self.core:OpenOptions("SeamlessDamageMeter")
+                self.core:OpenOptions("SeamlessDamageMeter", "windows")
             end)
             root:CreateButton("Remove this window", function()
                 self:RemoveWindow(frame.config)
@@ -318,15 +360,17 @@ function app:CreateWindow()
     )
     resize:SetScript("OnMouseDown", function(_, button)
         if button == "LeftButton" and not self.db.profile.locked then
+            frame.editing = true
             frame:StartSizing("BOTTOMRIGHT")
         end
     end)
     resize:SetScript("OnMouseUp", function()
-        SaveGeometry(frame)
+        SaveGeometry(frame, true)
         self:RefreshWindows()
     end)
     frame:SetScript("OnHide", function()
         frame:StopMovingOrSizing()
+        frame.editing = nil
     end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta)
@@ -337,6 +381,7 @@ function app:CreateWindow()
 end
 
 function app:RebuildWindows()
+    self:PrepareWindowSettings()
     self:HideWindows()
     if not self.db.profile.initialized then
         self:AddWindow()
@@ -350,9 +395,48 @@ function app:RebuildWindows()
         end
         frame.config, frame.offset = config, 0
         frame:ClearAllPoints()
-        frame:SetSize(config.width, config.height)
-        frame:SetPoint("CENTER", UIParent, "CENTER", config.x, config.y)
+        frame:SetScale(self:GetWindowSetting(config, "scale"))
+        frame:SetSize(self:GetWindowSetting(config, "width"), self:GetWindowSetting(config, "height"))
+        frame.background:SetColorTexture(unpack(self:GetWindowSetting(config, "backgroundColor")))
+        frame.header:SetVertexColor(unpack(self:GetWindowSetting(config, "headerColor")))
+        self:StyleWindowLabel(frame.statistic.text, config)
+        self:StyleWindowLabel(frame.session.text, config)
+        self:StyleWindowLabel(frame.message, config)
         frame:SetShown(not config.hidden)
     end
+    -- All frames must exist before another window can use one as its anchor.
+    for index, config in ipairs(self.db.profile.windows) do
+        local frame = self.windows[index]
+        local target = UIParent
+        if config.anchorTo and self:CanAnchorTo(config, config.anchorTo) then
+            for targetIndex, candidate in ipairs(self.db.profile.windows) do
+                if candidate.id == config.anchorTo then
+                    target = self.windows[targetIndex]
+                    break
+                end
+            end
+        else
+            config.anchorTo = nil
+        end
+        frame.anchorTarget = target
+        frame:SetPoint(
+            self:GetWindowSetting(config, "point"),
+            target,
+            self:GetWindowSetting(config, "relativePoint"),
+            self:GetWindowSetting(config, "x"),
+            self:GetWindowSetting(config, "y")
+        )
+    end
     self:RefreshWindows()
+    self:UpdateWindowOptions()
+end
+
+function app:StyleWindowLabel(label, config)
+    local media = LibStub("LibSharedMedia-3.0")
+    label:SetFont(
+        media:Fetch("font", self:GetWindowSetting(config, "font")),
+        self:GetWindowSetting(config, "fontSize"),
+        self:GetWindowSetting(config, "fontFlags")
+    )
+    label:SetTextColor(unpack(self:GetWindowSetting(config, "textColor")))
 end

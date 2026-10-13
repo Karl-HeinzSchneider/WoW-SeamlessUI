@@ -16,6 +16,7 @@ app.windowDefaults = {
     textColor = { 1, 1, 1, 1 },
     barColor = { 0.35, 0.6, 0.8, 1 },
     classColors = true,
+    hideTypeSelector = false,
     backgroundColor = { 1, 1, 1, 0.5 },
     headerColor = { 1, 1, 1, 1 },
     rowHeight = 24,

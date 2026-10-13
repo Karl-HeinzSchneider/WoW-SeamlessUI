@@ -242,6 +242,14 @@ assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
+assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type selector is visible by default")
+frame.config.overrides.hideTypeSelector = true
+app:RebuildWindows()
+assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
+assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains the category label")
+frame.config.overrides.hideTypeSelector = false
+app:RebuildWindows()
+assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Selector can be restored")
 assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
 for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())

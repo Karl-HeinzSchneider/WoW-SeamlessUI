@@ -40,7 +40,10 @@ Window rendering uses plain Lua-created frames without inherited frame templates
 mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default to 24 pixels with
 4 pixels between them. The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
-from hiding a window. Save the expanded height and keep the header position stable when
+from hiding a window. `hideTypeSelector` defaults to false and supports shared defaults and
+window overrides; hiding it removes the category arrow and its clicks while retaining the label.
+The category label shares the timer's text top; the arrow aligns with the settings button.
+Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass
 through number abbreviation. An offscreen local player stays visible in a separate row.

@@ -36,14 +36,17 @@ fields migrate into overrides. Dragging overrides X/Y, resizing also overrides w
 anchor target preserves the attachment and its geometry. Defaults are profile scoped.
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
-mixins. Reuse client art and fonts. The header is 32 pixels tall; rows are 18 pixels with
+mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default to 24 pixels with
 4 pixels between them. The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
 from hiding a window. Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass
 through number abbreviation. An offscreen local player stays visible in a separate row.
-Rows clip the fixed-size icon and bar art to their entry bounds. Amount-based statistics
+Rows use full square icons sized to the row height and an original grayscale shaded fill
+with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
+is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
+the generator uses only our own formula and reads no reference assets. Amount-based statistics
 show total and rate in compact form; DPS/HPS swap their order, and action counts omit rates.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`

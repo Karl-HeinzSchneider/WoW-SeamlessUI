@@ -18,7 +18,7 @@ app.windowDefaults = {
     classColors = true,
     backgroundColor = { 1, 1, 1, 0.5 },
     headerColor = { 1, 1, 1, 1 },
-    rowHeight = 18,
+    rowHeight = 24,
     rowSpacing = 4,
 }
 

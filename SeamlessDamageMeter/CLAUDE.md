@@ -47,6 +47,8 @@ at the left edge (X 3), with its arrow centered vertically opposite the red coll
 The category starts at X 28, Y -9 within the header and never moves when the timer changes.
 Hiding the selector preserves the category label's position and reserved arrow space.
 The timer follows the category label on the same line, left aligned with natural text width.
+`hideCombatTimer` defaults to false and supports shared defaults and window overrides,
+including Edit Mode previews. Toggling it preserves the category position.
 Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass

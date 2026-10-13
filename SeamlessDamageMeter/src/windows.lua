@@ -488,6 +488,7 @@ function app:RefreshWindow(frame, session, message)
     frame.timer:ClearAllPoints()
     frame.timer:SetPoint("LEFT", frame.statistic.text, "RIGHT", 5, 0)
     frame.timer:SetWidth(0)
+    frame.timer:SetShown(not self:GetWindowSetting(config, "hideCombatTimer"))
     local sources = session and session.combatSources or {}
     local localIndex
     for index, source in ipairs(sources) do

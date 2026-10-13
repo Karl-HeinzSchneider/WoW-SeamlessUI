@@ -266,6 +266,19 @@ app:RebuildWindows()
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Selector can be restored")
 assert(frame.statistic.points.TOPLEFT[2] == frame and frame.statistic.points.TOPLEFT[4] == 3)
 assert(frame.timer.points.LEFT[2] == frame.statistic.text, "Timer follows the category label")
+assert(frame.timer:IsShown(), "Combat timer is visible by default")
+app.db.profile.windowDefaults.hideCombatTimer = true
+app:RebuildWindows()
+assert(not frame.timer:IsShown(), "Combat timer inherits the shared hide setting")
+frame.config.overrides.hideCombatTimer = false
+app:RebuildWindows()
+assert(frame.timer:IsShown(), "A false override restores the combat timer")
+frame.config.overrides.hideCombatTimer = true
+app:RebuildWindows()
+assert(not frame.timer:IsShown(), "A window override hides the combat timer")
+frame.config.overrides.hideCombatTimer = nil
+app.db.profile.windowDefaults.hideCombatTimer = false
+app:RebuildWindows()
 assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
 for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())

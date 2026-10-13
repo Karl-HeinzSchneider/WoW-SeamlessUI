@@ -40,6 +40,7 @@ local settings = {
     { key = "textColor", name = "Text color", type = "color" },
     { key = "classColors", name = "Use class colors", type = "toggle" },
     { key = "hideTypeSelector", name = "Hide type selector", type = "toggle" },
+    { key = "hideCombatTimer", name = "Hide combat timer", type = "toggle" },
     { key = "barColor", name = "Bar color", type = "color" },
     { key = "backgroundColor", name = "Window background", type = "color" },
     { key = "headerColor", name = "Header tint", type = "color" },

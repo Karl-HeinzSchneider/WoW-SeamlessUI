@@ -9,8 +9,14 @@
 
 src\core.lua
 src\data.lua
+src\archive.lua
+src\live.lua
+src\service.lua
+src\breakdowns.lua
+src\capture.lua
 src\blizzard.lua
 src\settings.lua
 src\editmode.lua
 src\windows.lua
+src\analysis.lua
 src\options.lua

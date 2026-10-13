@@ -7,6 +7,7 @@ local addon = app.addon
 
 function addon:OnInitialize()
     app.db = LibStub("AceDB-3.0"):New("SeamlessDamageMeterDB", {
+        char = {},
         profile = {
             windows = {},
             initialized = false,
@@ -17,6 +18,16 @@ function addon:OnInitialize()
             maxVisibleFavorites = 6,
         },
     }, true)
+    app.combatService:Initialize(app.db.char)
+    app.combatService:Subscribe(app, function(owner, historyChanged)
+        owner:RefreshWindows()
+        if owner.RefreshAnalysis then
+            owner:RefreshAnalysis()
+        end
+        if historyChanged then
+            owner.core:RefreshOptions(appName)
+        end
+    end)
     app.db.RegisterCallback(self, "OnProfileChanged", "RefreshProfile")
     app.db.RegisterCallback(self, "OnProfileCopied", "RefreshProfile")
     app.db.RegisterCallback(self, "OnProfileReset", "RefreshProfile")
@@ -34,21 +45,49 @@ end
 function addon:OnEnable()
     app:EnsureTracking()
     self:RefreshProfile()
-    self:RegisterEvent("PLAYER_ENTERING_WORLD", "RefreshData")
-    self:RegisterEvent("PLAYER_REGEN_ENABLED", "RefreshProfile")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", function()
+        app.combatService:OnWorld()
+    end)
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", function()
+        app.combatService:OnWorld()
+    end)
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
+        app.combatService:OnCombatEnd()
+        self:RefreshProfile()
+    end)
+    self:RegisterEvent("PLAYER_LOGOUT", function()
+        app.combatService:OnLogout()
+    end)
+    self:RegisterEvent("ENCOUNTER_START", function(event, ...)
+        app.combatService:OnEncounter(event, ...)
+    end)
+    self:RegisterEvent("ENCOUNTER_END", function(event, ...)
+        app.combatService:OnEncounter(event, ...)
+    end)
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
         if name:lower() == "damagemeterenabled" then
+            app.combatService:OnWorld()
             self:RefreshData()
             app.core:RefreshOptions(appName)
         end
     end)
     if app:IsAvailable() then
-        self:RegisterEvent("DAMAGE_METER_COMBAT_SESSION_UPDATED", "RefreshData")
-        self:RegisterEvent("DAMAGE_METER_CURRENT_SESSION_UPDATED", "RefreshData")
-        self:RegisterEvent("DAMAGE_METER_RESET", "RefreshData")
+        for _, event in ipairs({
+            "DAMAGE_METER_COMBAT_SESSION_UPDATED",
+            "DAMAGE_METER_CURRENT_SESSION_UPDATED",
+            "DAMAGE_METER_RESET",
+        }) do
+            self:RegisterEvent(event, function(name, ...)
+                app.combatService:OnMeterEvent(name, ...)
+            end)
+        end
     end
     -- Also refresh rates while a session is active, with one timer for all windows.
     self:ScheduleRepeatingTimer("RefreshData", 0.5)
+    self:ScheduleRepeatingTimer(function()
+        app.combatService:Tick()
+    end, 0.2)
+    app.combatService:OnWorld()
 end
 
 function addon:RefreshData()
@@ -57,7 +96,11 @@ end
 
 function addon:OnDisable()
     self:CancelAllTimers()
+    self:UnregisterAllEvents()
     app:HideWindows()
+    if app.analysisWindow then
+        app.analysisWindow:Hide()
+    end
     app:UpdateBlizzardMeter()
 end
 

@@ -2,6 +2,10 @@
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0
 ---@field db AceDBObject-3.0
+---@field archive table Public snapshot storage and schema validation.
+---@field live table Client combat API provider.
+---@field combatService table Shared live/archive queries, capture queue and notifications.
+---@field analysisWindow table? Pooled detail, comparison and report window.
 ---@field windows table[]
 ---@field windowFrames table<number, table> Frames indexed by persistent window ID.
 ---@field statistics table[]

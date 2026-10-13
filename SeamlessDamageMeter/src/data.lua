@@ -1,7 +1,7 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
--- Keep the client API behind this adapter; windows never collect combat logs.
+-- Rendering facade. All combat queries belong to the central service.
 app.statistics = {
     { key = "DamageDone", label = DAMAGE_METER_TYPE_DAMAGE_DONE or "Damage done" },
     { key = "Dps", label = DAMAGE_METER_TYPE_DPS or "DPS", rate = true },
@@ -17,7 +17,7 @@ app.statistics = {
 }
 
 function app:IsAvailable()
-    return C_DamageMeter ~= nil and Enum.DamageMeterType ~= nil
+    return self.live:IsAvailable()
 end
 
 function app:GetStatistic(key)
@@ -30,120 +30,15 @@ function app:GetStatistic(key)
 end
 
 function app:GetSession(config)
-    if self.IsEditingWindows and self:IsEditingWindows() then
-        return self:GetPreviewSession(config)
-    end
-    if not self:IsAvailable() then
-        return nil, "This client does not provide the damage meter API."
-    end
-    local available, reason = C_DamageMeter.IsDamageMeterAvailable()
-    if not available then
-        return nil, reason
-    end
-    if not C_CVar.GetCVarBool("damageMeterEnabled") then
-        return nil, "Combat tracking is disabled. Enable it in Seamless > Damage Meter."
-    end
-    local statistic = self:GetStatistic(config.statistic)
-    local meterType = Enum.DamageMeterType[statistic.key]
-    if meterType == nil then
-        return nil, "This statistic is unavailable on this client."
-    end
-    -- A saved historical session may disappear when Blizzard clears its history.
-    if config.sessionID then
-        for _, session in ipairs(C_DamageMeter.GetAvailableCombatSessions()) do
-            if session.sessionID == config.sessionID then
-                return C_DamageMeter.GetCombatSessionFromID(config.sessionID, meterType)
-            end
-        end
-        return nil, "This fight is no longer available. Select another session."
-    end
-    return C_DamageMeter.GetCombatSessionFromType(
-        Enum.DamageMeterSessionType[config.session] or Enum.DamageMeterSessionType.Current,
-        meterType
-    )
+    return self.combatService:GetSession(config, self:GetStatistic(config.statistic).key)
 end
 
 function app:GetSourceDetails(config, source)
-    if (self.IsEditingWindows and self:IsEditingWindows()) or not self:IsAvailable() then
-        return nil
-    end
-    -- Revalidate history/tracking before requesting a source from a pooled row.
-    if not self:GetSession(config) then
-        return nil
-    end
-    if config.statistic == "Deaths" then
-        if C_DeathRecap and source.deathRecapID and source.deathRecapID ~= 0 then
-            return {
-                deathEvents = C_DeathRecap.GetRecapEvents(source.deathRecapID) or {},
-                maxAmount = C_DeathRecap.GetRecapMaxHealth(source.deathRecapID),
-            }
-        end
-        return { deathEvents = {} }
-    end
-    local meterType = Enum.DamageMeterType[self:GetStatistic(config.statistic).key]
-    if config.sessionID then
-        return C_DamageMeter.GetCombatSessionSourceFromID(
-            config.sessionID,
-            meterType,
-            source.sourceGUID,
-            source.sourceCreatureID
-        )
-    end
-    return C_DamageMeter.GetCombatSessionSourceFromType(
-        Enum.DamageMeterSessionType[config.session] or Enum.DamageMeterSessionType.Current,
-        meterType,
-        source.sourceGUID,
-        source.sourceCreatureID
-    )
+    return self.combatService:GetDetails(config, source, self:GetStatistic(config.statistic).key)
 end
 
--- This API exposes target names, not GUIDs. Aggregate only complete, public detail
--- amounts; a representative target or a restricted amount is not a target total.
-function app:GetTargetBreakdown(details)
-    local entries, byName = {}, {}
-    local total, maximum = 0, 0
-    local function restricted(value)
-        return issecretvalue and issecretvalue(value)
-    end
-    if restricted(details.totalAmount) then
-        return nil, "Target data restricted."
-    end
-    for _, spell in ipairs(details.combatSpells or {}) do
-        local unit = spell.combatSpellDetails
-        if not unit then
-            return nil, "Target data unavailable."
-        end
-        if restricted(unit.unitName) or restricted(unit.amount) or restricted(spell.totalAmount) then
-            return nil, "Target data restricted."
-        end
-        if type(unit.unitName) ~= "string" or unit.unitName == "" or type(unit.amount) ~= "number" then
-            return nil, "Target data unavailable."
-        end
-        if unit.amount ~= spell.totalAmount then
-            return nil, "Target data unavailable."
-        end
-        local target = byName[unit.unitName]
-        if not target then
-            target = {
-                isTarget = true,
-                spellName = unit.unitName,
-                totalAmount = 0,
-                combatSpellDetails = {
-                    specIconID = unit.specIconID,
-                    unitClassFilename = unit.unitClassFilename,
-                },
-            }
-            entries[#entries + 1] = target
-            byName[unit.unitName] = target
-        end
-        target.totalAmount = target.totalAmount + unit.amount
-        maximum = math.max(maximum, target.totalAmount)
-        total = total + unit.amount
-    end
-    if total ~= details.totalAmount or #entries == 0 then
-        return nil, "Target data unavailable."
-    end
-    return { entries = entries, maxAmount = maximum }
+function app:GetTargetBreakdown(config, source)
+    return self.combatService:GetPlayerTargets(config, source)
 end
 
 local previewCharacters = {

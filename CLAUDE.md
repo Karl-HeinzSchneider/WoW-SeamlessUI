@@ -18,6 +18,8 @@ TOC is an independently selectable addon.
   `SeamlessTooltipDB` and existing profiles. See its `CLAUDE.md`.
 - `SeamlessChat/`: optional chat sync, history, copy/log windows and chat enhancements. Keeps
   its profile and per-character SavedVariables. See its `CLAUDE.md`.
+- `SeamlessDamageMeter/`: optional windows and a shared live/archive combat-data service.
+  Saves public per-character fight history independently of appearance profiles. See its `CLAUDE.md`.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `.github/`: release workflows using the BigWigs packager.
 

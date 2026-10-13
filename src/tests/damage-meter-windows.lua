@@ -255,6 +255,10 @@ end
 assert(loadfile("SeamlessDamageMeter/src/settings.lua"))("SeamlessDamageMeter", app)
 app.db.profile.windowDefaults = app.windowDefaults
 assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
+for _, name in ipairs({ "archive", "live", "service", "breakdowns", "capture" }) do
+    assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
+end
+app.combatService:Initialize({})
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
@@ -351,7 +355,7 @@ assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main ba
 assert(detailBar.icon.texture == 1001, "Spell icons come from C_Spell")
 assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.icon:GetWidth() == 24)
 assert(detailBar.color[1] == RAID_CLASS_COLORS.MAGE.r)
-assert(tooltip.targetLabel:IsShown() and tooltip.targetLabel.text == "Targets")
+assert(tooltip.targetLabel:IsShown() and tooltip.targetLabel.text == "Targets (% of yours; % of enemy)")
 assert(tooltip.targetMessage:IsShown() and tooltip.targetMessage.text == "Target data restricted.")
 assert(detailBar.entry.points.TOPLEFT[3] == 0, "First bar begins at the top with no header gap")
 assert(
@@ -404,6 +408,7 @@ C_DamageMeter.GetCombatSessionSourceFromID = function(id, meterType, guid)
     return details
 end
 frame.config.sessionID = 77
+frame.config.sessionGeneration = app.combatService.generation
 frame.rows[1].entry.scripts.OnEnter()
 assert(tooltip:IsShown(), "History hover uses the ID API")
 history = {}
@@ -433,7 +438,7 @@ app:RefreshWindows()
 assert(tooltip.offset == 0 and not tooltip.rows[2]:IsShown(), "Shrinking detail lists hide pooled surplus bars")
 details.combatSpells = {}
 app:RefreshWindows()
-assert(not tooltip:IsShown(), "Empty data hides the headerless panel")
+assert(tooltip.targetMessage:IsShown(), "Empty details explain unavailable data")
 details.combatSpells = { firstSpell }
 frame.rows[1].entry.scripts.OnEnter()
 frame.rows[1].entry.scripts.OnHide()
@@ -452,40 +457,98 @@ details.combatSpells = {
     { spellID = 2, totalAmount = 20, amountPerSecond = 2, combatSpellDetails = { unitName = "Wolf", amount = 20 } },
     { spellID = 3, totalAmount = 50, amountPerSecond = 5, combatSpellDetails = { unitName = "Bear", amount = 50 } },
 }
-local breakdown = app:GetTargetBreakdown(details)
+local oldSessionAPI, oldDetailsAPI =
+    C_DamageMeter.GetCombatSessionFromType, C_DamageMeter.GetCombatSessionSourceFromType
+local enemySession = {
+    totalAmount = 100,
+    maxAmount = 50,
+    durationSeconds = 10,
+    combatSources = {
+        { name = "Wolf", sourceCreatureID = 1, totalAmount = 50, amountPerSecond = 5, specIconID = 777 },
+        { name = "Bear", sourceCreatureID = 2, totalAmount = 50, amountPerSecond = 5 },
+    },
+}
+Enum.DamageMeterType.EnemyDamageTaken = 10
+local enemyDetails = {
+    {
+        totalAmount = 50,
+        maxAmount = 30,
+        combatSpells = {
+            {
+                spellID = 1,
+                totalAmount = 30,
+                amountPerSecond = 3,
+                combatSpellDetails = { unitName = "Player", amount = 30 },
+            },
+            {
+                spellID = 2,
+                totalAmount = 20,
+                amountPerSecond = 2,
+                combatSpellDetails = { unitName = "Player", amount = 20 },
+            },
+        },
+    },
+    {
+        totalAmount = 50,
+        maxAmount = 50,
+        combatSpells = {
+            {
+                spellID = 3,
+                totalAmount = 50,
+                amountPerSecond = 5,
+                combatSpellDetails = { unitName = "Player", amount = 50 },
+            },
+        },
+    },
+}
+C_DamageMeter.GetCombatSessionFromType = function(kind, meterType)
+    if meterType == 10 then
+        return enemySession
+    end
+    return oldSessionAPI(kind, meterType)
+end
+C_DamageMeter.GetCombatSessionSourceFromType = function(kind, meterType, guid, creature)
+    if meterType == 10 then
+        return enemyDetails[creature]
+    end
+    return oldDetailsAPI(kind, meterType, guid, creature)
+end
+local savedName, savedAmount = session.combatSources[1].name, session.combatSources[1].totalAmount
+session.combatSources[1].name, session.combatSources[1].totalAmount = "Player", 100
+app.combatService:Invalidate()
+local breakdown = app:GetTargetBreakdown(frame.config, session.combatSources[1])
 assert(
-    #breakdown.entries == 2 and breakdown.entries[1].spellName == "Wolf" and breakdown.entries[2].spellName == "Bear"
+    #breakdown.entries == 2 and breakdown.entries[1].spellName == "Bear" and breakdown.entries[2].spellName == "Wolf"
 )
-assert(breakdown.entries[1].totalAmount == 50 and breakdown.entries[2].totalAmount == 50 and breakdown.maxAmount == 50)
-assert(details.combatSpells[1].totalAmount == 30 and details.combatSpells[1].combatSpellDetails.amount == 30)
-assert(details.combatSpells[1].isTarget == nil, "Grouping leaves the API's data unchanged")
+assert(breakdown.complete and breakdown.maxAmount == 50 and breakdown.entries[2].enemyShare == 100)
 frame.rows[1].entry.scripts.OnEnter()
 assert(tooltip.count == 6 and tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown())
-assert(tooltip.targetLabel.points.TOPLEFT[3] == -3 * (24 + 4), "Targets category follows all three spell bars")
-assert(tooltip.rows[5].name.text == "Wolf" and tooltip.rows[6].name.text == "Bear")
-assert(tooltip.rows[5].statusValue == 50 and tooltip.rows[6].statusValue == 50 and tooltip.rows[5].maximum == 50)
-assert(tooltip.rows[5].value.args[1] == "50" and tooltip.rows[5].value.args[2] == 50)
-assert(tooltip.rows[5].icon.texture == 777 and tooltip.rows[5].fill.texture == detailBar.fill.texture)
+assert(tooltip.rows[5].name.text == "Bear" and tooltip.rows[6].name.text == "Wolf")
+assert(tooltip.rows[5].statusValue == 50 and tooltip.rows[6].statusValue == 50)
+assert(tooltip.rows[5].value.args[2] == 50 and tooltip.rows[5].value.args[3] == 100)
+assert(tooltip.rows[6].icon.texture == 777)
 frame.config.statistic = "Dps"
 app:RefreshWindows()
-assert(tooltip.rows[5].value.args[1] == "50", "Target bars always show total damage, including in the DPS view")
+assert(tooltip.rows[5].value.args[1] == "50", "Targets show damage even in DPS view")
 frame.config.statistic = "DamageDone"
-details.combatSpells[2].combatSpellDetails.amount = 10
-assert(app:GetTargetBreakdown(details) == nil, "Incomplete per-spell target data must not produce partial totals")
-details.combatSpells[2].combatSpellDetails.amount = 20
-details.totalAmount = 120
-assert(app:GetTargetBreakdown(details) == nil, "Target totals must account for the complete source total")
-details.totalAmount = 100
-details.combatSpells[2].combatSpellDetails.unitName = secret
-assert(app:GetTargetBreakdown(details) == nil, "Restricted target names cannot be compared or used as grouping keys")
-details.combatSpells[2].combatSpellDetails.unitName = "Wolf"
-details.combatSpells[2].combatSpellDetails.amount = secret
-assert(app:GetTargetBreakdown(details) == nil, "Restricted target amounts cannot be summed")
-app:RefreshWindows()
+session.combatSources[1].totalAmount = 120
+assert(not app:GetTargetBreakdown(frame.config, session.combatSources[1]).complete, "Partial totals are labelled")
+session.combatSources[1].totalAmount = 100
+enemyDetails[1].combatSpells[1].combatSpellDetails.unitName = secret
+app.combatService:Invalidate()
+assert(app:GetTargetBreakdown(frame.config, session.combatSources[1]) == nil, "Restricted identities cannot be grouped")
+enemyDetails[1].combatSpells[1].combatSpellDetails.unitName = "Player"
+enemyDetails[1].combatSpells[1].totalAmount = secret
+app.combatService:Invalidate()
 assert(
-    tooltip.targetMessage:IsShown() and not tooltip.rows[5]:IsShown(),
-    "Unavailable data replaces stale target totals"
+    app:GetTargetBreakdown(frame.config, session.combatSources[1]) == nil,
+    "Restricted contributions cannot be added"
 )
+app:RefreshWindows()
+assert(tooltip.targetMessage:IsShown() and not tooltip.rows[5]:IsShown(), "Unavailable data clears stale targets")
+session.combatSources[1].name, session.combatSources[1].totalAmount = savedName, savedAmount
+C_DamageMeter.GetCombatSessionFromType, C_DamageMeter.GetCombatSessionSourceFromType = oldSessionAPI, oldDetailsAPI
+app.combatService:Invalidate()
 frame.rows[1].entry.scripts.OnLeave()
 details.combatSpells, details.totalAmount, details.maxAmount = savedSpells, savedTotal, savedMaximum
 UIParent:SetHeight(200)
@@ -551,7 +614,7 @@ history = { { sessionID = 42, name = "", durationSeconds = 15 }, { sessionID = 4
 frame.session.scripts.OnClick()
 local fight, otherFight = menuRoot.entries[1], menuRoot.entries[2]
 local current, overall = menuRoot.entries[4], menuRoot.entries[5]
-assert(fight.label == "Combat 42 [15]" and otherFight.label == "Boss")
+assert(fight.label == "Combat 42 [15] (live)" and otherFight.label == "Boss (live)")
 assert(current.selected() and not overall.selected() and not fight.selected())
 frame.offset = 5
 fight.choose()
@@ -1040,3 +1103,105 @@ savedX = meter.config.overrides.x
 meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 20, 20)
 assert(meter.config.overrides.x == savedX, "Do not inspect restricted geometry in combat")
 print("Damage meter Edit Mode regressions OK")
+
+-- Saved history uses the same windows and analysis panel without any live APIs.
+combat = false
+function date(_, timestamp)
+    return tostring(timestamp)
+end
+assert(loadfile("SeamlessDamageMeter/src/analysis.lua"))("SeamlessDamageMeter", app)
+local archiveID = app.archive:Commit({
+    name = "Saved boss",
+    capturedAt = 1000,
+    durationSeconds = 10,
+    complete = true,
+    categories = {
+        DamageDone = {
+            complete = true,
+            session = {
+                totalAmount = 100,
+                maxAmount = 100,
+                durationSeconds = 10,
+                combatSources = {
+                    {
+                        sourceGUID = "saved-player",
+                        name = "Jaina",
+                        totalAmount = 100,
+                        amountPerSecond = 10,
+                        classFilename = "MAGE",
+                        specIconID = 0,
+                    },
+                },
+            },
+            details = {
+                {
+                    totalAmount = 100,
+                    maxAmount = 100,
+                    combatSpells = {
+                        {
+                            spellID = 1,
+                            totalAmount = 100,
+                            amountPerSecond = 10,
+                            isAvoidable = true,
+                            overkillAmount = 10,
+                            combatSpellDetails = { unitName = "Wolf", amount = 100 },
+                        },
+                    },
+                },
+            },
+        },
+        EnemyDamageTaken = {
+            complete = true,
+            session = {
+                totalAmount = 100,
+                maxAmount = 100,
+                durationSeconds = 10,
+                combatSources = { { sourceCreatureID = 11, name = "Wolf", totalAmount = 100, amountPerSecond = 10 } },
+            },
+            details = {
+                {
+                    totalAmount = 100,
+                    maxAmount = 100,
+                    combatSpells = {
+                        {
+                            spellID = 1,
+                            totalAmount = 100,
+                            amountPerSecond = 10,
+                            combatSpellDetails = { unitName = "Jaina", amount = 100 },
+                        },
+                    },
+                },
+            },
+        },
+    },
+})
+meter.config.archiveID, meter.config.statistic = archiveID, "DamageDone"
+C_DamageMeter = nil
+app:RefreshWindows()
+assert(meter.rows[1].name.args[2] == "Jaina" and meter.session.text.text == "S" .. archiveID)
+meter.rows[1].entry.scripts.OnEnter()
+assert(app.detailTooltip.targetLabel:IsShown() and app.detailTooltip.rows[3].statusValue == 100)
+meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+local analysis = app.analysisWindow
+assert(
+    analysis:IsShown()
+        and analysis.text.text:find("avoidable", 1, true)
+        and analysis.text.text:find("overkill 10", 1, true)
+)
+analysis.buttons.targets.scripts.OnClick()
+assert(analysis.text.text:find("Wolf", 1, true) and analysis.text.text:find("100.0% / 100.0%", 1, true))
+analysis.buttons.report.scripts.OnClick()
+assert(analysis.text.text:find("Seamless: Saved boss", 1, true))
+app:ShowComparison(archiveID, archiveID, "DamageDone")
+assert(analysis.text.text:find("difference 0", 1, true))
+analysis.buttons.spells.scripts.OnClick()
+assert(analysis.text.text:find("Fireball", 1, true))
+analysis.buttons.targets.scripts.OnClick()
+assert(analysis.text.text:find("Wolf", 1, true))
+app:ShowAnalysis(meter.config)
+assert(analysis.text.text:find("Saved fight", 1, true))
+app.combatService:Delete(archiveID)
+app:RefreshWindows()
+assert(meter.message.text == "This saved fight was deleted.")
+C_DamageMeter = realAPI
+print("Damage meter archived windows and analysis regressions OK")

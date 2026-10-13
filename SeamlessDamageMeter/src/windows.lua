@@ -330,21 +330,23 @@ end
 
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
-        if self:IsAvailable() and not (self.IsEditingWindows and self:IsEditingWindows()) then
-            local sessions = C_DamageMeter.GetAvailableCombatSessions()
+        if not (self.IsEditingWindows and self:IsEditingWindows()) then
+            local sessions = self.combatService:ListSessions()
             for _, session in ipairs(sessions) do
-                local name = session.name
-                if not name or name == "" then
-                    name = (DAMAGE_METER_COMBAT_NUMBER or "Combat %d"):format(session.sessionID)
-                end
-                local label = name
-                if session.durationSeconds then
-                    label = ("%s [%s]"):format(name, SecondsToClock(session.durationSeconds))
-                end
+                local name = session.name ~= "" and session.name
+                    or ("Combat " .. (session.archiveID or session.sessionID))
+                local label = self.combatService:Describe(session)
                 root:CreateRadio(label, function()
-                    return frame.config.sessionID == session.sessionID
+                    return session.archiveID and frame.config.archiveID == session.archiveID
+                        or (
+                            not session.archiveID
+                            and not frame.config.archiveID
+                            and frame.config.sessionID == session.sessionID
+                        )
                 end, function()
                     frame.config.sessionID, frame.config.sessionName = session.sessionID, name
+                    frame.config.archiveID, frame.config.sessionGeneration =
+                        session.archiveID, session.sessionGeneration
                     frame.offset = 0
                     self:RefreshWindows()
                 end)
@@ -357,11 +359,34 @@ function app:ShowSessionMenu(frame)
             local label = key == "Current" and (DAMAGE_METER_CURRENT_SESSION or key)
                 or (DAMAGE_METER_OVERALL_SESSION or key)
             root:CreateRadio(label, function()
-                return not frame.config.sessionID and frame.config.session == key
+                return not frame.config.archiveID and not frame.config.sessionID and frame.config.session == key
             end, function()
                 frame.config.session, frame.config.sessionID, frame.config.sessionName = key, nil, nil
+                frame.config.archiveID, frame.config.sessionGeneration = nil, nil
                 frame.offset = 0
                 self:RefreshWindows()
+            end)
+        end
+        local fight = self.combatService:GetMetadata(frame.config)
+        if fight then
+            root:CreateDivider()
+            root:CreateButton(fight.pinned and "Unpin selected fight" or "Pin selected fight", function()
+                self.combatService:Pin(fight.id)
+            end)
+            root:CreateButton("Fight details / copy report", function()
+                self:ShowAnalysis(frame.config)
+            end)
+            local compare = root:CreateButton("Compare with saved fight")
+            for _, session in ipairs(self.combatService:ListSessions()) do
+                if session.archiveID and session.archiveID ~= fight.id then
+                    compare:CreateButton(self.combatService:Describe(session), function()
+                        self:ShowComparison(fight.id, session.archiveID, frame.config.statistic)
+                    end)
+                end
+            end
+            local delete = root:CreateButton("Delete selected saved fight")
+            delete:CreateButton("Confirm deletion", function()
+                self.combatService:Delete(fight.id)
             end)
         end
     end)
@@ -410,31 +435,46 @@ local function ShowRowTooltip(row, frame)
         HideRowTooltip(row)
         return
     end
-    local details = app:GetSourceDetails(frame.config, row.source)
-    if not details then
-        HideRowTooltip(row)
-        return
-    end
+    local details, detailReason = app:GetSourceDetails(frame.config, row.source)
+    details = details or { combatSpells = {}, totalAmount = row.source.totalAmount, maxAmount = row.source.totalAmount }
     local spells = details.deathEvents or details.combatSpells or {}
-    if #spells == 0 then
-        HideRowTooltip(row)
-        return
-    end
     local entries = {}
     for _, spell in ipairs(spells) do
         entries[#entries + 1] = spell
     end
     local targetDetails, targetReason
     if frame.config.statistic == "DamageDone" or frame.config.statistic == "Dps" then
-        targetDetails, targetReason = app:GetTargetBreakdown(details)
+        targetDetails, targetReason = app:GetTargetBreakdown(frame.config, row.source)
         entries[#entries + 1] = { isTargetHeading = true }
         if targetDetails then
             for _, target in ipairs(targetDetails.entries) do
                 entries[#entries + 1] = target
             end
+            if targetDetails.message then
+                targetReason = targetDetails.message
+                entries[#entries + 1] = { isTargetMessage = true }
+            end
         else
             entries[#entries + 1] = { isTargetMessage = true }
         end
+    elseif frame.config.statistic == "EnemyDamageTaken" then
+        targetDetails, targetReason = app.combatService:GetEnemyContributors(frame.config, row.source)
+        entries = { { isTargetHeading = true } }
+        if targetDetails then
+            for _, contributor in ipairs(targetDetails.entries) do
+                entries[#entries + 1] = contributor
+            end
+            if not targetDetails.complete then
+                targetReason = "Available contributions only; totals do not fully reconcile."
+                entries[#entries + 1] = { isTargetMessage = true }
+            end
+        else
+            entries[#entries + 1] = { isTargetMessage = true }
+        end
+    end
+    if #entries == 0 then
+        targetReason = detailReason or "No details available."
+        entries[1] = { isTargetMessage = true }
     end
     local tooltip = app.detailTooltip or CreateDetailTooltip()
     local config = frame.config
@@ -476,7 +516,9 @@ local function ShowRowTooltip(row, frame)
             label:SetPoint("TOPLEFT", 2, -(index - 1) * (rowHeight + spacing))
             label:SetPoint("RIGHT", -2, 0)
             label:SetHeight(rowHeight)
-            label:SetText(spell.isTargetHeading and "Targets" or targetReason)
+            local heading = frame.config.statistic == "EnemyDamageTaken" and "Contributors (% of enemy)"
+                or "Targets (% of yours; % of enemy)"
+            label:SetText(spell.isTargetHeading and heading or targetReason)
             label:Show()
             bar:Hide()
         else
@@ -574,6 +616,19 @@ local function ShowRowTooltip(row, frame)
             else
                 bar.value:SetFormattedText("%.0f", amount)
             end
+            if
+                spell.isTarget
+                and spell.enemyShare
+                and frame.config.statistic ~= "EnemyDamageTaken"
+                and IsPublic(amount)
+            then
+                bar.value:SetFormattedText(
+                    "%s %d%% / %d%%",
+                    AbbreviateLargeNumbers(amount),
+                    percentage or 0,
+                    math.floor(spell.enemyShare + 0.5)
+                )
+            end
             -- The API provides the scale; restricted amounts go directly to the widgets.
             local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
             if IsPublic(maximum) and maximum == nil then
@@ -635,6 +690,8 @@ CreateRow = function(frame, index)
     entry:SetScript("OnMouseUp", function(_, button)
         if button == "RightButton" then
             app:ToggleFavorites(frame)
+        elseif button == "LeftButton" and row.source and not row.preview then
+            app:ShowAnalysis(frame.config, row.source)
         end
     end)
     row:SetScript("OnHide", function()
@@ -727,6 +784,7 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
     frame.session.text:SetText(
         preview and "Preview"
+            or (config.archiveID and ("S" .. config.archiveID))
             or config.sessionID
             or (
                 config.session == "Overall" and DAMAGE_METER_OVERALL_SESSION_SHORT
@@ -734,15 +792,12 @@ function app:RefreshWindow(frame, session, message)
             )
     )
     frame.session:SetWidth(preview and 60 or frame.session.normalWidth)
-    local duration = session and session.durationSeconds
-    if not preview and self:IsAvailable() and not config.sessionID and UnitAffectingCombat("player") then
-        duration = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType[config.session])
-    end
+    local duration = self.combatService:GetDuration(config, session)
     if
         not (issecretvalue and issecretvalue(duration))
         and duration
         and duration > 0
-        and (preview or config.sessionID or UnitAffectingCombat("player"))
+        and (preview or config.archiveID or config.sessionID or UnitAffectingCombat("player"))
     then
         frame.timer:SetFormattedText("[%s]", SecondsToClock(duration))
     else
@@ -843,16 +898,12 @@ function app:RefreshWindow(frame, session, message)
 end
 
 function app:RefreshWindows()
-    -- Share API reads between windows showing the same session and statistic.
-    local cache = {}
+    self.combatService:BeginRefresh()
     for _, frame in ipairs(self.windows) do
         if frame:IsShown() then
             local config = frame.config
-            local key = config.statistic .. ":" .. (config.sessionID or config.session)
-            if not cache[key] then
-                cache[key] = { self:GetSession(config) }
-            end
-            self:RefreshWindow(frame, cache[key][1], cache[key][2])
+            local session, message = self:GetSession(config)
+            self:RefreshWindow(frame, session, message)
         end
     end
 end

@@ -29,7 +29,10 @@ function methods:SetParent(parent)
     self.parent = parent
 end
 function methods:GetFrameLevel()
-    return 1
+    return self.frameLevel or 1
+end
+function methods:SetFrameLevel(level)
+    self.frameLevel = level
 end
 function methods:SetPoint(...)
     self.point = { ... }
@@ -182,16 +185,23 @@ for index = 1, 12 do
     }
 end
 local reads = 0
+local lastSessionType, lastMeterType, lastSessionID
+local history = {}
 C_DamageMeter = {
-    GetCombatSessionFromType = function()
+    GetCombatSessionFromType = function(sessionType, meterType)
+        lastSessionType, lastMeterType, lastSessionID = sessionType, meterType, nil
         reads = reads + 1
+        return session
+    end,
+    GetCombatSessionFromID = function(sessionID, meterType)
+        lastSessionID, lastMeterType = sessionID, meterType
         return session
     end,
     IsDamageMeterAvailable = function()
         return true
     end,
     GetAvailableCombatSessions = function()
-        return {}
+        return history
     end,
 }
 C_CVar = {
@@ -225,6 +235,67 @@ assert(frame.rows[1].value.args[1] == secret)
 assert(frame.rows[1].value.args[2] == secret, "Restricted rates must also go directly to the widget")
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
 assert(frame.localRow:IsShown(), "Offscreen local player must stay visible")
+assert(frame.statistic:GetFrameLevel() == 2 and frame.session:GetFrameLevel() == 2)
+-- Exercise the actual button callbacks, menu selection and API routing together.
+local menuRoot
+local function menuDescription(label)
+    local description = { label = label, entries = {} }
+    function description:CreateButton(text)
+        local child = menuDescription(text)
+        table.insert(self.entries, child)
+        return child
+    end
+    function description:CreateRadio(text, selected, choose)
+        local child = { label = text, selected = selected, choose = choose }
+        table.insert(self.entries, child)
+        return child
+    end
+    function description:CreateDivider()
+        table.insert(self.entries, { divider = true })
+    end
+    return description
+end
+MenuUtil = {
+    CreateContextMenu = function(owner, generator)
+        menuRoot = menuDescription()
+        generator(owner, menuRoot)
+    end,
+}
+frame.statistic.scripts.OnClick()
+local damage, dps = menuRoot.entries[1].entries[1], menuRoot.entries[1].entries[2]
+assert(damage.selected() and not dps.selected())
+frame.offset = 5
+dps.choose()
+assert(frame.config.statistic == "Dps" and frame.offset == 0 and dps.selected())
+assert(lastMeterType == Enum.DamageMeterType.Dps and frame.statistic.text.text == "DPS")
+history = { { sessionID = 42, name = "", durationSeconds = 15 }, { sessionID = 43, name = "Boss" } }
+frame.session.scripts.OnClick()
+local fight, otherFight = menuRoot.entries[1], menuRoot.entries[2]
+local current, overall = menuRoot.entries[4], menuRoot.entries[5]
+assert(fight.label == "Combat 42 [15]" and otherFight.label == "Boss")
+assert(current.selected() and not overall.selected() and not fight.selected())
+frame.offset = 5
+fight.choose()
+assert(fight.selected() and not current.selected() and frame.offset == 0)
+assert(lastSessionID == 42 and lastMeterType == Enum.DamageMeterType.Dps)
+assert(frame.config.sessionName == "Combat 42" and frame.session.text.text == 42)
+overall.choose()
+assert(overall.selected() and not fight.selected())
+assert(frame.config.sessionID == nil and frame.config.sessionName == nil)
+assert(lastSessionType == Enum.DamageMeterSessionType.Overall and frame.session.text.text == "O")
+current.choose()
+damage.choose()
+history = {}
+assert(lastSessionType == Enum.DamageMeterSessionType.Current and lastMeterType == Enum.DamageMeterType.DamageDone)
+Enum.DamageMeterType.Deaths, Enum.DamageMeterType.EnemyDamageTaken = 3, 4
+frame.statistic.scripts.OnClick()
+local enemy = menuRoot.entries[1].entries[3]
+local deaths = menuRoot.entries[3].entries[1]
+enemy.choose()
+assert(lastMeterType == Enum.DamageMeterType.EnemyDamageTaken)
+deaths.choose()
+assert(lastMeterType == Enum.DamageMeterType.Deaths)
+damage.choose()
 local fullHeight = app:GetWindowSetting(frame.config, "height")
 frame.collapse.scripts.OnClick()
 assert(frame:IsShown() and not frame.body:IsShown())

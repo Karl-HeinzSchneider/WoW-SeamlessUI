@@ -154,10 +154,10 @@ function app:ShowStatisticMenu(frame)
         local categories = {
             {
                 DAMAGE_METER_CATEGORY_DAMAGE or "Damage",
-                { "DamageDone", "Dps", "DamageTaken", "AvoidableDamageTaken" },
+                { "DamageDone", "Dps", "DamageTaken", "AvoidableDamageTaken", "EnemyDamageTaken" },
             },
             { DAMAGE_METER_CATEGORY_HEALING or "Healing", { "HealingDone", "Hps", "Absorbs" } },
-            { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels" } },
+            { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels", "Deaths" } },
         }
         for _, category in ipairs(categories) do
             local menu = root:CreateButton(category[1])
@@ -179,7 +179,29 @@ end
 
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
-        root:CreateTitle("Combat session")
+        if self:IsAvailable() then
+            local sessions = C_DamageMeter.GetAvailableCombatSessions()
+            for _, session in ipairs(sessions) do
+                local name = session.name
+                if not name or name == "" then
+                    name = (DAMAGE_METER_COMBAT_NUMBER or "Combat %d"):format(session.sessionID)
+                end
+                local label = name
+                if session.durationSeconds then
+                    label = ("%s [%s]"):format(name, SecondsToClock(session.durationSeconds))
+                end
+                root:CreateRadio(label, function()
+                    return frame.config.sessionID == session.sessionID
+                end, function()
+                    frame.config.sessionID, frame.config.sessionName = session.sessionID, name
+                    frame.offset = 0
+                    self:RefreshWindows()
+                end)
+            end
+            if #sessions > 0 then
+                root:CreateDivider()
+            end
+        end
         for _, key in ipairs({ "Current", "Overall" }) do
             local label = key == "Current" and (DAMAGE_METER_CURRENT_SESSION or key)
                 or (DAMAGE_METER_OVERALL_SESSION or key)
@@ -190,18 +212,6 @@ function app:ShowSessionMenu(frame)
                 frame.offset = 0
                 self:RefreshWindows()
             end)
-        end
-        if self:IsAvailable() then
-            root:CreateDivider()
-            for _, session in ipairs(C_DamageMeter.GetAvailableCombatSessions()) do
-                root:CreateRadio(session.name, function()
-                    return frame.config.sessionID == session.sessionID
-                end, function()
-                    frame.config.sessionID, frame.config.sessionName = session.sessionID, session.name
-                    frame.offset = 0
-                    self:RefreshWindows()
-                end)
-            end
         end
     end)
 end
@@ -498,6 +508,8 @@ function app:CreateWindow(id)
     frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
+        -- Keep selector clicks above the mouse-enabled header used for dragging.
+        selector:SetFrameLevel(title:GetFrameLevel() + 1)
         selector:RegisterForDrag("LeftButton")
         selector:SetScript("OnDragStart", title:GetScript("OnDragStart"))
         selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))

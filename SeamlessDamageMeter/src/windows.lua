@@ -428,17 +428,11 @@ local function ShowRowTooltip(row, frame)
     tooltip.capacity, tooltip.count = capacity, #entries
     tooltip.offset = math.max(0, math.min(tooltip.offset or 0, #entries - capacity))
     tooltip:SetScale(scale)
-    tooltip:SetSize(
-        math.max(400, frame:GetWidth()),
-        10 + math.min(capacity, #entries) * (rowHeight + spacing) - spacing
-    )
+    tooltip:SetHeight(10 + math.min(capacity, #entries) * (rowHeight + spacing) - spacing)
     tooltip.background:SetVertexColor(unpack(app:GetWindowSetting(config, "backgroundColor")))
     tooltip:ClearAllPoints()
-    if frame:GetRight() * scale + tooltip:GetWidth() * scale + 6 > UIParent:GetWidth() then
-        tooltip:SetPoint("TOPRIGHT", row.entry, "TOPLEFT", -6, 0)
-    else
-        tooltip:SetPoint("TOPLEFT", row.entry, "TOPRIGHT", 6, 0)
-    end
+    tooltip:SetPoint("BOTTOMLEFT", row.entry, "TOPLEFT", 0, 0)
+    tooltip:SetPoint("BOTTOMRIGHT", row.entry, "TOPRIGHT", 0, 0)
     local statistic = app:GetStatistic(frame.config.statistic)
     for index = 1, math.min(capacity, #entries) do
         local spell = entries[index + tooltip.offset]

@@ -338,6 +338,13 @@ local tooltip = app.detailTooltip
 local detailBar = tooltip.rows[1]
 assert(tooltip.owner == frame.rows[1] and tooltip:GetFrameStrata() == "TOOLTIP")
 assert(tooltip.header == nil and tooltip.title == nil, "The detail panel has no header")
+assert(tooltip.points.BOTTOMLEFT[2] == frame.rows[1].entry and tooltip.points.BOTTOMLEFT[3] == "TOPLEFT")
+assert(tooltip.points.BOTTOMRIGHT[2] == frame.rows[1].entry and tooltip.points.BOTTOMRIGHT[3] == "TOPRIGHT")
+assert(tooltip.points.BOTTOMLEFT[4] == 0 and tooltip.points.BOTTOMLEFT[5] == 0)
+assert(
+    tooltip.points.BOTTOMRIGHT[4] == 0 and tooltip.points.BOTTOMRIGHT[5] == 0,
+    "Panel matches the bar edges above it"
+)
 assert(detailBar.value.args[1] == secret and detailBar.value.args[2] == secret)
 assert(detailBar.maximum == secret and detailBar.statusValue == secret, "Restricted bar scales go to widget setters")
 assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main bars share the exact texture")
@@ -358,6 +365,7 @@ assert(not tooltip:IsShown(), "Refresh must not reopen a tooltip after leaving")
 session.combatSources[12].sourceCreatureID = 42
 frame.localRow.entry.scripts.OnEnter()
 assert(detailCreature == 42, "Pinned rows support creature source IDs")
+assert(tooltip.points.BOTTOMLEFT[2] == frame.localRow.entry and tooltip.points.BOTTOMRIGHT[2] == frame.localRow.entry)
 frame.localRow.entry.scripts.OnLeave()
 details.totalAmount = 100
 details.combatSpells[1].totalAmount, details.combatSpells[1].amountPerSecond = 25, 5

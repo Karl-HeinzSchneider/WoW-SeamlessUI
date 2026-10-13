@@ -61,8 +61,9 @@ texture from `C_Spell`. Deaths show recap event bars scaled against recap max he
 Preserve API ordering and send restricted names/amounts directly to labels and status bars;
 omit percentages when their inputs are secret. Refresh the owned tooltip with its pooled
 row, dismiss it on leave/hide, and never request live details for Edit Mode preview rows.
-The panel opens beside the hovered row, chooses the left side near the screen's right edge,
-and caps its height at 75% of the screen. Mouse wheel over the owner scrolls an overflowing
+The panel opens directly above the hovered row, with both bottom corners anchored to the
+row's top corners so its width matches the full bar including its icon. Its height is capped
+at 75% of the screen. Mouse wheel over the owner scrolls an overflowing
 breakdown; otherwise it keeps the window's normal scrolling. The panel never captures mouse
 input, so moving off the owner dismisses it.
 Rows use full square icons sized to the row height and an original grayscale shaded fill

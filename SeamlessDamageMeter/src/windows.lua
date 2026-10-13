@@ -2,7 +2,8 @@
 local _, app = ...
 
 app.windows = {}
-local ROW_HEIGHT = 25
+app.windowFrames = {}
+local ROW_HEIGHT = 18
 local ROW_SPACING = 4
 local HEADER_HEIGHT = 32
 
@@ -190,9 +191,15 @@ function app:ShowSessionMenu(frame)
 end
 
 local function CreateRow(frame, index)
-    local row = CreateFrame("StatusBar", nil, frame.body)
+    local entry = CreateFrame("Frame", nil, frame.body)
+    entry:SetHeight(ROW_HEIGHT)
+    entry:SetPoint("TOPLEFT", 0, -(index - 1) * (ROW_HEIGHT + ROW_SPACING))
+    entry:SetPoint("RIGHT", 0, 0)
+    entry:SetClipsChildren(true)
+    local row = CreateFrame("StatusBar", nil, entry)
+    row.entry = entry
     row:SetHeight(ROW_HEIGHT - 2)
-    row:SetPoint("TOPLEFT", 24, -1 - (index - 1) * (ROW_HEIGHT + ROW_SPACING))
+    row:SetPoint("TOPLEFT", 24, -1)
     row:SetPoint("RIGHT", -4, 0)
     local fill = row:CreateTexture(nil, "ARTWORK")
     fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
@@ -233,10 +240,21 @@ local function UpdateRow(row, source, sourceIndex, session, statistic)
         row.icon:SetTexture(nil)
     end
     local amount = source.totalAmount
+    local secondary = source.amountPerSecond
     if statistic.rate then
         amount = source.amountPerSecond
+        secondary = source.totalAmount
     end
-    if issecretvalue and issecretvalue(amount) then
+    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
+    if showRate and issecretvalue and (issecretvalue(amount) or issecretvalue(secondary)) then
+        row.value:SetFormattedText(statistic.rate and "%.1f (%.0f)" or "%.0f (%.1f)", amount, secondary)
+    elseif showRate then
+        row.value:SetFormattedText(
+            DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)",
+            AbbreviateLargeNumbers(amount),
+            AbbreviateLargeNumbers(secondary)
+        )
+    elseif issecretvalue and issecretvalue(amount) then
         row.value:SetFormattedText("%.0f", amount)
     else
         row.value:SetText(AbbreviateLargeNumbers(amount))
@@ -322,17 +340,18 @@ function app:RefreshWindow(frame, session, message)
     if not config.collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity) then
         local row = frame.localRow or CreateRow(frame, 0)
         frame.localRow = row
-        row:SetParent(frame)
-        row:SetFrameLevel(frame.body:GetFrameLevel() + 10)
-        row:ClearAllPoints()
-        row:SetPoint(
+        local entry = row.entry
+        entry:SetParent(frame)
+        entry:SetFrameLevel(frame.body:GetFrameLevel() + 10)
+        entry:ClearAllPoints()
+        entry:SetPoint(
             localIndex <= frame.offset and "TOPLEFT" or "BOTTOMLEFT",
             frame.body,
             localIndex <= frame.offset and "TOPLEFT" or "BOTTOMLEFT",
-            24,
+            0,
             localIndex <= frame.offset and 3 or -3
         )
-        row:SetPoint("RIGHT", frame.body, "RIGHT", -4, 0)
+        entry:SetPoint("RIGHT", frame.body, "RIGHT", 0, 0)
         UpdateRow(row, sources[localIndex], localIndex, session, statistic)
     end
     frame.message:SetText(
@@ -356,8 +375,9 @@ function app:RefreshWindows()
     end
 end
 
-function app:CreateWindow()
-    local frame = CreateFrame("Frame", nil, UIParent)
+function app:CreateWindow(id)
+    local frame = CreateFrame("Frame", "SeamlessDamageMeterWindow" .. id, UIParent)
+    frame.windowID = id
     frame:Hide()
     frame.rows, frame.offset = {}, 0
     frame:SetFrameStrata("MEDIUM")
@@ -573,12 +593,16 @@ function app:RebuildWindows()
         self:AddWindow()
         return
     end
+    for index = #self.windows, 1, -1 do
+        self.windows[index] = nil
+    end
     for index, config in ipairs(self.db.profile.windows) do
-        local frame = self.windows[index]
+        local frame = self.windowFrames[config.id]
         if not frame then
-            frame = self:CreateWindow()
-            self.windows[index] = frame
+            frame = self:CreateWindow(config.id)
+            self.windowFrames[config.id] = frame
         end
+        self.windows[index] = frame
         frame.config = nil
         frame.offset = 0
         config.width = math.max(200, math.min(600, config.width))

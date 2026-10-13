@@ -3,4 +3,5 @@
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0
 ---@field db AceDBObject-3.0
 ---@field windows table[]
+---@field windowFrames table<number, table> Frames indexed by persistent window ID.
 ---@field statistics table[]

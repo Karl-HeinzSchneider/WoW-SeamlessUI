@@ -106,9 +106,14 @@ function methods:IsShown()
 end
 
 UIParent = object()
-function CreateFrame(_, _, parent, template)
+function CreateFrame(_, name, parent, template)
     assert(template == nil, "Meter frames must not inherit templates")
-    return object(parent)
+    local frame = object(parent)
+    if name then
+        assert(_G[name] == nil, "Named frames must be reused")
+        _G[name] = frame
+    end
+    return frame
 end
 RAID_CLASS_COLORS = { MAGE = { r = 0.2, g = 0.5, b = 1 } }
 DAMAGE_METER_CURRENT_SESSION_SHORT = "C"
@@ -183,9 +188,12 @@ assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
+assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
+assert(frame.rows[1]:GetHeight() == 16 and frame.rows[1].entry:GetHeight() == 18)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
 assert(frame.rows[1].name.args[2] == secret)
 assert(frame.rows[1].value.args[1] == secret)
+assert(frame.rows[1].value.args[2] == secret, "Restricted rates must also go directly to the widget")
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
 assert(frame.localRow:IsShown(), "Offscreen local player must stay visible")
 local fullHeight = frame.config.height
@@ -197,17 +205,27 @@ app:RebuildWindows()
 assert(frame:GetHeight() == 32 and frame.config.height == fullHeight)
 frame.collapse.scripts.OnClick()
 assert(frame:GetHeight() == fullHeight, "Expanding must not overwrite saved height with resize minimum")
-frame.scrollbar:SetValue(7)
-assert(frame.offset == 7 and not frame.localRow:IsShown())
-session.combatSources[8].totalAmount = 12345
+frame.scrollbar:SetValue(5)
+assert(frame.offset == 5 and not frame.localRow:IsShown())
+session.combatSources[6].totalAmount = 12345
+session.combatSources[6].amountPerSecond = 2.8
 app:RefreshWindows()
-assert(frame.rows[1].value.text == "12345")
+assert(frame.rows[1].value.args[1] == "12345" and frame.rows[1].value.args[2] == "2.8")
 frame.config.statistic = "Dps"
 app:RefreshWindows()
 assert(frame.rows[1]:IsShown())
-assert(frame.rows[1].value.args[1] == secret, "Rate display must use amountPerSecond")
+assert(
+    frame.rows[1].value.args[1] == "2.8" and frame.rows[1].value.args[2] == "12345",
+    "Rate display must swap primary and secondary values"
+)
+frame.config.statistic = "Interrupts"
+Enum.DamageMeterType.Interrupts = 2
+app:RefreshWindows()
+assert(frame.rows[1].value.text == "12345", "Action counts must not show a rate")
 frame.config.statistic = "DamageDone"
 app:AddWindow()
+local second = app.windows[2]
+assert(SeamlessDamageMeterWindow2 == second)
 reads = 0
 app:RefreshWindows()
 assert(reads == 1, "Matching windows should share one API read")
@@ -222,9 +240,25 @@ assert(not frame.rows[1]:IsShown() and not frame.localRow:IsShown())
 C_DamageMeter = nil
 app:RefreshWindows()
 assert(frame.message.text == "This client does not provide the damage meter API.")
-app:RemoveWindow(app.db.profile.windows[2])
+app:RemoveWindow(app.db.profile.windows[1])
+assert(
+    app.windows[1] == second and SeamlessDamageMeterWindow2 == second,
+    "Deleting another window must not rename or reassign this frame"
+)
+app:RebuildWindows()
+assert(app.windows[1] == second)
 app:RemoveWindow(app.db.profile.windows[1])
 assert(#app.db.profile.windows == 0 and not frame:IsShown())
 app:RebuildWindows()
 assert(#app.db.profile.windows == 0, "An empty profile must stay empty")
+app.db.profile = {
+    initialized = true,
+    nextID = 3,
+    windows = { { id = 2, statistic = "DamageDone", session = "Current", width = 400, height = 200, x = 0, y = 0 } },
+}
+app:RebuildWindows()
+assert(
+    app.windows[1] == second and SeamlessDamageMeterWindow2 == second,
+    "Profile changes must reuse the same named frame"
+)
 print("Damage meter window regressions OK")

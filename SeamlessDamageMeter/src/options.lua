@@ -17,27 +17,9 @@ local anchors = {
 local settings = {
     { key = "width", name = "Width", type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = "Height", type = "range", min = 120, max = 900, step = 1 },
-    {
-        key = "fixedHeight",
-        name = "Set window height by number of bars",
-        type = "toggle",
-        desc = "Keep the window tall enough for the number of bars selected below. Changing bar height or spacing adjusts the window height automatically. Dragging the resize handle changes only the width while this is on.",
-    },
-    {
-        key = "visibleLines",
-        name = "Number of visible bars",
-        type = "range",
-        min = 1,
-        max = 30,
-        step = 0.25,
-        desc = "Used when Set window height by number of bars is on. For example, 7 shows seven full bars; 7.5 leaves room for seven bars and half of the next bar. The default is 7.",
-    },
-    {
-        key = "showResizeHandle",
-        name = "Show corner resize handle",
-        type = "toggle",
-        desc = "Show the draggable handle in the bottom-right corner. Drag it to change the window size. Turn this off to hide the handle, including in Edit Mode. You can still change the size in settings.",
-    },
+    { key = "fixedHeight", name = "Fix height by visible lines", type = "toggle" },
+    { key = "visibleLines", name = "Visible lines", type = "range", min = 1, max = 30, step = 0.25 },
+    { key = "showResizeHandle", name = "Show resize handle", type = "toggle" },
     { key = "scale", name = "Scale", type = "range", min = 0.5, max = 2, step = 0.01 },
     {
         key = "font",
@@ -84,8 +66,7 @@ local function SettingControl(definition, config, inherited)
     local key = definition.key
     local control = {
         type = definition.type,
-        name = config and inherited and "Shared setting" or definition.name,
-        desc = definition.desc,
+        name = config and (inherited and "Default" or "Window value") or definition.name,
         width = config and 0.75 or "full",
         min = definition.min,
         max = definition.max,
@@ -141,8 +122,8 @@ local function AppearanceOptions(config)
             type = "description",
             order = 0,
             name = config
-                    and "This window uses the shared settings unless you tick Customize. Tick Customize beside a setting, then choose what you want for this window. Untick it to use the shared setting again. Moving or resizing a window saves its position or size for that window.\n"
-                or "These settings apply to all windows. A window with Customize ticked for a setting keeps its own choice. New windows use these shared settings.\n",
+                    and "Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Dragging sets X/Y overrides; resizing also sets width/height overrides.\n"
+                or "Shared settings for every window without an override, including newly created windows. Offsets are measured at the window's scale.\n",
         },
     }
     for order, definition in ipairs(settings) do
@@ -161,8 +142,7 @@ local function AppearanceOptions(config)
                     default = default,
                     override = {
                         type = "toggle",
-                        name = "Customize",
-                        desc = "Choose a separate setting for this window. Untick to use the shared setting again.",
+                        name = "Override",
                         order = 2,
                         width = 0.5,
                         get = function()
@@ -313,7 +293,7 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Drag a window's header to move it. When unlocked, hover over the window to show its bottom-right resize handle, then drag the handle to change its size. You can hide the handle in the Windows tab or set the height by the number of visible bars. Scroll over the bars to see more players. The gear menu manages windows; the collapse button hides the bars and leaves the header visible.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu activates, hides or deactivates windows; the collapse button folds the bars away and keeps the header visible. Combat history is owned by the game and is not saved by this addon.\n",
                     },
                     add = {
                         type = "execute",

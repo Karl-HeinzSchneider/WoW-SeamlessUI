@@ -16,7 +16,7 @@
 ---@field unitTooltip SeamlessTooltip.UnitTooltip  # the unit and line helpers of the unit text features
 ---@field border SeamlessTooltip.Border  # the border color features paint by a tooltip's content
 ---@field features SeamlessTooltip.Features  # the registry of tooltip features (src\features\), each switchable in the options
----@field options SeamlessTooltip.Options  # native Settings child category
+---@field options SeamlessTooltip.Options  # AceConfig panel under Settings > AddOns > Seamless
 
 -- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
 -- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.

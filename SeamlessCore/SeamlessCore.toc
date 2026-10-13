@@ -14,9 +14,5 @@ src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
 src\core\tweaks.lua
-src\core\settings.lua
-src\core\settings-actions.lua
-src\core\settings-options.lua
-src\core\profiles.lua
 src\core\options.lua
 src\core\minimapbutton.lua

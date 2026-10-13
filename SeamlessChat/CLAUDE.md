@@ -11,22 +11,20 @@ Every runtime Lua/XML file must be listed in dependency order in `SeamlessChat.t
 
 1. `src/core/bootstrap.lua`: obtains Core through AceAddon and shares its logger.
 2. `db.lua`, `ace.lua`: defaults, independent AceDB/AceAddon lifecycle and legacy slash commands.
-3. `options.lua`: native Settings > AddOns > Seamless > Chat, using Core's panel helpers and profiles.
+3. `options.lua`: the Chat panel: General (sync, chat input), Messages, Windows, Buttons, Log, Profiles.
 4. `src/chat/`: state, sync, line transforms and input history.
 5. `src/features/features.lua`, followed by features in TOC order. Window mixins load before their XML.
 6. `SeamlessChat.lua`: load diagnostic.
 
 LibEditModeOverride is vendored and loaded by Core, alongside Ace3. No local library embeds,
-minimap launcher or standalone options window. `/seamlesschat` opens the native child category;
+minimap launcher or standalone options window. `/seamlesschat` opens the Chat panel;
 `save`, `apply`, `log`, `search <text>` and `reset` keep their existing behavior. `loglevel` delegates
 to Core. Legacy local minimap/logLevel settings are unused; shared preferences live in Core.
 
-Native controls retain the feature option definitions through `panel:Options`. Inputs open a
-prefilled native dialog, permit empty channel labels, validate custom timestamp formats and
-refuse stale edits after profile switches. Custom get/set callbacks retain nested settings and
-color behavior. Nested channel-label options declare explicit defaults. Conditional inputs remain
-visible but disabled while inapplicable. Status/preview rows show current text in their tooltip
-and a Details dialog. Delete-log confirmation remains required.
+Each feature is an inline section (`core.FeatureGroup`) on the tab named by its prototype's
+`optionsTab` (`messages`, `windows`, `buttons`, `log`; the `TABS` table in `options.lua`), in TOC
+order. Its `GetOptions()` args are plain AceConfig: get/set default to the feature's settings, an
+own `disabled` must include the feature-off check, unknown keys are rejected.
 
 ### `src/chat/` — the same chat on every character
 
@@ -77,9 +75,9 @@ after `features.lua`.
 - `features.lua` — `app.features`. `app.features:New(key, prototype, name, desc, defaults, ...libs)`
   makes an Ace module whose prototype inherits the feature methods: `GetSettings()`
   (`profile.features[key]`, where `enabled` is the switch; `defaults` are registered as AceDB
-  defaults), `GetOptions()` (declarative option definitions for its own settings), `Refresh()` (re-apply after a
+  defaults), `GetOptions()` (AceConfig args for its own settings), `Refresh()` (re-apply after a
   setting changed) and `OnProfileRefresh()` (enable/disable to match the profile). `options.lua`
-  gives every feature a native section: description, the Enable toggle, then `GetOptions()`, with get/set
+  gives every feature a section on its `optionsTab`: the Enable toggle with its description, then `GetOptions()`, with get/set
   defaulting to the feature's settings and everything grayed out while it is off.
 - A feature sets itself up in `OnEnable` and undoes it in `OnDisable`. Hooks that can't be removed
   (`hooksecurefunc`, a wrapped method) are installed once and check `self:IsEnabled()`.
@@ -156,14 +154,14 @@ after `features.lua`.
   each button's OnShow/OnHide). `show[key]` hides a button (the log button uses the log feature's
   `showButton`; `game` buttons are still shown and hidden by the game). Its own buttons (`own`): copy
   (copy window for `SELECTED_CHAT_FRAME`) and options (Chat settings). Bottom up: options, copy, log,
-  chat menu, channels, social, then text to speech and voice. Its settings are on their own page,
-  "Chat Buttons" (`options.lua` registers `<appName>.Buttons` and leaves `skin` off the Chat page). Every button gets a dark plate (1 px edge + fill,
+  chat menu, channels, social, then text to speech and voice. Its settings are on the
+  Buttons tab. Every button gets a dark plate (1 px edge + fill,
   the edge in `accent` on hover); the button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
   whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors and
   hidden buttons back when disabled.
 
-To add a feature: a new `src/features/<name>.lua` calling `app.features:New`, its TOC line, a README
-entry. Nothing else needs registering.
+To add a feature: a new `src/features/<name>.lua` calling `app.features:New` with an `optionsTab`
+on its prototype, its TOC line, a README entry. Nothing else needs registering.
 
 ### Annotations (not in the TOC)
 
@@ -179,4 +177,4 @@ entry. Nothing else needs registering.
 - Logout code reading settings registers AceDB `OnDatabaseShutdown`, never `PLAYER_LOGOUT`, because
   AceDB removes defaults when serializing its SavedVariables.
 - Preserve combat, Edit Mode readiness and preset-layout guards in chat synchronization.
-- The custom copy/log windows stay native Lua/XML UI; the settings renderer does not replace them.
+- The custom copy/log windows stay native Lua/XML UI; the options panel does not replace them.

@@ -4,7 +4,7 @@ local _, app = ...
 -- AceDB-3.0 defaults. Missing keys in the SavedVariables fall back to these values,
 -- and values equal to the default are not written to disk.
 
--- User settings, switchable per character through native profile controls.
+-- User settings, switchable per character through the Profiles tab.
 ---@class SeamlessTooltip.DB.Profile
 local profile = {
     -- One table per feature, keyed like the feature; each file in src\features\ adds its own

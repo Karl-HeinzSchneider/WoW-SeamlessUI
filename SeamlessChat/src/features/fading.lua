@@ -5,7 +5,7 @@ local _, app = ...
 -- the fade takes. Applies to every chat window (temporary ones too); the game's values come back
 -- when disabled.
 ---@class SeamlessChat.Fading : SeamlessChat.Feature
-local module = {}
+local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.FadingSettings : SeamlessChat.FeatureSettings
 local defaults = {

@@ -5,7 +5,7 @@ A modular World of Warcraft addon suite for WoW Forever.
 ## Addons
 
 - **SeamlessCore** (required): shared libraries, logging, profiles for shared settings, one
-  minimap button and a native **Seamless** category in WoW Settings.
+  minimap button and the **Seamless** entry in WoW Settings > AddOns.
 - **SeamlessUnitframes** (optional): per-frame health colors for player, pet, target, focus,
   their targets and party. Choose default, class, reaction or combined colors, and configure
   the client's numeric target threat display.
@@ -39,15 +39,15 @@ Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `S
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
 
 - `/seamless`: open Settings > AddOns > Seamless.
-- `/rl`: reload the UI. Enabled by default; toggle it under Seamless > Tweaks in Settings.
-- Core also shows the FPS counter on startup by default. Disable this under Seamless > Tweaks; Ctrl+R still toggles the counter normally.
+- `/rl`: reload the UI. Enabled by default; toggle it on the Tweaks tab of Seamless in Settings.
+- Core also shows the FPS counter on startup by default. Disable this on the Tweaks tab; Ctrl+R still toggles the counter normally.
 - `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
 - `/seamless reset`: reset the current core profile (shared preferences only).
-- `/seamlessunitframes`: open the Unit Frames subcategory.
+- `/seamlessunitframes`: open the Unit Frames options.
 - `/seamlessunitframes reset`: reset the current Unitframes profile.
-- `/seamlesstooltip`: open the Tooltip subcategory.
+- `/seamlesstooltip`: open the Tooltip options.
 - `/seamlesstooltip reset`: reset the current Tooltip profile.
-- `/seamlesschat`: open the Chat subcategory; `save`/`apply` manage its shared chat setup.
+- `/seamlesschat`: open the Chat options; `save`/`apply` manage its shared chat setup.
 - `/seamlesschat log` or `/seamlesschat search <text>`: open the searchable chat log.
 - `/seamlesschat reset`: reset the current Chat profile.
 
@@ -58,9 +58,9 @@ Each feature manages its own profiles, independently of the core profile.
 Chat retains `SeamlessChatDB`, `SeamlessChatHistoryDB` and `SeamlessChatLogDB`, including existing
 sync snapshots, input history and per-character message data.
 
-Settings use native checkboxes and dropdowns and participate in WoW's Settings search.
-Each category includes controls to select, create, copy, delete and reset its AceDB profiles.
-Copying, deletion and reset ask for confirmation. Native Defaults resets controls without switching profiles.
+Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
+addon's own sections, and Profiles last, where its profiles are selected, created, copied, deleted
+and reset.
 
 When replacing standalone SeamlessTooltip or SeamlessChat, replace its existing AddOns folder with the suite version
 and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to

@@ -71,20 +71,23 @@ end
 -- Available at file load to dependent addons through AceAddon:GetAddon("SeamlessCore").
 addon.logger = app.logger
 
----@param name string
----@param title string
----@param build fun(panel: SeamlessCore.SettingsPanel)
----@return SeamlessCore.SettingsPanel
-function addon:RegisterOptions(name, title, build)
-    return app.options:RegisterAddon(name, title, build)
+-- Gives a feature addon its panel in Settings > AddOns > Seamless: a General tab, `spec.tabs`
+-- and, with `spec.db`, a Profiles tab. Call from the addon's OnInitialize, once its database exists.
+---@param name string The addon's folder name, also its AceConfig app name.
+---@param spec SeamlessCore.OptionsSpec
+function addon:RegisterOptions(name, spec)
+    app.options:RegisterAddon(name, spec)
 end
 
----@param name string?
-function addon:OpenOptions(name)
-    app.options:Open(name)
+-- Opens the native Settings window on an addon's panel (Seamless when nil), optionally on a tab.
+---@param name? string
+---@param tab? string
+function addon:OpenOptions(name, tab)
+    app.options:Open(name, tab)
 end
 
----@param name string?
+-- Redraws an addon's panel (Seamless when nil) after a change made elsewhere, e.g. a CVar.
+---@param name? string
 function addon:RefreshOptions(name)
     app.options:Refresh(name)
 end

@@ -12,7 +12,7 @@ local _, app = ...
 ---@field bar Frame? SeamlessChatButtonBar
 ---@field copyButton Button?
 ---@field optionsButton Button?
-local module = {}
+local module = { optionsTab = "buttons" }
 
 ---@class SeamlessChat.SkinSettings : SeamlessChat.FeatureSettings
 local defaults = {

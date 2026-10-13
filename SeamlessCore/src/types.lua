@@ -4,13 +4,13 @@
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema
 ---@field db SeamlessCore.DB
----@field settings SeamlessCore.Settings
 ---@field options SeamlessCore.Options
 ---@field minimapButton SeamlessCore.MinimapButton
 ---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
+---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
 
 ---@class SeamlessCore.DB : AceDBObject-3.0
 ---@field profile SeamlessCore.Profile

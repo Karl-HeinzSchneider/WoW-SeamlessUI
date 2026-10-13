@@ -1,7 +1,7 @@
 ---@type string, SeamlessUnitframes
 local _, app = ...
 
--- The game's unit frames this addon changes. The native options have labeled controls per entry and the
+-- The game's unit frames this addon changes. The options have a health bar color per entry and the
 -- settings live in profile.unitFrames[key]; a feature finds its frames through here.
 ---@class SeamlessUnitframes.UnitFrames
 local unitFrames = {}

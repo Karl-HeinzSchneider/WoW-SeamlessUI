@@ -10,7 +10,8 @@ client in the TOCs (`16001` = WoW Forever). Each direct child folder with a same
 TOC is an independently selectable addon.
 
 - `SeamlessCore/`: required shared libraries, logger, AceDB core settings, minimap launcher,
-  `/seamless` and the native Settings parent category. See its `CLAUDE.md` for the public API.
+  `/seamless`, the "Seamless" options panel and the AceConfig options layout every addon uses
+  (General tab, the addon's tabs, Profiles tab). See its `CLAUDE.md` for the public API.
 - `SeamlessUnitframes/`: optional unit-frame features, depending on SeamlessCore. Keeps
   `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
 - `SeamlessTooltip/`: optional tooltip features, depending on SeamlessCore. Keeps

@@ -10,7 +10,7 @@ local log = app.logger
 -- FCF_SetWindowAlpha (login, new whisper windows, reset, the tab menu); hooks on them paint ours
 -- over it.
 ---@class SeamlessChat.Background : SeamlessChat.Feature
-local module = {}
+local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.BackgroundSettings : SeamlessChat.FeatureSettings
 local defaults = {

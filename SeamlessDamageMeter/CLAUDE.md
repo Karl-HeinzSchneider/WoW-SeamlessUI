@@ -6,7 +6,7 @@ statistic/session selections. Combat data stays owned by `C_DamageMeter`.
 
 Load order: `core.lua` (lifecycle/database), `data.lua` (client API adapter),
 `blizzard.lua` (turns tracking on, keeps the game's meter window hidden),
-`windows.lua` (pooled frames and menus), `options.lua` (native Core settings).
+`windows.lua` (pooled frames and menus), `options.lua` (the Damage Meter panel: General, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
 Use the exported client API documentation under `../_data/BlizzardInterfaceCode` when

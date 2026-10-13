@@ -11,7 +11,7 @@
 ---@field addon SeamlessChat.Addon
 ---@field dbDefaults SeamlessChat.DBDefaults
 ---@field db SeamlessChat.DB
----@field options SeamlessChat.Options  # native Settings child category
+---@field options SeamlessChat.Options  # AceConfig panel under Settings > AddOns > Seamless
 ---@field chatState SeamlessChat.ChatState  # reads and writes the game's chat setup
 ---@field sync SeamlessChat.Sync  # keeps the chat setup the same on every character
 ---@field features SeamlessChat.Features  # the optional features (src/features/)

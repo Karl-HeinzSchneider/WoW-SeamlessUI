@@ -5,7 +5,7 @@ local _, app = ...
 -- at the start of a chat line (|Hchannel:...|h[...]|h); the link stays, so clicking it still
 -- switches the chat input to that channel.
 ---@class SeamlessChat.Channels : SeamlessChat.Feature
-local module = {}
+local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.ChannelSettings : SeamlessChat.FeatureSettings
 local defaults = {
@@ -147,7 +147,6 @@ function module:GetOptions()
             order = 30 + i,
             width = "half",
             name = GROUP_LABELS[chatType],
-            default = defaults.short[chatType],
             desc = "Empty keeps the game's name.",
             disabled = function()
                 local settings = self:Settings()

@@ -13,7 +13,7 @@ local log = app.logger
 ---@class SeamlessChat.History : SeamlessChat.Feature
 ---@field restored boolean this session's saved chat was put back
 ---@field dividers table<string, true> the divider lines shown, never saved
-local module = {}
+local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.HistorySettings : SeamlessChat.FeatureSettings
 local defaults = {

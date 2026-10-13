@@ -13,7 +13,7 @@ local _, app = ...
 ---@field first integer index of the oldest record in db.records
 ---@field last integer index of the newest
 ---@field onAdd fun(record: SeamlessChat.LogRecord)? called for every new record (the log window)
-local module = {}
+local module = { optionsTab = "log" }
 
 ---@class SeamlessChat.LogSettings : SeamlessChat.FeatureSettings
 local defaults = {

@@ -12,19 +12,19 @@ Every runtime Lua/XML file must be listed in dependency order in `SeamlessToolti
 1. `src/core/bootstrap.lua`: obtains Core through AceAddon and shares its logger.
 2. `db.lua`, then `ace.lua`: feature defaults, independent AceAddon/AceDB lifecycle and the legacy
    `/seamlesstooltip` command. `loglevel` delegates to Core; `reset` resets only Tooltip's profile.
-3. `features.lua`: nested feature modules and native settings registration. Defaults are declared
+3. `features.lua`: nested feature modules and their options sections (`OptionsByCategory`). Defaults are declared
    at file load; all modules exist before AceDB initialization.
 4. `media.lua`: LibSharedMedia lookup helpers (the library is vendored and loaded by Core).
 5. `lines.lua`: consistent label/value lines. `unittooltip.lua`: shared unit lookup and line helpers,
    including secret-value checks and this client's surname-aware `DisplayName`.
 6. `border.lua`: shared content-driven border painting and restoration.
-7. `options.lua`: the Tooltip child category under native Seamless Settings; feature controls,
-   game aura CVars and Core's profile controls. CVAR_UPDATE refreshes external game-setting changes.
+7. `options.lua`: the Tooltip panel: a tab per feature category (`all` is General, then Units,
+   Items, Spells with the game aura CVars), then Profiles. CVAR_UPDATE refreshes external game-setting changes.
 8. `src/features/*.lua`: the features below, in category order.
 9. `SeamlessTooltip.lua`: load diagnostic.
 
 No local library embeds, launcher or standalone options window. `/seamlesstooltip` opens
-Settings > AddOns > Seamless > Tooltip. Native labels include feature names for search.
+Settings > AddOns > Seamless > Tooltip.
 
 ### `src/features/`
 
@@ -169,15 +169,13 @@ A feature is one file in `src/features/` plus its TOC entry. It declares itself 
 Never rename an existing key without migration. `info` declares category (`all`, `units`, `items`,
 `spells`), name, description (`desc`), order, optional `enabled` (default true), defaults and options.
 
-Options are declarative `toggle`, `select`, `range` or `color` definitions consumed by Core's
-`panel:Options` adapter, without AceConfig. Each key maps to the same key in feature settings.
-Select values may be a table or a function, with optional explicit `sorting`; numeric keys stay
-numeric. Ranges use hard min/max/step bounds. Colors retain `{ r, g, b, a }` storage and are shown
-as a native RGB swatch plus an opacity slider when `hasAlpha` is true. Native Defaults uses the
-feature defaults. Layout-only metadata from the old renderer is ignored.
+Options are AceConfig args; each key maps to the same key in the feature's settings, read and
+written by `core.FeatureGroup` (colors as `{ r, g, b, a }` tables) unless the option has its own
+get/set. Each feature is an inline section on its category's tab: an Enable toggle with `desc`
+under it, then its options, disabled while the feature is off.
 
-Features are sorted by category and order, then key. Every feature gets an enable checkbox;
-its controls also respect optional `disabled` predicates and update when sibling settings change.
+Features are sorted by `order` within their tab. An option's own `disabled` replaces the
+feature-off check, so include `not settings.enabled` in it.
 Feature options need no manual edits in `options.lua` or `db.lua`.
 
 Features are nested Ace modules with AceEvent/AceHook. Register hooks/events in `OnEnable` and

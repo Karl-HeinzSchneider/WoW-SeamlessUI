@@ -5,8 +5,8 @@ local addon = app.addon
 
 -- Optional features the user switches on and off. A feature is an Ace module made with
 -- `app.features:New`, one file in src/features/. Its settings live in `profile.features[key]`, where
--- `enabled` is the switch, and `options.lua` gives it a section in native Settings with that switch on top
--- plus the feature's own `GetOptions()`.
+-- `enabled` is the switch, and `options.lua` gives it a section on its `optionsTab` with that switch on
+-- top plus the feature's own `GetOptions()`.
 --
 -- A disabled feature stays loaded but Ace calls its OnDisable, so a feature undoes in OnDisable
 -- whatever OnEnable changed. Hooks that can't be removed check `self:IsEnabled()` instead.
@@ -18,6 +18,8 @@ app.features = features
 
 app.dbDefaults.profile.features = {}
 
+---@alias SeamlessChat.OptionsTab "messages"|"windows"|"buttons"|"log"
+
 ---@class SeamlessChat.FeatureSettings
 ---@field enabled boolean
 
@@ -26,6 +28,7 @@ app.dbDefaults.profile.features = {}
 ---@field featureKey string key in profile.features and the module name
 ---@field featureName string title in the options
 ---@field featureDesc string one sentence for the options
+---@field optionsTab SeamlessChat.OptionsTab the options tab its section is on
 local featureMixin = {}
 
 ---@return SeamlessChat.FeatureSettings
@@ -33,8 +36,8 @@ function featureMixin:GetSettings()
     return app.db.profile.features[self.featureKey]
 end
 
--- Declarative native options for the feature's own settings, shown below its on/off switch. Their get/set
--- default to the feature's settings table (the arg key is the settings key), then call Refresh.
+-- AceConfig args for the feature's own settings, shown below its on/off switch. Their get/set default
+-- to the feature's settings table (the arg key is the settings key), then call Refresh.
 ---@return table<string, table>
 function featureMixin:GetOptions()
     return {}

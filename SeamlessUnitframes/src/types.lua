@@ -11,7 +11,7 @@
 ---@field addon SeamlessUnitframes.Addon
 ---@field dbDefaults SeamlessUnitframes.DBDefaults
 ---@field db SeamlessUnitframes.DB
----@field options SeamlessUnitframes.Options  # native Settings subcategory
+---@field options SeamlessUnitframes.Options  # AceConfig panel under Settings > AddOns > Seamless
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
 ---@field questIcons SeamlessUnitframes.QuestIcons

@@ -12,8 +12,9 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
    `/seamlessunitframes` alias. `reset` resets only the feature profile; `loglevel` delegates to core.
 4. `unitframes.lua`: registry of player, pet, target, target of target, focus, target of focus,
    and party frames, with `Exists`, `KeyOf` and `All` helpers.
-5. `options.lua`: native controls in Settings > AddOns > Seamless > Unit Frames, using Core's
-   panel helpers. Getters follow the active profile; CVAR_UPDATE refreshes external threat changes.
+5. `options.lua`: the Unit Frames panel (Settings > AddOns > Seamless) via `core:RegisterOptions`:
+   General (health bar color per unit frame), Target (threat percentage, quest icon), Profiles.
+   Getters follow the active profile; CVAR_UPDATE refreshes external threat changes.
 6. `src/healthcolor/healthcolor.lua`: feature implementation.
    `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
    objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.

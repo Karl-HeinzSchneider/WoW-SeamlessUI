@@ -13,24 +13,25 @@ app.features = addon:NewModule("Features", module) --[[@as SeamlessTooltip.Featu
 
 ---@alias SeamlessTooltip.FeatureCategory "all"|"units"|"items"|"spells"
 
--- The options sections features are sorted into, by FeatureInfo.category: by the tooltips they
--- change.
+-- The options tabs features are sorted into, by FeatureInfo.category: by the tooltips they change.
+-- Features for all tooltips go on the General tab.
 ---@type table<SeamlessTooltip.FeatureCategory, { name: string, order: integer }>
 local CATEGORIES = {
-    all = { name = "All tooltips", order = 10 },
+    all = { name = "General", order = 0 },
     units = { name = "Units", order = 20 },
     items = { name = "Items", order = 30 },
     spells = { name = "Spells", order = 40 },
 }
+module.CATEGORIES = CATEGORIES
 
 ---@class SeamlessTooltip.FeatureInfo
----@field category SeamlessTooltip.FeatureCategory The options section it is listed in.
----@field name string The feature's heading in the options.
----@field desc string One line on what it adds to the tooltip, shown under the heading.
+---@field category SeamlessTooltip.FeatureCategory The options tab it is listed on.
+---@field name string The feature's section heading in the options.
+---@field desc string One line on what it adds to the tooltip, shown under its Enable switch.
 ---@field order? integer Position among its category's features (default 100).
 ---@field enabled? boolean Whether it is on in a new profile (default true).
 ---@field defaults? table Profile defaults of the feature's own settings.
----@field options? table<string, table> Declarative native control definitions; each key is the setting it stores in `defaults`.
+---@field options? table<string, table> AceConfig args; each key is the setting it stores in `defaults`.
 
 -- Set once the features are enabled (PLAYER_LOGIN); before that, profile refreshes only set the
 -- state Ace enables them with.
@@ -171,60 +172,31 @@ function module:OnProfileRefresh()
     end
 end
 
--- Stable category/feature ordering, with one native toggle and the shared option adapter per feature.
----@param panel SeamlessCore.SettingsPanel
-function module:RegisterSettings(panel)
-    local features = {}
-    for _, feature in self:IterateModules() do
-        features[#features + 1] = feature
+-- The features' options sections, by category: AceConfig args keyed by feature, ordered by the
+-- features' order. Each is a section with the feature's Enable switch and its options.
+---@return table<SeamlessTooltip.FeatureCategory, table<string, table>>
+function module:OptionsByCategory()
+    local result = {}
+    for category in pairs(CATEGORIES) do
+        result[category] = {}
     end
-    table.sort(features, function(a, b)
-        local first, second = CATEGORIES[a.info.category].order, CATEGORIES[b.info.category].order
-        if first ~= second then
-            return first < second
-        end
-        first, second = a.info.order or 100, b.info.order or 100
-        return first == second and a.moduleName < b.moduleName or first < second
-    end)
-    local previousCategory
-    for _, feature in ipairs(features) do
-        local info, key = feature.info, feature.moduleName
-        if previousCategory ~= info.category then
-            panel:Header(CATEGORIES[info.category].name)
-            previousCategory = info.category
-        end
-        local prefix = "features." .. key
-        local enabledID = prefix .. ".enabled"
-        panel:Checkbox({
-            id = enabledID,
+    for _, feature in self:IterateModules() do
+        local info = feature.info
+        result[info.category][feature.moduleName] = app.core.FeatureGroup({
             name = info.name,
-            tooltip = info.desc,
-            default = app.dbDefaults.profile.features[key].enabled,
-            get = function()
-                return feature:Settings().enabled
-            end,
-            set = function(value)
-                feature:Settings().enabled = value
-                feature:Refresh()
-            end,
-            tags = { CATEGORIES[info.category].name },
-        })
-        panel:Options({
-            id = prefix,
-            name = info.name,
-            defaults = app.dbDefaults.profile.features[key],
-            options = info.options or {},
-            get = function()
+            desc = info.desc,
+            order = info.order or 100,
+            options = info.options,
+            settings = function()
                 return feature:Settings()
+            end,
+            toggled = function()
+                feature:Refresh()
             end,
             changed = function()
                 feature:SettingsChanged()
             end,
-            enabled = function()
-                return feature:Settings().enabled
-            end,
-            dependencies = { enabledID },
-            tags = { CATEGORIES[info.category].name, info.name },
         })
     end
+    return result
 end

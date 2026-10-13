@@ -6,7 +6,7 @@ local _, app = ...
 -- chatClassColorOverride: "0" colors every name, "1" none, anything else leaves it to the types.
 -- This sets it to "0" while enabled and restores the previous value when disabled.
 ---@class SeamlessChat.ClassColors : SeamlessChat.Feature
-local module = {}
+local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.ClassColorSettings : SeamlessChat.FeatureSettings
 local defaults = {

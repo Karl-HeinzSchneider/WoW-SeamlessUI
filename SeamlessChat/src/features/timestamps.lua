@@ -9,7 +9,7 @@ local _, app = ...
 ---@field unstampedSince number GetTime() since when lines went in without a stamp
 ---@field cachedTime integer? time() the cached stamp is for
 ---@field cachedStamp string?
-local module = {}
+local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.TimestampSettings : SeamlessChat.FeatureSettings
 local defaults = {

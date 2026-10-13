@@ -15,7 +15,7 @@ local log = app.logger
 ---@field lines table<integer, string> recent chat lines by link id
 ---@field nextId integer
 ---@field buttons table<Frame, Button> the copy button of each chat window
-local module = {}
+local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.CopySettings : SeamlessChat.FeatureSettings
 local defaults = {

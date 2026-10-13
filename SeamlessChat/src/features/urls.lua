@@ -5,7 +5,7 @@ local appName, app = ...
 -- chat input, selected, ready for Ctrl+C (the game can't open a browser). The address is the link's
 -- own data (|Haddon:SeamlessChat:url:<address>|h), so links in restored chat history keep working.
 ---@class SeamlessChat.Urls : SeamlessChat.Feature
-local module = {}
+local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.UrlSettings : SeamlessChat.FeatureSettings
 local defaults = {

@@ -4,7 +4,7 @@ local _, app = ...
 -- AceDB-3.0 defaults. Missing keys in the SavedVariables fall back to these values,
 -- and values equal to the default are not written to disk.
 
--- User settings, switchable per character through native profile controls. Every character shares the "Default"
+-- User settings, switchable per character through the Profiles tab. Every character shares the "Default"
 -- profile unless given its own, which is what makes the chat the same everywhere.
 ---@class SeamlessChat.DB.Profile
 ---@field chat SeamlessChat.Snapshot? the synced chat setup; nil until a character using this profile logs in

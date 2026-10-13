@@ -97,6 +97,55 @@ function app:GetSourceDetails(config, source)
     )
 end
 
+-- This API exposes target names, not GUIDs. Aggregate only complete, public detail
+-- amounts; a representative target or a restricted amount is not a target total.
+function app:GetTargetBreakdown(details)
+    local entries, byName = {}, {}
+    local total, maximum = 0, 0
+    local function restricted(value)
+        return issecretvalue and issecretvalue(value)
+    end
+    if restricted(details.totalAmount) then
+        return nil, "Target data restricted."
+    end
+    for _, spell in ipairs(details.combatSpells or {}) do
+        local unit = spell.combatSpellDetails
+        if not unit then
+            return nil, "Target data unavailable."
+        end
+        if restricted(unit.unitName) or restricted(unit.amount) or restricted(spell.totalAmount) then
+            return nil, "Target data restricted."
+        end
+        if type(unit.unitName) ~= "string" or unit.unitName == "" or type(unit.amount) ~= "number" then
+            return nil, "Target data unavailable."
+        end
+        if unit.amount ~= spell.totalAmount then
+            return nil, "Target data unavailable."
+        end
+        local target = byName[unit.unitName]
+        if not target then
+            target = {
+                isTarget = true,
+                spellName = unit.unitName,
+                totalAmount = 0,
+                combatSpellDetails = {
+                    specIconID = unit.specIconID,
+                    unitClassFilename = unit.unitClassFilename,
+                },
+            }
+            entries[#entries + 1] = target
+            byName[unit.unitName] = target
+        end
+        target.totalAmount = target.totalAmount + unit.amount
+        maximum = math.max(maximum, target.totalAmount)
+        total = total + unit.amount
+    end
+    if total ~= details.totalAmount or #entries == 0 then
+        return nil, "Target data unavailable."
+    end
+    return { entries = entries, maxAmount = maximum }
+end
+
 local previewCharacters = {
     { "Jaina", "MAGE", 125000 },
     { "Thrall", "SHAMAN", 112000 },

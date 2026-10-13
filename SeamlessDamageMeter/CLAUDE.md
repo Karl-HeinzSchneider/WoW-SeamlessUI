@@ -66,6 +66,14 @@ row's top corners so its width matches the full bar including its icon. Its heig
 at 75% of the screen. Mouse wheel over the owner scrolls an overflowing
 breakdown; otherwise it keeps the window's normal scrolling. The panel never captures mouse
 input, so moving off the owner dismisses it.
+Damage done and DPS add a "Targets" category below the spell bars, showing total damage
+per target name with an independent bar scale and percentage of source damage. Combine
+public `combatSpellDetails.amount` values only when every spell has a public, nonempty
+target name and its target amount equals the spell total, and all amounts account for the
+source total. The API provides no target GUID, so identically named units are combined.
+Restricted or incomplete detail data shows a short unavailable message instead of partial
+totals. Keep first-appearance order, leave returned API tables untouched, and never save
+these aggregates. Other statistics and death recaps retain their existing breakdown.
 Rows use full square icons sized to the row height and an original grayscale shaded fill
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;

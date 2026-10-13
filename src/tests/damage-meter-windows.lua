@@ -351,6 +351,8 @@ assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main ba
 assert(detailBar.icon.texture == 1001, "Spell icons come from C_Spell")
 assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.icon:GetWidth() == 24)
 assert(detailBar.color[1] == RAID_CLASS_COLORS.MAGE.r)
+assert(tooltip.targetLabel:IsShown() and tooltip.targetLabel.text == "Targets")
+assert(tooltip.targetMessage:IsShown() and tooltip.targetMessage.text == "Target data restricted.")
 assert(detailBar.entry.points.TOPLEFT[3] == 0, "First bar begins at the top with no header gap")
 assert(
     not tooltip.mouseEnabled and not detailBar.entry.mouseEnabled,
@@ -436,6 +438,57 @@ details.combatSpells = { firstSpell }
 frame.rows[1].entry.scripts.OnEnter()
 frame.rows[1].entry.scripts.OnHide()
 assert(not tooltip:IsShown(), "Hiding the owner entry dismisses the panel")
+-- Per-target totals must combine every spell without mutating the API tables.
+local savedSpells, savedTotal, savedMaximum = details.combatSpells, details.totalAmount, details.maxAmount
+UIParent:SetHeight(800)
+details.totalAmount, details.maxAmount = 100, 50
+details.combatSpells = {
+    {
+        spellID = 1,
+        totalAmount = 30,
+        amountPerSecond = 3,
+        combatSpellDetails = { unitName = "Wolf", amount = 30, specIconID = 777 },
+    },
+    { spellID = 2, totalAmount = 20, amountPerSecond = 2, combatSpellDetails = { unitName = "Wolf", amount = 20 } },
+    { spellID = 3, totalAmount = 50, amountPerSecond = 5, combatSpellDetails = { unitName = "Bear", amount = 50 } },
+}
+local breakdown = app:GetTargetBreakdown(details)
+assert(
+    #breakdown.entries == 2 and breakdown.entries[1].spellName == "Wolf" and breakdown.entries[2].spellName == "Bear"
+)
+assert(breakdown.entries[1].totalAmount == 50 and breakdown.entries[2].totalAmount == 50 and breakdown.maxAmount == 50)
+assert(details.combatSpells[1].totalAmount == 30 and details.combatSpells[1].combatSpellDetails.amount == 30)
+assert(details.combatSpells[1].isTarget == nil, "Grouping leaves the API's data unchanged")
+frame.rows[1].entry.scripts.OnEnter()
+assert(tooltip.count == 6 and tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown())
+assert(tooltip.targetLabel.points.TOPLEFT[3] == -3 * (24 + 4), "Targets category follows all three spell bars")
+assert(tooltip.rows[5].name.text == "Wolf" and tooltip.rows[6].name.text == "Bear")
+assert(tooltip.rows[5].statusValue == 50 and tooltip.rows[6].statusValue == 50 and tooltip.rows[5].maximum == 50)
+assert(tooltip.rows[5].value.args[1] == "50" and tooltip.rows[5].value.args[2] == 50)
+assert(tooltip.rows[5].icon.texture == 777 and tooltip.rows[5].fill.texture == detailBar.fill.texture)
+frame.config.statistic = "Dps"
+app:RefreshWindows()
+assert(tooltip.rows[5].value.args[1] == "50", "Target bars always show total damage, including in the DPS view")
+frame.config.statistic = "DamageDone"
+details.combatSpells[2].combatSpellDetails.amount = 10
+assert(app:GetTargetBreakdown(details) == nil, "Incomplete per-spell target data must not produce partial totals")
+details.combatSpells[2].combatSpellDetails.amount = 20
+details.totalAmount = 120
+assert(app:GetTargetBreakdown(details) == nil, "Target totals must account for the complete source total")
+details.totalAmount = 100
+details.combatSpells[2].combatSpellDetails.unitName = secret
+assert(app:GetTargetBreakdown(details) == nil, "Restricted target names cannot be compared or used as grouping keys")
+details.combatSpells[2].combatSpellDetails.unitName = "Wolf"
+details.combatSpells[2].combatSpellDetails.amount = secret
+assert(app:GetTargetBreakdown(details) == nil, "Restricted target amounts cannot be summed")
+app:RefreshWindows()
+assert(
+    tooltip.targetMessage:IsShown() and not tooltip.rows[5]:IsShown(),
+    "Unavailable data replaces stale target totals"
+)
+frame.rows[1].entry.scripts.OnLeave()
+details.combatSpells, details.totalAmount, details.maxAmount = savedSpells, savedTotal, savedMaximum
+UIParent:SetHeight(200)
 local recapID
 C_DeathRecap = {
     GetRecapEvents = function(id)
@@ -455,6 +508,7 @@ frame.rows[1].entry.scripts.OnEnter()
 assert(recapID == 99 and detailBar.maximum == secret and detailBar.statusValue == secret)
 assert(detailBar.icon.texture == 89163, "Recap melee bars use the attack spell icon")
 assert(detailBar.name.args[2] == secret and detailBar.value.args[1] == secret)
+assert(not tooltip.targetLabel:IsShown(), "Death recap keeps its existing layout without a Targets category")
 frame.rows[1].entry.scripts.OnLeave()
 frame.config.statistic = "DamageDone"
 app:RefreshWindows()

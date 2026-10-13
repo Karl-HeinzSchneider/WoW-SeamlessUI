@@ -394,6 +394,12 @@ local function CreateDetailTooltip()
     tooltip.body:SetPoint("BOTTOMRIGHT", -5, 5)
     tooltip.body:SetClipsChildren(true)
     tooltip.body:EnableMouse(false)
+    tooltip.targetLabel = Label(tooltip.body)
+    tooltip.targetLabel:SetJustifyH("LEFT")
+    tooltip.targetLabel:SetWordWrap(false)
+    tooltip.targetMessage = Label(tooltip.body)
+    tooltip.targetMessage:SetJustifyH("LEFT")
+    tooltip.targetMessage:SetWordWrap(true)
     tooltip:Hide()
     app.detailTooltip = tooltip
     return tooltip
@@ -409,10 +415,26 @@ local function ShowRowTooltip(row, frame)
         HideRowTooltip(row)
         return
     end
-    local entries = details.deathEvents or details.combatSpells or {}
-    if #entries == 0 then
+    local spells = details.deathEvents or details.combatSpells or {}
+    if #spells == 0 then
         HideRowTooltip(row)
         return
+    end
+    local entries = {}
+    for _, spell in ipairs(spells) do
+        entries[#entries + 1] = spell
+    end
+    local targetDetails, targetReason
+    if frame.config.statistic == "DamageDone" or frame.config.statistic == "Dps" then
+        targetDetails, targetReason = app:GetTargetBreakdown(details)
+        entries[#entries + 1] = { isTargetHeading = true }
+        if targetDetails then
+            for _, target in ipairs(targetDetails.entries) do
+                entries[#entries + 1] = target
+            end
+        else
+            entries[#entries + 1] = { isTargetMessage = true }
+        end
     end
     local tooltip = app.detailTooltip or CreateDetailTooltip()
     local config = frame.config
@@ -434,6 +456,10 @@ local function ShowRowTooltip(row, frame)
     tooltip:SetPoint("BOTTOMLEFT", row.entry, "TOPLEFT", 0, 0)
     tooltip:SetPoint("BOTTOMRIGHT", row.entry, "TOPRIGHT", 0, 0)
     local statistic = app:GetStatistic(frame.config.statistic)
+    tooltip.targetLabel:Hide()
+    tooltip.targetMessage:Hide()
+    app:StyleWindowLabel(tooltip.targetLabel, config)
+    app:StyleWindowLabel(tooltip.targetMessage, config)
     for index = 1, math.min(capacity, #entries) do
         local spell = entries[index + tooltip.offset]
         local bar = tooltip.rows[index]
@@ -444,113 +470,129 @@ local function ShowRowTooltip(row, frame)
             bar:EnableMouse(false)
             tooltip.rows[index] = bar
         end
-        bar.entry:SetHeight(rowHeight)
-        bar.entry:ClearAllPoints()
-        bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
-        bar.entry:SetPoint("RIGHT", 0, 0)
-        bar:SetHeight(rowHeight)
-        bar:SetPoint("TOPLEFT", rowHeight, 0)
-        bar.icon:SetSize(rowHeight, rowHeight)
-        app:StyleWindowLabel(bar.name, config)
-        app:StyleWindowLabel(bar.value, config)
-        local name = spell.spellName
-        if IsPublic(name) and (name == nil or name == "") then
-            local spellID = spell.spellID or spell.spellId
-            name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
-            if details.deathEvents and spell.event == "SWING_DAMAGE" then
-                name = ACTION_SWING or "Melee"
-            elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
-                name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
-            end
-        end
-        local unit = spell.creatureName
-        if IsPublic(unit) and (unit == nil or unit == "") then
-            unit = spell.sourceName
-            if spell.combatSpellDetails then
-                unit = spell.combatSpellDetails.unitName
-            end
-        end
-        if not IsPublic(unit) or (unit ~= nil and unit ~= "") then
-            bar.name:SetFormattedText("%s (%s)", name, unit)
+        if spell.isTargetHeading or spell.isTargetMessage then
+            local label = spell.isTargetHeading and tooltip.targetLabel or tooltip.targetMessage
+            label:ClearAllPoints()
+            label:SetPoint("TOPLEFT", 2, -(index - 1) * (rowHeight + spacing))
+            label:SetPoint("RIGHT", -2, 0)
+            label:SetHeight(rowHeight)
+            label:SetText(spell.isTargetHeading and "Targets" or targetReason)
+            label:Show()
+            bar:Hide()
         else
-            bar.name:SetText(name)
-        end
-        local unitDetails = spell.combatSpellDetails or {}
-        local spellID = spell.spellID or spell.spellId
-        if details.deathEvents and spell.event == "SWING_DAMAGE" then
-            spellID = 88163
-        end
-        if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
-            bar.icon:SetTexture(unitDetails.specIconID)
-        elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
-            bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
-        else
-            bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
-        end
-        local amount = spell.totalAmount
-        if IsPublic(amount) and amount == nil then
-            amount = spell.amount
-        end
-        if IsPublic(amount) and amount == nil then
-            amount = 0
-        end
-        local rate = spell.amountPerSecond
-        local percentage
-        if IsPublic(amount) and IsPublic(details.totalAmount) and details.totalAmount and details.totalAmount > 0 then
-            percentage = math.floor(amount / details.totalAmount * 100 + 0.5)
-        end
-        if (not IsPublic(rate) or rate ~= nil) and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" then
-            local primary, secondary = amount, rate
-            if statistic.rate then
-                primary, secondary = rate, amount
-            end
-            if IsPublic(primary) and IsPublic(secondary) then
-                if percentage then
-                    bar.value:SetFormattedText(
-                        "%s (%s) %d%%",
-                        AbbreviateLargeNumbers(primary),
-                        AbbreviateLargeNumbers(secondary),
-                        percentage
-                    )
-                else
-                    bar.value:SetFormattedText(
-                        "%s (%s)",
-                        AbbreviateLargeNumbers(primary),
-                        AbbreviateLargeNumbers(secondary)
-                    )
+            bar.entry:SetHeight(rowHeight)
+            bar.entry:ClearAllPoints()
+            bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
+            bar.entry:SetPoint("RIGHT", 0, 0)
+            bar:SetHeight(rowHeight)
+            bar:SetPoint("TOPLEFT", rowHeight, 0)
+            bar.icon:SetSize(rowHeight, rowHeight)
+            app:StyleWindowLabel(bar.name, config)
+            app:StyleWindowLabel(bar.value, config)
+            local name = spell.spellName
+            if IsPublic(name) and (name == nil or name == "") then
+                local spellID = spell.spellID or spell.spellId
+                name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
+                if details.deathEvents and spell.event == "SWING_DAMAGE" then
+                    name = ACTION_SWING or "Melee"
+                elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
+                    name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
                 end
-            elseif percentage then
-                bar.value:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
-            else
-                bar.value:SetFormattedText("%.1f (%.1f)", primary, secondary)
             end
-        elseif IsPublic(amount) then
-            if percentage then
-                bar.value:SetFormattedText("%s %d%%", AbbreviateLargeNumbers(amount), percentage)
-            else
-                bar.value:SetText(AbbreviateLargeNumbers(amount))
+            local unit = spell.creatureName
+            if IsPublic(unit) and (unit == nil or unit == "") then
+                unit = spell.sourceName
+                if spell.combatSpellDetails then
+                    unit = spell.combatSpellDetails.unitName
+                end
             end
-        else
-            bar.value:SetFormattedText("%.0f", amount)
+            if not IsPublic(unit) or (unit ~= nil and unit ~= "") then
+                bar.name:SetFormattedText("%s (%s)", name, unit)
+            else
+                bar.name:SetText(name)
+            end
+            local unitDetails = spell.combatSpellDetails or {}
+            local spellID = spell.spellID or spell.spellId
+            if details.deathEvents and spell.event == "SWING_DAMAGE" then
+                spellID = 88163
+            end
+            if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
+                bar.icon:SetTexture(unitDetails.specIconID)
+            elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
+                bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
+            else
+                bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
+            end
+            local amount = spell.totalAmount
+            if IsPublic(amount) and amount == nil then
+                amount = spell.amount
+            end
+            if IsPublic(amount) and amount == nil then
+                amount = 0
+            end
+            local rate = spell.amountPerSecond
+            local percentage
+            if
+                IsPublic(amount)
+                and IsPublic(details.totalAmount)
+                and details.totalAmount
+                and details.totalAmount > 0
+            then
+                percentage = math.floor(amount / details.totalAmount * 100 + 0.5)
+            end
+            if (not IsPublic(rate) or rate ~= nil) and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" then
+                local primary, secondary = amount, rate
+                if statistic.rate then
+                    primary, secondary = rate, amount
+                end
+                if IsPublic(primary) and IsPublic(secondary) then
+                    if percentage then
+                        bar.value:SetFormattedText(
+                            "%s (%s) %d%%",
+                            AbbreviateLargeNumbers(primary),
+                            AbbreviateLargeNumbers(secondary),
+                            percentage
+                        )
+                    else
+                        bar.value:SetFormattedText(
+                            "%s (%s)",
+                            AbbreviateLargeNumbers(primary),
+                            AbbreviateLargeNumbers(secondary)
+                        )
+                    end
+                elseif percentage then
+                    bar.value:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
+                else
+                    bar.value:SetFormattedText("%.1f (%.1f)", primary, secondary)
+                end
+            elseif IsPublic(amount) then
+                if percentage then
+                    bar.value:SetFormattedText("%s %d%%", AbbreviateLargeNumbers(amount), percentage)
+                else
+                    bar.value:SetText(AbbreviateLargeNumbers(amount))
+                end
+            else
+                bar.value:SetFormattedText("%.0f", amount)
+            end
+            -- The API provides the scale; restricted amounts go directly to the widgets.
+            local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
+            if IsPublic(maximum) and maximum == nil then
+                maximum = 1
+            end
+            bar:SetMinMaxValues(0, maximum)
+            bar:SetValue(amount)
+            local classFilename = unitDetails.unitClassFilename
+            if not classFilename or classFilename == "" then
+                classFilename = row.source.classFilename
+            end
+            local color = RAID_CLASS_COLORS[classFilename]
+            if color and app:GetWindowSetting(config, "classColors") then
+                bar:SetStatusBarColor(color.r, color.g, color.b, 1)
+            else
+                bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
+            end
+            bar:Show()
         end
-        -- The API provides the scale; restricted amounts go directly to the widgets.
-        local maximum = details.maxAmount
-        if IsPublic(maximum) and maximum == nil then
-            maximum = 1
-        end
-        bar:SetMinMaxValues(0, maximum)
-        bar:SetValue(amount)
-        local classFilename = unitDetails.unitClassFilename
-        if not classFilename or classFilename == "" then
-            classFilename = row.source.classFilename
-        end
-        local color = RAID_CLASS_COLORS[classFilename]
-        if color and app:GetWindowSetting(config, "classColors") then
-            bar:SetStatusBarColor(color.r, color.g, color.b, 1)
-        else
-            bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
-        end
-        bar:Show()
     end
     for index = math.min(capacity, #entries) + 1, #tooltip.rows do
         tooltip.rows[index]:Hide()

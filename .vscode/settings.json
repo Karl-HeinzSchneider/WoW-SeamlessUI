@@ -1,4 +1,11 @@
 {
+  "githubPullRequests.remotes": ["origin"],
+  "githubPullRequests.queries": [
+    {
+      "label": "All Open",
+      "query": "repo:${owner}/${repository} is:open"
+    }
+  ],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[lua]": {

@@ -60,6 +60,9 @@ end
 function methods:SetText(text)
     self.text = text
 end
+function methods:GetStringWidth()
+    return #(self.text or "") * 7
+end
 function methods:SetFormattedText(format, ...)
     self.format, self.args = format, { ... }
 end
@@ -250,6 +253,8 @@ assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains 
 frame.config.overrides.hideTypeSelector = false
 app:RebuildWindows()
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Selector can be restored")
+assert(frame.statistic.points.TOPLEFT[2] == frame and frame.statistic.points.TOPLEFT[4] == 3)
+assert(frame.timer.points.LEFT[2] == frame.statistic.text, "Timer follows the category label")
 assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
 for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())

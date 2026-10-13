@@ -42,7 +42,10 @@ mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default t
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
 from hiding a window. `hideTypeSelector` defaults to false and supports shared defaults and
 window overrides; hiding it removes the category arrow and its clicks while retaining the label.
-The category label shares the timer's text top; the arrow aligns with the settings button.
+Header order is type arrow, category label, then combat timer. The 25-pixel selector stays
+at the left edge (X 3), with its arrow centered vertically opposite the red collapse button.
+The category uses the client arrow-to-text offset and never moves when the timer changes.
+The timer follows the category label on the same line; text widths stay within the right controls.
 Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass

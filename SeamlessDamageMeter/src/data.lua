@@ -63,6 +63,37 @@ function app:GetSession(config)
     )
 end
 
+function app:GetSourceDetails(config, source)
+    if (self.IsEditingWindows and self:IsEditingWindows()) or not self:IsAvailable() then
+        return nil
+    end
+    -- Revalidate history/tracking before requesting a source from a pooled row.
+    if not self:GetSession(config) then
+        return nil
+    end
+    if config.statistic == "Deaths" then
+        if C_DeathRecap and source.deathRecapID and source.deathRecapID ~= 0 then
+            return { deathEvents = C_DeathRecap.GetRecapEvents(source.deathRecapID) or {} }
+        end
+        return { deathEvents = {} }
+    end
+    local meterType = Enum.DamageMeterType[self:GetStatistic(config.statistic).key]
+    if config.sessionID then
+        return C_DamageMeter.GetCombatSessionSourceFromID(
+            config.sessionID,
+            meterType,
+            source.sourceGUID,
+            source.sourceCreatureID
+        )
+    end
+    return C_DamageMeter.GetCombatSessionSourceFromType(
+        Enum.DamageMeterSessionType[config.session] or Enum.DamageMeterSessionType.Current,
+        meterType,
+        source.sourceGUID,
+        source.sourceCreatureID
+    )
+end
+
 local previewCharacters = {
     { "Jaina", "MAGE", 125000 },
     { "Thrall", "SHAMAN", 112000 },

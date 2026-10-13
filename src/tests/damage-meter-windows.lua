@@ -136,7 +136,11 @@ function methods:SetMinMaxValues(minimum, maximum)
     self.minimum, self.maximum = minimum, maximum
 end
 function methods:Hide()
+    local wasShown = self.shown
     self.shown = false
+    if wasShown and self.scripts.OnHide then
+        self.scripts.OnHide(self)
+    end
 end
 function methods:Show()
     self.shown = true
@@ -256,10 +260,16 @@ frame.config.overrides.hideTypeSelector = true
 app:RebuildWindows()
 assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
 for index, value in ipairs(categoryAnchor) do
-    assert(frame.statistic.text.points.TOPLEFT[index] == value, "Hiding the selector must preserve the category position")
+    assert(
+        frame.statistic.text.points.TOPLEFT[index] == value,
+        "Hiding the selector must preserve the category position"
+    )
 end
 assert(frame.statistic.text:GetWidth() == categoryWidth)
-assert(frame.timer:GetWidth() == 0 and frame.timer.justifyH == "LEFT", "Timer must use natural width and left alignment")
+assert(
+    frame.timer:GetWidth() == 0 and frame.timer.justifyH == "LEFT",
+    "Timer must use natural width and left alignment"
+)
 assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains the category label")
 frame.config.overrides.hideTypeSelector = false
 app:RebuildWindows()
@@ -292,6 +302,88 @@ assert(frame.rows[1].value.args[1] == secret)
 assert(frame.rows[1].value.args[2] == secret, "Restricted rates must also go directly to the widget")
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
 assert(frame.localRow:IsShown(), "Offscreen local player must stay visible")
+-- Hover details use the selected source/session and accept restricted values unchanged.
+GameTooltip = object()
+GameTooltip.lines = {}
+function GameTooltip:IsOwned(owner)
+    return self.owner == owner
+end
+function GameTooltip:SetOwner(owner)
+    self.owner = owner
+end
+function GameTooltip:GetName()
+    return "TestMeterTooltip"
+end
+function GameTooltip:ClearLines()
+    self.lines = {}
+end
+function GameTooltip:NumLines()
+    return #self.lines
+end
+function GameTooltip:AddLine(text)
+    table.insert(self.lines, text)
+end
+function GameTooltip:AddDoubleLine()
+    table.insert(self.lines, "columns")
+    _G[self:GetName() .. "TextLeft" .. #self.lines] = object()
+    _G[self:GetName() .. "TextRight" .. #self.lines] = object()
+end
+C_Spell = {
+    GetSpellName = function()
+        return "Fireball"
+    end,
+}
+local sourceReads, detailGUID, detailCreature = 0
+local details = {
+    totalAmount = secret,
+    combatSpells = { { spellID = 1, totalAmount = secret, amountPerSecond = secret } },
+}
+C_DamageMeter.GetCombatSessionSourceFromType = function(sessionType, meterType, guid, creature)
+    assert(sessionType == Enum.DamageMeterSessionType.Current and meterType == Enum.DamageMeterType.DamageDone)
+    sourceReads = sourceReads + 1
+    detailGUID, detailCreature = guid, creature
+    return details
+end
+session.combatSources[1].sourceGUID = "player-1"
+frame.rows[1].entry.scripts.OnEnter()
+assert(sourceReads == 1 and detailGUID == "player-1")
+assert(GameTooltip.lines[1] == secret, "Restricted source names go directly to the tooltip")
+assert(TestMeterTooltipTextRight3.args[1] == secret and TestMeterTooltipTextRight3.args[2] == secret)
+app:RefreshWindows()
+assert(GameTooltip:IsShown() and sourceReads == 2, "Live refresh preserves and updates the hover")
+frame.rows[1].entry.scripts.OnLeave()
+assert(not GameTooltip:IsShown())
+app:RefreshWindows()
+assert(not GameTooltip:IsShown(), "Refresh must not reopen a tooltip after leaving")
+session.combatSources[12].sourceCreatureID = 42
+frame.localRow.entry.scripts.OnEnter()
+assert(detailCreature == 42, "Pinned rows support creature source IDs")
+frame.localRow.entry.scripts.OnLeave()
+details.totalAmount = 100
+details.combatSpells[1].totalAmount, details.combatSpells[1].amountPerSecond = 25, 5
+frame.rows[1].entry.scripts.OnEnter()
+assert(TestMeterTooltipTextRight3.args[3] == 25, "Public values include the spell's percentage share")
+frame.rows[1].entry.scripts.OnLeave()
+assert(details.combatSpells[1].name == nil, "Returned spell tables stay untouched")
+history = { { sessionID = 77 } }
+C_DamageMeter.GetCombatSessionSourceFromID = function(id, meterType, guid)
+    assert(id == 77 and meterType == 0 and guid == "player-1")
+    return details
+end
+frame.config.sessionID = 77
+frame.rows[1].entry.scripts.OnEnter()
+assert(GameTooltip:IsShown(), "History hover uses the ID API")
+history = {}
+app:RefreshWindows()
+assert(not GameTooltip:IsShown(), "Expired history dismisses hover details")
+frame.config.sessionID = nil
+app:RefreshWindows()
+frame.rows[1].preview = true
+local beforePreview = sourceReads
+frame.rows[1].entry.scripts.OnEnter()
+assert(sourceReads == beforePreview and not GameTooltip:IsShown(), "Preview hover never reads live details")
+frame.rows[1].preview = nil
+GameTooltip = nil
 assert(frame.statistic:GetFrameLevel() == 2 and frame.session:GetFrameLevel() == 2)
 -- Exercise the actual button callbacks, menu selection and API routing together.
 local menuRoot

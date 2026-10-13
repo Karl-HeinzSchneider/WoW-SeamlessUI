@@ -32,6 +32,8 @@ end
 
 function app:PrepareWindowSettings()
     local profile = self.db.profile
+    profile.favorites = profile.favorites or {}
+    profile.maxVisibleFavorites = math.max(0, math.min(20, math.floor(tonumber(profile.maxVisibleFavorites) or 6)))
     if not profile.fixedWindowSlots then
         local used, remapped, assigned, pending = {}, {}, {}, {}
         -- Preserve existing slot IDs first, then move old increasing IDs into free slots.
@@ -93,7 +95,14 @@ function app:PrepareWindowSettings()
     end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
-        config.favorites = config.favorites or {}
+        if config.favorites then
+            for slot, key in pairs(config.favorites) do
+                if profile.favorites[slot] == nil then
+                    profile.favorites[slot] = key
+                end
+            end
+            config.favorites = nil
+        end
         -- Keep old layouts while all new windows inherit the profile defaults.
         for _, key in ipairs({ "width", "height", "x", "y" }) do
             if config[key] ~= nil then

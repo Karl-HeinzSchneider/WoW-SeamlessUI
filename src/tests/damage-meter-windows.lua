@@ -34,6 +34,9 @@ end
 function methods:SetFrameLevel(level)
     self.frameLevel = level
 end
+function methods:EnableMouse(enabled)
+    self.mouseEnabled = enabled
+end
 function methods:SetFrameStrata(strata)
     self.frameStrata = strata
 end
@@ -315,13 +318,16 @@ deaths.choose()
 assert(lastMeterType == Enum.DamageMeterType.Deaths)
 damage.choose()
 local fullHeight = app:GetWindowSetting(frame.config, "height")
-assert(next(frame.config.favorites) == nil and not frame.favorites:IsShown())
+assert(next(app.db.profile.favorites) == nil and not frame.favorites:IsShown())
 frame.scripts.OnMouseUp(frame, "LeftButton")
 assert(not frame.favorites:IsShown())
 frame.scripts.OnMouseUp(frame, "RightButton")
-assert(frame.favorites:IsShown() and #frame.favorites.buttons == 6)
+assert(frame.favorites:IsShown() and #frame.favorites.buttons == 7)
 local favorite = frame.favorites.buttons[1]
 assert(frame.favorites.parent == frame and favorite.row.entry.parent == frame.favorites)
+assert(frame.favorites:GetFrameLevel() > frame.body:GetFrameLevel())
+assert(favorite.mouseEnabled and not favorite.row.mouseEnabled and not favorite.row.entry.mouseEnabled)
+assert(favorite:GetFrameLevel() > favorite.row:GetFrameLevel(), "Favorite buttons must receive clicks above row art")
 assert(favorite.row:GetHeight() == frame.rows[1]:GetHeight())
 assert(not frame.rows[1]:IsShown() and not frame.localRow:IsShown() and not frame.message:IsShown())
 app:RefreshWindows()
@@ -329,23 +335,36 @@ assert(not frame.rows[1]:IsShown(), "Combat updates must not paint over favorite
 favorite.scripts.OnClick(favorite, "LeftButton")
 assert(not menuRoot.entries[1].entries[1].selected(), "Empty favorites have no selected type")
 menuRoot.entries[1].entries[2].choose()
-assert(frame.config.favorites[1] == "Dps" and frame.config.statistic == "DamageDone")
+assert(app.db.profile.favorites[1] == "Dps" and frame.config.statistic == "DamageDone")
 assert(favorite.row.name.text == "DPS" and frame.favorites:IsShown())
 frame.offset = 5
 favorite.scripts.OnClick(favorite, "LeftButton")
 assert(frame.config.statistic == "Dps" and frame.offset == 0 and not frame.favorites:IsShown())
 assert(lastMeterType == Enum.DamageMeterType.Dps)
 app:RebuildWindows()
-assert(frame.config.favorites[1] == "Dps", "Rebuilding must preserve assigned favorites")
+assert(app.db.profile.favorites[1] == "Dps", "Rebuilding must preserve assigned favorites")
 frame.scripts.OnMouseUp(frame, "RightButton")
 favorite.scripts.OnClick(favorite, "RightButton")
 assert(menuRoot.entries[1].entries[2].selected())
+menuRoot.entries[1].entries[1].choose()
+assert(app.db.profile.favorites[1] == "DamageDone" and frame.config.statistic == "Dps")
+assert(frame.favorites:IsShown(), "Replacing a favorite keeps the shortcuts open")
+favorite.scripts.OnClick(favorite, "RightButton")
 menuRoot.entries[#menuRoot.entries].choose()
-assert(frame.config.favorites[1] == nil and favorite.row.name.text == "+ Set favorite")
+assert(app.db.profile.favorites[1] == nil and favorite.row.name.text == "+ Set favorite")
+local selector = frame.favorites.buttons[7]
+assert(selector.row.name.text == "Select type" and selector.number.text == "")
+for _, mouseButton in ipairs({ "LeftButton", "RightButton" }) do
+    selector.scripts.OnClick(selector, mouseButton)
+    menuRoot.entries[1].entries[1].choose()
+    assert(frame.config.statistic == "DamageDone" and next(app.db.profile.favorites) == nil)
+    assert(not frame.favorites:IsShown(), "The general selector changes the window type and closes favorites")
+    app:ToggleFavorites(frame)
+end
 local savedOffset = frame.offset
 frame.config.overrides.height = 120
 app:RefreshWindows()
-assert(frame.scrollbar:IsShown(), "Small windows must scroll all six favorites")
+assert(frame.scrollbar:IsShown(), "Small windows must scroll five favorites and the general selector")
 frame.favorites.scripts.OnMouseWheel(frame.favorites, -1)
 assert(frame.favoriteOffset > 0 and frame.offset == savedOffset)
 assert(not favorite.row.entry:IsShown(), "Favorite rows above the viewport must be hidden")
@@ -384,8 +403,24 @@ frame.config.statistic = "DamageDone"
 app:AddWindow()
 local second = app.windows[2]
 assert(SeamlessDamageMeterWindow2 == second)
-frame.config.favorites[1] = "Dps"
-assert(next(second.config.favorites) == nil, "Favorites belong to each window independently")
+app.db.profile.favorites[1] = "Dps"
+assert(second.config.favorites == nil, "Favorites are stored only on the shared profile")
+app.db.profile.maxVisibleFavorites = 2
+app:ToggleFavorites(second)
+assert(second.favorites.buttons[1].row.name.text == "DPS", "Every window uses the shared favorites")
+assert(second.favorites.buttons[3].row.name.text == "Select type")
+app.db.profile.maxVisibleFavorites = 8
+app:RefreshWindows()
+assert(second.favorites.buttons[9].row.name.text == "Select type")
+assert(second.favorites.buttons[3].row.name.text == "+ Set favorite")
+app.db.profile.maxVisibleFavorites = 0
+app:RefreshWindows()
+assert(second.favorites.buttons[1].row.name.text == "Select type")
+assert(not second.favorites.buttons[2].row.entry:IsShown())
+second.favorites.buttons[1].scripts.OnClick(second.favorites.buttons[1], "LeftButton")
+menuRoot.entries[1].entries[1].choose()
+assert(second.config.statistic == "DamageDone" and app.db.profile.favorites[1] == "Dps")
+app.db.profile.maxVisibleFavorites = 6
 app:ToggleFavorites(frame)
 app:ToggleFavorites(second)
 assert(not frame.favorites:IsShown() and second.favorites:IsShown())

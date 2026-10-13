@@ -187,7 +187,7 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                 if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
                     menu:CreateRadio(statistic.label, function()
                         if favoriteSlot then
-                            return config.favorites[favoriteSlot] == key
+                            return self.db.profile.favorites[favoriteSlot] == key
                         end
                         return config.statistic == key
                     end, function()
@@ -195,7 +195,7 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                             return
                         end
                         if favoriteSlot then
-                            config.favorites[favoriteSlot] = key
+                            self.db.profile.favorites[favoriteSlot] = key
                             self:UpdateFavorites(frame)
                             return
                         end
@@ -207,11 +207,11 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                 end
             end
         end
-        if favoriteSlot and config.favorites[favoriteSlot] then
+        if favoriteSlot and self.db.profile.favorites[favoriteSlot] then
             root:CreateDivider()
             root:CreateButton("Clear favorite", function()
                 if frame.config == config then
-                    config.favorites[favoriteSlot] = nil
+                    self.db.profile.favorites[favoriteSlot] = nil
                     self:UpdateFavorites(frame)
                 end
             end)
@@ -222,11 +222,18 @@ end
 function app:UpdateFavorites(frame)
     local rowHeight = self:GetWindowSetting(frame.config, "rowHeight")
     local spacing = self:GetWindowSetting(frame.config, "rowSpacing")
-    for slot = 1, 6 do
+    local count = self.db.profile.maxVisibleFavorites + 1
+    for _, button in ipairs(frame.favorites.buttons) do
+        button.row.entry:Hide()
+    end
+    for slot = 1, count do
+        local isSelector = slot == count
         local button = frame.favorites.buttons[slot]
         if not button then
             local row = CreateRow(frame, -1)
             row.entry:SetParent(frame.favorites)
+            row.entry:EnableMouse(false)
+            row:EnableMouse(false)
             row.icon:Hide()
             row.value:Hide()
             row.name:ClearAllPoints()
@@ -236,9 +243,12 @@ function app:UpdateFavorites(frame)
             row:SetValue(1)
             local number = Label(row.entry)
             number:SetPoint("LEFT", 4, 0)
-            number:SetText(slot)
             button = Button(row.entry, "", 1, function(owner, mouseButton)
-                local key = frame.config.favorites[slot]
+                if slot == self.db.profile.maxVisibleFavorites + 1 then
+                    self:ShowStatisticMenu(frame, nil, owner)
+                    return
+                end
+                local key = self.db.profile.favorites[slot]
                 if mouseButton == "RightButton" or not key then
                     self:ShowStatisticMenu(frame, slot, owner)
                 elseif self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
@@ -249,6 +259,8 @@ function app:UpdateFavorites(frame)
                 end
             end)
             button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            button:EnableMouse(true)
+            button:SetFrameLevel(row:GetFrameLevel() + 1)
             button:SetAllPoints(row.entry)
             local highlight = button:CreateTexture(nil, "HIGHLIGHT")
             highlight:SetAtlas("UI-HUD-CoolDownManager-Bar")
@@ -258,7 +270,8 @@ function app:UpdateFavorites(frame)
             button.row, button.number = row, number
             frame.favorites.buttons[slot] = button
         end
-        local key = frame.config.favorites[slot]
+        button.number:SetText(isSelector and "" or slot)
+        local key = not isSelector and self.db.profile.favorites[slot]
         local row = button.row
         row.entry:SetHeight(rowHeight)
         row:SetHeight(rowHeight)
@@ -269,7 +282,7 @@ function app:UpdateFavorites(frame)
         row.entry:SetShown(slot > (frame.favoriteOffset or 0))
         self:StyleWindowLabel(row.name, frame.config)
         self:StyleWindowLabel(button.number, frame.config)
-        row.name:SetText(key and self:GetStatistic(key).label or "+ Set favorite")
+        row.name:SetText(isSelector and "Select type" or key and self:GetStatistic(key).label or "+ Set favorite")
         local color = self:GetWindowSetting(frame.config, "barColor")
         row:SetStatusBarColor(color[1], color[2], color[3], key and color[4] or 0.25)
     end
@@ -296,6 +309,7 @@ end
 local function CreateFavorites(frame)
     local overlay = CreateFrame("Frame", nil, frame)
     frame.favorites = overlay
+    overlay:SetFrameLevel(frame.body:GetFrameLevel() + 1)
     overlay:SetAllPoints(frame.body)
     overlay:SetClipsChildren(true)
     overlay:EnableMouse(true)
@@ -480,7 +494,7 @@ function app:RefreshWindow(frame, session, message)
         )
     )
     local favoritesShown = frame.favorites:IsShown()
-    local count = favoritesShown and 6 or #sources
+    local count = favoritesShown and (self.db.profile.maxVisibleFavorites + 1) or #sources
     local offsetKey = ScrollOffsetKey(frame)
     local scrollable = count > capacity
     frame.body:SetPoint("BOTTOMRIGHT", scrollable and -16 or -1, 6)

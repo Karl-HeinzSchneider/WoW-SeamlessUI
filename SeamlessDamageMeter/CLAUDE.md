@@ -57,12 +57,15 @@ The frame's `windowID` is stable; `config` always reflects its currently bound p
 including while inactive. This is an authorized
 exception to the repository's default rule against additional globals.
 
-Right-click a window to toggle its six-slot favorites view inside the normal data area.
+Right-click a window to toggle shared favorite slots followed by a "Select type" row inside the normal data area.
+General's Maximum visible favorites setting defaults to six, accepts 0–20, and immediately
+refreshes open lists. Reducing it preserves hidden favorites; pooled rows beyond the limit are hidden.
+The selector opens the normal type menu and changes the window's statistic without assigning a favorite.
 Favorites reuse the combat row art, configured fonts, bar color, height and spacing, and
 the existing scrollbar with a separate scroll offset. Combat rows and the pinned player
 row are hidden while favorites are visible; live refreshes preserve the favorites view.
-`config.favorites` stores
-statistic keys by slot, independently per window and profile; all slots start empty.
+`profile.favorites` stores statistic keys by slot shared by every window; all slots start empty.
+Legacy window favorites migrate in window-slot order, filling only empty shared slots.
 Empty slots open the type menu to assign a favorite without changing the displayed type.
 Assigned slots switch the displayed type immediately; right-click them to replace or clear.
 Only one favorites view is open at a time. Hide, collapse and profile rebuild dismiss it.

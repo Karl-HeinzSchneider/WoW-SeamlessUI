@@ -386,6 +386,10 @@ function app:CreateWindow(id)
     frame:SetResizable(true)
     frame:SetResizeBounds(200, 120, 600, 400)
     frame:EnableMouse(true)
+    frame.background = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    frame.background:SetAtlas("damagemeters-background")
+    frame.background:SetAllPoints(frame)
+    frame.background:SetAlpha(0.5)
     local header = frame:CreateTexture(nil, "BACKGROUND")
     header:SetAtlas("ui-damagemeters-header-bar")
     header:SetPoint("TOPLEFT")
@@ -578,6 +582,7 @@ function app:ApplyWindowLayout(frame)
     frame:SetHeight(config.collapsed and HEADER_HEIGHT or config.height)
     frame.applyingLayout = false
     frame.body:SetShown(not config.collapsed)
+    frame.background:SetShown(not config.collapsed)
     frame.resize:SetShown(not config.collapsed)
     AtlasButton(
         frame.collapse,

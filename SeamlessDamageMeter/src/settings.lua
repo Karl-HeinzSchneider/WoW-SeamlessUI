@@ -74,9 +74,23 @@ function app:PrepareWindowSettings()
         profile.fixedWindowSlots = true
         profile.nextID = nil
     end
-    table.sort(profile.windows, function(a, b)
-        return a.id < b.id
-    end)
+    local slots = {}
+    for _, config in ipairs(profile.windows) do
+        if config.enabled == nil then
+            config.enabled = true
+        end
+        slots[config.id] = config
+    end
+    for id = 1, self.MAX_WINDOWS do
+        if not slots[id] then
+            slots[id] = { id = id, enabled = false, statistic = "DamageDone", session = "Current", overrides = {} }
+        end
+        profile.windows[id] = slots[id]
+    end
+    if not profile.initialized then
+        profile.windows[1].enabled = true
+        profile.initialized = true
+    end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
         -- Keep old layouts while all new windows inherit the profile defaults.
@@ -90,13 +104,9 @@ function app:PrepareWindowSettings()
 end
 
 function app:GetUnusedWindowSlot()
-    local used = {}
     for _, config in ipairs(self.db.profile.windows) do
-        used[config.id] = true
-    end
-    for id = 1, self.MAX_WINDOWS do
-        if not used[id] then
-            return id
+        if not config.enabled then
+            return config.id
         end
     end
 end

@@ -213,6 +213,10 @@ assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
+assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
+for id = 2, 10 do
+    assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
+end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
 assert(frame.rows[1]:GetHeight() == 16 and frame.rows[1].entry:GetHeight() == 18)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
@@ -266,17 +270,20 @@ assert(not frame.rows[1]:IsShown() and not frame.localRow:IsShown())
 C_DamageMeter = nil
 app:RefreshWindows()
 assert(frame.message.text == "This client does not provide the damage meter API.")
-app:RemoveWindow(app.db.profile.windows[1])
+app:SetWindowEnabled(app.db.profile.windows[1], false)
 assert(
-    app.windows[1] == second and SeamlessDamageMeterWindow2 == second,
+    app.windows[2] == second and SeamlessDamageMeterWindow2 == second,
     "Deleting another window must not rename or reassign this frame"
 )
 app:RebuildWindows()
-assert(app.windows[1] == second)
-app:RemoveWindow(app.db.profile.windows[1])
-assert(#app.db.profile.windows == 0 and not frame:IsShown())
+assert(app.windows[2] == second)
+app:SetWindowEnabled(app.db.profile.windows[2], false)
+assert(#app.db.profile.windows == 10 and not frame:IsShown() and not second:IsShown())
 app:RebuildWindows()
-assert(#app.db.profile.windows == 0, "An empty profile must stay empty")
+assert(
+    app:GetUnusedWindowSlot() == 1 and not frame:IsShown() and not second:IsShown(),
+    "A fully inactive profile must remain inactive"
+)
 app.db.profile = {
     initialized = true,
     nextID = 3,
@@ -285,7 +292,7 @@ app.db.profile = {
 }
 app:RebuildWindows()
 assert(
-    app.windows[1] == second and SeamlessDamageMeterWindow2 == second,
+    app.windows[2] == second and SeamlessDamageMeterWindow2 == second,
     "Profile changes must reuse the same named frame"
 )
 assert(second.config.width == nil and second.config.overrides.width == 400, "Legacy geometry must migrate")
@@ -302,9 +309,13 @@ inherited.config.overrides.scale = 1.5
 app:RebuildWindows()
 assert(inherited.anchorTarget == second and inherited:GetEffectiveScale() == 1.5)
 assert(not app:CanAnchorTo(second.config, inherited.config.id))
-app:RemoveWindow(second.config)
-assert(inherited.config.anchorTo == nil and inherited.config.overrides.point == "TOPLEFT")
-assert(inherited.config.overrides.width == nil, "Removing an anchor must not override the inherited size")
+local anchorPoint = inherited.point
+app:SetWindowEnabled(second.config, false)
+assert(inherited.config.anchorTo == 2 and inherited.anchorTarget == second and not second:IsShown())
+for index = 1, 5 do
+    assert(inherited.point[index] == anchorPoint[index], "Deactivation must preserve the dependent's anchor geometry")
+end
+assert(inherited.config.overrides.width == nil, "Deactivating an anchor must not override the inherited size")
 app.core = { logger = { chat = function() end } }
 for _ = 1, 12 do
     app:AddWindow()
@@ -319,16 +330,16 @@ slot.config.overrides.fontSize = 20
 app:RebuildWindows()
 assert(not slot:IsShown() and app:GetUnusedWindowSlot() == nil, "Hidden windows must retain their slot")
 local previousConfig = slot.config
-app:RemoveWindow(previousConfig)
-assert(slot.config == nil and not slot:IsShown())
+app:SetWindowEnabled(previousConfig, false)
+assert(slot.config == previousConfig and not slot:IsShown())
 assert(app:GetUnusedWindowSlot() == 3)
 app:AddWindow()
 assert(app.windowFrames[3] == slot and slot:IsShown(), "Reactivation must reuse the slot's frame")
-assert(slot.config ~= previousConfig and next(slot.config.overrides) == nil)
-assert(slot.config.statistic == "DamageDone" and slot.config.session == "Current")
-assert(not slot.config.hidden and not slot.config.collapsed and not slot.config.sessionID)
+assert(slot.config == previousConfig and slot.config.overrides.fontSize == 20)
+assert(slot.config.statistic == "Dps" and slot.config.session == "Current")
+assert(not slot.config.hidden and slot.config.collapsed and slot.config.sessionID == 99)
 for _ = 1, 25 do
-    app:RemoveWindow(slot.config)
+    app:SetWindowEnabled(slot.config, false)
     app:AddWindow()
     assert(app.windowFrames[3] == slot)
 end

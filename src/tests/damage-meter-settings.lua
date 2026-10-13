@@ -62,7 +62,21 @@ assert(values.x.args.value.validate(nil, "12.125") == true)
 assert(type(values.x.args.value.validate(nil, "no")) == "string")
 app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
 app:BuildWindowOptions()
-assert(app.windowOptions.args.window1 == nil)
+assert(app.windowOptions.args.window1.name == "Window 1")
+for id = 2, 10 do
+    local group = app.windowOptions.args["window" .. id]
+    assert(group and group.name == "|cff808080Window " .. id .. "|r")
+    assert(not group.disabled, "Inactive settings must remain editable")
+end
+assert(app:CanAnchorTo(app.db.profile.windows[1], 10), "Inactive windows must remain anchor targets")
+local targets = app.windowOptions.args.window1.args.management.args.anchorTo.values()
+assert(targets["10"] == "Window 10")
+app.db.profile.windows[10].enabled = true
+app:BuildWindowOptions()
+assert(app.windowOptions.args.window10.name == "Window 10")
+app.db.profile.windows[10].hidden = true
+app:BuildWindowOptions()
+assert(app.windowOptions.args.window10.name == "|cff808080Window 10|r")
 assert(defaults.width.get() == 400)
 local highID = { id = 18, anchorTo = 27, overrides = { fontSize = 19 } }
 local anchor = { id = 27, overrides = {} }

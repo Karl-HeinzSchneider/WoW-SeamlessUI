@@ -164,26 +164,27 @@ local function AppearanceOptions(config)
 end
 
 function app:BuildWindowOptions()
+    self:PrepareWindowSettings()
     local args = {
         defaults = { type = "group", name = "Defaults", order = 1, args = AppearanceOptions() },
         add = {
             type = "group",
-            name = "Add window",
+            name = "Activate window",
             order = 1000,
             args = {
                 info = {
                     type = "description",
                     name = "Use up to "
                         .. self.MAX_WINDOWS
-                        .. " window slots. Add activates the lowest unused slot with shared defaults. Hide preserves its settings; remove clears them and frees the slot.",
+                        .. " permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets.",
                     order = 1,
                 },
                 add = {
                     type = "execute",
-                    name = "Add window",
+                    name = "Activate next window",
                     order = 2,
                     disabled = function()
-                        return #self.db.profile.windows >= self.MAX_WINDOWS
+                        return self:GetUnusedWindowSlot() == nil
                     end,
                     func = function()
                         self:AddWindow()
@@ -223,13 +224,16 @@ function app:BuildWindowOptions()
                         self:RebuildWindows()
                     end,
                 },
-                remove = {
-                    type = "execute",
-                    name = "Remove window",
-                    order = 3,
-                    confirm = true,
-                    func = function()
-                        self:RemoveWindow(config)
+                enabled = {
+                    type = "toggle",
+                    name = "Use this window",
+                    desc = "Deactivation hides the window and preserves its settings and attachments.",
+                    order = 0,
+                    get = function()
+                        return config.enabled
+                    end,
+                    set = function(_, value)
+                        self:SetWindowEnabled(config, value)
                     end,
                 },
                 anchorTo = {
@@ -257,8 +261,13 @@ function app:BuildWindowOptions()
                 },
             },
         }
-        args["window" .. config.id] =
-            { type = "group", name = "Window " .. config.id, order = index + 1, args = windowArgs }
+        args["window" .. config.id] = {
+            type = "group",
+            name = config.enabled and not config.hidden and ("Window " .. config.id)
+                or ("|cff808080Window " .. config.id .. "|r"),
+            order = index + 1,
+            args = windowArgs,
+        }
     end
     self.windowOptions.args = args
 end
@@ -279,16 +288,16 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu adds, hides or removes windows; the collapse button folds the bars away and keeps the header visible. Combat history is owned by the game and is not saved by this addon.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu activates, hides or deactivates windows; the collapse button folds the bars away and keeps the header visible. Combat history is owned by the game and is not saved by this addon.\n",
                     },
                     add = {
                         type = "execute",
                         order = 10,
-                        name = "Add window",
+                        name = "Activate next window",
                         disabled = function()
-                            return #self.db.profile.windows >= self.MAX_WINDOWS
+                            return self:GetUnusedWindowSlot() == nil
                         end,
-                        desc = "Opens a new meter window. Same as /sdm new.",
+                        desc = "Activates the first inactive meter window, preserving its settings. Same as /sdm new.",
                         func = function()
                             self:AddWindow()
                         end,

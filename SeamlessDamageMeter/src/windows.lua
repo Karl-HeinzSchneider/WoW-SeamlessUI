@@ -135,43 +135,16 @@ function app:AddWindow()
     self:PrepareWindowSettings()
     local id = self:GetUnusedWindowSlot()
     if not id then
-        self.core.logger:chat("You can create up to " .. self.MAX_WINDOWS .. " meter windows.")
+        self.core.logger:chat("All " .. self.MAX_WINDOWS .. " meter windows are already active.")
         return
     end
-    local config = {
-        id = id,
-        statistic = "DamageDone",
-        session = "Current",
-        overrides = {},
-    }
-    profile.initialized = true
-    table.insert(profile.windows, config)
-    self:RebuildWindows()
+    self:SetWindowEnabled(profile.windows[id], true)
 end
 
-function app:RemoveWindow(config)
-    -- Preserve the screen position of windows whose anchor is being removed.
-    for index, dependent in ipairs(self.db.profile.windows) do
-        local frame = self.windows[index]
-        if frame and dependent.anchorTo == config.id then
-            local x, y = AnchorCoordinates(frame, "TOPLEFT")
-            local centerX, centerY = AnchorCoordinates(UIParent, "CENTER")
-            frame.config.anchorTo = nil
-            frame.config.overrides.point, frame.config.overrides.relativePoint = "TOPLEFT", "CENTER"
-            frame.config.overrides.x = (x - centerX) / frame:GetEffectiveScale()
-            frame.config.overrides.y = (y - centerY) / frame:GetEffectiveScale()
-        end
-    end
-    for index, candidate in ipairs(self.db.profile.windows) do
-        if candidate == config then
-            table.remove(self.db.profile.windows, index)
-            local frame = self.windowFrames[config.id]
-            if frame then
-                frame:Hide()
-                frame.config, frame.anchorTarget = nil, nil
-            end
-            break
-        end
+function app:SetWindowEnabled(config, enabled)
+    config.enabled = enabled
+    if enabled then
+        config.hidden = false
     end
     self:RebuildWindows()
 end
@@ -486,14 +459,14 @@ function app:CreateWindow(id)
     )
     local menu = Button(frame, "", 27, function(button)
         MenuUtil.CreateContextMenu(button, function(_, root)
-            root:CreateButton("Add window", function()
+            root:CreateButton("Activate next window", function()
                 self:AddWindow()
             end)
             root:CreateButton("Damage Meter settings", function()
                 self.core:OpenOptions("SeamlessDamageMeter", "windows")
             end)
-            root:CreateButton("Remove this window", function()
-                self:RemoveWindow(frame.config)
+            root:CreateButton("Deactivate this window", function()
+                self:SetWindowEnabled(frame.config, false)
             end)
             root:CreateButton("Hide this window", function()
                 frame.config.hidden = true
@@ -654,10 +627,6 @@ end
 function app:RebuildWindows()
     self:PrepareWindowSettings()
     self:HideWindows()
-    if not self.db.profile.initialized then
-        self:AddWindow()
-        return
-    end
     for index = #self.windows, 1, -1 do
         self.windows[index] = nil
     end
@@ -683,7 +652,7 @@ function app:RebuildWindows()
         self:StyleWindowLabel(frame.timer, config)
         frame.config = config
         self:ApplyWindowLayout(frame)
-        frame:SetShown(not config.hidden)
+        frame:SetShown(config.enabled and not config.hidden)
     end
     -- All frames must exist before another window can use one as its anchor.
     for index, config in ipairs(self.db.profile.windows) do

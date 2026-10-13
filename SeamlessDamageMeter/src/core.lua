@@ -70,6 +70,6 @@ function addon:SlashCommand(input)
     elseif command == "" or command == "options" then
         app.core:OpenOptions(appName)
     else
-        app.core.logger:chat("/sdm [options], /sdm new, /sdm show. Use each window's menu to remove it.")
+        app.core.logger:chat("/sdm [options], /sdm new, /sdm show. Use each window's menu to deactivate it.")
     end
 end

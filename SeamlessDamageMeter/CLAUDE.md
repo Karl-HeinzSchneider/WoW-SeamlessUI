@@ -17,20 +17,23 @@ them. Preserve the client's source order and do not modify returned data tables.
 Only layout and selections belong in SavedVariables; never persist combat results.
 
 One shared timer refreshes visible windows, with per-refresh caching for matching views.
-Frames and rows are reused. Removing all windows must leave the profile empty; only a
-fresh/reset profile creates a default window. Hidden windows are restored via `/sdm show`.
+Frames and rows are reused. Every profile always contains slots 1�10; only a fresh/reset
+profile activates slot 1 by default. A profile with all slots inactive stays inactive.
+Hidden active windows are restored via `/sdm show`; this does not activate inactive slots.
 
-The Windows tab uses a tree with Defaults and one category per active window slot (1–10).
-Adding activates the lowest unused slot with fresh defaults; hiding retains its configuration
-and reserves the slot. Removing clears its configuration and hides its retained frame. Frames
-are created lazily and reused, so at most ten meter frames exist. Old increasing IDs migrate
-to free slots while preserving settings and remapping anchors; valid existing slot IDs stay
-unchanged. Excess windows from very old profiles are retained in `profile.legacyWindows`.
+The Windows tab always lists all ten windows, with inactive/hidden names greyed out and
+settings still editable. `config.enabled` controls usage; `config.hidden` hides an active
+window temporarily. Deactivation preserves all configuration, geometry and anchor links.
+All ten independent frames exist and retain their positions while hidden, so dependent
+windows may anchor to inactive windows. Adding activates the first inactive slot and
+preserves its settings. Old increasing IDs migrate to free slots while preserving settings
+and remapping anchors; valid existing slot IDs stay unchanged. Excess windows from very
+old profiles are retained in `profile.legacyWindows`.
 `profile.windowDefaults` supplies appearance and geometry; `config.overrides` stores only
 explicit overrides (nil inherits; false is a valid toggle override). Old width/height/x/y
 fields migrate into overrides. Dragging overrides X/Y, resizing also overrides width/height.
-`config.anchorTo` is a window ID or nil for UIParent; reject circular anchors. Removing an
-anchor target preserves its dependent windows' screen positions. Defaults are profile scoped.
+`config.anchorTo` is a window ID or nil for UIParent; reject circular anchors. Deactivating an
+anchor target preserves the attachment and its geometry. Defaults are profile scoped.
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
 mixins. Reuse client art and fonts. The header is 32 pixels tall; rows are 18 pixels with
@@ -45,22 +48,21 @@ show total and rate in compact form; DPS/HPS swap their order, and action counts
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`
 (for example `SeamlessDamageMeterWindow1`). The suffix is the fixed slot number, not its
-position in the active list. Frames are retained by slot and reused across profile changes;
-deleting another window never renames them. Removed windows remain allocated but hidden.
-The frame's `windowID` is stable; `config` is nil for a removed slot and otherwise reflects
-its currently bound profile. A reused slot represents a fresh window. This is an authorized
+position in the list. All ten frames are retained and reused across profile changes.
+The frame's `windowID` is stable; `config` always reflects its currently bound profile,
+including while inactive. This is an authorized
 exception to the repository's default rule against additional globals.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone
 window regression harness (template independence, restricted data, collapse persistence,
-scrolling, shared reads, expired history, empty data and removing the final window).
+scrolling, shared reads, expired history, empty data and deactivating every window).
 
 In-game verification: enable tracking, attack a target, add a second window and select
 DPS or healing independently. Verify current/overall/history selection, scrolling with
-a group, drag/resize, hide/show, removing the final window, reload persistence and profile
+a group, drag/resize, hide/show, deactivating every window, reload persistence and profile
 switch/reset. Clear Blizzard history while viewing an old fight and verify the empty
 state. Check both in and out of combat, including restricted combat values.
 Verify default changes propagate only to inherited settings, including fonts and colors;
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
-to each other, remove the anchor target, and check the 10-window limit.
+to each other, deactivate the anchor target, and check the 10-window limit.

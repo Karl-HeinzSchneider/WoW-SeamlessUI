@@ -420,14 +420,15 @@ end
 
 -- Fixed columns use public layout settings, never the width of restricted combat text.
 local function SetRowValues(row, config, amount, rate, percentage, enemyPercentage, showRate, rateFirst, showEnemy)
-    local labels = { row.value, row.secondaryValue, row.percentageValue, row.enemyPercentageValue }
+    local labels = { row.enemyPercentageValue, row.value, row.secondaryValue, row.percentageValue }
     local fontSize = app:GetWindowSetting(config, "fontSize")
     local gap = math.max(3, fontSize * 0.35)
-    local widths = { fontSize * 4.5, fontSize * 4, fontSize * 2.75, fontSize * 2.75 }
-    local shown = { true, showRate, true, showEnemy }
+    local widths = { fontSize * 2.75, fontSize * 4.5, fontSize * 4, fontSize * 2.75 }
+    local shown = { showEnemy, true, showRate, true }
     local total, count = 0, 0
     for index = 1, 4 do
-        if shown[index] then
+        -- Use the same scale for shared columns, including when a target-only column is present.
+        if index == 1 or shown[index] then
             total, count = total + widths[index], count + 1
         end
     end
@@ -448,7 +449,7 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     end
     row.name:ClearAllPoints()
     row.name:SetPoint("LEFT", 2, 0)
-    row.name:SetPoint("RIGHT", row.value, "LEFT", -gap, 0)
+    row.name:SetPoint("RIGHT", showEnemy and row.enemyPercentageValue or row.value, "LEFT", -gap, 0)
     local primary, secondary = amount, rate
     if rateFirst then
         primary, secondary = rate, amount
@@ -588,7 +589,7 @@ local function ShowRowTooltip(row, frame)
             label:SetPoint("RIGHT", -2, 0)
             label:SetHeight(rowHeight)
             local heading = frame.config.statistic == "EnemyDamageTaken" and "Contributors (% of enemy)"
-                or "Targets (% of yours; % of enemy)"
+                or "Targets (% of enemy; % of yours)"
             label:SetText(spell.isTargetHeading and heading or targetReason)
             label:Show()
             bar:Hide()
@@ -647,7 +648,17 @@ local function ShowRowTooltip(row, frame)
             local total = spell.isTarget and targetDetails.totalAmount or details.totalAmount
             local percentage = Percentage(amount, total)
             local enemyPercentage = spell.isTarget and spell.enemyShare and math.floor(spell.enemyShare + 0.5) or nil
-            SetRowValues(bar, config, amount, rate, percentage, enemyPercentage, showRate, statistic.rate, showEnemy)
+            SetRowValues(
+                bar,
+                config,
+                amount,
+                rate,
+                percentage,
+                enemyPercentage,
+                showRate,
+                statistic.rate,
+                showEnemy and spell.isTarget
+            )
             -- The API provides the scale; restricted amounts go directly to the widgets.
             local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
             if IsPublic(maximum) and maximum == nil then

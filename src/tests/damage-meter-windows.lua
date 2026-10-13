@@ -1,4 +1,5 @@
 -- Run from the repository root: lua src/tests/damage-meter-windows.lua
+unpack = unpack or table.unpack
 local methods = {}
 local function object(parent)
     return setmetatable({ parent = parent, scripts = {}, width = 400, height = 200, shown = true }, {
@@ -82,6 +83,21 @@ function methods:GetCenter()
 end
 function methods:GetTop()
     return 100
+end
+function methods:GetLeft()
+    return -self.width / 2
+end
+function methods:GetRight()
+    return self.width / 2
+end
+function methods:GetBottom()
+    return 100 - self.height
+end
+function methods:GetEffectiveScale()
+    return self.scale or 1
+end
+function methods:SetScale(scale)
+    self.scale = scale
 end
 function methods:SetValue(value)
     self.statusValue = value
@@ -184,10 +200,23 @@ C_CVar = {
     end,
 }
 local app = { db = { profile = { windows = {}, nextID = 1, initialized = false } } }
+LibStub = function()
+    return {
+        Fetch = function()
+            return "test-font"
+        end,
+    }
+end
+assert(loadfile("SeamlessDamageMeter/src/settings.lua"))("SeamlessDamageMeter", app)
+app.db.profile.windowDefaults = app.windowDefaults
 assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
+assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
+for id = 2, 10 do
+    assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
+end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
 assert(frame.rows[1]:GetHeight() == 16 and frame.rows[1].entry:GetHeight() == 18)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
@@ -196,13 +225,14 @@ assert(frame.rows[1].value.args[1] == secret)
 assert(frame.rows[1].value.args[2] == secret, "Restricted rates must also go directly to the widget")
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
 assert(frame.localRow:IsShown(), "Offscreen local player must stay visible")
-local fullHeight = frame.config.height
+local fullHeight = app:GetWindowSetting(frame.config, "height")
 frame.collapse.scripts.OnClick()
 assert(frame:IsShown() and not frame.body:IsShown())
-assert(frame.config.height == fullHeight and frame:GetHeight() == 32)
+assert(app:GetWindowSetting(frame.config, "height") == fullHeight and frame:GetHeight() == 32)
+assert(frame.point[5] == (fullHeight - 32) / 2, "Collapse must keep the header position stable")
 assert(not frame.localRow:IsShown())
 app:RebuildWindows()
-assert(frame:GetHeight() == 32 and frame.config.height == fullHeight)
+assert(frame:GetHeight() == 32 and app:GetWindowSetting(frame.config, "height") == fullHeight)
 frame.collapse.scripts.OnClick()
 assert(frame:GetHeight() == fullHeight, "Expanding must not overwrite saved height with resize minimum")
 frame.scrollbar:SetValue(5)
@@ -240,25 +270,83 @@ assert(not frame.rows[1]:IsShown() and not frame.localRow:IsShown())
 C_DamageMeter = nil
 app:RefreshWindows()
 assert(frame.message.text == "This client does not provide the damage meter API.")
-app:RemoveWindow(app.db.profile.windows[1])
+app:SetWindowEnabled(app.db.profile.windows[1], false)
 assert(
-    app.windows[1] == second and SeamlessDamageMeterWindow2 == second,
+    app.windows[2] == second and SeamlessDamageMeterWindow2 == second,
     "Deleting another window must not rename or reassign this frame"
 )
 app:RebuildWindows()
-assert(app.windows[1] == second)
-app:RemoveWindow(app.db.profile.windows[1])
-assert(#app.db.profile.windows == 0 and not frame:IsShown())
+assert(app.windows[2] == second)
+app:SetWindowEnabled(app.db.profile.windows[2], false)
+assert(#app.db.profile.windows == 10 and not frame:IsShown() and not second:IsShown())
 app:RebuildWindows()
-assert(#app.db.profile.windows == 0, "An empty profile must stay empty")
+assert(
+    app:GetUnusedWindowSlot() == 1 and not frame:IsShown() and not second:IsShown(),
+    "A fully inactive profile must remain inactive"
+)
 app.db.profile = {
     initialized = true,
     nextID = 3,
+    windowDefaults = app.windowDefaults,
     windows = { { id = 2, statistic = "DamageDone", session = "Current", width = 400, height = 200, x = 0, y = 0 } },
 }
 app:RebuildWindows()
 assert(
-    app.windows[1] == second and SeamlessDamageMeterWindow2 == second,
+    app.windows[2] == second and SeamlessDamageMeterWindow2 == second,
     "Profile changes must reuse the same named frame"
 )
+assert(second.config.width == nil and second.config.overrides.width == 400, "Legacy geometry must migrate")
+app.db.profile.windowDefaults.width = 480
+app:AddWindow()
+local inherited = app.windowFrames[1]
+assert(inherited:GetWidth() == 480 and next(inherited.config.overrides) == nil)
+assert(second:GetWidth() == 400, "Migrated geometry must remain an override")
+app.db.profile.windowDefaults.width = 520
+app:RebuildWindows()
+assert(inherited:GetWidth() == 520 and second:GetWidth() == 400)
+inherited.config.anchorTo = second.config.id
+inherited.config.overrides.scale = 1.5
+app:RebuildWindows()
+assert(inherited.anchorTarget == second and inherited:GetEffectiveScale() == 1.5)
+assert(not app:CanAnchorTo(second.config, inherited.config.id))
+local anchorPoint = inherited.point
+app:SetWindowEnabled(second.config, false)
+assert(inherited.config.anchorTo == 2 and inherited.anchorTarget == second and not second:IsShown())
+for index = 1, 5 do
+    assert(inherited.point[index] == anchorPoint[index], "Deactivation must preserve the dependent's anchor geometry")
+end
+assert(inherited.config.overrides.width == nil, "Deactivating an anchor must not override the inherited size")
+app.core = { logger = { chat = function() end } }
+for _ = 1, 12 do
+    app:AddWindow()
+end
+assert(#app.db.profile.windows == 10, "All creation paths must enforce the window limit")
+local slot = app.windowFrames[3]
+slot.config.hidden = true
+slot.config.collapsed = true
+slot.config.statistic = "Dps"
+slot.config.sessionID = 99
+slot.config.overrides.fontSize = 20
+app:RebuildWindows()
+assert(not slot:IsShown() and app:GetUnusedWindowSlot() == nil, "Hidden windows must retain their slot")
+local previousConfig = slot.config
+app:SetWindowEnabled(previousConfig, false)
+assert(slot.config == previousConfig and not slot:IsShown())
+assert(app:GetUnusedWindowSlot() == 3)
+app:AddWindow()
+assert(app.windowFrames[3] == slot and slot:IsShown(), "Reactivation must reuse the slot's frame")
+assert(slot.config == previousConfig and slot.config.overrides.fontSize == 20)
+assert(slot.config.statistic == "Dps" and slot.config.session == "Current")
+assert(not slot.config.hidden and slot.config.collapsed and slot.config.sessionID == 99)
+for _ = 1, 25 do
+    app:SetWindowEnabled(slot.config, false)
+    app:AddWindow()
+    assert(app.windowFrames[3] == slot)
+end
+local allocated = 0
+for id in pairs(app.windowFrames) do
+    assert(id >= 1 and id <= 10)
+    allocated = allocated + 1
+end
+assert(allocated == 10, "Repeated removal and creation must not grow the frame pool")
 print("Damage meter window regressions OK")

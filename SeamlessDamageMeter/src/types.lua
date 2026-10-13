@@ -5,3 +5,6 @@
 ---@field windows table[]
 ---@field windowFrames table<number, table> Frames indexed by persistent window ID.
 ---@field statistics table[]
+---@field MAX_WINDOWS integer
+---@field windowDefaults table
+---@field windowOptions table

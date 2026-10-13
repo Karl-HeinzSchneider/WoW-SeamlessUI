@@ -10,5 +10,6 @@
 src\core.lua
 src\data.lua
 src\blizzard.lua
+src\settings.lua
 src\windows.lua
 src\options.lua

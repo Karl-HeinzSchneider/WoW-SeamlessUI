@@ -7,7 +7,13 @@ local addon = app.addon
 
 function addon:OnInitialize()
     app.db = LibStub("AceDB-3.0"):New("SeamlessDamageMeterDB", {
-        profile = { windows = {}, nextID = 1, initialized = false, locked = false, hideBlizzard = true },
+        profile = {
+            windows = {},
+            initialized = false,
+            locked = false,
+            hideBlizzard = true,
+            windowDefaults = app.windowDefaults,
+        },
     }, true)
     app.db.RegisterCallback(self, "OnProfileChanged", "RefreshProfile")
     app.db.RegisterCallback(self, "OnProfileCopied", "RefreshProfile")
@@ -64,6 +70,6 @@ function addon:SlashCommand(input)
     elseif command == "" or command == "options" then
         app.core:OpenOptions(appName)
     else
-        app.core.logger:chat("/sdm [options], /sdm new, /sdm show. Use each window's menu to remove it.")
+        app.core.logger:chat("/sdm [options], /sdm new, /sdm show. Use each window's menu to deactivate it.")
     end
 end

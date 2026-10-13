@@ -94,6 +94,7 @@ end
 
 function app:PositionWindow(frame)
     local config = frame.config
+    frame.positioning = true
     frame:ClearAllPoints()
     frame:SetPoint(
         self:GetWindowSetting(config, "point"),
@@ -102,6 +103,21 @@ function app:PositionWindow(frame)
         self:GetWindowSetting(config, "x"),
         self:GetWindowSetting(config, "y") + CollapseOffset(config)
     )
+    frame.positioning = nil
+end
+
+function app:SaveWindowPosition(frame, onlyChanged)
+    local config = frame.config
+    local x, y = AnchorCoordinates(frame, app:GetWindowSetting(config, "point"))
+    local targetX, targetY =
+        AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
+    x, y = (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale() - CollapseOffset(config)
+    if not onlyChanged or math.abs(x - app:GetWindowSetting(config, "x")) > 0.001 then
+        config.overrides.x = x
+    end
+    if not onlyChanged or math.abs(y - app:GetWindowSetting(config, "y")) > 0.001 then
+        config.overrides.y = y
+    end
 end
 
 local function SaveGeometry(frame, resizing)
@@ -111,12 +127,7 @@ local function SaveGeometry(frame, resizing)
     end
     frame.editing = nil
     local config = frame.config
-    local x, y = AnchorCoordinates(frame, app:GetWindowSetting(config, "point"))
-    local targetX, targetY =
-        AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
-    config.overrides.x, config.overrides.y =
-        (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale()
-    config.overrides.y = config.overrides.y - CollapseOffset(config)
+    app:SaveWindowPosition(frame)
     if resizing and not config.collapsed then
         config.overrides.width, config.overrides.height = frame:GetSize()
     end
@@ -622,6 +633,9 @@ function app:ApplyWindowLayout(frame)
         config.collapsed and "ui-questtrackerbutton-expand-all-pressed" or "ui-questtrackerbutton-collapse-all-pressed",
         "ui-questtrackerbutton-red-highlight"
     )
+    if self.SyncWindowEditMode then
+        self:SyncWindowEditMode(frame)
+    end
 end
 
 function app:RebuildWindows()
@@ -670,6 +684,10 @@ function app:RebuildWindows()
         end
         frame.anchorTarget = target
         self:PositionWindow(frame)
+        if self.SyncWindowEditMode then
+            self:SyncWindowEditMode(frame)
+            frame:SetShown(self:WindowShouldBeShown(frame))
+        end
     end
     self:RefreshWindows()
     self:UpdateWindowOptions()

@@ -23,4 +23,5 @@
 	<Include file="lib\LibDBIcon-1.0\LibDBIcon-1.0\lib.xml" />
 	<Include file="lib\LibSharedMedia-3.0\LibSharedMedia-3.0\lib.xml" />
 	<Include file="lib\LibEditModeOverride\LibEditModeOverride.xml" />
+	<Script file="lib\EditModeExpanded-1.0\EditModeExpanded-1.0.lua" />
 </Ui>

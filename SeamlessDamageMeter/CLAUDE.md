@@ -7,6 +7,7 @@ statistic/session selections. Combat data stays owned by `C_DamageMeter`.
 Load order: `core.lua` (lifecycle/database), `data.lua` (client API adapter),
 `blizzard.lua` (turns tracking on, keeps the game's meter window hidden),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
+`editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
 `windows.lua` (pooled frames and menus), `options.lua` (General, Windows, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
@@ -52,6 +53,16 @@ position in the list. All ten frames are retained and reused across profile chan
 The frame's `windowID` is stable; `config` always reflects its currently bound profile,
 including while inactive. This is an authorized
 exception to the repository's default rule against additional globals.
+
+All ten slots register with EditModeExpanded-1.0, embedded unchanged from `_libs` in
+Core. Each window's `editMode` table stores native layout settings inside its AceDB
+profile. The adapter rebinds the library's exposed `baseFramesDB`/`framesDB` tables
+(minor 121) because RegisterFrame cannot replace a pooled frame's database. Meter
+settings seed the current native layout on rebuild; library moves and scale changes
+update meter overrides while preserving independent anchor points and collapse offsets.
+Inactive/hidden slots can be previewed without enabling them. Exit restores normal
+visibility and movability. Verify Edit Mode dragging, arrow keys, scaling, native layout
+changes, collapsed windows, linked anchors, AceDB switch/copy/reset and reload in game.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone

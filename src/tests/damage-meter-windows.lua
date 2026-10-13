@@ -350,3 +350,119 @@ for id in pairs(app.windowFrames) do
 end
 assert(allocated == 10, "Repeated removal and creation must not grow the frame pool")
 print("Damage meter window regressions OK")
+
+-- Exercise the adapter against the library's exposed database contract and callbacks.
+local registered = 0
+local eme = { baseFramesDB = {}, framesDB = {} }
+function eme:IsRegistered(frame)
+    return frame.system ~= nil
+end
+function eme:RegisterFrame(frame, _, db)
+    registered = registered + 1
+    frame.system = 100 + registered
+    frame.EMECheckButtonFrame = object(frame)
+    self.baseFramesDB[frame.system], self.framesDB[frame.system] = db, db
+    frame.SetScaleOverride = frame.SetScale
+end
+function eme:RegisterResizable(frame, minimum, maximum, step)
+    assert(minimum == 50 and maximum == 200 and step == 5)
+end
+function eme:SetDontResize(frame)
+    frame.EMEDontResize = true
+end
+function eme:IsFrameEnabled(frame)
+    return self.framesDB[frame.system].enabled
+end
+function methods:GetRect()
+    return self:GetLeft(), self:GetBottom(), self:GetSize()
+end
+function methods:GetScale()
+    return self.scale or 1
+end
+local combat = false
+function InCombatLockdown()
+    return combat
+end
+function hooksecurefunc(target, key, callback)
+    local original = target[key]
+    target[key] = function(...)
+        original(...)
+        callback(...)
+    end
+end
+Enum.EditModeLayoutType = { Character = 2 }
+EditModeManagerFrame = {
+    GetActiveLayoutInfo = function()
+        return { layoutType = 1, layoutName = "Test" }
+    end,
+    ExitEditMode = function(self)
+        self.editModeActive = false
+    end,
+}
+local originalLibStub = LibStub
+LibStub = function(name)
+    if name == "EditModeExpanded-1.0" then
+        return eme
+    end
+    return originalLibStub(name)
+end
+app.core.RefreshOptions = function() end
+app.addon = {
+    IsEnabled = function()
+        return true
+    end,
+}
+assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
+app:RebuildWindows()
+assert(registered == 10, "Every slot must register once, including inactive slots")
+local meter = app.windowFrames[1]
+assert(meter.EMEDontResize)
+assert(eme.baseFramesDB[meter.system] == meter.config.editMode)
+assert(eme.framesDB[meter.system] == meter.config.editMode.profiles["1-Test"])
+meter.config.enabled = false
+meter.config.hidden = true
+EditModeManagerFrame.editModeActive = true
+app:RebuildWindows()
+assert(meter:IsShown(), "Edit Mode must preview inactive/hidden slots")
+assert(not meter.config.enabled and meter.config.hidden, "Preview must not activate slots")
+meter:SetScaleOverride(1.25)
+assert(meter.config.overrides.scale == 1.25)
+assert(eme.framesDB[meter.system].settings[16] ~= nil)
+local originalDatabase = meter.config.editMode
+app.db.profile = { windows = {}, initialized = false, windowDefaults = app.windowDefaults }
+app:RebuildWindows()
+assert(registered == 10, "Profile changes must reuse library registrations")
+assert(meter.config.editMode ~= originalDatabase)
+assert(eme.baseFramesDB[meter.system] == meter.config.editMode, "Rebind the active AceDB profile")
+assert(meter.config.overrides.scale == nil, "Profile changes must preserve inheritance")
+assert(meter.config.overrides.x == nil and meter.config.overrides.y == nil)
+meter:SetScaleOverride(meter:GetScale())
+assert(meter.config.overrides.scale == nil, "An unchanged library scale must remain inherited")
+assert(
+    meter.config.overrides.x == nil and meter.config.overrides.y == nil,
+    "An unchanged library position stays inherited"
+)
+eme.framesDB[meter.system].enabled = false
+app:RebuildWindows()
+assert(not meter:IsShown(), "The Expanded checkbox controls Edit Mode previews")
+eme.framesDB[meter.system].enabled = true
+meter.config.hidden = true
+EditModeManagerFrame:ExitEditMode()
+assert(not meter:IsShown(), "Exit must restore the profile's normal visibility")
+local savedX = meter.config.overrides.x
+local originalCenter = methods.GetCenter
+function methods:GetCenter()
+    if self.testCenter then
+        return self.testCenter, 0
+    end
+    return originalCenter(self)
+end
+meter.testCenter = 200
+meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 10, 10)
+assert(meter.config.overrides.x ~= savedX, "Library movement must update meter overrides")
+assert(meter.point[1] == "BOTTOMLEFT", "Saving library movement must not recursively reposition")
+combat = true
+savedX = meter.config.overrides.x
+meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 20, 20)
+assert(meter.config.overrides.x == savedX, "Do not inspect restricted geometry in combat")
+print("Damage meter Edit Mode regressions OK")

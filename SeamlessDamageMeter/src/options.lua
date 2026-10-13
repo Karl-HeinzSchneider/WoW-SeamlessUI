@@ -364,7 +364,40 @@ function app:RegisterOptions()
                 },
             },
         },
-        tabs = { windows = self.windowOptions },
+        tabs = {
+            windows = self.windowOptions,
+            credits = {
+                name = "Credits",
+                order = 20,
+                args = {
+                    teelo = {
+                        type = "description",
+                        order = 10,
+                        name = "Thanks to Teelo for creating Edit Mode Expanded and its EditModeExpanded-1.0 library, which powers Edit Mode integration for all ten meter windows.",
+                    },
+                    github = {
+                        type = "input",
+                        order = 20,
+                        width = "full",
+                        name = "GitHub (select and copy)",
+                        get = function()
+                            return "https://github.com/teelolws/EditModeExpanded"
+                        end,
+                        set = function() end,
+                    },
+                    curseforge = {
+                        type = "input",
+                        order = 30,
+                        width = "full",
+                        name = "CurseForge (select and copy)",
+                        get = function()
+                            return "https://www.curseforge.com/wow/addons/edit-mode-expanded"
+                        end,
+                        set = function() end,
+                    },
+                },
+            },
+        },
         db = self.db,
     })
 end

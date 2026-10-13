@@ -1,16 +1,9 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
--- The client only records combat statistics while the damageMeterEnabled CVar is on, and the
--- same CVar also shows the game's own meter window. Turn tracking on for our windows and keep the
--- game's window hidden instead (it still shows in Edit Mode, so its layout stays editable).
+-- This CVar controls Blizzard's meter UI. API availability is checked independently
+-- by the live provider; do not force this setting on when another addon hides the UI.
 local CVAR = "damageMeterEnabled"
-
-function app:EnsureTracking()
-    if C_CVar.GetCVar(CVAR) ~= nil and not C_CVar.GetCVarBool(CVAR) then
-        self:SetCombatTracking(true)
-    end
-end
 
 function app:SetCombatTracking(enabled)
     -- The CVar invokes Blizzard callbacks synchronously. Keep those native callbacks

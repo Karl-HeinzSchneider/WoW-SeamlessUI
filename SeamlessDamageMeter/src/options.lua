@@ -496,8 +496,8 @@ function app:RegisterOptions()
                         type = "toggle",
                         order = 10,
                         width = "full",
-                        name = "Combat tracking",
-                        desc = "The game setting that records combat statistics. This addon needs it and turns it on when it loads.",
+                        name = "Enable the game's damage meter UI",
+                        desc = "Controls Blizzard's own meter window. Seamless queries the combat API independently of this setting.",
                         descStyle = "inline",
                         hidden = C_CVar.GetCVar("damageMeterEnabled") == nil,
                         get = function()

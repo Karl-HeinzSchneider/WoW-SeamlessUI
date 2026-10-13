@@ -43,7 +43,6 @@ function addon:RefreshProfile()
 end
 
 function addon:OnEnable()
-    app:EnsureTracking()
     self:RefreshProfile()
     self:RegisterEvent("PLAYER_ENTERING_WORLD", function()
         app.combatService:OnWorld()

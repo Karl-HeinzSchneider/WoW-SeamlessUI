@@ -25,9 +25,6 @@ function live:CanRead()
     if not available then
         return false, reason
     end
-    if not C_CVar.GetCVarBool("damageMeterEnabled") then
-        return false, "Combat tracking is disabled. Saved fights are still available."
-    end
     return true
 end
 

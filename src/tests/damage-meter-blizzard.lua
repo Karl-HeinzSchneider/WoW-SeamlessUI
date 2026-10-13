@@ -68,8 +68,9 @@ local app = {
     },
 }
 assert(loadfile("SeamlessDamageMeter/src/blizzard.lua"))("SeamlessDamageMeter", app)
-app:EnsureTracking()
-assert(tracking, "Enable collection using a native-isolated CVar call")
+assert(not tracking, "Loading Seamless preserves the native meter UI setting")
+app:SetCombatTracking(true)
+assert(tracking, "Explicit native UI toggles use a native-isolated CVar call")
 app:UpdateBlizzardMeter()
 assert(not shown and hides == 1)
 local previousUpdates = updates
@@ -93,7 +94,7 @@ app:UpdateBlizzardMeter()
 assert(shown, "Disabling Seamless restores the native meter")
 app:SetCombatTracking(false)
 assert(not tracking and not shown)
-app:EnsureTracking()
+app:SetCombatTracking(true)
 assert(tracking and shown)
 local original = DamageMeter
 DamageMeter = nil

@@ -206,6 +206,17 @@ Fight(1, 100)
 available = { { sessionID = 1, name = "First fight", durationSeconds = 10 } }
 local config = { session = "Current", statistic = "DamageDone" }
 local session = service:GetSession(config, "DamageDone")
+tracking = false
+service:Invalidate()
+assert(
+    service:GetSession(config, "DamageDone").totalAmount == session.totalAmount,
+    "Native UI off does not block API reads"
+)
+assert(
+    app.live:GetDetails(config, session.combatSources[1], "DamageDone"),
+    "Native UI off does not block spell queries"
+)
+tracking = true
 local before = reads
 assert(service:GetSession(config, "DamageDone") == session and reads == before, "Matching windows share reads")
 local player = session.combatSources[1]

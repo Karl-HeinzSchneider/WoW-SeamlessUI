@@ -8,7 +8,7 @@ statistic/session selections. Client collection stays owned by `C_DamageMeter`; 
 Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statistics/previews),
 `archive.lua` (schema/storage), `live.lua` (client API provider), `service.lua` (shared queries/cache),
 `breakdowns.lua` (enemy relationships/comparisons/reports), `capture.lua` (bounded capture/retries),
-`blizzard.lua` (turns tracking on, keeps the game's meter window hidden),
+`blizzard.lua` (controls native meter visibility without forcing its CVar on),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
 `editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
 `windows.lua` (pooled frames and menus), `analysis.lua` (detail/copy panel),

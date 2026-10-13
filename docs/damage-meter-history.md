@@ -66,7 +66,9 @@ retained; units already combined by the client and same-name contributors cannot
 - Successfully captured public completed fights survive normal reload/relog. Immediate reloads,
   disconnects or restricted combat can leave incomplete data. SavedVariables are game-written,
   so this is not continuous crash-safe disk storage.
-- Public saved fights remain readable during combat, with tracking off, or without client APIs.
+- Live reads use the API's availability result, independently of `damageMeterEnabled`.
+  Seamless preserves that native UI toggle on load so other meters can keep Blizzard's UI hidden.
+- Public saved fights remain readable during combat, with the native UI off, or without client APIs.
 - Live spell hover accepts readable secret-bearing tables and passes restricted amounts directly
   to widgets. Local-player queries use the known public player GUID; other restricted identities
   are not guessed. Target analysis checks only its required public fields, even during combat.
@@ -106,7 +108,9 @@ Window tests also exercise archived hover/analysis without APIs, and settings te
 5. Record a boss kill/wipe, rapid successive pulls, and a death near encounter end. Check
    encounter name, outcome, instance, dates and durations.
 6. Archive a death, reload/relog and reset Blizzard history. Its saved recap must still work.
-7. Disable tracking and switch/copy/reset appearance profiles. Saved history must remain intact.
+7. Disable the native meter UI, enable Details alongside Seamless, and fight a new mob.
+   Verify fresh live totals, spell hover and saved history still update, then switch/copy/reset
+   appearance profiles. Saved history must remain intact.
 8. Pin a fight and lower retention. Delete a fight, reload with client history intact, and
    confirm it is not silently restored. Clearing saved history must not reset the live meter.
 9. Reset Blizzard history and fight again. Old archives remain, and the new fight gets a new ID.
@@ -116,5 +120,5 @@ Window tests also exercise archived hover/analysis without APIs, and settings te
 11. Reload immediately after combat and during combat. Missing data must be labelled and no
     restricted-value errors should occur; only successfully captured results are guaranteed.
 12. Recheck Edit Mode, collapse, resize, linked anchors, pinned local-player rows and ten slots.
-    Enable/disable the native-meter hide option and tracking, including during combat. After reload,
+    Enable/disable the native-meter hide option and native UI toggle, including during combat. After reload,
     confirm no native secret-duration timer errors occur across combat transitions or Edit Mode.

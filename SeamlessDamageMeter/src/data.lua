@@ -3,15 +3,15 @@ local _, app = ...
 
 -- Keep the client API behind this adapter; windows never collect combat logs.
 app.statistics = {
-    { key = "DamageDone", label = "Damage done" },
-    { key = "Dps", label = "Damage per second", rate = true },
-    { key = "HealingDone", label = "Healing done" },
-    { key = "Hps", label = "Healing per second", rate = true },
-    { key = "Absorbs", label = "Absorbs" },
-    { key = "Interrupts", label = "Interrupts" },
-    { key = "Dispels", label = "Dispels" },
-    { key = "DamageTaken", label = "Damage taken" },
-    { key = "AvoidableDamageTaken", label = "Avoidable damage taken" },
+    { key = "DamageDone", label = DAMAGE_METER_TYPE_DAMAGE_DONE or "Damage done" },
+    { key = "Dps", label = DAMAGE_METER_TYPE_DPS or "DPS", rate = true },
+    { key = "HealingDone", label = DAMAGE_METER_TYPE_HEALING_DONE or "Healing done" },
+    { key = "Hps", label = DAMAGE_METER_TYPE_HPS or "HPS", rate = true },
+    { key = "Absorbs", label = DAMAGE_METER_TYPE_ABSORBS or "Absorbs" },
+    { key = "Interrupts", label = DAMAGE_METER_TYPE_INTERRUPTS or "Interrupts" },
+    { key = "Dispels", label = DAMAGE_METER_TYPE_DISPELS or "Dispels" },
+    { key = "DamageTaken", label = DAMAGE_METER_TYPE_DAMAGE_TAKEN or "Damage taken" },
+    { key = "AvoidableDamageTaken", label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken" },
 }
 
 function app:IsAvailable()

@@ -9,3 +9,4 @@
 ---@field windowDefaults table
 ---@field windowOptions table
 ---@field editModeHooked boolean?
+---@field detailTooltip table? Shared pooled spell-bar hover panel; never saved.

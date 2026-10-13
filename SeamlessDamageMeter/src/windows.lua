@@ -368,8 +368,10 @@ function app:ShowSessionMenu(frame)
 end
 
 local function HideRowTooltip(row)
-    if GameTooltip and GameTooltip:IsOwned(row.entry) then
-        GameTooltip:Hide()
+    local tooltip = app.detailTooltip
+    if tooltip and tooltip.owner == row then
+        tooltip.owner = nil
+        tooltip:Hide()
     end
 end
 
@@ -377,11 +379,24 @@ local function IsPublic(value)
     return not (issecretvalue and issecretvalue(value))
 end
 
-local function TooltipColumns()
-    GameTooltip:AddDoubleLine(" ", " ", 1, 1, 1, 1, 1, 1)
-    local prefix = GameTooltip:GetName() .. "Text"
-    local line = GameTooltip:NumLines()
-    return _G[prefix .. "Left" .. line], _G[prefix .. "Right" .. line]
+local function CreateDetailTooltip()
+    local tooltip = CreateFrame("Frame", nil, UIParent)
+    tooltip:SetFrameStrata("TOOLTIP")
+    tooltip:SetClampedToScreen(true)
+    tooltip:EnableMouse(false)
+    tooltip.rows = {}
+    local background = tooltip:CreateTexture(nil, "BACKGROUND", nil, -1)
+    background:SetAtlas("damagemeters-background")
+    background:SetAllPoints()
+    tooltip.background = background
+    tooltip.body = CreateFrame("Frame", nil, tooltip)
+    tooltip.body:SetPoint("TOPLEFT", 5, -5)
+    tooltip.body:SetPoint("BOTTOMRIGHT", -5, 5)
+    tooltip.body:SetClipsChildren(true)
+    tooltip.body:EnableMouse(false)
+    tooltip:Hide()
+    app.detailTooltip = tooltip
+    return tooltip
 end
 
 local function ShowRowTooltip(row, frame)
@@ -394,14 +409,56 @@ local function ShowRowTooltip(row, frame)
         HideRowTooltip(row)
         return
     end
-    GameTooltip:SetOwner(row.entry, "ANCHOR_RIGHT")
-    GameTooltip:ClearLines()
-    GameTooltip:AddLine(row.source.name)
-    local statistic = app:GetStatistic(frame.config.statistic)
-    GameTooltip:AddLine(statistic.label, 1, 1, 1)
     local entries = details.deathEvents or details.combatSpells or {}
-    for _, spell in ipairs(entries) do
-        local left, right = TooltipColumns()
+    if #entries == 0 then
+        HideRowTooltip(row)
+        return
+    end
+    local tooltip = app.detailTooltip or CreateDetailTooltip()
+    local config = frame.config
+    local rowHeight = app:GetWindowSetting(config, "rowHeight")
+    local spacing = app:GetWindowSetting(config, "rowSpacing")
+    local scale = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
+    local capacity =
+        math.max(1, math.floor((UIParent:GetHeight() * 0.75 / scale - 10 + spacing) / (rowHeight + spacing)))
+    if tooltip.owner ~= row then
+        tooltip.offset = 0
+    end
+    tooltip.owner, tooltip.config = row, config
+    tooltip.capacity, tooltip.count = capacity, #entries
+    tooltip.offset = math.max(0, math.min(tooltip.offset or 0, #entries - capacity))
+    tooltip:SetScale(scale)
+    tooltip:SetSize(
+        math.max(400, frame:GetWidth()),
+        10 + math.min(capacity, #entries) * (rowHeight + spacing) - spacing
+    )
+    tooltip.background:SetVertexColor(unpack(app:GetWindowSetting(config, "backgroundColor")))
+    tooltip:ClearAllPoints()
+    if frame:GetRight() * scale + tooltip:GetWidth() * scale + 6 > UIParent:GetWidth() then
+        tooltip:SetPoint("TOPRIGHT", row.entry, "TOPLEFT", -6, 0)
+    else
+        tooltip:SetPoint("TOPLEFT", row.entry, "TOPRIGHT", 6, 0)
+    end
+    local statistic = app:GetStatistic(frame.config.statistic)
+    for index = 1, math.min(capacity, #entries) do
+        local spell = entries[index + tooltip.offset]
+        local bar = tooltip.rows[index]
+        if not bar then
+            bar = CreateRow(tooltip, -1)
+            bar.entry:EnableMouse(false)
+            bar.entry:EnableMouseWheel(false)
+            bar:EnableMouse(false)
+            tooltip.rows[index] = bar
+        end
+        bar.entry:SetHeight(rowHeight)
+        bar.entry:ClearAllPoints()
+        bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
+        bar.entry:SetPoint("RIGHT", 0, 0)
+        bar:SetHeight(rowHeight)
+        bar:SetPoint("TOPLEFT", rowHeight, 0)
+        bar.icon:SetSize(rowHeight, rowHeight)
+        app:StyleWindowLabel(bar.name, config)
+        app:StyleWindowLabel(bar.value, config)
         local name = spell.spellName
         if IsPublic(name) and (name == nil or name == "") then
             local spellID = spell.spellID or spell.spellId
@@ -420,13 +477,28 @@ local function ShowRowTooltip(row, frame)
             end
         end
         if not IsPublic(unit) or (unit ~= nil and unit ~= "") then
-            left:SetFormattedText("%s (%s)", name, unit)
+            bar.name:SetFormattedText("%s (%s)", name, unit)
         else
-            left:SetText(name)
+            bar.name:SetText(name)
+        end
+        local unitDetails = spell.combatSpellDetails or {}
+        local spellID = spell.spellID or spell.spellId
+        if details.deathEvents and spell.event == "SWING_DAMAGE" then
+            spellID = 88163
+        end
+        if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
+            bar.icon:SetTexture(unitDetails.specIconID)
+        elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
+            bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
+        else
+            bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
         end
         local amount = spell.totalAmount
         if IsPublic(amount) and amount == nil then
             amount = spell.amount
+        end
+        if IsPublic(amount) and amount == nil then
+            amount = 0
         end
         local rate = spell.amountPerSecond
         local percentage
@@ -438,21 +510,58 @@ local function ShowRowTooltip(row, frame)
             if statistic.rate then
                 primary, secondary = rate, amount
             end
-            if percentage then
-                right:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
+            if IsPublic(primary) and IsPublic(secondary) then
+                if percentage then
+                    bar.value:SetFormattedText(
+                        "%s (%s) %d%%",
+                        AbbreviateLargeNumbers(primary),
+                        AbbreviateLargeNumbers(secondary),
+                        percentage
+                    )
+                else
+                    bar.value:SetFormattedText(
+                        "%s (%s)",
+                        AbbreviateLargeNumbers(primary),
+                        AbbreviateLargeNumbers(secondary)
+                    )
+                end
+            elseif percentage then
+                bar.value:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
             else
-                right:SetFormattedText("%.1f (%.1f)", primary, secondary)
+                bar.value:SetFormattedText("%.1f (%.1f)", primary, secondary)
             end
-        elseif percentage then
-            right:SetFormattedText("%.0f %d%%", amount, percentage)
+        elseif IsPublic(amount) then
+            if percentage then
+                bar.value:SetFormattedText("%s %d%%", AbbreviateLargeNumbers(amount), percentage)
+            else
+                bar.value:SetText(AbbreviateLargeNumbers(amount))
+            end
         else
-            right:SetFormattedText("%.0f", amount)
+            bar.value:SetFormattedText("%.0f", amount)
         end
+        -- The API provides the scale; restricted amounts go directly to the widgets.
+        local maximum = details.maxAmount
+        if IsPublic(maximum) and maximum == nil then
+            maximum = 1
+        end
+        bar:SetMinMaxValues(0, maximum)
+        bar:SetValue(amount)
+        local classFilename = unitDetails.unitClassFilename
+        if not classFilename or classFilename == "" then
+            classFilename = row.source.classFilename
+        end
+        local color = RAID_CLASS_COLORS[classFilename]
+        if color and app:GetWindowSetting(config, "classColors") then
+            bar:SetStatusBarColor(color.r, color.g, color.b, 1)
+        else
+            bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
+        end
+        bar:Show()
     end
-    if #entries == 0 then
-        GameTooltip:AddLine("No details available.", 0.7, 0.7, 0.7)
+    for index = math.min(capacity, #entries) + 1, #tooltip.rows do
+        tooltip.rows[index]:Hide()
     end
-    GameTooltip:Show()
+    tooltip:Show()
 end
 
 CreateRow = function(frame, index)
@@ -466,7 +575,18 @@ CreateRow = function(frame, index)
     row.window = frame
     entry:EnableMouse(true)
     entry:EnableMouseWheel(true)
-    entry:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
+    entry:SetScript("OnMouseWheel", function(owner, delta)
+        local tooltip = app.detailTooltip
+        if tooltip and tooltip.owner == row and tooltip.count > tooltip.capacity then
+            tooltip.offset = tooltip.offset - delta * 3
+            ShowRowTooltip(row, frame)
+        else
+            local scroll = frame:GetScript("OnMouseWheel")
+            if scroll then
+                scroll(owner, delta)
+            end
+        end
+    end)
     entry:SetScript("OnEnter", function()
         ShowRowTooltip(row, frame)
     end)
@@ -558,7 +678,7 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
         row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
     end
     row:Show()
-    if GameTooltip and GameTooltip:IsShown() and GameTooltip:IsOwned(row.entry) then
+    if app.detailTooltip and app.detailTooltip.owner == row then
         ShowRowTooltip(row, row.window)
     end
 end

@@ -139,7 +139,10 @@ local function SaveGeometry(frame, resizing)
     local config = frame.config
     app:SaveWindowPosition(frame)
     if resizing and not app:IsWindowCollapsed(config) then
-        config.overrides.width, config.overrides.height = frame:GetSize()
+        config.overrides.width = frame:GetWidth()
+        if not app:GetWindowSetting(config, "fixedHeight") then
+            config.overrides.height = frame:GetHeight()
+        end
     end
     frame:SetUserPlaced(false)
     app:RebuildWindows()
@@ -827,6 +830,7 @@ function app:CreateWindow(id)
     resize:SetScript("OnMouseDown", function(_, button)
         if
             button == "LeftButton"
+            and self:GetWindowSetting(frame.config, "showResizeHandle")
             and (not self.db.profile.locked or (self.IsEditingWindows and self:IsEditingWindows()))
         then
             frame.editing = true
@@ -898,7 +902,10 @@ function app:CreateWindow(id)
     frame:SetScript("OnSizeChanged", function()
         if frame.config and not self:IsWindowCollapsed(frame.config) and not frame.applyingLayout then
             if frame.editing then
-                frame.config.overrides.width, frame.config.overrides.height = frame:GetSize()
+                frame.config.overrides.width = frame:GetWidth()
+                if not self:GetWindowSetting(frame.config, "fixedHeight") then
+                    frame.config.overrides.height = frame:GetHeight()
+                end
             end
             self:RefreshWindows()
         end
@@ -942,13 +949,15 @@ function app:ApplyWindowLayout(frame)
     local config = frame.config
     local collapsed = self:IsWindowCollapsed(config)
     frame.applyingLayout = true
-    frame:SetResizeBounds(200, collapsed and HEADER_HEIGHT or 120, 800, 900)
+    local height = self:GetWindowSetting(config, "height")
+    local fixed = self:GetWindowSetting(config, "fixedHeight")
+    frame:SetResizeBounds(200, collapsed and HEADER_HEIGHT or (fixed and height or 120), 800, fixed and height or 900)
     frame:SetHeight(collapsed and HEADER_HEIGHT or self:GetWindowSetting(config, "height"))
     self:PositionWindow(frame)
     frame.applyingLayout = false
     frame.body:SetShown(not collapsed)
     frame.background:SetShown(not collapsed)
-    frame.resize:SetShown(not collapsed)
+    frame.resize:SetShown(not collapsed and self:GetWindowSetting(config, "showResizeHandle"))
     AtlasButton(
         frame.collapse,
         collapsed and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all",

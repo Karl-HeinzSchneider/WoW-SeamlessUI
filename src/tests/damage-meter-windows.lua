@@ -885,6 +885,27 @@ meter.testCenter = 200
 meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 10, 10)
 assert(meter.config.overrides.x ~= savedX, "Library movement must update meter overrides")
 assert(meter.point[1] == "BOTTOMLEFT", "Saving library movement must not recursively reposition")
+meter.config.hidden, meter.config.collapsed = false, false
+meter.config.overrides.fixedHeight = true
+for _, lines in ipairs({ 1, 7, 7.25, 7.5, 7.75 }) do
+    meter.config.overrides.visibleLines = lines
+    app:RebuildWindows()
+    assert(meter:GetHeight() == 40 + lines * 28 - 4, "Fixed height must include padding and fractional rows")
+end
+meter.config.overrides.showResizeHandle = false
+EditModeManagerFrame:EnterEditMode()
+assert(not meter.resize:IsShown(), "Disabled grip must stay hidden in Edit Mode")
+meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
+assert(not meter.editing, "Disabled grip must not start resizing")
+local manualHeight = meter.config.overrides.height
+meter.editModeSliders.height(600)
+assert(meter:GetHeight() == 253 and meter.config.overrides.height == manualHeight)
+meter.editModeSliders.width(600)
+assert(meter:GetWidth() == 600 and meter:GetHeight() == 253)
+EditModeManagerFrame:ExitEditMode()
+meter.config.overrides.fixedHeight = false
+app:RebuildWindows()
+assert(meter:GetHeight() == manualHeight, "Disabling fixed height restores manual height")
 combat = true
 savedX = meter.config.overrides.x
 meter:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 20, 20)

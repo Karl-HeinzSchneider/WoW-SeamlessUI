@@ -9,6 +9,9 @@ local function ResizeWindow(frame, key, value)
     if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
         return
     end
+    if key == "height" and app:GetWindowSetting(frame.config, "fixedHeight") then
+        return
+    end
     if value == app:GetWindowSetting(frame.config, key) then
         return
     end

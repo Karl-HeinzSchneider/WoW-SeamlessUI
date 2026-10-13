@@ -43,8 +43,10 @@ from hiding a window. Save the expanded height and keep the header position stab
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass
 through number abbreviation. An offscreen local player stays visible in a separate row.
-Rows use full square icons sized to the row height and solid borderless bar fills with a dark
-unfilled background. Amount-based statistics
+Rows use full square icons sized to the row height and an original grayscale shaded fill
+with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
+is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
+the generator uses only our own formula and reads no reference assets. Amount-based statistics
 show total and rate in compact form; DPS/HPS swap their order, and action counts omit rates.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`

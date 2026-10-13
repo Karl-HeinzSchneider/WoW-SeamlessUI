@@ -60,12 +60,18 @@ profile. The adapter rebinds the library's exposed `baseFramesDB`/`framesDB` tab
 (minor 121) because RegisterFrame cannot replace a pooled frame's database. Meter
 settings seed the current native layout on rebuild; library moves and scale changes
 update meter overrides while preserving independent anchor points and collapse offsets.
-Inactive slots default to unchecked in Edit Mode; explicitly checking them previews
-them without enabling them. Activation/deactivation resets their preview default across
-native layouts, while ordinary rebuilds preserve manual checkbox choices. Labels are
+Inactive slots default to unchecked in Edit Mode. Left-clicking the Expanded checkbox
+activates/unhides or deactivates the real addon slot; right-click remains the library's
+position reset. Synchronize checkbox state from real slot activation across native layouts.
+Edit Mode uses only local classic-character sample sessions, even when tracking is off,
+the API is absent or the selected history expired. Never read live combat data or duration
+while editing. Collapsed windows expand visually without changing their saved collapse
+flag; entering and exiting immediately refreshes content and geometry. Labels are
 "Seamless Damage 1" through "Seamless Damage 10". Exit restores normal
 visibility and movability. Verify Edit Mode dragging, arrow keys, scaling, native layout
 changes, collapsed windows, linked anchors, AceDB switch/copy/reset and reload in game.
+Check sample names/classes/amounts for every statistic, and checkbox activation/deactivation
+persisting after exit and reload. Preview sessions are never saved.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone

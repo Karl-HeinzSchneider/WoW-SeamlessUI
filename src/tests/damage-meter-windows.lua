@@ -194,6 +194,7 @@ C_DamageMeter = {
         return {}
     end,
 }
+local liveAPI = C_DamageMeter
 C_CVar = {
     GetCVarBool = function()
         return true
@@ -354,6 +355,21 @@ print("Damage meter window regressions OK")
 -- Exercise the adapter against the library's exposed database contract and callbacks.
 local registered = 0
 local eme = { baseFramesDB = {}, framesDB = {} }
+function methods:HookScript(event, callback)
+    local original = self.scripts[event]
+    self.scripts[event] = function(...)
+        if original then
+            original(...)
+        end
+        callback(...)
+    end
+end
+function methods:SetChecked(value)
+    self.checked = value
+end
+function methods:GetChecked()
+    return self.checked
+end
 function eme:IsRegistered(frame)
     return frame.system ~= nil
 end
@@ -363,6 +379,12 @@ function eme:RegisterFrame(frame, name, db)
     frame.system = 100 + registered
     frame.EMECheckButtonFrame = object(frame)
     self.baseFramesDB[frame.system], self.framesDB[frame.system] = db, db
+    frame.EMECheckButtonFrame:SetScript("OnClick", function(button, mouseButton)
+        if mouseButton == "LeftButton" then
+            self.framesDB[frame.system].enabled = button:GetChecked()
+            frame:SetShown(button:GetChecked())
+        end
+    end)
     frame.SetScaleOverride = frame.SetScale
 end
 function eme:RegisterResizable(frame, minimum, maximum, step)
@@ -399,6 +421,9 @@ EditModeManagerFrame = {
     ExitEditMode = function(self)
         self.editModeActive = false
     end,
+    EnterEditMode = function(self)
+        self.editModeActive = true
+    end,
 }
 local originalLibStub = LibStub
 LibStub = function(name)
@@ -426,10 +451,14 @@ EditModeManagerFrame.editModeActive = true
 app:RebuildWindows()
 assert(not meter:IsShown(), "Deactivated slots must default to hidden in Edit Mode")
 assert(not eme.framesDB[meter.system].enabled)
-eme.framesDB[meter.system].enabled = true
-app:RebuildWindows()
-assert(meter:IsShown(), "The player can explicitly preview an inactive slot")
-assert(not meter.config.enabled and meter.config.hidden, "Preview must not activate slots")
+local function ClickWindow(frame, enabled, mouseButton)
+    local button = frame.EMECheckButtonFrame
+    button:SetChecked(enabled)
+    button:GetScript("OnClick")(button, mouseButton or "LeftButton")
+end
+ClickWindow(meter, true)
+assert(meter:IsShown(), "Checking a slot must show its preview")
+assert(meter.config.enabled and not meter.config.hidden, "Checking must activate and unhide the real slot")
 meter.config.enabled = true
 app:RebuildWindows()
 meter.config.editMode.profiles["1-Other"] = { enabled = true, settings = {} }
@@ -437,9 +466,9 @@ meter.config.enabled = false
 app:RebuildWindows()
 assert(not meter:IsShown(), "Deactivating a slot must reset its Edit Mode preview")
 assert(not meter.config.editMode.profiles["1-Other"].enabled, "Deactivation must update other native layouts")
-eme.framesDB[meter.system].enabled = true
+ClickWindow(meter, true)
 app:RebuildWindows()
-assert(meter:IsShown(), "Explicit previews survive ordinary rebuilds")
+assert(meter:IsShown() and meter.config.enabled, "Activation survives ordinary rebuilds")
 meter:SetScaleOverride(1.25)
 assert(meter.config.overrides.scale == 1.25)
 assert(eme.framesDB[meter.system].settings[16] ~= nil)
@@ -459,10 +488,52 @@ assert(
     meter.config.overrides.x == nil and meter.config.overrides.y == nil,
     "An unchanged library position stays inherited"
 )
-eme.framesDB[meter.system].enabled = false
-app:RebuildWindows()
-assert(not meter:IsShown(), "The Expanded checkbox controls Edit Mode previews")
-eme.framesDB[meter.system].enabled = true
+ClickWindow(meter, false)
+assert(not meter:IsShown() and not meter.config.enabled, "Unchecking must deactivate the real slot")
+ClickWindow(meter, true)
+ClickWindow(meter, false, "RightButton")
+assert(meter.config.enabled, "The library's right-click reset must not deactivate a slot")
+EditModeManagerFrame:ExitEditMode()
+assert(meter:IsShown() and meter.config.enabled, "A checked slot must remain usable after Edit Mode")
+
+local realAPI = liveAPI
+C_DamageMeter = setmetatable({}, {
+    __index = function(_, key)
+        return function()
+            error("Edit Mode must never query live damage data: " .. key)
+        end
+    end,
+})
+meter.config.collapsed = true
+local normalCombatState = UnitAffectingCombat
+UnitAffectingCombat = function()
+    return true
+end
+EditModeManagerFrame:EnterEditMode()
+assert(meter.config.collapsed and meter.body:IsShown(), "Collapsed slots must temporarily expand for preview")
+assert(meter:GetHeight() == app:GetWindowSetting(meter.config, "height"))
+assert(meter.session.text.text == "Preview")
+assert(meter.rows[1].name.args[2] == "Jaina" and meter.rows[1].icon.atlas == "MAGE")
+assert(meter.rows[1].statusValue == 125000 and meter.rows[2].statusValue == 112000)
+for _, statistic in ipairs(app.statistics) do
+    meter.config.statistic = statistic.key
+    meter.config.sessionID = 999
+    app:RefreshWindows()
+    local sample = app:GetSession(meter.config)
+    assert(sample.isPreview and #sample.combatSources == 9)
+    assert(sample.combatSources[9].classFilename == "PRIEST")
+    if statistic.key == "Interrupts" or statistic.key == "Dispels" then
+        assert(sample.maxAmount == 27 and sample.combatSources[1].totalAmount == 27)
+    end
+end
+meter.config.sessionID = nil
+meter.config.statistic = "DamageDone"
+C_DamageMeter = realAPI
+UnitAffectingCombat = normalCombatState
+EditModeManagerFrame:ExitEditMode()
+assert(meter.config.collapsed and not meter.body:IsShown() and meter:GetHeight() == 32)
+assert(meter.session.text.text ~= "Preview", "Exiting must clear sample labels")
+assert(not app:GetSession(meter.config).isPreview, "Exiting must restore live data")
 meter.config.hidden = true
 EditModeManagerFrame:ExitEditMode()
 assert(not meter:IsShown(), "Exit must restore the profile's normal visibility")

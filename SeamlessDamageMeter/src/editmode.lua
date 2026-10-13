@@ -5,7 +5,7 @@ local lib = LibStub("EditModeExpanded-1.0")
 local SCALE_SETTING = 16 -- EditModeExpanded's FrameSize setting.
 
 function app:IsEditingWindows()
-    return EditModeManagerFrame and EditModeManagerFrame.editModeActive and not InCombatLockdown()
+    return EditModeManagerFrame and EditModeManagerFrame.editModeActive
 end
 
 local function CurrentLayout(db)
@@ -36,6 +36,11 @@ function app:SyncWindowEditMode(frame)
         lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
         lib:RegisterResizable(frame, 50, 200, 5)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
+        frame.EMECheckButtonFrame:HookScript("OnClick", function(button, mouseButton)
+            if mouseButton == "LeftButton" and app:IsEditingWindows() and not InCombatLockdown() then
+                app:SetWindowEnabled(frame.config, button:GetChecked())
+            end
+        end)
         hooksecurefunc(frame, "SetPoint", function()
             if
                 frame.config
@@ -59,6 +64,11 @@ function app:SyncWindowEditMode(frame)
         end)
         if not app.editModeHooked then
             app.editModeHooked = true
+            hooksecurefunc(EditModeManagerFrame, "EnterEditMode", function()
+                if not InCombatLockdown() then
+                    app:RebuildWindows()
+                end
+            end)
             hooksecurefunc(EditModeManagerFrame, "ExitEditMode", function()
                 if not InCombatLockdown() then
                     app:RebuildWindows()
@@ -73,15 +83,12 @@ function app:SyncWindowEditMode(frame)
     self:PositionWindow(frame)
     local db = CurrentLayout(config.editMode)
     lib.framesDB[frame.system] = db
-    -- Seed new layouts and reset previews when a slot is activated/deactivated.
-    -- Otherwise preserve the player's Expanded checkbox choice for this layout.
-    if config.editMode.windowEnabled ~= config.enabled then
-        for _, layout in pairs(config.editMode.profiles or {}) do
-            layout.enabled = config.enabled
-        end
-        db.enabled = config.enabled
-        config.editMode.windowEnabled = config.enabled
+    -- The Expanded checkbox represents real slot activation, across native layouts.
+    for _, layout in pairs(config.editMode.profiles or {}) do
+        layout.enabled = config.enabled
     end
+    db.enabled = config.enabled
+    config.editMode.windowEnabled = nil
     config.editMode.enabled = config.enabled
     frame.EMEdisabledByDefault = not config.enabled
     db.settings = db.settings or {}

@@ -34,6 +34,21 @@ end
 function methods:SetFrameLevel(level)
     self.frameLevel = level
 end
+function methods:SetFrameStrata(strata)
+    self.frameStrata = strata
+end
+function methods:GetFrameStrata()
+    return self.frameStrata or (self.parent and self.parent:GetFrameStrata()) or "MEDIUM"
+end
+function methods:SetAlpha(alpha)
+    self.alpha = alpha
+end
+function methods:StartSizing(corner)
+    self.sizing = corner
+end
+function methods:StopMovingOrSizing()
+    self.sizing = nil
+end
 function methods:SetPoint(...)
     self.point = { ... }
     self.points = self.points or {}
@@ -646,7 +661,19 @@ assert(meter.rows[1].statusValue == 125000 and meter.rows[2].statusValue == 1120
 app.db.profile.locked = true
 meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
 assert(meter.editing, "Edit Mode must allow the resize grip even when normal dragging is locked")
-meter.editing = nil
+assert(meter.sizing == "BOTTOMRIGHT" and meter.resize:GetFrameStrata() == "HIGH")
+assert(meter.resize.alpha == 1, "Entering Edit Mode must expose the grip immediately")
+meter.Selection:SetFrameLevel(1500)
+app:SyncWindowEditMode(meter)
+assert(meter.resize:GetFrameLevel() > meter.Selection:GetFrameLevel())
+meter:SetSize(610, 410)
+meter.resize:GetScript("OnMouseUp")(meter.resize, "LeftButton")
+assert(not meter.editing and not meter.sizing, "Releasing the grip must finish resizing")
+assert(meter.config.overrides.width == 610 and meter.config.overrides.height == 410)
+assert(eme.framesDB[meter.system].settings[18].width == 610)
+assert(eme.framesDB[meter.system].settings[18].height == 410)
+meter.config.overrides.width, meter.config.overrides.height = nil, nil
+app:RebuildWindows()
 local inheritedWidth = app:GetWindowSetting(meter.config, "width")
 meter.editModeSliders.width(inheritedWidth)
 assert(meter.config.overrides.width == nil, "Unchanged sliders must preserve inheritance")
@@ -674,6 +701,7 @@ UnitAffectingCombat = normalCombatState
 EditModeManagerFrame:ExitEditMode()
 assert(meter.config.collapsed and not meter.body:IsShown() and meter:GetHeight() == 32)
 assert(meter.session.text.text ~= "Preview", "Exiting must clear sample labels")
+assert(meter.resize:GetFrameStrata() == meter:GetFrameStrata(), "Exiting restores the grip's normal strata")
 assert(meter:GetWidth() == 650 and app:GetWindowSetting(meter.config, "height") == 450)
 meter.editModeSliders.width(700)
 assert(meter:GetWidth() == 650, "Native layout callbacks outside Edit Mode must not overwrite meter size")

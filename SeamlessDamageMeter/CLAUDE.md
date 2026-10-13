@@ -88,7 +88,9 @@ persisting after exit and reload. Preview sessions are never saved.
 Width/Height custom sliders (EME setting 18) update existing size overrides immediately.
 Sync slider values from meter settings on rebuild and ignore callbacks outside Edit Mode.
 The resize grip stays visible and above the EME selection overlay while editing, including
-when normal dragging is locked. Verify slider/grip resizing and persistence after exit/reload.
+when normal dragging is locked. Synchronize its frame level on every layout refresh and use
+HIGH strata during Edit Mode so the top-level selection cannot cover it after being raised.
+Restore the window's strata on exit. Verify slider/grip resizing and persistence after exit/reload.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone

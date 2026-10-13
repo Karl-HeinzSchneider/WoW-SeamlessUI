@@ -2,6 +2,7 @@
 local _, app = ...
 
 app.windows = {}
+app.windowFrames = {}
 local HEADER_HEIGHT = 32
 
 local function Label(parent, font)
@@ -25,17 +26,53 @@ local function Button(parent, text, width, callback)
     return button
 end
 
-local function Selector(parent, callback)
+local function Selector(parent, callback, compact)
     local button = Button(parent, "", 100, callback)
     button.text = Label(button, "GameFontNormalMed1")
-    button.text:SetPoint("LEFT", 18, 0)
-    button.text:SetPoint("RIGHT", -2, 0)
-    button.text:SetJustifyH("LEFT")
+    button.text:SetPoint("LEFT", compact and 0 or 25, compact and 0 or 3)
+    button.text:SetPoint("RIGHT", 0, compact and 0 or 3)
+    button.text:SetJustifyH(compact and "CENTER" or "LEFT")
     button.text:SetWordWrap(false)
-    local arrow = button:CreateTexture(nil, "ARTWORK")
-    arrow:SetAtlas("common-dropdown-classic-a-buttonDown")
-    arrow:SetSize(20, 20)
-    arrow:SetPoint("LEFT", -2, 0)
+    if compact then
+        local background = button:CreateTexture(nil, "BACKGROUND")
+        background:SetAtlas("common-dropdown-c-button")
+        background:SetPoint("TOPLEFT", -7, 7)
+        background:SetPoint("BOTTOMRIGHT", 7, -7)
+        local arrow = button:CreateTexture(nil, "OVERLAY")
+        arrow:SetAtlas("common-dropdown-c-button-hover-arrow", true)
+        arrow:SetPoint("BOTTOM", 0, -5)
+        arrow:Hide()
+        button:SetScript("OnEnter", function()
+            background:SetAtlas("common-dropdown-c-button-hover-2")
+            arrow:Show()
+        end)
+        button:SetScript("OnLeave", function()
+            background:SetAtlas("common-dropdown-c-button")
+            arrow:Hide()
+        end)
+        button:SetScript("OnMouseDown", function()
+            background:SetAtlas("common-dropdown-c-button-pressed-2")
+        end)
+        button:SetScript("OnMouseUp", function()
+            background:SetAtlas("common-dropdown-c-button-hover-2")
+        end)
+    else
+        local arrow = button:CreateTexture(nil, "ARTWORK")
+        arrow:SetAtlas("common-dropdown-a-button-shadowless", true)
+        arrow:SetPoint("CENTER", button, "LEFT", 12.5, 0)
+        button:SetScript("OnEnter", function()
+            arrow:SetAtlas("common-dropdown-a-button-hover-shadowless", true)
+        end)
+        button:SetScript("OnLeave", function()
+            arrow:SetAtlas("common-dropdown-a-button-shadowless", true)
+        end)
+        button:SetScript("OnMouseDown", function()
+            arrow:SetAtlas("common-dropdown-a-button-pressed-shadowless", true)
+        end)
+        button:SetScript("OnMouseUp", function()
+            arrow:SetAtlas("common-dropdown-a-button-hover-shadowless", true)
+        end)
+    end
     return button
 end
 
@@ -44,6 +81,27 @@ local function AnchorCoordinates(frame, point)
     local _, centerY = frame:GetCenter()
     local y = point:find("TOP") and frame:GetTop() or point:find("BOTTOM") and frame:GetBottom() or centerY
     return x * frame:GetEffectiveScale(), y * frame:GetEffectiveScale()
+end
+
+local function CollapseOffset(config)
+    if not config.collapsed then
+        return 0
+    end
+    local point = app:GetWindowSetting(config, "point")
+    local fraction = point:find("TOP") and 0 or point:find("BOTTOM") and 1 or 0.5
+    return (app:GetWindowSetting(config, "height") - HEADER_HEIGHT) * fraction
+end
+
+function app:PositionWindow(frame)
+    local config = frame.config
+    frame:ClearAllPoints()
+    frame:SetPoint(
+        self:GetWindowSetting(config, "point"),
+        frame.anchorTarget or UIParent,
+        self:GetWindowSetting(config, "relativePoint"),
+        self:GetWindowSetting(config, "x"),
+        self:GetWindowSetting(config, "y") + CollapseOffset(config)
+    )
 end
 
 local function SaveGeometry(frame, resizing)
@@ -58,7 +116,8 @@ local function SaveGeometry(frame, resizing)
         AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
     config.overrides.x, config.overrides.y =
         (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale()
-    if resizing then
+    config.overrides.y = config.overrides.y - CollapseOffset(config)
+    if resizing and not config.collapsed then
         config.overrides.width, config.overrides.height = frame:GetSize()
     end
     frame:SetUserPlaced(false)
@@ -94,10 +153,10 @@ function app:RemoveWindow(config)
     for index, dependent in ipairs(self.db.profile.windows) do
         local frame = self.windows[index]
         if frame and dependent.anchorTo == config.id then
-            local x, y = AnchorCoordinates(frame, "CENTER")
+            local x, y = AnchorCoordinates(frame, "TOPLEFT")
             local centerX, centerY = AnchorCoordinates(UIParent, "CENTER")
             frame.config.anchorTo = nil
-            frame.config.overrides.point, frame.config.overrides.relativePoint = "CENTER", "CENTER"
+            frame.config.overrides.point, frame.config.overrides.relativePoint = "TOPLEFT", "CENTER"
             frame.config.overrides.x = (x - centerX) / frame:GetEffectiveScale()
             frame.config.overrides.y = (y - centerY) / frame:GetEffectiveScale()
         end
@@ -113,16 +172,27 @@ end
 
 function app:ShowStatisticMenu(frame)
     MenuUtil.CreateContextMenu(frame.statistic, function(_, root)
-        root:CreateTitle("Statistic")
-        for _, statistic in ipairs(self.statistics) do
-            if self:IsAvailable() and Enum.DamageMeterType[statistic.key] ~= nil then
-                root:CreateRadio(statistic.label, function()
-                    return frame.config.statistic == statistic.key
-                end, function()
-                    frame.config.statistic = statistic.key
-                    frame.offset = 0
-                    self:RefreshWindows()
-                end)
+        local categories = {
+            {
+                DAMAGE_METER_CATEGORY_DAMAGE or "Damage",
+                { "DamageDone", "Dps", "DamageTaken", "AvoidableDamageTaken" },
+            },
+            { DAMAGE_METER_CATEGORY_HEALING or "Healing", { "HealingDone", "Hps", "Absorbs" } },
+            { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels" } },
+        }
+        for _, category in ipairs(categories) do
+            local menu = root:CreateButton(category[1])
+            for _, key in ipairs(category[2]) do
+                local statistic = self:GetStatistic(key)
+                if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                    menu:CreateRadio(statistic.label, function()
+                        return frame.config.statistic == key
+                    end, function()
+                        frame.config.statistic = key
+                        frame.offset = 0
+                        self:RefreshWindows()
+                    end)
+                end
             end
         end
     end)
@@ -132,7 +202,9 @@ function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
         root:CreateTitle("Combat session")
         for _, key in ipairs({ "Current", "Overall" }) do
-            root:CreateRadio(key, function()
+            local label = key == "Current" and (DAMAGE_METER_CURRENT_SESSION or key)
+                or (DAMAGE_METER_OVERALL_SESSION or key)
+            root:CreateRadio(label, function()
                 return not frame.config.sessionID and frame.config.session == key
             end, function()
                 frame.config.session, frame.config.sessionID, frame.config.sessionName = key, nil, nil
@@ -156,7 +228,15 @@ function app:ShowSessionMenu(frame)
 end
 
 local function CreateRow(frame, index)
-    local row = CreateFrame("StatusBar", nil, frame)
+    local entry = CreateFrame("Frame", nil, frame.body)
+    entry:SetHeight(app:GetWindowSetting(frame.config, "rowHeight"))
+    entry:SetPoint("TOPLEFT", 0, 0)
+    entry:SetPoint("RIGHT", 0, 0)
+    entry:SetClipsChildren(true)
+    local row = CreateFrame("StatusBar", nil, entry)
+    row.entry = entry
+    row:SetHeight(app:GetWindowSetting(frame.config, "rowHeight") - 2)
+    row:SetPoint("TOPLEFT", 24, -1)
     row:SetPoint("RIGHT", -4, 0)
     local fill = row:CreateTexture(nil, "ARTWORK")
     fill:SetAtlas("UI-HUD-CoolDownManager-Bar")
@@ -165,7 +245,6 @@ local function CreateRow(frame, index)
     background:SetPoint("TOPLEFT", -2, 2)
     background:SetPoint("BOTTOMRIGHT", 2, -2)
     background:SetAtlas("ui-damagemeters-bar-shadowbg")
-    row.background = background
     local edge = row:CreateTexture(nil, "OVERLAY")
     edge:SetPoint("TOPLEFT", -2, 2)
     edge:SetPoint("BOTTOMRIGHT", 2, -2)
@@ -174,73 +253,156 @@ local function CreateRow(frame, index)
     row.icon:SetSize(24, 24)
     row.icon:SetPoint("RIGHT", row, "LEFT", 0, 0)
     row.icon:SetTexCoord(0.0625, 0.9, 0.0626, 0.9)
-    row.rank = Label(row, "NumberFontNormal")
-    row.rank:SetPoint("LEFT", 2, 0)
-    row.rank:SetWidth(22)
     row.name = Label(row, "NumberFontNormal")
-    row.name:SetPoint("LEFT", 28, 0)
+    row.name:SetPoint("LEFT", 2, 0)
     row.name:SetJustifyH("LEFT")
     row.name:SetWordWrap(false)
     row.value = Label(row, "NumberFontNormal")
-    row.value:SetPoint("RIGHT", -4, 0)
+    row.value:SetPoint("RIGHT", -3, 0)
     row.value:SetJustifyH("RIGHT")
-    row.value:SetWidth(110)
-    row.name:SetPoint("RIGHT", row.value, "LEFT", -5, 0)
-    frame.rows[index] = row
+    row.name:SetPoint("RIGHT", row.value, "LEFT", -25, 0)
+    if index > 0 then
+        frame.rows[index] = row
+    end
     return row
+end
+
+local function UpdateRow(row, source, sourceIndex, session, statistic, config)
+    local rowHeight = app:GetWindowSetting(config, "rowHeight")
+    row.entry:SetHeight(rowHeight)
+    row:SetHeight(rowHeight - 2)
+    app:StyleWindowLabel(row.name, config)
+    app:StyleWindowLabel(row.value, config)
+    row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
+    if source.specIconID and source.specIconID ~= 0 then
+        row.icon:SetTexture(source.specIconID)
+    elseif source.classFilename and source.classFilename ~= "" then
+        row.icon:SetAtlas(GetClassAtlas(source.classFilename))
+    else
+        row.icon:SetTexture(nil)
+    end
+    local amount = source.totalAmount
+    local secondary = source.amountPerSecond
+    if statistic.rate then
+        amount = source.amountPerSecond
+        secondary = source.totalAmount
+    end
+    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
+    if showRate and issecretvalue and (issecretvalue(amount) or issecretvalue(secondary)) then
+        row.value:SetFormattedText(statistic.rate and "%.1f (%.0f)" or "%.0f (%.1f)", amount, secondary)
+    elseif showRate then
+        row.value:SetFormattedText(
+            DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)",
+            AbbreviateLargeNumbers(amount),
+            AbbreviateLargeNumbers(secondary)
+        )
+    elseif issecretvalue and issecretvalue(amount) then
+        row.value:SetFormattedText("%.0f", amount)
+    else
+        row.value:SetText(AbbreviateLargeNumbers(amount))
+    end
+    row:SetMinMaxValues(0, session.maxAmount)
+    row:SetValue(source.totalAmount)
+    local color = RAID_CLASS_COLORS[source.classFilename]
+    if color and app:GetWindowSetting(config, "classColors") then
+        row:SetStatusBarColor(color.r, color.g, color.b, 1)
+    else
+        row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
+    end
+    row:Show()
 end
 
 function app:RefreshWindow(frame, session, message)
     local config = frame.config
     local statistic = self:GetStatistic(config.statistic)
     frame.statistic.text:SetText(statistic.label)
-    frame.session.text:SetText(config.sessionName or config.session)
+    frame.session.text:SetText(
+        config.sessionID
+            or (
+                config.session == "Overall" and DAMAGE_METER_OVERALL_SESSION_SHORT
+                or DAMAGE_METER_CURRENT_SESSION_SHORT
+            )
+    )
+    local duration = session and session.durationSeconds
+    if self:IsAvailable() and not config.sessionID and UnitAffectingCombat("player") then
+        duration = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType[config.session])
+    end
+    if
+        not (issecretvalue and issecretvalue(duration))
+        and duration
+        and duration > 0
+        and (config.sessionID or UnitAffectingCombat("player"))
+    then
+        frame.timer:SetFormattedText("[%s] ", SecondsToClock(duration))
+    else
+        frame.timer:SetText("")
+    end
+    frame.statistic:ClearAllPoints()
+    frame.statistic:SetPoint("TOPLEFT", frame.timer, "TOPRIGHT", 0, 6)
+    frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     local sources = session and session.combatSources or {}
+    local localIndex
+    for index, source in ipairs(sources) do
+        if source.isLocalPlayer then
+            localIndex = index
+            break
+        end
+    end
     local rowHeight = self:GetWindowSetting(config, "rowHeight")
     local rowSpacing = self:GetWindowSetting(config, "rowSpacing")
-    local capacity = math.max(1, math.floor((frame:GetHeight() - HEADER_HEIGHT) / (rowHeight + rowSpacing)))
+    local capacity = math.max(
+        1,
+        math.floor(
+            (self:GetWindowSetting(config, "height") - HEADER_HEIGHT - 8 + rowSpacing) / (rowHeight + rowSpacing)
+        )
+    )
+    local scrollable = #sources > capacity
+    frame.body:SetPoint("BOTTOMRIGHT", scrollable and -16 or -1, 6)
+    frame.scrollbar:SetShown(scrollable and not config.collapsed)
     frame.offset = math.max(0, math.min(frame.offset, #sources - capacity))
+    frame.updatingScroll = true
+    frame.scrollbar:SetMinMaxValues(0, math.max(0, #sources - capacity))
+    frame.scrollbar:SetValue(frame.offset)
+    if scrollable then
+        frame.thumb:SetHeight(math.max(23, frame.scrollbar:GetHeight() * capacity / #sources))
+    end
+    frame.updatingScroll = false
     for _, row in ipairs(frame.rows) do
         row:Hide()
     end
     -- Preserve the client's ordering. Never compare, sort or calculate with secret combat values.
-    for index = 1, math.min(capacity, #sources - frame.offset) do
+    for index = 1, math.min(capacity + 1, #sources - frame.offset) do
         local sourceIndex = index + frame.offset
         local source = sources[sourceIndex]
         local row = frame.rows[index] or CreateRow(frame, index)
-        row:SetHeight(rowHeight - 2)
-        row:ClearAllPoints()
-        row:SetPoint("TOPLEFT", rowHeight, -HEADER_HEIGHT - 1 - (index - 1) * (rowHeight + rowSpacing))
-        row:SetPoint("RIGHT", -4, 0)
-        row.icon:SetSize(rowHeight - 1, rowHeight - 1)
-        for _, label in ipairs({ row.rank, row.name, row.value }) do
-            self:StyleWindowLabel(label, config)
-        end
-        row.rank:SetText(sourceIndex)
-        row.name:SetText(source.name)
-        if source.specIconID and source.specIconID ~= 0 then
-            row.icon:SetTexture(source.specIconID)
-        elseif source.classFilename ~= "" then
-            row.icon:SetAtlas(GetClassAtlas(source.classFilename))
-        else
-            row.icon:SetTexture(nil)
-        end
-        if statistic.rate then
-            row.value:SetFormattedText("%.0f/s", source.amountPerSecond)
-        else
-            row.value:SetFormattedText("%.0f", source.totalAmount)
-        end
-        row:SetMinMaxValues(0, session.maxAmount)
-        row:SetValue(source.totalAmount)
-        local color = RAID_CLASS_COLORS[source.classFilename]
-        if color and self:GetWindowSetting(config, "classColors") then
-            row:SetStatusBarColor(color.r, color.g, color.b, 1)
-        else
-            row:SetStatusBarColor(unpack(self:GetWindowSetting(config, "barColor")))
-        end
-        row:Show()
+        row.entry:ClearAllPoints()
+        row.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + rowSpacing))
+        row.entry:SetPoint("RIGHT", 0, 0)
+        UpdateRow(row, source, sourceIndex, session, statistic, config)
     end
-    frame.message:SetText(message or "No combat data yet.")
+    if frame.localRow then
+        frame.localRow:Hide()
+    end
+    if not config.collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity) then
+        local row = frame.localRow or CreateRow(frame, 0)
+        frame.localRow = row
+        local entry = row.entry
+        entry:SetParent(frame)
+        entry:SetFrameLevel(frame.body:GetFrameLevel() + 10)
+        entry:ClearAllPoints()
+        entry:SetPoint(
+            localIndex <= frame.offset and "TOPLEFT" or "BOTTOMLEFT",
+            frame.body,
+            localIndex <= frame.offset and "TOPLEFT" or "BOTTOMLEFT",
+            0,
+            localIndex <= frame.offset and 3 or -3
+        )
+        entry:SetPoint("RIGHT", frame.body, "RIGHT", 0, 0)
+        UpdateRow(row, sources[localIndex], localIndex, session, statistic, config)
+    end
+    frame.message:SetText(
+        message or (config.statistic == "AvoidableDamageTaken" and DAMAGE_METER_AVOIDABLE_DAMAGE_NOT_ACTIVE) or ""
+    )
     frame.message:SetShown(#sources == 0)
 end
 
@@ -259,25 +421,33 @@ function app:RefreshWindows()
     end
 end
 
-function app:CreateWindow()
-    local frame = CreateFrame("Frame", nil, UIParent)
+function app:CreateWindow(id)
+    local frame = CreateFrame("Frame", "SeamlessDamageMeterWindow" .. id, UIParent)
+    frame.windowID = id
     frame:Hide()
     frame.rows, frame.offset = {}, 0
     frame:SetFrameStrata("MEDIUM")
     frame:SetClampedToScreen(true)
     frame:SetMovable(true)
     frame:SetResizable(true)
-    frame:SetResizeBounds(320, 120, 800, 900)
+    frame:SetResizeBounds(200, 120, 800, 900)
     frame:EnableMouse(true)
-    local background = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
-    background:SetAllPoints()
-    frame.background = background
+    frame.background = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
+    frame.background:SetAtlas("damagemeters-background")
+    frame.background:SetAllPoints(frame)
+    frame.background:SetAlpha(1)
     local header = frame:CreateTexture(nil, "BACKGROUND")
     header:SetAtlas("ui-damagemeters-header-bar")
     header:SetPoint("TOPLEFT")
     header:SetPoint("TOPRIGHT")
     header:SetHeight(HEADER_HEIGHT)
     frame.header = header
+    frame.timer = Label(frame, "GameFontNormalMed1")
+    frame.timer:SetPoint("TOPLEFT", 1, -9)
+    frame.body = CreateFrame("Frame", nil, frame)
+    frame.body:SetPoint("TOPLEFT", 5, -HEADER_HEIGHT - 2)
+    frame.body:SetPoint("BOTTOMRIGHT", -1, 6)
+    frame.body:SetClipsChildren(true)
 
     local title = CreateFrame("Frame", nil, frame)
     title:SetPoint("TOPLEFT")
@@ -296,9 +466,9 @@ function app:CreateWindow()
         SaveGeometry(frame)
     end)
     local close = Button(frame, "", 18, function()
-        frame.config.hidden = true
-        frame:Hide()
-        self:UpdateWindowOptions()
+        frame.config.collapsed = not frame.config.collapsed
+        self:ApplyWindowLayout(frame)
+        self:RefreshWindows()
     end)
     close:SetSize(18, 19)
     close:SetPoint("TOPRIGHT", -3, -5)
@@ -319,6 +489,11 @@ function app:CreateWindow()
             root:CreateButton("Remove this window", function()
                 self:RemoveWindow(frame.config)
             end)
+            root:CreateButton("Hide this window", function()
+                frame.config.hidden = true
+                frame:Hide()
+                self:UpdateWindowOptions()
+            end)
         end)
     end)
     menu:SetSize(27, 27)
@@ -332,12 +507,16 @@ function app:CreateWindow()
     frame.statistic = Selector(frame, function()
         self:ShowStatisticMenu(frame)
     end)
-    frame.statistic:SetPoint("TOPLEFT", 2, -4)
+    frame.statistic:SetHeight(25)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
-    end)
-    frame.session:SetWidth(105)
-    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 2)
+    end, true)
+    frame.session:SetSize(
+        math.max(#(DAMAGE_METER_OVERALL_SESSION_SHORT or "O"), #(DAMAGE_METER_CURRENT_SESSION_SHORT or "C")) > 1 and 32
+            or 18,
+        18
+    )
+    frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
         selector:RegisterForDrag("LeftButton")
@@ -345,13 +524,14 @@ function app:CreateWindow()
         selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))
     end
 
-    frame.message = Label(frame, "GameFontNormalMed1")
-    frame.message:SetPoint("TOPLEFT", 20, -HEADER_HEIGHT)
+    frame.message = Label(frame.body, "GameFontNormalMed1")
+    frame.message:SetPoint("TOPLEFT", 15, 2)
     frame.message:SetPoint("BOTTOMRIGHT", -20, 0)
     frame.message:SetJustifyH("CENTER")
-    local resize = Button(frame, "", 32, function() end)
-    resize:SetSize(32, 32)
-    resize:SetPoint("BOTTOMRIGHT", 4, -4)
+    local resize = Button(frame, "", 60, function() end)
+    resize:SetSize(60, 60)
+    resize:SetPoint("BOTTOMRIGHT", 9, -8)
+    resize:SetAlpha(0)
     AtlasButton(
         resize,
         "damagemeters-scalehandle",
@@ -368,6 +548,69 @@ function app:CreateWindow()
         SaveGeometry(frame, true)
         self:RefreshWindows()
     end)
+    frame.resize, frame.collapse = resize, close
+    local scrollbar = CreateFrame("Slider", nil, frame)
+    scrollbar:SetWidth(8)
+    scrollbar:SetPoint("TOPLEFT", frame.body, "TOPRIGHT", 0, -19)
+    scrollbar:SetPoint("BOTTOMLEFT", frame.body, "BOTTOMRIGHT", 0, 27)
+    scrollbar:SetOrientation("VERTICAL")
+    scrollbar:SetValueStep(1)
+    scrollbar:SetObeyStepOnDrag(true)
+    local thumb = scrollbar:CreateTexture(nil, "ARTWORK")
+    frame.thumb = thumb
+    thumb:SetAtlas("minimal-scrollbar-small-thumb-middle")
+    thumb:SetSize(8, 23)
+    scrollbar:SetThumbTexture(thumb)
+    for _, cap in ipairs({
+        { "TOP", "minimal-scrollbar-small-thumb-top" },
+        { "BOTTOM", "minimal-scrollbar-small-thumb-bottom" },
+    }) do
+        local texture = scrollbar:CreateTexture(nil, "OVERLAY")
+        texture:SetAtlas(cap[2], true)
+        texture:SetPoint(cap[1], thumb, cap[1])
+    end
+    local track = scrollbar:CreateTexture(nil, "BACKGROUND")
+    track:SetAtlas("!minimal-scrollbar-track-middle")
+    track:SetAllPoints()
+    for _, direction in ipairs({ { "TOP", "top", -1 }, { "BOTTOM", "bottom", 1 } }) do
+        local step = Button(scrollbar, "", 17, function()
+            frame.offset = math.max(0, frame.offset + direction[3])
+            self:RefreshWindows()
+        end)
+        step:SetSize(17, 11)
+        step:SetPoint(direction[1], scrollbar, direction[1], 0, direction[3] * -19)
+        AtlasButton(
+            step,
+            "minimal-scrollbar-arrow-" .. direction[2],
+            "minimal-scrollbar-arrow-" .. direction[2] .. "-down",
+            "minimal-scrollbar-arrow-" .. direction[2] .. "-over"
+        )
+    end
+    scrollbar:SetAlpha(0.3)
+    scrollbar:SetScript("OnValueChanged", function(_, value)
+        local offset = math.floor(value + 0.5)
+        if not frame.updatingScroll and frame.offset ~= offset then
+            frame.offset = offset
+            self:RefreshWindows()
+        end
+    end)
+    frame.scrollbar = scrollbar
+    frame:SetScript("OnUpdate", function(_, elapsed)
+        local hover = frame:IsMouseOver() and not frame.config.collapsed
+        local resizeTarget = hover and not self.db.profile.locked and 1 or 0
+        local scrollTarget = hover and 1 or 0.3
+        local step = math.min(1, elapsed / 0.25)
+        resize:SetAlpha(resize:GetAlpha() + (resizeTarget - resize:GetAlpha()) * step)
+        scrollbar:SetAlpha(scrollbar:GetAlpha() + (scrollTarget - scrollbar:GetAlpha()) * step)
+    end)
+    frame:SetScript("OnSizeChanged", function()
+        if frame.config and not frame.config.collapsed and not frame.applyingLayout then
+            if frame.editing then
+                frame.config.overrides.width, frame.config.overrides.height = frame:GetSize()
+            end
+            self:RefreshWindows()
+        end
+    end)
     frame:SetScript("OnHide", function()
         frame:StopMovingOrSizing()
         frame.editing = nil
@@ -377,7 +620,29 @@ function app:CreateWindow()
         frame.offset = math.max(0, frame.offset - delta * 3)
         self:RefreshWindows()
     end)
+    frame.body:EnableMouseWheel(true)
+    frame.body:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
+    scrollbar:EnableMouseWheel(true)
+    scrollbar:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
     return frame
+end
+
+function app:ApplyWindowLayout(frame)
+    local config = frame.config
+    frame.applyingLayout = true
+    frame:SetResizeBounds(200, config.collapsed and HEADER_HEIGHT or 120, 800, 900)
+    frame:SetHeight(config.collapsed and HEADER_HEIGHT or self:GetWindowSetting(config, "height"))
+    self:PositionWindow(frame)
+    frame.applyingLayout = false
+    frame.body:SetShown(not config.collapsed)
+    frame.background:SetShown(not config.collapsed)
+    frame.resize:SetShown(not config.collapsed)
+    AtlasButton(
+        frame.collapse,
+        config.collapsed and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all",
+        config.collapsed and "ui-questtrackerbutton-expand-all-pressed" or "ui-questtrackerbutton-collapse-all-pressed",
+        "ui-questtrackerbutton-red-highlight"
+    )
 end
 
 function app:RebuildWindows()
@@ -387,21 +652,31 @@ function app:RebuildWindows()
         self:AddWindow()
         return
     end
+    for index = #self.windows, 1, -1 do
+        self.windows[index] = nil
+    end
     for index, config in ipairs(self.db.profile.windows) do
-        local frame = self.windows[index]
+        local frame = self.windowFrames[config.id]
         if not frame then
-            frame = self:CreateWindow()
-            self.windows[index] = frame
+            frame = self:CreateWindow(config.id)
+            self.windowFrames[config.id] = frame
         end
-        frame.config, frame.offset = config, 0
+        self.windows[index] = frame
+        frame.config = nil
+        frame.anchorTarget = nil
+        frame.offset = 0
+        frame:SetResizeBounds(200, 120, 800, 900)
         frame:ClearAllPoints()
         frame:SetScale(self:GetWindowSetting(config, "scale"))
         frame:SetSize(self:GetWindowSetting(config, "width"), self:GetWindowSetting(config, "height"))
-        frame.background:SetColorTexture(unpack(self:GetWindowSetting(config, "backgroundColor")))
+        frame.background:SetVertexColor(unpack(self:GetWindowSetting(config, "backgroundColor")))
         frame.header:SetVertexColor(unpack(self:GetWindowSetting(config, "headerColor")))
         self:StyleWindowLabel(frame.statistic.text, config)
         self:StyleWindowLabel(frame.session.text, config)
         self:StyleWindowLabel(frame.message, config)
+        self:StyleWindowLabel(frame.timer, config)
+        frame.config = config
+        self:ApplyWindowLayout(frame)
         frame:SetShown(not config.hidden)
     end
     -- All frames must exist before another window can use one as its anchor.
@@ -419,13 +694,7 @@ function app:RebuildWindows()
             config.anchorTo = nil
         end
         frame.anchorTarget = target
-        frame:SetPoint(
-            self:GetWindowSetting(config, "point"),
-            target,
-            self:GetWindowSetting(config, "relativePoint"),
-            self:GetWindowSetting(config, "x"),
-            self:GetWindowSetting(config, "y")
-        )
+        self:PositionWindow(frame)
     end
     self:RefreshWindows()
     self:UpdateWindowOptions()

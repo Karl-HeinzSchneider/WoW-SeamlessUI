@@ -15,7 +15,7 @@ local anchors = {
 
 -- Both views use the same definitions, so new settings always support inheritance.
 local settings = {
-    { key = "width", name = "Width", type = "range", min = 320, max = 800, step = 1 },
+    { key = "width", name = "Width", type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = "Height", type = "range", min = 120, max = 900, step = 1 },
     { key = "scale", name = "Scale", type = "range", min = 0.5, max = 2, step = 0.01 },
     {
@@ -23,7 +23,11 @@ local settings = {
         name = "Font",
         type = "select",
         values = function()
-            return LibStub("LibSharedMedia-3.0"):HashTable("font")
+            local values = {}
+            for name in pairs(LibStub("LibSharedMedia-3.0"):HashTable("font")) do
+                values[name] = name
+            end
+            return values
         end,
     },
     { key = "fontSize", name = "Font size", type = "range", min = 8, max = 24, step = 1 },
@@ -275,7 +279,7 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu adds or removes windows; the collapse button hides a window. Combat history is owned by the game and is not saved by this addon.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu adds, hides or removes windows; the collapse button folds the bars away and keeps the header visible. Combat history is owned by the game and is not saved by this addon.\n",
                     },
                     add = {
                         type = "execute",
@@ -293,7 +297,7 @@ function app:RegisterOptions()
                         type = "execute",
                         order = 20,
                         name = "Show hidden windows",
-                        desc = "Shows every collapsed meter window again. Same as /sdm show.",
+                        desc = "Shows every hidden meter window again. Same as /sdm show.",
                         func = function()
                             self.addon:SlashCommand("show")
                         end,

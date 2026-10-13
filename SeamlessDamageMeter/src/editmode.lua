@@ -59,8 +59,6 @@ function app:SyncWindowEditMode(frame)
             ResizeWindow(frame, "height", value)
         end, 120, 900, 1)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
-        -- Keep the drag grip above the library's selection overlay.
-        frame.resize:SetFrameLevel(frame.Selection:GetFrameLevel() + 1)
         frame.EMECheckButtonFrame:HookScript("OnClick", function(button, mouseButton)
             if mouseButton == "LeftButton" and app:IsEditingWindows() and not InCombatLockdown() then
                 app:SetWindowEnabled(frame.config, button:GetChecked())
@@ -134,6 +132,14 @@ function app:SyncWindowEditMode(frame)
     -- EME moves with matching anchor points; retain our independent anchor points by
     -- converting its resulting screen position back to the meter's X/Y overrides.
     frame.EMEanchorTo, frame.EMEanchorPoint = frame.anchorTarget or UIParent, "BOTTOMLEFT"
+    -- The selection is a top-level frame and may be raised after registration.
+    -- Give the grip its own strata in Edit Mode so the selection cannot cover it.
+    frame.resize:SetFrameStrata(self:IsEditingWindows() and "HIGH" or frame:GetFrameStrata())
+    frame.resize:SetFrameLevel(frame.Selection:GetFrameLevel() + 1)
+    frame.resize:EnableMouse(true)
+    if self:IsEditingWindows() then
+        frame.resize:SetAlpha(1)
+    end
     frame.syncingEditMode = nil
     if not self:IsEditingWindows() then
         frame:SetMovable(true)

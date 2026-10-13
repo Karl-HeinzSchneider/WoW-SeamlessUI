@@ -4,6 +4,11 @@ local _, app = ...
 app.windows = {}
 app.windowFrames = {}
 local HEADER_HEIGHT = 32
+local CreateRow
+
+local function ScrollOffsetKey(frame)
+    return frame.favorites and frame.favorites:IsShown() and "favoriteOffset" or "offset"
+end
 
 local function Label(parent, font)
     return parent:CreateFontString(nil, "OVERLAY", font or "GameFontHighlightSmall")
@@ -164,15 +169,16 @@ function app:SetWindowEnabled(config, enabled)
     self:RebuildWindows()
 end
 
-function app:ShowStatisticMenu(frame)
-    MenuUtil.CreateContextMenu(frame.statistic, function(_, root)
+function app:ShowStatisticMenu(frame, favoriteSlot, owner)
+    local config = frame.config
+    MenuUtil.CreateContextMenu(owner or frame.statistic, function(_, root)
         local categories = {
             {
                 DAMAGE_METER_CATEGORY_DAMAGE or "Damage",
-                { "DamageDone", "Dps", "DamageTaken", "AvoidableDamageTaken" },
+                { "DamageDone", "Dps", "DamageTaken", "AvoidableDamageTaken", "EnemyDamageTaken" },
             },
             { DAMAGE_METER_CATEGORY_HEALING or "Healing", { "HealingDone", "Hps", "Absorbs" } },
-            { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels" } },
+            { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels", "Deaths" } },
         }
         for _, category in ipairs(categories) do
             local menu = root:CreateButton(category[1])
@@ -180,21 +186,155 @@ function app:ShowStatisticMenu(frame)
                 local statistic = self:GetStatistic(key)
                 if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
                     menu:CreateRadio(statistic.label, function()
-                        return frame.config.statistic == key
+                        if favoriteSlot then
+                            return config.favorites[favoriteSlot] == key
+                        end
+                        return config.statistic == key
                     end, function()
-                        frame.config.statistic = key
+                        if frame.config ~= config then
+                            return
+                        end
+                        if favoriteSlot then
+                            config.favorites[favoriteSlot] = key
+                            self:UpdateFavorites(frame)
+                            return
+                        end
+                        config.statistic = key
                         frame.offset = 0
+                        frame.favorites:Hide()
                         self:RefreshWindows()
                     end)
                 end
             end
         end
+        if favoriteSlot and config.favorites[favoriteSlot] then
+            root:CreateDivider()
+            root:CreateButton("Clear favorite", function()
+                if frame.config == config then
+                    config.favorites[favoriteSlot] = nil
+                    self:UpdateFavorites(frame)
+                end
+            end)
+        end
     end)
+end
+
+function app:UpdateFavorites(frame)
+    local rowHeight = self:GetWindowSetting(frame.config, "rowHeight")
+    local spacing = self:GetWindowSetting(frame.config, "rowSpacing")
+    for slot = 1, 6 do
+        local button = frame.favorites.buttons[slot]
+        if not button then
+            local row = CreateRow(frame, -1)
+            row.entry:SetParent(frame.favorites)
+            row.icon:Hide()
+            row.value:Hide()
+            row.name:ClearAllPoints()
+            row.name:SetPoint("LEFT", 3, 0)
+            row.name:SetPoint("RIGHT", -3, 0)
+            row:SetMinMaxValues(0, 1)
+            row:SetValue(1)
+            local number = Label(row.entry)
+            number:SetPoint("LEFT", 4, 0)
+            number:SetText(slot)
+            button = Button(row.entry, "", 1, function(owner, mouseButton)
+                local key = frame.config.favorites[slot]
+                if mouseButton == "RightButton" or not key then
+                    self:ShowStatisticMenu(frame, slot, owner)
+                elseif self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                    frame.config.statistic = key
+                    frame.offset = 0
+                    frame.favorites:Hide()
+                    self:RefreshWindows()
+                end
+            end)
+            button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            button:SetAllPoints(row.entry)
+            local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+            highlight:SetAtlas("UI-HUD-CoolDownManager-Bar")
+            highlight:SetAllPoints(row)
+            highlight:SetAlpha(0.2)
+            highlight:SetBlendMode("ADD")
+            button.row, button.number = row, number
+            frame.favorites.buttons[slot] = button
+        end
+        local key = frame.config.favorites[slot]
+        local row = button.row
+        row.entry:SetHeight(rowHeight)
+        row:SetHeight(rowHeight)
+        row:SetPoint("TOPLEFT", rowHeight, 0)
+        row.entry:ClearAllPoints()
+        row.entry:SetPoint("TOPLEFT", 0, -(slot - 1 - (frame.favoriteOffset or 0)) * (rowHeight + spacing))
+        row.entry:SetPoint("RIGHT", 0, 0)
+        row.entry:SetShown(slot > (frame.favoriteOffset or 0))
+        self:StyleWindowLabel(row.name, frame.config)
+        self:StyleWindowLabel(button.number, frame.config)
+        row.name:SetText(key and self:GetStatistic(key).label or "+ Set favorite")
+        local color = self:GetWindowSetting(frame.config, "barColor")
+        row:SetStatusBarColor(color[1], color[2], color[3], key and color[4] or 0.25)
+    end
+end
+
+function app:ToggleFavorites(frame)
+    if frame.favorites:IsShown() then
+        frame.favorites:Hide()
+        self:RefreshWindows()
+        return
+    end
+    for _, other in ipairs(self.windows) do
+        other.favorites:Hide()
+    end
+    frame.favoriteOffset = 0
+    if frame.config.collapsed then
+        frame.config.collapsed = false
+        self:ApplyWindowLayout(frame)
+    end
+    frame.favorites:Show()
+    self:RefreshWindows()
+end
+
+local function CreateFavorites(frame)
+    local overlay = CreateFrame("Frame", nil, frame)
+    frame.favorites = overlay
+    overlay:SetAllPoints(frame.body)
+    overlay:SetClipsChildren(true)
+    overlay:EnableMouse(true)
+    overlay.buttons = {}
+    overlay:SetScript("OnMouseUp", function(_, button)
+        if button == "RightButton" then
+            app:ToggleFavorites(frame)
+        end
+    end)
+    overlay:EnableMouseWheel(true)
+    overlay:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
+    overlay:Hide()
 end
 
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
-        root:CreateTitle("Combat session")
+        if self:IsAvailable() and not (self.IsEditingWindows and self:IsEditingWindows()) then
+            local sessions = C_DamageMeter.GetAvailableCombatSessions()
+            for _, session in ipairs(sessions) do
+                local name = session.name
+                if not name or name == "" then
+                    name = (DAMAGE_METER_COMBAT_NUMBER or "Combat %d"):format(session.sessionID)
+                end
+                local label = name
+                if session.durationSeconds then
+                    label = ("%s [%s]"):format(name, SecondsToClock(session.durationSeconds))
+                end
+                root:CreateRadio(label, function()
+                    return frame.config.sessionID == session.sessionID
+                end, function()
+                    frame.config.sessionID, frame.config.sessionName = session.sessionID, name
+                    frame.offset = 0
+                    self:RefreshWindows()
+                end)
+            end
+            if #sessions > 0 then
+                root:CreateDivider()
+            end
+        end
         for _, key in ipairs({ "Current", "Overall" }) do
             local label = key == "Current" and (DAMAGE_METER_CURRENT_SESSION or key)
                 or (DAMAGE_METER_OVERALL_SESSION or key)
@@ -206,22 +346,10 @@ function app:ShowSessionMenu(frame)
                 self:RefreshWindows()
             end)
         end
-        if self:IsAvailable() and not (self.IsEditingWindows and self:IsEditingWindows()) then
-            root:CreateDivider()
-            for _, session in ipairs(C_DamageMeter.GetAvailableCombatSessions()) do
-                root:CreateRadio(session.name, function()
-                    return frame.config.sessionID == session.sessionID
-                end, function()
-                    frame.config.sessionID, frame.config.sessionName = session.sessionID, session.name
-                    frame.offset = 0
-                    self:RefreshWindows()
-                end)
-            end
-        end
     end)
 end
 
-local function CreateRow(frame, index)
+CreateRow = function(frame, index)
     local entry = CreateFrame("Frame", nil, frame.body)
     entry:SetHeight(app:GetWindowSetting(frame.config, "rowHeight"))
     entry:SetPoint("TOPLEFT", 0, 0)
@@ -308,7 +436,7 @@ function app:RefreshWindow(frame, session, message)
     local preview = session and session.isPreview
     local collapsed = self:IsWindowCollapsed(config)
     local statistic = self:GetStatistic(config.statistic)
-    frame.statistic.text:SetText(statistic.label)
+    frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
     frame.session.text:SetText(
         preview and "Preview"
             or config.sessionID
@@ -351,19 +479,30 @@ function app:RefreshWindow(frame, session, message)
             (self:GetWindowSetting(config, "height") - HEADER_HEIGHT - 8 + rowSpacing) / (rowHeight + rowSpacing)
         )
     )
-    local scrollable = #sources > capacity
+    local favoritesShown = frame.favorites:IsShown()
+    local count = favoritesShown and 6 or #sources
+    local offsetKey = ScrollOffsetKey(frame)
+    local scrollable = count > capacity
     frame.body:SetPoint("BOTTOMRIGHT", scrollable and -16 or -1, 6)
     frame.scrollbar:SetShown(scrollable and not collapsed)
-    frame.offset = math.max(0, math.min(frame.offset, #sources - capacity))
+    frame[offsetKey] = math.max(0, math.min(frame[offsetKey] or 0, count - capacity))
     frame.updatingScroll = true
-    frame.scrollbar:SetMinMaxValues(0, math.max(0, #sources - capacity))
-    frame.scrollbar:SetValue(frame.offset)
+    frame.scrollbar:SetMinMaxValues(0, math.max(0, count - capacity))
+    frame.scrollbar:SetValue(frame[offsetKey])
     if scrollable then
-        frame.thumb:SetHeight(math.max(23, frame.scrollbar:GetHeight() * capacity / #sources))
+        frame.thumb:SetHeight(math.max(23, frame.scrollbar:GetHeight() * capacity / count))
     end
     frame.updatingScroll = false
     for _, row in ipairs(frame.rows) do
         row:Hide()
+    end
+    if favoritesShown then
+        if frame.localRow then
+            frame.localRow:Hide()
+        end
+        frame.message:Hide()
+        self:UpdateFavorites(frame)
+        return
     end
     -- Preserve the client's ordering. Never compare, sort or calculate with secret combat values.
     for index = 1, math.min(capacity + 1, #sources - frame.offset) do
@@ -518,6 +657,8 @@ function app:CreateWindow(id)
     frame.session.normalWidth = frame.session:GetWidth()
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
+        -- Keep selector clicks above the mouse-enabled header used for dragging.
+        selector:SetFrameLevel(title:GetFrameLevel() + 1)
         selector:RegisterForDrag("LeftButton")
         selector:SetScript("OnDragStart", title:GetScript("OnDragStart"))
         selector:SetScript("OnDragStop", title:GetScript("OnDragStop"))
@@ -576,7 +717,8 @@ function app:CreateWindow(id)
     track:SetAllPoints()
     for _, direction in ipairs({ { "TOP", "top", -1 }, { "BOTTOM", "bottom", 1 } }) do
         local step = Button(scrollbar, "", 17, function()
-            frame.offset = math.max(0, frame.offset + direction[3])
+            local offsetKey = ScrollOffsetKey(frame)
+            frame[offsetKey] = math.max(0, (frame[offsetKey] or 0) + direction[3])
             self:RefreshWindows()
         end)
         step:SetSize(17, 11)
@@ -591,8 +733,9 @@ function app:CreateWindow(id)
     scrollbar:SetAlpha(0.3)
     scrollbar:SetScript("OnValueChanged", function(_, value)
         local offset = math.floor(value + 0.5)
-        if not frame.updatingScroll and frame.offset ~= offset then
-            frame.offset = offset
+        local offsetKey = ScrollOffsetKey(frame)
+        if not frame.updatingScroll and frame[offsetKey] ~= offset then
+            frame[offsetKey] = offset
             self:RefreshWindows()
         end
     end)
@@ -620,17 +763,36 @@ function app:CreateWindow(id)
     end)
     frame:EnableMouseWheel(true)
     frame:SetScript("OnMouseWheel", function(_, delta)
-        frame.offset = math.max(0, frame.offset - delta * 3)
+        local offsetKey = ScrollOffsetKey(frame)
+        frame[offsetKey] = math.max(0, (frame[offsetKey] or 0) - delta * 3)
         self:RefreshWindows()
     end)
     frame.body:EnableMouseWheel(true)
     frame.body:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
     scrollbar:EnableMouseWheel(true)
     scrollbar:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
+    CreateFavorites(frame)
+    -- Mouse-enabled children consume clicks, so route their right-clicks too.
+    for _, region in ipairs({ frame, frame.body, title, frame.statistic, frame.session, close, menu, scrollbar, resize }) do
+        local mouseUp = region:GetScript("OnMouseUp")
+        region:SetScript("OnMouseUp", function(owner, button)
+            if button == "RightButton" then
+                self:ToggleFavorites(frame)
+            elseif mouseUp then
+                mouseUp(owner, button)
+            end
+        end)
+    end
+    frame:SetScript("OnHide", function()
+        frame:StopMovingOrSizing()
+        frame.editing = nil
+        frame.favorites:Hide()
+    end)
     return frame
 end
 
 function app:ApplyWindowLayout(frame)
+    frame.favorites:Hide()
     local config = frame.config
     local collapsed = self:IsWindowCollapsed(config)
     frame.applyingLayout = true

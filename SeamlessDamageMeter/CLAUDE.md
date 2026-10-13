@@ -57,6 +57,16 @@ The frame's `windowID` is stable; `config` always reflects its currently bound p
 including while inactive. This is an authorized
 exception to the repository's default rule against additional globals.
 
+Right-click a window to toggle its six-slot favorites view inside the normal data area.
+Favorites reuse the combat row art, configured fonts, bar color, height and spacing, and
+the existing scrollbar with a separate scroll offset. Combat rows and the pinned player
+row are hidden while favorites are visible; live refreshes preserve the favorites view.
+`config.favorites` stores
+statistic keys by slot, independently per window and profile; all slots start empty.
+Empty slots open the type menu to assign a favorite without changing the displayed type.
+Assigned slots switch the displayed type immediately; right-click them to replace or clear.
+Only one favorites view is open at a time. Hide, collapse and profile rebuild dismiss it.
+
 All ten slots register with EditModeExpanded-1.0, embedded unchanged from `_libs` in
 Core. Each window's `editMode` table stores native layout settings inside its AceDB
 profile. The adapter rebinds the library's exposed `baseFramesDB`/`framesDB` tables
@@ -78,7 +88,9 @@ persisting after exit and reload. Preview sessions are never saved.
 Width/Height custom sliders (EME setting 18) update existing size overrides immediately.
 Sync slider values from meter settings on rebuild and ignore callbacks outside Edit Mode.
 The resize grip stays visible and above the EME selection overlay while editing, including
-when normal dragging is locked. Verify slider/grip resizing and persistence after exit/reload.
+when normal dragging is locked. Synchronize its frame level on every layout refresh and use
+HIGH strata during Edit Mode so the top-level selection cannot cover it after being raised.
+Restore the window's strata on exit. Verify slider/grip resizing and persistence after exit/reload.
 
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone

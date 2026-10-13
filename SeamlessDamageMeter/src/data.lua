@@ -12,6 +12,8 @@ app.statistics = {
     { key = "Dispels", label = DAMAGE_METER_TYPE_DISPELS or "Dispels" },
     { key = "DamageTaken", label = DAMAGE_METER_TYPE_DAMAGE_TAKEN or "Damage taken" },
     { key = "AvoidableDamageTaken", label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken" },
+    { key = "EnemyDamageTaken", label = DAMAGE_METER_TYPE_ENEMY_DAMAGE_TAKEN or "Enemy damage taken" },
+    { key = "Deaths", label = DAMAGE_METER_TYPE_DEATHS or "Deaths" },
 }
 
 function app:IsAvailable()

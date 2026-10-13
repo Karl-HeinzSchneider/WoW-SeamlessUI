@@ -364,6 +364,94 @@ function app:ShowSessionMenu(frame)
     end)
 end
 
+local function HideRowTooltip(row)
+    if GameTooltip and GameTooltip:IsOwned(row.entry) then
+        GameTooltip:Hide()
+    end
+end
+
+local function IsPublic(value)
+    return not (issecretvalue and issecretvalue(value))
+end
+
+local function TooltipColumns()
+    GameTooltip:AddDoubleLine(" ", " ", 1, 1, 1, 1, 1, 1)
+    local prefix = GameTooltip:GetName() .. "Text"
+    local line = GameTooltip:NumLines()
+    return _G[prefix .. "Left" .. line], _G[prefix .. "Right" .. line]
+end
+
+local function ShowRowTooltip(row, frame)
+    if not row.source or row.preview or app:IsWindowCollapsed(frame.config) then
+        HideRowTooltip(row)
+        return
+    end
+    local details = app:GetSourceDetails(frame.config, row.source)
+    if not details then
+        HideRowTooltip(row)
+        return
+    end
+    GameTooltip:SetOwner(row.entry, "ANCHOR_RIGHT")
+    GameTooltip:ClearLines()
+    GameTooltip:AddLine(row.source.name)
+    local statistic = app:GetStatistic(frame.config.statistic)
+    GameTooltip:AddLine(statistic.label, 1, 1, 1)
+    local entries = details.deathEvents or details.combatSpells or {}
+    for _, spell in ipairs(entries) do
+        local left, right = TooltipColumns()
+        local name = spell.spellName
+        if IsPublic(name) and (name == nil or name == "") then
+            local spellID = spell.spellID or spell.spellId
+            name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
+            if details.deathEvents and spell.event == "SWING_DAMAGE" then
+                name = ACTION_SWING or "Melee"
+            elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
+                name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
+            end
+        end
+        local unit = spell.creatureName
+        if IsPublic(unit) and (unit == nil or unit == "") then
+            unit = spell.sourceName
+            if spell.combatSpellDetails then
+                unit = spell.combatSpellDetails.unitName
+            end
+        end
+        if not IsPublic(unit) or (unit ~= nil and unit ~= "") then
+            left:SetFormattedText("%s (%s)", name, unit)
+        else
+            left:SetText(name)
+        end
+        local amount = spell.totalAmount
+        if IsPublic(amount) and amount == nil then
+            amount = spell.amount
+        end
+        local rate = spell.amountPerSecond
+        local percentage
+        if IsPublic(amount) and IsPublic(details.totalAmount) and details.totalAmount and details.totalAmount > 0 then
+            percentage = math.floor(amount / details.totalAmount * 100 + 0.5)
+        end
+        if (not IsPublic(rate) or rate ~= nil) and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" then
+            local primary, secondary = amount, rate
+            if statistic.rate then
+                primary, secondary = rate, amount
+            end
+            if percentage then
+                right:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
+            else
+                right:SetFormattedText("%.1f (%.1f)", primary, secondary)
+            end
+        elseif percentage then
+            right:SetFormattedText("%.0f %d%%", amount, percentage)
+        else
+            right:SetFormattedText("%.0f", amount)
+        end
+    end
+    if #entries == 0 then
+        GameTooltip:AddLine("No details available.", 0.7, 0.7, 0.7)
+    end
+    GameTooltip:Show()
+end
+
 CreateRow = function(frame, index)
     local entry = CreateFrame("Frame", nil, frame.body)
     entry:SetHeight(app:GetWindowSetting(frame.config, "rowHeight"))
@@ -372,6 +460,28 @@ CreateRow = function(frame, index)
     entry:SetClipsChildren(true)
     local row = CreateFrame("StatusBar", nil, entry)
     row.entry = entry
+    row.window = frame
+    entry:EnableMouse(true)
+    entry:EnableMouseWheel(true)
+    entry:SetScript("OnMouseWheel", frame:GetScript("OnMouseWheel"))
+    entry:SetScript("OnEnter", function()
+        ShowRowTooltip(row, frame)
+    end)
+    entry:SetScript("OnLeave", function()
+        HideRowTooltip(row)
+    end)
+    entry:SetScript("OnHide", function()
+        HideRowTooltip(row)
+    end)
+    entry:SetScript("OnMouseUp", function(_, button)
+        if button == "RightButton" then
+            app:ToggleFavorites(frame)
+        end
+    end)
+    row:SetScript("OnHide", function()
+        HideRowTooltip(row)
+        row.source = nil
+    end)
     row:SetHeight(app:GetWindowSetting(frame.config, "rowHeight"))
     row:SetPoint("TOPLEFT", app:GetWindowSetting(frame.config, "rowHeight"), 0)
     row:SetPoint("RIGHT", -4, 0)
@@ -400,6 +510,7 @@ CreateRow = function(frame, index)
 end
 
 local function UpdateRow(row, source, sourceIndex, session, statistic, config)
+    row.source, row.preview = source, session.isPreview
     local rowHeight = app:GetWindowSetting(config, "rowHeight")
     row.entry:SetHeight(rowHeight)
     row:SetHeight(rowHeight)
@@ -444,6 +555,9 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
         row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
     end
     row:Show()
+    if GameTooltip and GameTooltip:IsShown() and GameTooltip:IsOwned(row.entry) then
+        ShowRowTooltip(row, row.window)
+    end
 end
 
 function app:RefreshWindow(frame, session, message)
@@ -519,8 +633,10 @@ function app:RefreshWindow(frame, session, message)
         frame.thumb:SetHeight(math.max(23, frame.scrollbar:GetHeight() * capacity / count))
     end
     frame.updatingScroll = false
-    for _, row in ipairs(frame.rows) do
-        row:Hide()
+    for index, row in ipairs(frame.rows) do
+        if favoritesShown or collapsed or index > math.min(capacity + 1, #sources - frame.offset) then
+            row:Hide()
+        end
     end
     if favoritesShown then
         if frame.localRow then
@@ -540,10 +656,11 @@ function app:RefreshWindow(frame, session, message)
         row.entry:SetPoint("RIGHT", 0, 0)
         UpdateRow(row, source, sourceIndex, session, statistic, config)
     end
-    if frame.localRow then
+    local pinned = not collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity)
+    if frame.localRow and not pinned then
         frame.localRow:Hide()
     end
-    if not collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity) then
+    if pinned then
         local row = frame.localRow or CreateRow(frame, 0)
         frame.localRow = row
         local entry = row.entry

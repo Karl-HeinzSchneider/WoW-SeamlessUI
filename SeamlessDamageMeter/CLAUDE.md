@@ -53,6 +53,11 @@ Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass
 through number abbreviation. An offscreen local player stays visible in a separate row.
+Hovering a combat row (including the pinned player) shows its selected session's spell
+breakdown in a tooltip, with totals, rates and public percentage shares. Deaths show recap
+events. Preserve API ordering and send restricted names/amounts directly to tooltip labels;
+omit percentages when their inputs are secret. Refresh the owned tooltip with its pooled
+row, dismiss it on leave/hide, and never request live details for Edit Mode preview rows.
 Rows use full square icons sized to the row height and an original grayscale shaded fill
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;

@@ -33,7 +33,7 @@ function app:SyncWindowEditMode(frame)
     local config = frame.config
     config.editMode = config.editMode or { settings = {} }
     if not lib:IsRegistered(frame) then
-        lib:RegisterFrame(frame, "Seamless Damage Meter: Window " .. frame.windowID, config.editMode)
+        lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
         lib:RegisterResizable(frame, 50, 200, 5)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
         hooksecurefunc(frame, "SetPoint", function()
@@ -73,13 +73,24 @@ function app:SyncWindowEditMode(frame)
     self:PositionWindow(frame)
     local db = CurrentLayout(config.editMode)
     lib.framesDB[frame.system] = db
+    -- Seed new layouts and reset previews when a slot is activated/deactivated.
+    -- Otherwise preserve the player's Expanded checkbox choice for this layout.
+    if config.editMode.windowEnabled ~= config.enabled then
+        for _, layout in pairs(config.editMode.profiles or {}) do
+            layout.enabled = config.enabled
+        end
+        db.enabled = config.enabled
+        config.editMode.windowEnabled = config.enabled
+    end
+    config.editMode.enabled = config.enabled
+    frame.EMEdisabledByDefault = not config.enabled
     db.settings = db.settings or {}
     db.x, db.y = frame:GetRect()
     db.defaultX, db.defaultY = db.x, db.y
     db.defaultScale = frame:GetScale()
     db.settings[SCALE_SETTING] = frame:GetScale() * 100
     if db.enabled == nil then
-        db.enabled = true
+        db.enabled = config.enabled
     end
     if db.clamped == nil then
         db.clamped = 1

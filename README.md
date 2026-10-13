@@ -30,8 +30,10 @@ The gear menu adds or removes windows; the collapse button hides a window.
 Drag the header or bottom-right corner to move or resize; mouse-wheel over
 the window to scroll players. Enable Blizzard combat tracking in its settings if needed.
 All ten windows also appear in Edit Mode Expanded's Expanded list, including inactive
-and hidden slots. Select a window to move it or adjust its scale. Leaving Edit Mode
-restores normal visibility without activating inactive windows. Edit Mode changes update
+and hidden slots, named "Seamless Damage 1" through "Seamless Damage 10". Inactive slots
+are unchecked by default; check their entry to preview them. Select a window to move it
+or adjust its scale. Leaving Edit Mode restores normal visibility without activating
+inactive windows. Edit Mode changes update
 the window's position and scale overrides in the current Damage Meter profile.
 The built-in meter's visibility remains controlled by the game's own settings; keep tracking
 enabled for data. Fight history belongs to Blizzard and may expire or reset independently

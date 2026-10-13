@@ -357,7 +357,8 @@ local eme = { baseFramesDB = {}, framesDB = {} }
 function eme:IsRegistered(frame)
     return frame.system ~= nil
 end
-function eme:RegisterFrame(frame, _, db)
+function eme:RegisterFrame(frame, name, db)
+    assert(name == "Seamless Damage " .. frame.windowID, "Edit Mode labels must use the compact slot name")
     registered = registered + 1
     frame.system = 100 + registered
     frame.EMECheckButtonFrame = object(frame)
@@ -423,8 +424,22 @@ meter.config.enabled = false
 meter.config.hidden = true
 EditModeManagerFrame.editModeActive = true
 app:RebuildWindows()
-assert(meter:IsShown(), "Edit Mode must preview inactive/hidden slots")
+assert(not meter:IsShown(), "Deactivated slots must default to hidden in Edit Mode")
+assert(not eme.framesDB[meter.system].enabled)
+eme.framesDB[meter.system].enabled = true
+app:RebuildWindows()
+assert(meter:IsShown(), "The player can explicitly preview an inactive slot")
 assert(not meter.config.enabled and meter.config.hidden, "Preview must not activate slots")
+meter.config.enabled = true
+app:RebuildWindows()
+meter.config.editMode.profiles["1-Other"] = { enabled = true, settings = {} }
+meter.config.enabled = false
+app:RebuildWindows()
+assert(not meter:IsShown(), "Deactivating a slot must reset its Edit Mode preview")
+assert(not meter.config.editMode.profiles["1-Other"].enabled, "Deactivation must update other native layouts")
+eme.framesDB[meter.system].enabled = true
+app:RebuildWindows()
+assert(meter:IsShown(), "Explicit previews survive ordinary rebuilds")
 meter:SetScaleOverride(1.25)
 assert(meter.config.overrides.scale == 1.25)
 assert(eme.framesDB[meter.system].settings[16] ~= nil)
@@ -436,6 +451,8 @@ assert(meter.config.editMode ~= originalDatabase)
 assert(eme.baseFramesDB[meter.system] == meter.config.editMode, "Rebind the active AceDB profile")
 assert(meter.config.overrides.scale == nil, "Profile changes must preserve inheritance")
 assert(meter.config.overrides.x == nil and meter.config.overrides.y == nil)
+assert(meter:IsShown(), "The active default slot must be visible in Edit Mode")
+assert(not app.windowFrames[10]:IsShown(), "Fresh inactive slots must be unchecked")
 meter:SetScaleOverride(meter:GetScale())
 assert(meter.config.overrides.scale == nil, "An unchanged library scale must remain inherited")
 assert(

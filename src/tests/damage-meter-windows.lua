@@ -218,7 +218,8 @@ for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
 end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
-assert(frame.rows[1]:GetHeight() == 16 and frame.rows[1].entry:GetHeight() == 18)
+assert(frame.rows[1]:GetHeight() == 24 and frame.rows[1].entry:GetHeight() == 24)
+assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() == 24)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
 assert(frame.rows[1].name.args[2] == secret)
 assert(frame.rows[1].value.args[1] == secret)
@@ -235,10 +236,10 @@ app:RebuildWindows()
 assert(frame:GetHeight() == 32 and app:GetWindowSetting(frame.config, "height") == fullHeight)
 frame.collapse.scripts.OnClick()
 assert(frame:GetHeight() == fullHeight, "Expanding must not overwrite saved height with resize minimum")
-frame.scrollbar:SetValue(5)
-assert(frame.offset == 5 and not frame.localRow:IsShown())
-session.combatSources[6].totalAmount = 12345
-session.combatSources[6].amountPerSecond = 2.8
+frame.scrollbar:SetValue(7)
+assert(frame.offset == 7 and not frame.localRow:IsShown())
+session.combatSources[8].totalAmount = 12345
+session.combatSources[8].amountPerSecond = 2.8
 app:RefreshWindows()
 assert(frame.rows[1].value.args[1] == "12345" and frame.rows[1].value.args[2] == "2.8")
 frame.config.statistic = "Dps"

@@ -249,13 +249,14 @@ assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", a
 app:RebuildWindows()
 local frame = app.windows[1]
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type selector is visible by default")
-local categoryAnchor = frame.statistic.text.points.LEFT
+local categoryAnchor = frame.statistic.text.points.TOPLEFT
+assert(categoryAnchor[4] == 25 and categoryAnchor[5] == -9, "Category text must sit at the reference header height")
 local categoryWidth = frame.statistic.text:GetWidth()
 frame.config.overrides.hideTypeSelector = true
 app:RebuildWindows()
 assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
 for index, value in ipairs(categoryAnchor) do
-    assert(frame.statistic.text.points.LEFT[index] == value, "Hiding the selector must preserve the category position")
+    assert(frame.statistic.text.points.TOPLEFT[index] == value, "Hiding the selector must preserve the category position")
 end
 assert(frame.statistic.text:GetWidth() == categoryWidth)
 assert(frame.timer:GetWidth() == 0 and frame.timer.justifyH == "LEFT", "Timer must use natural width and left alignment")

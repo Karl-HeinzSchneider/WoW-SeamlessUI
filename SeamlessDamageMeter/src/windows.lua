@@ -83,8 +83,12 @@ local function AnchorCoordinates(frame, point)
     return x * frame:GetEffectiveScale(), y * frame:GetEffectiveScale()
 end
 
+function app:IsWindowCollapsed(config)
+    return config.collapsed and not (self.IsEditingWindows and self:IsEditingWindows())
+end
+
 local function CollapseOffset(config)
-    if not config.collapsed then
+    if not app:IsWindowCollapsed(config) then
         return 0
     end
     local point = app:GetWindowSetting(config, "point")
@@ -94,6 +98,7 @@ end
 
 function app:PositionWindow(frame)
     local config = frame.config
+    frame.positioning = true
     frame:ClearAllPoints()
     frame:SetPoint(
         self:GetWindowSetting(config, "point"),
@@ -102,6 +107,21 @@ function app:PositionWindow(frame)
         self:GetWindowSetting(config, "x"),
         self:GetWindowSetting(config, "y") + CollapseOffset(config)
     )
+    frame.positioning = nil
+end
+
+function app:SaveWindowPosition(frame, onlyChanged)
+    local config = frame.config
+    local x, y = AnchorCoordinates(frame, app:GetWindowSetting(config, "point"))
+    local targetX, targetY =
+        AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
+    x, y = (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale() - CollapseOffset(config)
+    if not onlyChanged or math.abs(x - app:GetWindowSetting(config, "x")) > 0.001 then
+        config.overrides.x = x
+    end
+    if not onlyChanged or math.abs(y - app:GetWindowSetting(config, "y")) > 0.001 then
+        config.overrides.y = y
+    end
 end
 
 local function SaveGeometry(frame, resizing)
@@ -111,13 +131,8 @@ local function SaveGeometry(frame, resizing)
     end
     frame.editing = nil
     local config = frame.config
-    local x, y = AnchorCoordinates(frame, app:GetWindowSetting(config, "point"))
-    local targetX, targetY =
-        AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
-    config.overrides.x, config.overrides.y =
-        (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale()
-    config.overrides.y = config.overrides.y - CollapseOffset(config)
-    if resizing and not config.collapsed then
+    app:SaveWindowPosition(frame)
+    if resizing and not app:IsWindowCollapsed(config) then
         config.overrides.width, config.overrides.height = frame:GetSize()
     end
     frame:SetUserPlaced(false)
@@ -191,7 +206,7 @@ function app:ShowSessionMenu(frame)
                 self:RefreshWindows()
             end)
         end
-        if self:IsAvailable() then
+        if self:IsAvailable() and not (self.IsEditingWindows and self:IsEditingWindows()) then
             root:CreateDivider()
             for _, session in ipairs(C_DamageMeter.GetAvailableCombatSessions()) do
                 root:CreateRadio(session.name, function()
@@ -290,24 +305,28 @@ end
 
 function app:RefreshWindow(frame, session, message)
     local config = frame.config
+    local preview = session and session.isPreview
+    local collapsed = self:IsWindowCollapsed(config)
     local statistic = self:GetStatistic(config.statistic)
     frame.statistic.text:SetText(statistic.label)
     frame.session.text:SetText(
-        config.sessionID
+        preview and "Preview"
+            or config.sessionID
             or (
                 config.session == "Overall" and DAMAGE_METER_OVERALL_SESSION_SHORT
                 or DAMAGE_METER_CURRENT_SESSION_SHORT
             )
     )
+    frame.session:SetWidth(preview and 60 or frame.session.normalWidth)
     local duration = session and session.durationSeconds
-    if self:IsAvailable() and not config.sessionID and UnitAffectingCombat("player") then
+    if not preview and self:IsAvailable() and not config.sessionID and UnitAffectingCombat("player") then
         duration = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType[config.session])
     end
     if
         not (issecretvalue and issecretvalue(duration))
         and duration
         and duration > 0
-        and (config.sessionID or UnitAffectingCombat("player"))
+        and (preview or config.sessionID or UnitAffectingCombat("player"))
     then
         frame.timer:SetFormattedText("[%s] ", SecondsToClock(duration))
     else
@@ -334,7 +353,7 @@ function app:RefreshWindow(frame, session, message)
     )
     local scrollable = #sources > capacity
     frame.body:SetPoint("BOTTOMRIGHT", scrollable and -16 or -1, 6)
-    frame.scrollbar:SetShown(scrollable and not config.collapsed)
+    frame.scrollbar:SetShown(scrollable and not collapsed)
     frame.offset = math.max(0, math.min(frame.offset, #sources - capacity))
     frame.updatingScroll = true
     frame.scrollbar:SetMinMaxValues(0, math.max(0, #sources - capacity))
@@ -359,7 +378,7 @@ function app:RefreshWindow(frame, session, message)
     if frame.localRow then
         frame.localRow:Hide()
     end
-    if not config.collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity) then
+    if not collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity) then
         local row = frame.localRow or CreateRow(frame, 0)
         frame.localRow = row
         local entry = row.entry
@@ -442,6 +461,9 @@ function app:CreateWindow(id)
         SaveGeometry(frame)
     end)
     local close = Button(frame, "", 18, function()
+        if self.IsEditingWindows and self:IsEditingWindows() then
+            return
+        end
         frame.config.collapsed = not frame.config.collapsed
         self:ApplyWindowLayout(frame)
         self:RefreshWindows()
@@ -493,6 +515,7 @@ function app:CreateWindow(id)
         18
     )
     frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
+    frame.session.normalWidth = frame.session:GetWidth()
     frame.statistic:SetPoint("RIGHT", frame.session, "LEFT", -5, 0)
     for _, selector in ipairs({ frame.statistic, frame.session }) do
         selector:RegisterForDrag("LeftButton")
@@ -515,7 +538,10 @@ function app:CreateWindow(id)
         "damagemeters-scalehandle-hover"
     )
     resize:SetScript("OnMouseDown", function(_, button)
-        if button == "LeftButton" and not self.db.profile.locked then
+        if
+            button == "LeftButton"
+            and (not self.db.profile.locked or (self.IsEditingWindows and self:IsEditingWindows()))
+        then
             frame.editing = true
             frame:StartSizing("BOTTOMRIGHT")
         end
@@ -572,15 +598,16 @@ function app:CreateWindow(id)
     end)
     frame.scrollbar = scrollbar
     frame:SetScript("OnUpdate", function(_, elapsed)
-        local hover = frame:IsMouseOver() and not frame.config.collapsed
-        local resizeTarget = hover and not self.db.profile.locked and 1 or 0
+        local hover = frame:IsMouseOver() and not self:IsWindowCollapsed(frame.config)
+        local editing = self.IsEditingWindows and self:IsEditingWindows()
+        local resizeTarget = (editing or (hover and not self.db.profile.locked)) and 1 or 0
         local scrollTarget = hover and 1 or 0.3
         local step = math.min(1, elapsed / 0.25)
         resize:SetAlpha(resize:GetAlpha() + (resizeTarget - resize:GetAlpha()) * step)
         scrollbar:SetAlpha(scrollbar:GetAlpha() + (scrollTarget - scrollbar:GetAlpha()) * step)
     end)
     frame:SetScript("OnSizeChanged", function()
-        if frame.config and not frame.config.collapsed and not frame.applyingLayout then
+        if frame.config and not self:IsWindowCollapsed(frame.config) and not frame.applyingLayout then
             if frame.editing then
                 frame.config.overrides.width, frame.config.overrides.height = frame:GetSize()
             end
@@ -605,20 +632,24 @@ end
 
 function app:ApplyWindowLayout(frame)
     local config = frame.config
+    local collapsed = self:IsWindowCollapsed(config)
     frame.applyingLayout = true
-    frame:SetResizeBounds(200, config.collapsed and HEADER_HEIGHT or 120, 800, 900)
-    frame:SetHeight(config.collapsed and HEADER_HEIGHT or self:GetWindowSetting(config, "height"))
+    frame:SetResizeBounds(200, collapsed and HEADER_HEIGHT or 120, 800, 900)
+    frame:SetHeight(collapsed and HEADER_HEIGHT or self:GetWindowSetting(config, "height"))
     self:PositionWindow(frame)
     frame.applyingLayout = false
-    frame.body:SetShown(not config.collapsed)
-    frame.background:SetShown(not config.collapsed)
-    frame.resize:SetShown(not config.collapsed)
+    frame.body:SetShown(not collapsed)
+    frame.background:SetShown(not collapsed)
+    frame.resize:SetShown(not collapsed)
     AtlasButton(
         frame.collapse,
-        config.collapsed and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all",
-        config.collapsed and "ui-questtrackerbutton-expand-all-pressed" or "ui-questtrackerbutton-collapse-all-pressed",
+        collapsed and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all",
+        collapsed and "ui-questtrackerbutton-expand-all-pressed" or "ui-questtrackerbutton-collapse-all-pressed",
         "ui-questtrackerbutton-red-highlight"
     )
+    if self.SyncWindowEditMode then
+        self:SyncWindowEditMode(frame)
+    end
 end
 
 function app:RebuildWindows()
@@ -667,6 +698,10 @@ function app:RebuildWindows()
         end
         frame.anchorTarget = target
         self:PositionWindow(frame)
+        if self.SyncWindowEditMode then
+            self:SyncWindowEditMode(frame)
+            frame:SetShown(self:WindowShouldBeShown(frame))
+        end
     end
     self:RefreshWindows()
     self:UpdateWindowOptions()

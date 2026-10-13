@@ -29,6 +29,16 @@ Install its folder alongside Core. `/sdm` opens settings, `/sdm new` adds a wind
 The gear menu adds or removes windows; the collapse button hides a window.
 Drag the header or bottom-right corner to move or resize; mouse-wheel over
 the window to scroll players. Enable Blizzard combat tracking in its settings if needed.
+All ten windows also appear in Edit Mode Expanded's Expanded list, including inactive
+and hidden slots, named "Seamless Damage 1" through "Seamless Damage 10". Inactive slots
+are unchecked by default; checking an entry activates and unhides that window for normal
+play, while unchecking deactivates it. Edit Mode displays sample bars with classic WoW
+characters, class colors and example amounts instead of reading live combat data.
+Collapsed windows temporarily expand to show the preview. Select a window to move it
+or adjust its scale. Use the Width/Height sliders in its Edit Mode dialog or drag the
+visible bottom-right grip to resize it. Leaving Edit Mode restores live data and the saved collapse state.
+Edit Mode changes update
+the window's position and scale overrides in the current Damage Meter profile.
 The built-in meter's visibility remains controlled by the game's own settings; keep tracking
 enabled for data. Fight history belongs to Blizzard and may expire or reset independently
 of saved layouts. This first version intentionally focuses on the base windows, without
@@ -78,6 +88,14 @@ list its runtime files, and add `Seamless/SeamlessFeature: SeamlessFeature` to `
 Use the core API documented in [SeamlessCore/CLAUDE.md](SeamlessCore/CLAUDE.md) for shared options
 and logging. Keep feature state in its private addon table and its own SavedVariables.
 No core code change is needed to register another feature.
+
+## Credits
+
+Thanks to **Teelo** for Edit Mode Expanded and the **EditModeExpanded-1.0** library
+used to integrate the damage meter windows with Edit Mode.
+
+- [Edit Mode Expanded on GitHub](https://github.com/teelolws/EditModeExpanded)
+- [Edit Mode Expanded on CurseForge](https://www.curseforge.com/wow/addons/edit-mode-expanded)
 
 ## License
 

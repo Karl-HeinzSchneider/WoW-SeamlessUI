@@ -34,6 +34,9 @@ end
 function methods:SetFrameLevel(level)
     self.frameLevel = level
 end
+function methods:EnableMouse(enabled)
+    self.mouseEnabled = enabled
+end
 function methods:SetFrameStrata(strata)
     self.frameStrata = strata
 end
@@ -322,6 +325,9 @@ frame.scripts.OnMouseUp(frame, "RightButton")
 assert(frame.favorites:IsShown() and #frame.favorites.buttons == 6)
 local favorite = frame.favorites.buttons[1]
 assert(frame.favorites.parent == frame and favorite.row.entry.parent == frame.favorites)
+assert(frame.favorites:GetFrameLevel() > frame.body:GetFrameLevel())
+assert(favorite.mouseEnabled and not favorite.row.mouseEnabled and not favorite.row.entry.mouseEnabled)
+assert(favorite:GetFrameLevel() > favorite.row:GetFrameLevel(), "Favorite buttons must receive clicks above row art")
 assert(favorite.row:GetHeight() == frame.rows[1]:GetHeight())
 assert(not frame.rows[1]:IsShown() and not frame.localRow:IsShown() and not frame.message:IsShown())
 app:RefreshWindows()
@@ -340,6 +346,10 @@ assert(frame.config.favorites[1] == "Dps", "Rebuilding must preserve assigned fa
 frame.scripts.OnMouseUp(frame, "RightButton")
 favorite.scripts.OnClick(favorite, "RightButton")
 assert(menuRoot.entries[1].entries[2].selected())
+menuRoot.entries[1].entries[1].choose()
+assert(frame.config.favorites[1] == "DamageDone" and frame.config.statistic == "Dps")
+assert(frame.favorites:IsShown(), "Replacing a favorite keeps the shortcuts open")
+favorite.scripts.OnClick(favorite, "RightButton")
 menuRoot.entries[#menuRoot.entries].choose()
 assert(frame.config.favorites[1] == nil and favorite.row.name.text == "+ Set favorite")
 local savedOffset = frame.offset

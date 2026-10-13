@@ -423,7 +423,7 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     local labels = { row.value, row.secondaryValue, row.percentageValue, row.enemyPercentageValue }
     local fontSize = app:GetWindowSetting(config, "fontSize")
     local gap = math.max(3, fontSize * 0.35)
-    local widths = { fontSize * 6, fontSize * 5.5, fontSize * 3.5, fontSize * 3.5 }
+    local widths = { fontSize * 4.5, fontSize * 4, fontSize * 2.75, fontSize * 2.75 }
     local shown = { true, showRate, true, showEnemy }
     local total, count = 0, 0
     for index = 1, 4 do
@@ -437,6 +437,7 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     for index = 4, 1, -1 do
         local label = labels[index]
         app:StyleWindowLabel(label, config)
+        label:SetJustifyH("RIGHT")
         label:ClearAllPoints()
         label:SetWidth(widths[index] * factor)
         label:SetShown(shown[index] and true or false)
@@ -618,7 +619,7 @@ local function ShowRowTooltip(row, frame)
                     unit = spell.combatSpellDetails.unitName
                 end
             end
-            if not IsPublic(unit) or (unit ~= nil and unit ~= "") then
+            if not inCombat and (not IsPublic(unit) or (unit ~= nil and unit ~= "")) then
                 bar.name:SetFormattedText("%s (%s)", name, unit)
             else
                 bar.name:SetText(name)

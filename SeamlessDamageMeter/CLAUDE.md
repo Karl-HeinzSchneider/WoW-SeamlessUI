@@ -19,6 +19,19 @@ One shared timer refreshes visible windows, with per-refresh caching for matchin
 Frames and rows are reused. Removing all windows must leave the profile empty; only a
 fresh/reset profile creates a default window. Hidden windows are restored via `/sdm show`.
 
+Window rendering uses plain Lua-created frames without inherited frame templates or meter
+mixins. Reuse client art and fonts. The header is 32 pixels tall; rows are 25 pixels with
+4 pixels between them. The session selector shows a compact current/overall label or history
+ID; its full selection remains in the menu. Collapse keeps the header visible, separately
+from hiding a window. Save the expanded height and keep the header position stable when
+collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
+Amounts and names go directly to widget setters when secret; only public amounts can pass
+through number abbreviation. An offscreen local player stays visible in a separate row.
+
+Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone
+window regression harness (template independence, restricted data, collapse persistence,
+scrolling, shared reads, expired history, empty data and removing the final window).
+
 In-game verification: enable tracking, attack a target, add a second window and select
 DPS or healing independently. Verify current/overall/history selection, scrolling with
 a group, drag/resize, hide/show, removing the final window, reload persistence and profile

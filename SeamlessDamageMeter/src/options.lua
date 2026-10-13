@@ -14,7 +14,7 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu adds or removes windows; the collapse button hides a window. Combat history is owned by the game and is not saved by this addon.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu adds, hides or removes windows; the collapse button folds the bars away and keeps the header visible. Combat history is owned by the game and is not saved by this addon.\n",
                     },
                     add = {
                         type = "execute",
@@ -29,7 +29,7 @@ function app:RegisterOptions()
                         type = "execute",
                         order = 20,
                         name = "Show hidden windows",
-                        desc = "Shows every collapsed meter window again. Same as /sdm show.",
+                        desc = "Shows every hidden meter window again. Same as /sdm show.",
                         func = function()
                             self.addon:SlashCommand("show")
                         end,

@@ -21,6 +21,13 @@ end
 function issecrettable(value)
     return type(value) == "table" and rawget(value, "secretTable") == true
 end
+function canaccesstable(value)
+    return type(value) == "table" and not issecretvalue(value) and not rawget(value, "opaque")
+end
+function UnitGUID(unit)
+    assert(unit == "player")
+    return "Player-1"
+end
 function GetTime()
     return clock
 end
@@ -202,9 +209,95 @@ local session = service:GetSession(config, "DamageDone")
 local before = reads
 assert(service:GetSession(config, "DamageDone") == session and reads == before, "Matching windows share reads")
 local player = session.combatSources[1]
+-- Reproduce readable API tables whose leaves become secret in combat. Such tables
+-- are suitable for widgets, but must never pass the snapshot validator.
+local flags = {
+    session,
+    player,
+    details[1].player,
+    details[1].player.combatSpells,
+    details[1].player.combatSpells[1],
+    details[1].player.combatSpells[1].combatSpellDetails,
+}
+for _, value in ipairs(flags) do
+    value.secretTable = true
+end
+player.sourceGUID = secret
+details[1].player.totalAmount, details[1].player.maxAmount = secret, secret
+details[1].player.combatSpells[1].totalAmount, details[1].player.combatSpells[1].amountPerSecond = secret, secret
+local originalGetter = C_DamageMeter.GetCombatSessionSourceFromType
+local safeQueries = 0
+C_DamageMeter.GetCombatSessionSourceFromType = function(kind, meterType, guid, creature)
+    assert(
+        guid ~= secret and (guid == "Player-1" or (guid == nil and creature == 42)),
+        "Never forward a secret GUID to an addon-tainted API call"
+    )
+    safeQueries = safeQueries + 1
+    return originalGetter(kind, meterType, guid, creature)
+end
+combat = true
+service:Invalidate()
+assert(service:GetSession(config, "DamageDone") == session, "Secret-bearing readable tables remain displayable")
+local combatDetails = service:GetDetails(config, player, "DamageDone")
+assert(
+    not app.live:IsReadableTable({ opaque = true }) and not app.live:IsReadableTable(secret),
+    "Opaque tables and secret table values are still rejected"
+)
+assert(
+    combatDetails and combatDetails.combatSpells[1].totalAmount == secret and safeQueries == 1,
+    "Local-player hover uses the public UnitGUID and returns secret amounts unchanged"
+)
+assert(
+    not archive:CopySession(session) and not archive:CopyDetails(combatDetails),
+    "Live rendering does not relax persistence"
+)
+player.isLocalPlayer = false
+assert(
+    not app.live:GetDetails(config, player, "DamageDone") and safeQueries == 1,
+    "A restricted other-player identity is not guessed or sent to the API"
+)
+player.sourceCreatureID = 42
+assert(
+    app.live:GetDetails(config, player, "DamageDone") and safeQueries == 2,
+    "Creature queries use the public creature ID without a secret GUID"
+)
+player.isLocalPlayer, player.sourceCreatureID = true, nil
+-- Secret optional history metadata must not invalidate a public session ID.
+available[1].name, available[1].durationSeconds, available[1].secretTable = secret, secret, true
+assert(
+    service:GetSession({ sessionID = 1, sessionGeneration = service.generation }, "DamageDone"),
+    "History lookups retain public IDs while omitting restricted labels and duration"
+)
+available[1].name, available[1].durationSeconds, available[1].secretTable = "First fight", 10, nil
+for _, value in ipairs(flags) do
+    value.secretTable = nil
+end
+player.sourceGUID = "Player-1"
+details[1].player.totalAmount, details[1].player.maxAmount = 100, 100
+details[1].player.combatSpells[1].totalAmount, details[1].player.combatSpells[1].amountPerSecond = 100, 10
+C_DamageMeter.GetCombatSessionSourceFromType = originalGetter
+combat = false
+service:Invalidate()
 local targets = service:GetPlayerTargets(config, player)
 assert(targets.complete and #targets.entries == 1 and targets.entries[1].totalAmount == 100)
 assert(targets.entries[1].enemyShare == 100 and targets.entries[1].sourceCreatureID == 10)
+combat = true
+sessions[1][10].combatSources[1].sourceGUID = secret
+details[1][10].combatSpells[1].spellID = secret
+details[1][10].combatSpells[1].amountPerSecond = secret
+service:Invalidate()
+local liveTargets = service:GetPlayerTargets(config, player)
+assert(
+    liveTargets
+        and liveTargets.complete
+        and liveTargets.entries[1].totalAmount == 100
+        and liveTargets.entries[1].amountPerSecond == nil,
+    "Public target contributions can be shown during combat; optional secret IDs/rates are omitted"
+)
+sessions[1][10].combatSources[1].sourceGUID = nil
+details[1][10].combatSpells[1].spellID, details[1][10].combatSpells[1].amountPerSecond = 1, 5
+combat = false
+service:Invalidate()
 local enemySession = service:GetSession(config, "EnemyDamageTaken")
 local contributors = service:GetEnemyContributors(config, enemySession.combatSources[1])
 assert(#contributors.entries == 1 and contributors.entries[1].totalAmount == 100, "Repeated contributor rows aggregate")

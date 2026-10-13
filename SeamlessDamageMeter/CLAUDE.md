@@ -23,6 +23,10 @@ Persist only service-owned public snapshots copied through the explicit allowlis
 Validate restored archives before querying them. Never store secret values, frames/functions,
 or references to API tables. Windows, menus, analysis and timers query `app.combatService`;
 only `live.lua` calls combat APIs. Edit Mode samples never read or capture live combat.
+Live readability uses `canaccesstable` and allows secret leaves to reach widgets. Never reuse
+archive table rejection for live rendering: `issecrettable` may flag readable secret-bearing tables.
+Source query arguments must be public; use `UnitGUID("player")` for local-player rows and public
+creature IDs where available. Other restricted player identities remain unavailable, never guessed.
 Saved fights remain queryable without tracking or the API. Archive IDs are independent of
 client IDs; generation-scoped live selections must not revive after reset/reload. Duplicate updates
 replace snapshots rather than append or add totals twice. Capture runs with every window hidden.
@@ -88,6 +92,8 @@ received; contributor percentages use enemy damage received. Units already combi
 cannot be separated. Never infer complete target totals from player spell summaries.
 Normal API spell breakdowns stay visible in combat. Append target headings/rows only when target
 data exists; unavailable targets never replace spells or add a restriction warning to the hover.
+Target availability is determined from the required public enemy/contributor fields, not a blanket
+combat flag. Optional secret GUIDs/spell IDs are ignored and unavailable rates remain blank.
 Enemy hover likewise retains its normal API details until public contributor analysis is available.
 Left-click a public row for spell flags, target analysis, saved metadata and copyable reports.
 Saved session menus expose pin/delete/compare. History defaults to 50 unpinned fights per
@@ -151,10 +157,16 @@ height slider is ignored. Manual height is preserved for when fixed height is di
 Both settings and the line count support shared defaults and per-window overrides.
 
 Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
+Run `lua src/tests/damage-meter-blizzard.lua` for native CVar/visibility isolation and Edit Mode hiding.
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone
 window regression harness (template independence, restricted data, collapse persistence,
 scrolling, shared reads, expired history, empty data and deactivating every window).
+
+Native meter visibility uses an OnShow script hook, never a hook of its timer updater. Native Hide,
+UpdateShownState and tracking-CVar calls go through `securecallfunction` with original Blizzard/C
+functions only; addon closures never gain secret access. Do not run the native timer pipeline
+directly from addon callbacks or modify Blizzard methods/state. A reload clears old hooks/taint.
 
 In-game verification: enable tracking, attack a target, add a second window and select
 DPS or healing independently. Verify current/overall/history selection, scrolling with

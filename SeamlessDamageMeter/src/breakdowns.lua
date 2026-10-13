@@ -15,30 +15,53 @@ end
 -- Reverse lookup: the enemy view identifies contributors, unlike player spell summaries.
 function service:GetEnemyIndex(config)
     self:Resolve(config)
-    if not config.archiveID and app.live:IsRestricted() then
-        return nil, "Target analysis is available after combat."
-    end
     local key = self:CacheKey(config, "enemyIndex")
     if self.cache[key] then
         return unpack(self.cache[key])
     end
     local session, reason = self:GetSession(config, "EnemyDamageTaken")
-    local publicSession = session and archive:CopySession(session)
-    if not publicSession then
+    if not session then
         return nil, reason or "Enemy data is restricted or incomplete."
     end
     local index = { enemies = {}, players = {}, complete = true }
     for sourceIndex, enemy in ipairs(session.combatSources) do
-        local publicEnemy = publicSession.combatSources[sourceIndex]
+        -- Only public fields needed for analysis are required. An optional secret GUID
+        -- or spell ID must not prevent an otherwise public contribution breakdown.
+        if
+            not app.live:IsReadableTable(enemy)
+            or not archive:IsPublic(enemy.name)
+            or type(enemy.name) ~= "string"
+            or not archive:IsPublic(enemy.totalAmount)
+            or type(enemy.totalAmount) ~= "number"
+        then
+            return nil, "Enemy data is restricted or incomplete."
+        end
+        local publicEnemy = { name = enemy.name, totalAmount = enemy.totalAmount }
+        for _, field in ipairs({ "sourceGUID", "sourceCreatureID", "classFilename", "specIconID" }) do
+            if archive:IsPublic(enemy[field]) then
+                publicEnemy[field] = enemy[field]
+            end
+        end
         local details = self:GetDetails(config, enemy, "EnemyDamageTaken")
-        local publicDetails = details and archive:CopyDetails(details)
-        if not publicDetails then
+        if not details or not app.live:IsReadableTable(details.combatSpells) then
             return nil, "Enemy contributions were not captured or are restricted."
         end
         local contributors, byName = {}, {}
-        for _, spell in ipairs(publicDetails.combatSpells or {}) do
+        for _, spell in ipairs(details.combatSpells) do
+            if
+                not app.live:IsReadableTable(spell)
+                or not archive:IsPublic(spell.totalAmount)
+                or type(spell.totalAmount) ~= "number"
+            then
+                return nil, "Enemy contribution amounts are restricted."
+            end
             local unit = spell.combatSpellDetails
-            if not unit or not unit.unitName or unit.unitName == "" then
+            if
+                not app.live:IsReadableTable(unit)
+                or not archive:IsPublic(unit.unitName)
+                or type(unit.unitName) ~= "string"
+                or unit.unitName == ""
+            then
                 return nil, "Enemy contributor identities are incomplete."
             end
             local contributor = byName[unit.unitName]
@@ -47,17 +70,30 @@ function service:GetEnemyIndex(config)
                     spellName = unit.unitName,
                     totalAmount = 0,
                     amountPerSecond = 0,
-                    combatSpellDetails = { unitClassFilename = unit.unitClassFilename, specIconID = unit.specIconID },
+                    hasRate = true,
+                    combatSpellDetails = {},
                     isTarget = true,
                 }
                 byName[unit.unitName] = contributor
                 contributors[#contributors + 1] = contributor
+                for _, field in ipairs({ "unitClassFilename", "specIconID" }) do
+                    if archive:IsPublic(unit[field]) then
+                        contributor.combatSpellDetails[field] = unit[field]
+                    end
+                end
             end
             contributor.totalAmount = contributor.totalAmount + spell.totalAmount
-            contributor.amountPerSecond = contributor.amountPerSecond + (spell.amountPerSecond or 0)
+            if archive:IsPublic(spell.amountPerSecond) and type(spell.amountPerSecond) == "number" then
+                contributor.amountPerSecond = contributor.amountPerSecond + spell.amountPerSecond
+            else
+                contributor.hasRate = false
+            end
         end
         local accounted = 0
         for name, contributor in pairs(byName) do
+            if not contributor.hasRate then
+                contributor.amountPerSecond = nil
+            end
             accounted = accounted + contributor.totalAmount
             contributor.enemyShare = publicEnemy.totalAmount > 0
                     and contributor.totalAmount / publicEnemy.totalAmount * 100

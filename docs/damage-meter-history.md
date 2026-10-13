@@ -65,6 +65,11 @@ retained; units already combined by the client and same-name contributors cannot
   disconnects or restricted combat can leave incomplete data. SavedVariables are game-written,
   so this is not continuous crash-safe disk storage.
 - Public saved fights remain readable during combat, with tracking off, or without client APIs.
+- Live spell hover accepts readable secret-bearing tables and passes restricted amounts directly
+  to widgets. Local-player queries use the known public player GUID; other restricted identities
+  are not guessed. Target analysis checks only its required public fields, even during combat.
+- Native meter/CVar callbacks use isolated calls to original native functions; hiding uses OnShow,
+  without hooking the timer pipeline. Reload after installing an update to clear prior hooks/taint.
 - Imported client history uses the observation date. Encounter association requires in-game QA.
 - Current and Overall remain client views. Arbitrary time slices, dungeon-wide aggregates,
   cast/crit counts and aura uptime are not fabricated from aggregate totals.
@@ -75,6 +80,7 @@ retained; units already combined by the client and same-name contributors cannot
 ```text
 npm run check
 lua src/tests/damage-meter-service.lua
+lua src/tests/damage-meter-blizzard.lua
 lua src/tests/damage-meter-windows.lua
 lua src/tests/damage-meter-settings.lua
 ```
@@ -91,8 +97,10 @@ Window tests also exercise archived hover/analysis without APIs, and settings te
 2. Hide/deactivate every window, fight, then show a window. Confirm collection continued.
 3. Compare AoE damage, enemy totals and contributions with Details for the same fight. Include
    pets, summons, identical enemy names and repeated contributor rows; note client grouping.
-4. Check hover during combat and immediately afterward. Restricted data must be labelled,
-   and public archived fights must remain readable during later combat.
+4. Hover your player row while fighting a normal mob solo. Spell names, damage and rates must show
+   during combat. Targets appear when their required fields are public, with no restriction warning
+   replacing spells. Repeat in a group and check that unavailable identities are not guessed.
+   Public archived fights must remain readable during later combat.
 5. Record a boss kill/wipe, rapid successive pulls, and a death near encounter end. Check
    encounter name, outcome, instance, dates and durations.
 6. Archive a death, reload/relog and reset Blizzard history. Its saved recap must still work.
@@ -106,3 +114,5 @@ Window tests also exercise archived hover/analysis without APIs, and settings te
 11. Reload immediately after combat and during combat. Missing data must be labelled and no
     restricted-value errors should occur; only successfully captured results are guaranteed.
 12. Recheck Edit Mode, collapse, resize, linked anchors, pinned local-player rows and ten slots.
+    Enable/disable the native-meter hide option and tracking, including during combat. After reload,
+    confirm no native secret-duration timer errors occur across combat transitions or Edit Mode.

@@ -548,19 +548,23 @@ local availableEnemyReads = enemyReads
 UnitAffectingCombat = function()
     return true
 end
+enemySession.combatSources[1].totalAmount = secret
+app.combatService:Invalidate()
 app:RefreshWindows()
 assert(
     tooltip.count == 3 and not tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown(),
     "Entering combat removes available targets without replacing spell bars"
 )
-assert(enemyReads == availableEnemyReads, "Combat fallback does not query enemy data")
+assert(enemyReads > availableEnemyReads, "Target availability is checked from actual API fields")
 assert(
     not tooltip.rows[1].enemyPercentageValue:IsShown() and not tooltip.rows[5]:IsShown(),
     "Pooled target columns and rows disappear in combat"
 )
-UnitAffectingCombat = hoverCombatState
+enemySession.combatSources[1].totalAmount = 50
+app.combatService:Invalidate()
 app:RefreshWindows()
-assert(tooltip.count == 6 and tooltip.targetLabel:IsShown(), "Available targets return after combat")
+assert(tooltip.count == 6 and tooltip.targetLabel:IsShown(), "Public targets can appear without leaving combat")
+UnitAffectingCombat = hoverCombatState
 frame.config.statistic = "Dps"
 app:RefreshWindows()
 assert(

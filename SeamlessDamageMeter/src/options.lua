@@ -504,7 +504,7 @@ function app:RegisterOptions()
                             return C_CVar.GetCVarBool("damageMeterEnabled")
                         end,
                         set = function(_, value)
-                            C_CVar.SetCVar("damageMeterEnabled", value and "1" or "0")
+                            self:SetCombatTracking(value)
                         end,
                     },
                     hideBlizzard = {

@@ -352,10 +352,19 @@ assert(frame.favorites:IsShown(), "Replacing a favorite keeps the shortcuts open
 favorite.scripts.OnClick(favorite, "RightButton")
 menuRoot.entries[#menuRoot.entries].choose()
 assert(frame.config.favorites[1] == nil and favorite.row.name.text == "+ Set favorite")
+local selector = frame.favorites.buttons[6]
+assert(selector.row.name.text == "Select type" and selector.number.text == "")
+for _, mouseButton in ipairs({ "LeftButton", "RightButton" }) do
+    selector.scripts.OnClick(selector, mouseButton)
+    menuRoot.entries[1].entries[1].choose()
+    assert(frame.config.statistic == "DamageDone" and next(frame.config.favorites) == nil)
+    assert(not frame.favorites:IsShown(), "The general selector changes the window type and closes favorites")
+    app:ToggleFavorites(frame)
+end
 local savedOffset = frame.offset
 frame.config.overrides.height = 120
 app:RefreshWindows()
-assert(frame.scrollbar:IsShown(), "Small windows must scroll all six favorites")
+assert(frame.scrollbar:IsShown(), "Small windows must scroll five favorites and the general selector")
 frame.favorites.scripts.OnMouseWheel(frame.favorites, -1)
 assert(frame.favoriteOffset > 0 and frame.offset == savedOffset)
 assert(not favorite.row.entry:IsShown(), "Favorite rows above the viewport must be hidden")

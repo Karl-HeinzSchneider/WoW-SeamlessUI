@@ -223,6 +223,7 @@ function app:UpdateFavorites(frame)
     local rowHeight = self:GetWindowSetting(frame.config, "rowHeight")
     local spacing = self:GetWindowSetting(frame.config, "rowSpacing")
     for slot = 1, 6 do
+        local isSelector = slot == 6
         local button = frame.favorites.buttons[slot]
         if not button then
             local row = CreateRow(frame, -1)
@@ -238,8 +239,12 @@ function app:UpdateFavorites(frame)
             row:SetValue(1)
             local number = Label(row.entry)
             number:SetPoint("LEFT", 4, 0)
-            number:SetText(slot)
+            number:SetText(isSelector and "" or slot)
             button = Button(row.entry, "", 1, function(owner, mouseButton)
+                if isSelector then
+                    self:ShowStatisticMenu(frame, nil, owner)
+                    return
+                end
                 local key = frame.config.favorites[slot]
                 if mouseButton == "RightButton" or not key then
                     self:ShowStatisticMenu(frame, slot, owner)
@@ -262,7 +267,7 @@ function app:UpdateFavorites(frame)
             button.row, button.number = row, number
             frame.favorites.buttons[slot] = button
         end
-        local key = frame.config.favorites[slot]
+        local key = not isSelector and frame.config.favorites[slot]
         local row = button.row
         row.entry:SetHeight(rowHeight)
         row:SetHeight(rowHeight)
@@ -273,7 +278,7 @@ function app:UpdateFavorites(frame)
         row.entry:SetShown(slot > (frame.favoriteOffset or 0))
         self:StyleWindowLabel(row.name, frame.config)
         self:StyleWindowLabel(button.number, frame.config)
-        row.name:SetText(key and self:GetStatistic(key).label or "+ Set favorite")
+        row.name:SetText(isSelector and "Select type" or key and self:GetStatistic(key).label or "+ Set favorite")
         local color = self:GetWindowSetting(frame.config, "barColor")
         row:SetStatusBarColor(color[1], color[2], color[3], key and color[4] or 0.25)
     end

@@ -57,7 +57,8 @@ The frame's `windowID` is stable; `config` always reflects its currently bound p
 including while inactive. This is an authorized
 exception to the repository's default rule against additional globals.
 
-Right-click a window to toggle its six-slot favorites view inside the normal data area.
+Right-click a window to toggle five favorite slots and a sixth "Select type" row inside the normal data area.
+The selector opens the normal type menu and changes the window's statistic without assigning a favorite.
 Favorites reuse the combat row art, configured fonts, bar color, height and spacing, and
 the existing scrollbar with a separate scroll offset. Combat rows and the pinned player
 row are hidden while favorites are visible; live refreshes preserve the favorites view.

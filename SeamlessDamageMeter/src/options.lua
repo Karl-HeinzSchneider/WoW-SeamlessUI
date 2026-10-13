@@ -17,9 +17,27 @@ local anchors = {
 local settings = {
     { key = "width", name = "Width", type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = "Height", type = "range", min = 120, max = 900, step = 1 },
-    { key = "fixedHeight", name = "Fix height by visible lines", type = "toggle" },
-    { key = "visibleLines", name = "Visible lines", type = "range", min = 1, max = 30, step = 0.25 },
-    { key = "showResizeHandle", name = "Show resize handle", type = "toggle" },
+    {
+        key = "fixedHeight",
+        name = "Fixed height (bar count)",
+        type = "toggle",
+        desc = "Keep the height at the bar count below. Resizing changes only the width.",
+    },
+    {
+        key = "visibleLines",
+        name = "Visible bars",
+        type = "range",
+        min = 1,
+        max = 30,
+        step = 0.25,
+        desc = "For fixed height. 7.5 shows seven bars and half of the next.",
+    },
+    {
+        key = "showResizeHandle",
+        name = "Enable corner resizing",
+        type = "toggle",
+        desc = "Drag the bottom-right handle to resize. Turning this off hides it in Edit Mode too.",
+    },
     { key = "scale", name = "Scale", type = "range", min = 0.5, max = 2, step = 0.01 },
     {
         key = "font",
@@ -66,7 +84,9 @@ local function SettingControl(definition, config, inherited)
     local key = definition.key
     local control = {
         type = definition.type,
-        name = config and (inherited and "Default" or "Window value") or definition.name,
+        name = config and (inherited and "Default" or (definition.desc and definition.name or "Window value"))
+            or definition.name,
+        desc = definition.desc,
         width = config and 0.75 or "full",
         min = definition.min,
         max = definition.max,

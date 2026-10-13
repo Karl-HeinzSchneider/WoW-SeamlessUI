@@ -481,14 +481,13 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.arrow:SetShown(not hideTypeSelector)
     frame.statistic:EnableMouse(not hideTypeSelector)
     frame.statistic.text:ClearAllPoints()
-    frame.statistic.text:SetPoint("LEFT", frame.statistic.arrow, hideTypeSelector and "LEFT" or "RIGHT", 0, 3)
-    local labelLeft = hideTypeSelector and 3 or 28
-    local availableWidth = math.max(0, frame:GetWidth() - labelLeft - frame.session:GetWidth() - 62)
+    frame.statistic.text:SetPoint("LEFT", frame.statistic.arrow, "RIGHT", 0, 3)
+    local availableWidth = math.max(0, frame:GetWidth() - 28 - frame.session:GetWidth() - 62)
     local labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
     frame.statistic.text:SetWidth(labelWidth)
     frame.timer:ClearAllPoints()
     frame.timer:SetPoint("LEFT", frame.statistic.text, "RIGHT", 5, 0)
-    frame.timer:SetWidth(math.max(0, availableWidth - labelWidth - 5))
+    frame.timer:SetWidth(0)
     local sources = session and session.combatSources or {}
     local localIndex
     for index, source in ipairs(sources) do
@@ -604,6 +603,7 @@ function app:CreateWindow(id)
     frame.header = header
     frame.timer = Label(frame, "GameFontNormalMed1")
     frame.timer:SetWordWrap(false)
+    frame.timer:SetJustifyH("LEFT")
     frame.body = CreateFrame("Frame", nil, frame)
     frame.body:SetPoint("TOPLEFT", 5, -HEADER_HEIGHT - 2)
     frame.body:SetPoint("BOTTOMRIGHT", -1, 6)

@@ -63,6 +63,9 @@ end
 function methods:GetStringWidth()
     return #(self.text or "") * 7
 end
+function methods:SetJustifyH(justification)
+    self.justifyH = justification
+end
 function methods:SetFormattedText(format, ...)
     self.format, self.args = format, { ... }
 end
@@ -246,9 +249,16 @@ assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", a
 app:RebuildWindows()
 local frame = app.windows[1]
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type selector is visible by default")
+local categoryAnchor = frame.statistic.text.points.LEFT
+local categoryWidth = frame.statistic.text:GetWidth()
 frame.config.overrides.hideTypeSelector = true
 app:RebuildWindows()
 assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
+for index, value in ipairs(categoryAnchor) do
+    assert(frame.statistic.text.points.LEFT[index] == value, "Hiding the selector must preserve the category position")
+end
+assert(frame.statistic.text:GetWidth() == categoryWidth)
+assert(frame.timer:GetWidth() == 0 and frame.timer.justifyH == "LEFT", "Timer must use natural width and left alignment")
 assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains the category label")
 frame.config.overrides.hideTypeSelector = false
 app:RebuildWindows()

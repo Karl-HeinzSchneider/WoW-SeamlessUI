@@ -45,7 +45,8 @@ window overrides; hiding it removes the category arrow and its clicks while reta
 Header order is type arrow, category label, then combat timer. The 25-pixel selector stays
 at the left edge (X 3), with its arrow centered vertically opposite the red collapse button.
 The category uses the client arrow-to-text offset and never moves when the timer changes.
-The timer follows the category label on the same line; text widths stay within the right controls.
+Hiding the selector preserves the category label's position and reserved arrow space.
+The timer follows the category label on the same line, left aligned with natural text width.
 Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.
 Amounts and names go directly to widget setters when secret; only public amounts can pass

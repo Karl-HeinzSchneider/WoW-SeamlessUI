@@ -60,6 +60,12 @@ end
 function methods:SetText(text)
     self.text = text
 end
+function methods:GetStringWidth()
+    return #(self.text or "") * 7
+end
+function methods:SetJustifyH(justification)
+    self.justifyH = justification
+end
 function methods:SetFormattedText(format, ...)
     self.format, self.args = format, { ... }
 end
@@ -242,6 +248,37 @@ assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
+assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type selector is visible by default")
+local categoryAnchor = frame.statistic.text.points.TOPLEFT
+assert(categoryAnchor[4] == 25 and categoryAnchor[5] == -9, "Category text must sit at the reference header height")
+local categoryWidth = frame.statistic.text:GetWidth()
+frame.config.overrides.hideTypeSelector = true
+app:RebuildWindows()
+assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
+for index, value in ipairs(categoryAnchor) do
+    assert(frame.statistic.text.points.TOPLEFT[index] == value, "Hiding the selector must preserve the category position")
+end
+assert(frame.statistic.text:GetWidth() == categoryWidth)
+assert(frame.timer:GetWidth() == 0 and frame.timer.justifyH == "LEFT", "Timer must use natural width and left alignment")
+assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains the category label")
+frame.config.overrides.hideTypeSelector = false
+app:RebuildWindows()
+assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Selector can be restored")
+assert(frame.statistic.points.TOPLEFT[2] == frame and frame.statistic.points.TOPLEFT[4] == 3)
+assert(frame.timer.points.LEFT[2] == frame.statistic.text, "Timer follows the category label")
+assert(frame.timer:IsShown(), "Combat timer is visible by default")
+app.db.profile.windowDefaults.hideCombatTimer = true
+app:RebuildWindows()
+assert(not frame.timer:IsShown(), "Combat timer inherits the shared hide setting")
+frame.config.overrides.hideCombatTimer = false
+app:RebuildWindows()
+assert(frame.timer:IsShown(), "A false override restores the combat timer")
+frame.config.overrides.hideCombatTimer = true
+app:RebuildWindows()
+assert(not frame.timer:IsShown(), "A window override hides the combat timer")
+frame.config.overrides.hideCombatTimer = nil
+app.db.profile.windowDefaults.hideCombatTimer = false
+app:RebuildWindows()
 assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
 for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())

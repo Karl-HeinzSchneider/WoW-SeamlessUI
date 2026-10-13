@@ -328,6 +328,23 @@ local function CreateFavorites(frame)
     overlay:Hide()
 end
 
+local function AddSessionDuration(description, session)
+    local duration = session.durationSeconds and SecondsToClock(session.durationSeconds) or ""
+    description:AddInitializer(function(button)
+        local time = button:AttachFontString()
+        time:SetFontObject("GameFontHighlightSmall")
+        time:SetWidth(55)
+        time:SetHeight(20)
+        time:SetPoint("RIGHT", -8, 0)
+        time:SetJustifyH("RIGHT")
+        time:SetText(duration)
+        local name = button.fontString
+        local width = 35 + name:GetUnboundedStringWidth() + 12 + 55
+        name:SetPoint("RIGHT", time, "LEFT", -12, 0)
+        return width, 20
+    end)
+end
+
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
@@ -335,8 +352,8 @@ function app:ShowSessionMenu(frame)
             for _, session in ipairs(sessions) do
                 local name = session.name ~= "" and session.name
                     or ("Combat " .. (session.archiveID or session.sessionID))
-                local label = self.combatService:Describe(session)
-                root:CreateRadio(label, function()
+                local label = self.combatService:Describe(session, true)
+                local description = root:CreateRadio(label, function()
                     return session.archiveID and frame.config.archiveID == session.archiveID
                         or (
                             not session.archiveID
@@ -350,6 +367,7 @@ function app:ShowSessionMenu(frame)
                     frame.offset = 0
                     self:RefreshWindows()
                 end)
+                AddSessionDuration(description, session)
             end
             if #sessions > 0 then
                 root:CreateDivider()
@@ -379,9 +397,10 @@ function app:ShowSessionMenu(frame)
             local compare = root:CreateButton("Compare with saved fight")
             for _, session in ipairs(self.combatService:ListSessions()) do
                 if session.archiveID and session.archiveID ~= fight.id then
-                    compare:CreateButton(self.combatService:Describe(session), function()
+                    local description = compare:CreateButton(self.combatService:Describe(session, true), function()
                         self:ShowComparison(fight.id, session.archiveID, frame.config.statistic)
                     end)
+                    AddSessionDuration(description, session)
                 end
             end
             local delete = root:CreateButton("Delete selected saved fight")

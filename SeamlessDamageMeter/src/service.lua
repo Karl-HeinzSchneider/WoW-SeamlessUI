@@ -181,12 +181,15 @@ function service:ListSessions()
     return result
 end
 
-function service:Describe(entry)
+function service:Describe(entry, menu)
     local text = entry.name ~= "" and entry.name or ("Combat " .. (entry.archiveID or entry.sessionID))
-    if entry.capturedAt and date then
+    if menu then
+        text = text .. " (" .. entry.state .. ")"
+    end
+    if not menu and entry.capturedAt and date then
         text = date("%d %b %H:%M", entry.capturedAt) .. " - " .. text
     end
-    if entry.durationSeconds then
+    if not menu and entry.durationSeconds then
         text = text .. " [" .. SecondsToClock(entry.durationSeconds) .. "]"
     end
     if entry.encounter and entry.encounter.success ~= nil then
@@ -195,7 +198,7 @@ function service:Describe(entry)
     if entry.pinned then
         text = "* " .. text
     end
-    return text .. " (" .. entry.state .. ")"
+    return menu and text or text .. " (" .. entry.state .. ")"
 end
 
 function service:Pin(id)

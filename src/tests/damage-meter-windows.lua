@@ -639,6 +639,9 @@ assert(frame.statistic:GetFrameLevel() == 2 and frame.session:GetFrameLevel() ==
 local menuRoot
 local function menuDescription(label)
     local description = { label = label, entries = {} }
+    function description:AddInitializer(initializer)
+        self.initializer = initializer
+    end
     function description:CreateButton(text, choose)
         local child = menuDescription(text)
         child.choose = choose
@@ -646,7 +649,8 @@ local function menuDescription(label)
         return child
     end
     function description:CreateRadio(text, selected, choose)
-        local child = { label = text, selected = selected, choose = choose }
+        local child = menuDescription(text)
+        child.selected, child.choose = selected, choose
         table.insert(self.entries, child)
         return child
     end
@@ -672,7 +676,24 @@ history = { { sessionID = 42, name = "", durationSeconds = 15 }, { sessionID = 4
 frame.session.scripts.OnClick()
 local fight, otherFight = menuRoot.entries[1], menuRoot.entries[2]
 local current, overall = menuRoot.entries[4], menuRoot.entries[5]
-assert(fight.label == "Combat 42 [15] (live)" and otherFight.label == "Boss (live)")
+assert(fight.label == "Combat 42 (live)" and otherFight.label == "Boss (live)")
+local menuButton = object()
+menuButton.fontString = object(menuButton)
+menuButton.fontString:SetText(fight.label)
+menuButton.fontString.GetUnboundedStringWidth = methods.GetStringWidth
+menuButton.AttachFontString = function(self)
+    self.duration = object(self)
+    return self.duration
+end
+local menuWidth, menuHeight = fight.initializer(menuButton)
+assert(menuWidth > 55 and menuHeight == 20)
+assert(menuButton.duration.text == "15" and menuButton.duration.justifyH == "RIGHT")
+assert(menuButton.fontString.points.RIGHT[2] == menuButton.duration, "Names reserve the separate duration column")
+assert(
+    app.combatService:Describe({ name = "Boss", state = "archived", capturedAt = 123, durationSeconds = 15 }, true)
+        == "Boss (archived)",
+    "Menu labels omit timestamps and duration, keeping archive status beside the name"
+)
 assert(current.selected() and not overall.selected() and not fight.selected())
 frame.offset = 5
 fight.choose()

@@ -410,6 +410,16 @@ function app:ShowSessionMenu(frame)
             delete:CreateButton("Confirm deletion", function()
                 self.combatService:Delete(fight.id)
             end)
+            local older = root:CreateButton("Delete segments older than selected")
+            older:CreateButton("Confirm deletion (including pinned segments)", function()
+                self.combatService:DeleteOlderSegments(fight.id)
+            end)
+        end
+        if not (self.IsEditingWindows and self:IsEditingWindows()) then
+            local clear = root:CreateButton("Clear saved segments")
+            clear:CreateButton("Confirm deletion (including pinned segments)", function()
+                self.combatService:ClearHistory()
+            end)
         end
     end)
 end

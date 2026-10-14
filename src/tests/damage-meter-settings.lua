@@ -6,6 +6,7 @@ dofile("SeamlessCore/lib/CallbackHandler-1.0/CallbackHandler-1.0.lua")
 dofile("SeamlessCore/lib/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
 local registry = LibStub("AceConfigRegistry-3.0")
 local app = {}
+assert(loadfile(root .. "archive.lua"))("SeamlessDamageMeter", app)
 assert(loadfile(root .. "settings.lua"))("SeamlessDamageMeter", app)
 local function copy(t)
     local result = {}

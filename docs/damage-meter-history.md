@@ -6,6 +6,12 @@ character-scoped SavedVariables independently of appearance profiles.
 
 ## Using it
 
+- History's Maximum saved segments setting defaults to 50 and accepts 1–1,000 per character.
+  The oldest saved segment is deleted before adding one beyond the limit, including pinned
+  segments. Lowering the limit removes excess segments immediately; 1,000 is the hard cap.
+- Select a saved fight to delete it or delete every older segment, from History or the session
+  menu. Both also offer clearing all saved segments. These actions leave native tracking running.
+
 - Completed fights are captured even with all windows hidden/inactive. Capture waits for
   restrictions to clear and runs in bounded steps. The header uses `S<number>` for saved fights.
 - Session menus show date, duration, capture status and encounter outcome when available.
@@ -23,7 +29,7 @@ character-scoped SavedVariables independently of appearance profiles.
   second fight; differences are second minus first. Spells and Targets / players compare the
   corresponding breakdowns, with unavailable details explicitly labelled.
 - Seamless > Damage Meter > History manages retention and saved fights. The default is
-  50 recent unpinned fights; pinned fights are outside this limit. Clearing saved history
+  50 saved segments, including pinned fights, with a hard cap of 1,000. Clearing saved history
   does not reset Blizzard tracking.
 
 ## Modules
@@ -111,7 +117,7 @@ Window tests also exercise archived hover/analysis without APIs, and settings te
 7. Disable the native meter UI, enable Details alongside Seamless, and fight a new mob.
    Verify fresh live totals, spell hover and saved history still update, then switch/copy/reset
    appearance profiles. Saved history must remain intact.
-8. Pin a fight and lower retention. Delete a fight, reload with client history intact, and
+8. Pin the oldest fight and lower retention; verify it is removed first. Delete a fight, reload with client history intact, and
    confirm it is not silently restored. Clearing saved history must not reset the live meter.
 9. Reset Blizzard history and fight again. Old archives remain, and the new fight gets a new ID.
    Expired/deleted selections must not silently show a different fight.

@@ -992,7 +992,7 @@ function eme:RegisterResizable(frame, minimum, maximum, step)
 end
 function eme:RegisterSlider(frame, name, key, callback, minimum, maximum, step)
     if key == "visibleLines" then
-        assert(name == "Row count" and minimum == 1 and maximum == 30 and step == 0.25)
+        assert(name == "Row count" and minimum == 1 and maximum == 30 and step == 1)
     else
         assert(name == (key == "width" and "Width" or "Height"))
         assert(minimum == (key == "width" and 200 or 120))
@@ -1131,11 +1131,15 @@ EditModeExpandedSystemSettingsDialog = {
             return function()
                 if not yielded then
                     yielded = true
-                    return { Slider = { Slider = {
-                        IsDraggingThumb = function()
-                            return draggingSettings
-                        end,
-                    } } }
+                    return {
+                        Slider = {
+                            Slider = {
+                                IsDraggingThumb = function()
+                                    return draggingSettings
+                                end,
+                            },
+                        },
+                    }
                 end
             end
         end,
@@ -1154,9 +1158,13 @@ draggingSettings = false
 EditModeExpandedSystemSettingsDialog = nil
 meter.editModeChecks.fixedHeight.checked()
 assert(app:GetWindowSetting(meter.config, "fixedHeight"))
-meter.editModeSliders.visibleLines(7.25)
-assert(app:GetWindowSetting(meter.config, "visibleLines") == 7.25)
-assert(meter:GetHeight() == 40 + 7.25 * 28 - 4)
+meter.config.overrides.visibleLines = 7.25
+app:SyncWindowEditMode(meter)
+assert(app:GetWindowSetting(meter.config, "visibleLines") == 7.25, "Edit Mode must preserve fractional addon values")
+assert(eme.framesDB[meter.system].settings[18].visibleLines == 7)
+meter.editModeSliders.visibleLines(8)
+assert(app:GetWindowSetting(meter.config, "visibleLines") == 8)
+assert(meter:GetHeight() == 40 + 8 * 28 - 4)
 meter.editModeChecks.lockSize.checked()
 assert(not meter.resize:IsShown() and not meter.resize.mouseEnabled)
 local lockedWidth = meter:GetWidth()
@@ -1168,7 +1176,7 @@ assert(meter.resize:IsShown() and meter.resize.mouseEnabled)
 meter.editModeChecks.fixedHeight.unchecked(false)
 assert(not app:GetWindowSetting(meter.config, "fixedHeight"))
 assert(eme.framesDB[meter.system].settings[12].fixedHeight == 0)
-assert(eme.framesDB[meter.system].settings[18].visibleLines == 7.25)
+assert(eme.framesDB[meter.system].settings[18].visibleLines == 8)
 app.db.profile.skins.testSkin = { name = "Test skin", settings = { rowHeight = 32 } }
 meter.skinDropdown:GetScript("OnClick")(meter.skinDropdown)
 local skinChoice

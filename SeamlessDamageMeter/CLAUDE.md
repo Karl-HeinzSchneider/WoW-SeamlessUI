@@ -163,7 +163,7 @@ height slider is ignored. Manual height is preserved for when fixed height is di
 `showResizeHandle` defaults to true and hides/disables the grip in normal and Edit Mode.
 Both settings and the line count support shared defaults and per-window overrides.
 `lockSize` defaults to false and blocks the grip and Edit Mode width/height sliders without
-locking position. Edit Mode exposes fixed height, a 1�30 row-count slider (quarter rows),
+locking position. Edit Mode exposes fixed height, a 1�30 row-count slider (whole rows; addon options retain quarter rows),
 size lock, a skin dropdown and an Edit selected skin button opening that skin's options.
 Meter configuration remains authoritative; synchronize checkbox/slider values and selected
 skin labels on rebuild/profile changes. Ignore initialization/outside-Edit-Mode callbacks.

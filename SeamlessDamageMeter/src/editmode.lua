@@ -137,8 +137,8 @@ function app:SyncWindowEditMode(frame)
             end
         end, "fixedHeight")
         lib:RegisterSlider(frame, "Row count", "visibleLines", function(value)
-            SetWindowOption(frame, "visibleLines", value)
-        end, 1, 30, 0.25)
+            SetWindowOption(frame, "visibleLines", math.floor(value + 0.5))
+        end, 1, 30, 1)
         lib:RegisterCustomCheckbox(frame, "Lock size", function()
             SetWindowOption(frame, "lockSize", true)
         end, function(initializing)
@@ -211,7 +211,7 @@ function app:SyncWindowEditMode(frame)
     db.settings[SLIDER_SETTING] = db.settings[SLIDER_SETTING] or {}
     db.settings[SLIDER_SETTING].width = self:GetWindowSetting(config, "width")
     db.settings[SLIDER_SETTING].height = self:GetWindowSetting(config, "height")
-    db.settings[SLIDER_SETTING].visibleLines = self:GetWindowSetting(config, "visibleLines")
+    db.settings[SLIDER_SETTING].visibleLines = math.floor(self:GetWindowSetting(config, "visibleLines") + 0.5)
     db.settings[CHECKBOX_SETTING] = db.settings[CHECKBOX_SETTING] or {}
     db.settings[CHECKBOX_SETTING].fixedHeight = self:GetWindowSetting(config, "fixedHeight") and 1 or 0
     db.settings[CHECKBOX_SETTING].lockSize = self:GetWindowSetting(config, "lockSize") and 1 or 0

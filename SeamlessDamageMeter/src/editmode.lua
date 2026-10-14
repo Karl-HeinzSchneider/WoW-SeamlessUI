@@ -3,13 +3,19 @@ local _, app = ...
 
 local lib = LibStub("EditModeExpanded-1.0")
 local SCALE_SETTING = 16 -- EditModeExpanded's FrameSize setting.
+local CHECKBOX_SETTING = 12 -- EditModeExpanded custom checkboxes.
 local SLIDER_SETTING = 18 -- EditModeExpanded's custom sliders.
 
 local function ResizeWindow(frame, key, value)
     if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
         return
     end
+    if app:GetWindowSetting(frame.config, "lockSize") then
+        app:SyncWindowEditMode(frame)
+        return
+    end
     if key == "height" and app:GetWindowSetting(frame.config, "fixedHeight") then
+        app:SyncWindowEditMode(frame)
         return
     end
     if value == app:GetWindowSetting(frame.config, key) then
@@ -22,6 +28,68 @@ local function ResizeWindow(frame, key, value)
     app:ApplyWindowLayout(frame)
     app:RefreshWindows()
     app.core:RefreshOptions("SeamlessDamageMeter")
+end
+
+local function SetWindowOption(frame, key, value)
+    if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
+        return
+    end
+    if app:GetWindowSetting(frame.config, key) == value then
+        return
+    end
+    frame.config.overrides[key] = value
+    app:RebuildWindows()
+end
+
+-- EME's dropdown slot accepts a factory; use our own menu button rather than
+-- introducing a second dropdown library solely for this selector.
+local dropdownFactory = {}
+function dropdownFactory:Create_UIDropDownMenu(_, parent)
+    local button = CreateFrame("Button", nil, parent)
+    button:SetSize(250, 28)
+    button:SetNormalFontObject("GameFontHighlightSmall")
+    button:SetHighlightFontObject("GameFontNormalSmall")
+    local background = button:CreateTexture(nil, "BACKGROUND")
+    background:SetAtlas("common-dropdown-c-button")
+    background:SetAllPoints()
+    local arrow = button:CreateTexture(nil, "OVERLAY")
+    arrow:SetAtlas("common-dropdown-c-button-hover-arrow", true)
+    arrow:SetPoint("RIGHT", -8, 0)
+    return button
+end
+
+local function RegisterSkinControls(frame)
+    local dropdown = lib:RegisterDropdown(frame, dropdownFactory, "skin")
+    frame.skinDropdown = dropdown
+    dropdown:SetScript("OnClick", function(button)
+        MenuUtil.CreateContextMenu(button, function(_, root)
+            root:CreateTitle("Skin")
+            local keys = {}
+            for key in pairs(app.db.profile.skins) do
+                if key ~= "default" then
+                    keys[#keys + 1] = key
+                end
+            end
+            table.sort(keys)
+            table.insert(keys, 1, "default")
+            for _, key in ipairs(keys) do
+                root:CreateRadio(app.db.profile.skins[key].name, function()
+                    return frame.config.skin == key
+                end, function()
+                    if app:IsEditingWindows() and not InCombatLockdown() then
+                        frame.config.skin = key
+                        app:RebuildWindows()
+                    end
+                end)
+            end
+        end)
+    end)
+    lib:RegisterCustomButton(frame, "Edit selected skin", function()
+        if not InCombatLockdown() then
+            app.core:OpenOptions("SeamlessDamageMeter", "skin")
+            LibStub("AceConfigDialog-3.0"):SelectGroup("SeamlessDamageMeter", "skin", frame.config.skin)
+        end
+    end, "editSkin")
 end
 
 function app:IsEditingWindows()
@@ -61,6 +129,24 @@ function app:SyncWindowEditMode(frame)
         lib:RegisterSlider(frame, "Height", "height", function(value)
             ResizeWindow(frame, "height", value)
         end, 120, 900, 1)
+        lib:RegisterCustomCheckbox(frame, "Fixed height by row count", function()
+            SetWindowOption(frame, "fixedHeight", true)
+        end, function(initializing)
+            if not initializing then
+                SetWindowOption(frame, "fixedHeight", false)
+            end
+        end, "fixedHeight")
+        lib:RegisterSlider(frame, "Row count", "visibleLines", function(value)
+            SetWindowOption(frame, "visibleLines", value)
+        end, 1, 30, 0.25)
+        lib:RegisterCustomCheckbox(frame, "Lock size", function()
+            SetWindowOption(frame, "lockSize", true)
+        end, function(initializing)
+            if not initializing then
+                SetWindowOption(frame, "lockSize", false)
+            end
+        end, "lockSize")
+        RegisterSkinControls(frame)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
         frame.EMECheckButtonFrame:HookScript("OnClick", function(button, mouseButton)
             if mouseButton == "LeftButton" and app:IsEditingWindows() and not InCombatLockdown() then
@@ -125,6 +211,11 @@ function app:SyncWindowEditMode(frame)
     db.settings[SLIDER_SETTING] = db.settings[SLIDER_SETTING] or {}
     db.settings[SLIDER_SETTING].width = self:GetWindowSetting(config, "width")
     db.settings[SLIDER_SETTING].height = self:GetWindowSetting(config, "height")
+    db.settings[SLIDER_SETTING].visibleLines = self:GetWindowSetting(config, "visibleLines")
+    db.settings[CHECKBOX_SETTING] = db.settings[CHECKBOX_SETTING] or {}
+    db.settings[CHECKBOX_SETTING].fixedHeight = self:GetWindowSetting(config, "fixedHeight") and 1 or 0
+    db.settings[CHECKBOX_SETTING].lockSize = self:GetWindowSetting(config, "lockSize") and 1 or 0
+    frame.skinDropdown:SetText("Skin: " .. self.db.profile.skins[config.skin].name)
     if db.enabled == nil then
         db.enabled = config.enabled
     end
@@ -139,9 +230,24 @@ function app:SyncWindowEditMode(frame)
     -- Give the grip its own strata in Edit Mode so the selection cannot cover it.
     frame.resize:SetFrameStrata(self:IsEditingWindows() and "HIGH" or frame:GetFrameStrata())
     frame.resize:SetFrameLevel(frame.Selection:GetFrameLevel() + 1)
-    frame.resize:EnableMouse(true)
+    frame.resize:EnableMouse(not self:GetWindowSetting(config, "lockSize"))
     if self:IsEditingWindows() then
         frame.resize:SetAlpha(1)
+    end
+    local dialog = EditModeExpandedSystemSettingsDialog
+    if self:IsEditingWindows() and dialog and dialog.attachedToSystem == frame then
+        local dragging = false
+        for slider in dialog.pools:EnumerateActiveByTemplate("EditModeSettingSliderTemplate") do
+            if slider.Slider.Slider:IsDraggingThumb() then
+                dragging = true
+                break
+            end
+        end
+        -- EME identifies its retained dragging slider by setting ID only; all
+        -- custom sliders share 18, so rebuilding the dialog mid-drag aliases them.
+        if not dragging then
+            dialog:UpdateSettings(frame)
+        end
     end
     frame.syncingEditMode = nil
     if not self:IsEditingWindows() then

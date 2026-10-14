@@ -254,6 +254,8 @@ LibStub = function()
 end
 assert(loadfile("SeamlessDamageMeter/src/settings.lua"))("SeamlessDamageMeter", app)
 app.db.profile.windowDefaults = app.windowDefaults
+assert(app.windowDefaults.fixedHeight and app.windowDefaults.visibleLines == 7)
+app.db.profile.windowDefaults.fixedHeight = false
 assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 for _, name in ipairs({ "archive", "live", "service", "breakdowns", "capture" }) do
     assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
@@ -660,6 +662,9 @@ local function menuDescription(label)
         table.insert(self.entries, child)
         return child
     end
+    function description:CreateTitle(text)
+        table.insert(self.entries, { title = text })
+    end
     function description:CreateDivider()
         table.insert(self.entries, { divider = true })
     end
@@ -986,11 +991,28 @@ function eme:RegisterResizable(frame, minimum, maximum, step)
     assert(minimum == 50 and maximum == 200 and step == 5)
 end
 function eme:RegisterSlider(frame, name, key, callback, minimum, maximum, step)
-    assert(name == (key == "width" and "Width" or "Height"))
-    assert(minimum == (key == "width" and 200 or 120))
-    assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    if key == "visibleLines" then
+        assert(name == "Row count" and minimum == 1 and maximum == 30 and step == 0.25)
+    else
+        assert(name == (key == "width" and "Width" or "Height"))
+        assert(minimum == (key == "width" and 200 or 120))
+        assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    end
     frame.editModeSliders = frame.editModeSliders or {}
     frame.editModeSliders[key] = callback
+end
+function eme:RegisterCustomCheckbox(frame, name, checked, unchecked, key)
+    frame.editModeChecks = frame.editModeChecks or {}
+    frame.editModeChecks[key] = { checked = checked, unchecked = unchecked }
+    unchecked(true)
+end
+function eme:RegisterDropdown(frame, factory, key)
+    assert(key == "skin")
+    return factory:Create_UIDropDownMenu(nil, object(frame))
+end
+function eme:RegisterCustomButton(frame, name, callback, key)
+    assert(key == "editSkin" and name == "Edit selected skin")
+    frame.editSkin = callback
 end
 function eme:SetDontResize(frame)
     frame.EMEDontResize = true
@@ -1098,6 +1120,91 @@ ClickWindow(meter, false, "RightButton")
 assert(meter.config.enabled, "The library's right-click reset must not deactivate a slot")
 EditModeManagerFrame:ExitEditMode()
 assert(meter:IsShown() and meter.config.enabled, "A checked slot must remain usable after Edit Mode")
+
+EditModeManagerFrame:EnterEditMode()
+local draggingSettings, dialogRefreshes = false, 0
+EditModeExpandedSystemSettingsDialog = {
+    attachedToSystem = meter,
+    pools = {
+        EnumerateActiveByTemplate = function()
+            local yielded = false
+            return function()
+                if not yielded then
+                    yielded = true
+                    return { Slider = { Slider = {
+                        IsDraggingThumb = function()
+                            return draggingSettings
+                        end,
+                    } } }
+                end
+            end
+        end,
+    },
+    UpdateSettings = function()
+        dialogRefreshes = dialogRefreshes + 1
+        meter.editModeSliders.visibleLines(25)
+    end,
+}
+app:SyncWindowEditMode(meter)
+assert(dialogRefreshes == 1 and app:GetWindowSetting(meter.config, "visibleLines") == 7)
+draggingSettings = true
+app:SyncWindowEditMode(meter)
+assert(dialogRefreshes == 1, "Avoid rebuilding pooled EME sliders during a drag")
+draggingSettings = false
+EditModeExpandedSystemSettingsDialog = nil
+meter.editModeChecks.fixedHeight.checked()
+assert(app:GetWindowSetting(meter.config, "fixedHeight"))
+meter.editModeSliders.visibleLines(7.25)
+assert(app:GetWindowSetting(meter.config, "visibleLines") == 7.25)
+assert(meter:GetHeight() == 40 + 7.25 * 28 - 4)
+meter.editModeChecks.lockSize.checked()
+assert(not meter.resize:IsShown() and not meter.resize.mouseEnabled)
+local lockedWidth = meter:GetWidth()
+meter.editModeSliders.width(lockedWidth + 100)
+meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
+assert(meter:GetWidth() == lockedWidth and not meter.editing)
+meter.editModeChecks.lockSize.unchecked(false)
+assert(meter.resize:IsShown() and meter.resize.mouseEnabled)
+meter.editModeChecks.fixedHeight.unchecked(false)
+assert(not app:GetWindowSetting(meter.config, "fixedHeight"))
+assert(eme.framesDB[meter.system].settings[12].fixedHeight == 0)
+assert(eme.framesDB[meter.system].settings[18].visibleLines == 7.25)
+app.db.profile.skins.testSkin = { name = "Test skin", settings = { rowHeight = 32 } }
+meter.skinDropdown:GetScript("OnClick")(meter.skinDropdown)
+local skinChoice
+for _, choice in ipairs(menuRoot.entries) do
+    if choice.label == "Test skin" then
+        skinChoice = choice
+    end
+end
+assert(skinChoice, "Skin dropdown must include custom skins")
+skinChoice.choose()
+assert(meter.config.skin == "testSkin" and app:GetWindowSetting(meter.config, "rowHeight") == 32)
+assert(meter.skinDropdown.text == "Skin: Test skin")
+local openedSkin
+app.core.OpenOptions = function(_, name, tab)
+    assert(name == "SeamlessDamageMeter" and tab == "skin")
+end
+local previousStub = LibStub
+LibStub = function(name)
+    if name == "AceConfigDialog-3.0" then
+        return {
+            SelectGroup = function(_, name, tab, skin)
+                openedSkin = skin
+            end,
+        }
+    end
+    return previousStub(name)
+end
+meter.editSkin()
+assert(openedSkin == "testSkin")
+LibStub = previousStub
+meter.config.skin = "default"
+app:RebuildWindows()
+EditModeManagerFrame:ExitEditMode()
+local savedLines = meter.config.overrides.visibleLines
+meter.editModeSliders.visibleLines(12)
+assert(meter.config.overrides.visibleLines == savedLines, "Outside-Edit-Mode callbacks must not change rows")
 
 local realAPI = liveAPI
 C_DamageMeter = setmetatable({}, {

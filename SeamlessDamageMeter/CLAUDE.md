@@ -156,12 +156,18 @@ when normal dragging is locked. Synchronize its frame level on every layout refr
 HIGH strata during Edit Mode so the top-level selection cannot cover it after being raised.
 Restore the window's strata on exit. Verify slider/grip resizing and persistence after exit/reload.
 
-`fixedHeight` defaults to false; `visibleLines` defaults to 7 and accepts 1–30 in quarter-line
+`fixedHeight` defaults to true; `visibleLines` defaults to 7 and accepts 1–30 in quarter-line
 steps. Expanded height includes the header, body padding, row heights and spacing. Fixed
 height follows row appearance changes and constrains grip resizing to width; Edit Mode's
 height slider is ignored. Manual height is preserved for when fixed height is disabled.
 `showResizeHandle` defaults to true and hides/disables the grip in normal and Edit Mode.
 Both settings and the line count support shared defaults and per-window overrides.
+`lockSize` defaults to false and blocks the grip and Edit Mode width/height sliders without
+locking position. Edit Mode exposes fixed height, a 1�30 row-count slider (quarter rows),
+size lock, a skin dropdown and an Edit selected skin button opening that skin's options.
+Meter configuration remains authoritative; synchronize checkbox/slider values and selected
+skin labels on rebuild/profile changes. Ignore initialization/outside-Edit-Mode callbacks.
+Explicit saved fixed-height choices are retained when changing the default to seven fixed rows.
 
 Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
 Run `lua src/tests/damage-meter-blizzard.lua` for native CVar/visibility isolation and Edit Mode hiding.

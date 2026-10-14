@@ -19,7 +19,7 @@ local settings = {
     { key = "height", name = "Height", type = "range", min = 120, max = 900, step = 1 },
     {
         key = "fixedHeight",
-        name = "Fixed height (bar count)",
+        name = "Fixed height by row count",
         type = "toggle",
         desc = "Keep the height at the bar count below. Resizing changes only the width.",
     },
@@ -37,6 +37,12 @@ local settings = {
         name = "Enable corner resizing",
         type = "toggle",
         desc = "Drag the bottom-right handle to resize. Turning this off hides it in Edit Mode too.",
+    },
+    {
+        key = "lockSize",
+        name = "Lock size",
+        type = "toggle",
+        desc = "Prevent grip and Edit Mode width/height resizing.",
     },
     { key = "scale", name = "Scale", type = "range", min = 0.5, max = 2, step = 0.01 },
     {

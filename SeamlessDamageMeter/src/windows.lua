@@ -1090,6 +1090,7 @@ function app:CreateWindow(id)
         if
             button == "LeftButton"
             and self:GetWindowSetting(frame.config, "showResizeHandle")
+            and not self:GetWindowSetting(frame.config, "lockSize")
             and (not self.db.profile.locked or (self.IsEditingWindows and self:IsEditingWindows()))
         then
             frame.editing = true
@@ -1216,7 +1217,11 @@ function app:ApplyWindowLayout(frame)
     frame.applyingLayout = false
     frame.body:SetShown(not collapsed)
     frame.background:SetShown(not collapsed)
-    frame.resize:SetShown(not collapsed and self:GetWindowSetting(config, "showResizeHandle"))
+    frame.resize:SetShown(
+        not collapsed
+            and self:GetWindowSetting(config, "showResizeHandle")
+            and not self:GetWindowSetting(config, "lockSize")
+    )
     AtlasButton(
         frame.collapse,
         collapsed and "ui-questtrackerbutton-expand-all" or "ui-questtrackerbutton-collapse-all",

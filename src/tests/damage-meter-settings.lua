@@ -72,7 +72,7 @@ favoriteLimit.set(nil, 3)
 assert(favoriteLimit.get() == 3 and refreshed == 1 and app.db.profile.favorites[2] == "HealingDone")
 local values = app.windowOptions.args.window2.args
 local defaults = app.windowOptions.args.defaults.args
-assert(defaults.fixedHeight.get() == false and defaults.visibleLines.get() == 7)
+assert(defaults.fixedHeight.get() == true and defaults.visibleLines.get() == 7)
 assert(defaults.visibleLines.step == 0.25 and defaults.showResizeHandle.get() == true)
 fresh.overrides.fixedHeight = true
 for _, lines in ipairs({ 7, 7.25, 7.5, 7.75 }) do

@@ -2,7 +2,7 @@
 local _, app = ...
 
 -- Only public, explicitly supported scalar fields can cross the persistence boundary.
-app.archive = { schemaVersion = 1 }
+app.archive = { schemaVersion = 1, maxSegments = 1000 }
 local archive = app.archive
 
 function archive:IsPublic(value)
@@ -235,7 +235,7 @@ function archive:Initialize(character)
         character.combatHistory = history
     end
     history.fights = type(history.fights) == "table" and history.fights or {}
-    history.retention = math.min(500, PositiveInteger(history.retention, 50))
+    history.retention = math.min(self.maxSegments, PositiveInteger(history.retention, 50))
     history.nextID = PositiveInteger(history.nextID, 1)
     history.generation = PositiveInteger(history.generation, 0) + 1
     local ignored = {}
@@ -283,6 +283,7 @@ function archive:Commit(snapshot, existingID)
             end
         end
     else
+        self:Prune(1)
         self.db.nextID = self.db.nextID + 1
         table.insert(self.db.fights, 1, snapshot)
     end
@@ -291,22 +292,11 @@ function archive:Commit(snapshot, existingID)
     return snapshot.id
 end
 
-function archive:Prune()
-    local unpinned = 0
-    for index = #self.db.fights, 1, -1 do
-        -- Count from newest below; remove oldest unpinned records first.
-        local fight = self.db.fights[index]
-        if self.byID[fight.id] and not fight.pinned then
-            unpinned = unpinned + 1
-        end
-    end
-    for index = #self.db.fights, 1, -1 do
-        local fight = self.db.fights[index]
-        if unpinned > self.db.retention and self.byID[fight.id] and not fight.pinned then
-            self.byID[fight.id] = nil
-            table.remove(self.db.fights, index)
-            unpinned = unpinned - 1
-        end
+function archive:Prune(reserved)
+    self.db.retention = math.min(self.maxSegments, PositiveInteger(self.db.retention, 50))
+    local limit = self.db.retention - (reserved or 0)
+    while #self.db.fights > limit do
+        self:Delete(self.db.fights[#self.db.fights].id)
     end
 end
 
@@ -340,7 +330,7 @@ function archive:RememberDeletion(fight)
         fingerprint = fight.fingerprint,
         generation = self.db.generation,
     }
-    if #self.db.ignored > 500 then
+    if #self.db.ignored > self.maxSegments then
         table.remove(self.db.ignored, 1)
     end
 end

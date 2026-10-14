@@ -68,6 +68,9 @@ function service:Resolve(config)
         if config.sessionGeneration and config.sessionGeneration ~= self.generation then
             return nil, "expired"
         end
+        if self.deleted[config.sessionID] or (entry and entry.archiveID and not app.archive:Get(entry.archiveID)) then
+            return nil, "archived"
+        end
         if entry and entry.archiveID and app.archive:Get(entry.archiveID) then
             config.archiveID, config.sessionName = entry.archiveID, app.archive:Get(entry.archiveID).name
             config.sessionID, config.sessionGeneration = nil, nil
@@ -157,7 +160,7 @@ function service:ListSessions()
     end
     for _, entry in ipairs(app.live:List()) do
         local runtime = self.runtime[entry.sessionID]
-        if not (runtime and runtime.archiveID and app.archive:Get(runtime.archiveID)) then
+        if not self.deleted[entry.sessionID] and not (runtime and runtime.archiveID) then
             entry.state = self.pending and self.pending[entry.sessionID] and "pending" or "live"
             entry.sessionGeneration = self.generation
             result[#result + 1] = entry
@@ -232,4 +235,25 @@ function service:ClearHistory()
     app.archive:Clear()
     self:Invalidate()
     self:Notify(true)
+end
+
+function service:SetSegmentLimit(value)
+    app.archive.db.retention = value
+    app.archive:Prune()
+    self:Invalidate()
+    self:Notify(true)
+end
+
+function service:DeleteOlderSegments(id)
+    local older, ids = false, {}
+    for _, fight in ipairs(app.archive.db.fights) do
+        if older then
+            ids[#ids + 1] = fight.id
+        elseif fight.id == id then
+            older = true
+        end
+    end
+    for _, olderID in ipairs(ids) do
+        self:Delete(olderID)
+    end
 end

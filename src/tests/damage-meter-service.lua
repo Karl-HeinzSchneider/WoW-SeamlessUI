@@ -427,16 +427,17 @@ local deathSession = service:GetSession({ archiveID = deathID }, "Deaths")
 assert(
     service:GetDetails({ archiveID = deathID }, deathSession.combatSources[1], "Deaths").deathEvents[1].amount == 400
 )
--- Pinning exempts a fight from retention; deleting must not silently recapture it.
+-- All segments count toward retention, including pinned fights.
 service:Pin(firstID)
 archive.db.retention = 1
 archive:Prune()
-assert(archive:Get(firstID) and archive:Get(deathID) and not archive:Get(secondID))
+assert(not archive:Get(firstID) and archive:Get(deathID) and not archive:Get(secondID))
 service:Delete(deathID)
 service:OnWorld()
 clock = 34
 service:Tick(1000)
-assert(not archive:Get(deathID) and #archive.db.fights == 1)
+assert(not archive:Get(deathID) and #archive.db.fights == 0)
+assert(#service:ListSessions() == 0, "Removed segments never reappear as live menu entries")
 service:ClearHistory()
 service:OnWorld()
 clock = 37
@@ -527,6 +528,51 @@ assert(#app.archive.db.invalidFights == 2, "Damaged records remain recoverable o
 local incompatible = { combatHistory = { schemaVersion = 999, fights = {} } }
 local migrated = Load(incompatible)
 assert(migrated.archive.db.schemaVersion == 1 and incompatible.previousCombatHistory.schemaVersion == 999)
+-- Retention is a total bound, including pins, and applies before new insertion.
+local bounded = Load({})
+local store, manager = bounded.archive, bounded.combatService
+manager:SetSegmentLimit(3)
+local ids = {}
+for index = 1, 4 do
+    ids[index] = store:Commit({ name = "Segment " .. index, capturedAt = index, categories = {} })
+end
+assert(#store.db.fights == 3 and not store:Get(ids[1]) and store:Get(ids[4]))
+manager:Pin(ids[2])
+manager:SetSegmentLimit(2)
+assert(#store.db.fights == 2 and not store:Get(ids[2]), "Pinned oldest segments count toward the limit")
+manager.runtime[123] = { sessionID = 123, archiveID = ids[2] }
+assert(not manager:GetSession({ sessionID = 123, sessionGeneration = manager.generation }, "DamageDone"))
+assert(
+    not manager:FinishSnapshot({ entry = manager.runtime[123], snapshot = {} }) and manager.deleted[123],
+    "An in-flight update cannot restore an evicted segment"
+)
+store:Commit({ name = "Updated", capturedAt = 4, categories = {} }, ids[4])
+assert(#store.db.fights == 2 and store:Get(ids[3]), "Updates do not evict another segment")
+manager:DeleteOlderSegments(ids[4])
+assert(#store.db.fights == 1 and store:Get(ids[4]))
+manager:DeleteOlderSegments(-1)
+assert(#store.db.fights == 1, "A stale selection never deletes unrelated segments")
+manager:SetSegmentLimit(math.huge)
+assert(store.db.retention == 50)
+manager:SetSegmentLimit(100000)
+assert(store.db.retention == 1000)
+for index = 1, 1001 do
+    local id = store:Commit({ name = "Bounded", capturedAt = index + 4, categories = {} })
+    store:Get(id).pinned = true
+    assert(#store.db.fights <= 1000)
+end
+local boundedSave = assert(compiler("return " .. Serialize(bounded.db.char)))()
+boundedSave.combatHistory.retention = 100000
+table.insert(boundedSave.combatHistory.fights, {
+    id = 9999,
+    name = "Old overflow",
+    capturedAt = 0,
+    categories = {},
+    pinned = true,
+})
+local boundedReload = Load(boundedSave)
+assert(boundedReload.archive.db.retention == 1000 and #boundedReload.archive.db.fights == 1000)
+assert(not boundedReload.archive:Get(9999), "Restored saves obey the hard cap, including pins")
 print(
     "PASS: shared queries, secret boundaries, enemy contributors, snapshots, reload reconciliation, offline history, reset generations, retries, recaps, retention, comparisons and reports"
 )

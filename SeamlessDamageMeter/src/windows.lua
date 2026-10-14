@@ -4,6 +4,7 @@ local _, app = ...
 app.windows = {}
 app.windowFrames = {}
 local HEADER_HEIGHT = 32
+local SESSION_MENU_MAX_HEIGHT = 240
 local CreateRow
 
 local function ScrollOffsetKey(frame)
@@ -346,7 +347,8 @@ local function AddSessionDuration(description, session)
 end
 
 function app:ShowSessionMenu(frame)
-    MenuUtil.CreateContextMenu(frame.session, function(_, root)
+    local menu = MenuUtil.CreateContextMenu(frame.session, function(_, root)
+        root:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
             local sessions = self.combatService:ListSessions()
             for _, session in ipairs(sessions) do
@@ -395,6 +397,7 @@ function app:ShowSessionMenu(frame)
                 self:ShowAnalysis(frame.config)
             end)
             local compare = root:CreateButton("Compare with saved fight")
+            compare:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
             for _, session in ipairs(self.combatService:ListSessions()) do
                 if session.archiveID and session.archiveID ~= fight.id then
                     local description = compare:CreateButton(self.combatService:Describe(session, true), function()
@@ -407,8 +410,21 @@ function app:ShowSessionMenu(frame)
             delete:CreateButton("Confirm deletion", function()
                 self.combatService:Delete(fight.id)
             end)
+            local older = root:CreateButton("Delete segments older than selected")
+            older:CreateButton("Confirm deletion (including pinned segments)", function()
+                self.combatService:DeleteOlderSegments(fight.id)
+            end)
+        end
+        if not (self.IsEditingWindows and self:IsEditingWindows()) then
+            local clear = root:CreateButton("Clear saved segments")
+            clear:CreateButton("Confirm deletion (including pinned segments)", function()
+                self.combatService:ClearHistory()
+            end)
         end
     end)
+    if menu and menu.ScrollBox and menu.ScrollBox:IsShown() then
+        menu.ScrollBox:ScrollToEnd(true)
+    end
 end
 
 local function HideRowTooltip(row)

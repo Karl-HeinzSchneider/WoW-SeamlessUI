@@ -403,23 +403,20 @@ function app:HistoryOptions()
             info = {
                 type = "description",
                 order = 1,
-                name = "Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. Pinned fights are kept outside the recent-fight limit.\nLeft-click a meter row for spell, target and contributor analysis. Select fights from a window's session menu.\n",
+                name = "Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. The oldest saved segment is deleted before adding a segment above your limit. Pinned segments also count toward the limit. The hard upper limit is 1,000 segments.\nLeft-click a meter row for spell, target and contributor analysis. Select fights from a window's session menu.\n",
             },
             retention = {
                 type = "range",
-                name = "Recent unpinned fights",
+                name = "Maximum saved segments",
                 order = 10,
                 min = 1,
-                max = 500,
+                max = self.archive.maxSegments,
                 step = 1,
                 get = function()
                     return self.archive.db.retention
                 end,
                 set = function(_, value)
-                    self.archive.db.retention = value
-                    self.archive:Prune()
-                    self.combatService:Invalidate()
-                    self.combatService:Notify()
+                    self.combatService:SetSegmentLimit(value)
                 end,
             },
             fight = {
@@ -494,6 +491,18 @@ function app:HistoryOptions()
                 func = function()
                     self.combatService:Delete(self.historySelection)
                     self.historySelection = nil
+                end,
+            },
+            deleteOlder = {
+                type = "execute",
+                name = "Delete segments older than selected",
+                order = 55,
+                confirm = "Delete all saved segments older than the selected fight, including pinned segments?",
+                disabled = function()
+                    return not Selected()
+                end,
+                func = function()
+                    self.combatService:DeleteOlderSegments(self.historySelection)
                 end,
             },
             clear = {

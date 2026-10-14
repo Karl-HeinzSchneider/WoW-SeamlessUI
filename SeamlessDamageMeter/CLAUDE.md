@@ -103,8 +103,11 @@ Target availability is determined from the required public enemy/contributor fie
 combat flag. Optional secret GUIDs/spell IDs are ignored and unavailable rates remain blank.
 Enemy hover likewise retains its normal API details until public contributor analysis is available.
 Left-click a public row for spell flags, target analysis, saved metadata and copyable reports.
-Saved session menus expose pin/delete/compare. History defaults to 50 unpinned fights per
-character; pins survive retention. Clearing archives does not reset the client meter.
+Saved session menus expose pin/delete/compare, delete-older and clear actions. History defaults
+to 50 saved segments per character, configurable from 1 to the hard cap of 1,000. Pins count
+toward the limit. Delete the oldest segment before inserting beyond the limit; lowering the
+limit prunes immediately. Removed segments must not return as live entries or be recaptured.
+Clearing archives does not reset the client meter.
 Rows use full square icons sized to the row height and an original grayscale shaded fill
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;

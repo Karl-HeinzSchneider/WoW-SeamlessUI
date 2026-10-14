@@ -61,6 +61,10 @@ function service:Discover()
             end
         end
         entry.name, entry.durationSeconds = session.name or "", session.durationSeconds
+        if entry.archiveID and not archive:Get(entry.archiveID) then
+            self.deleted[session.sessionID] = true
+            self.pending[session.sessionID] = nil
+        end
         if not entry.archiveID and not self.pending[session.sessionID] and not self.deleted[session.sessionID] then
             self.pending[session.sessionID] = { entry = entry, readyAt = Now() + RETRY_SECONDS, attempts = 0 }
         end
@@ -164,13 +168,17 @@ end
 
 function service:FinishSnapshot(job)
     local snapshot, entry = job.snapshot, job.entry
+    if self.deleted[entry.sessionID] or (entry.archiveID and not archive:Get(entry.archiveID)) then
+        self.deleted[entry.sessionID] = true
+        return false
+    end
     snapshot.fingerprint = SnapshotSignature(snapshot)
     if not snapshot.fingerprint then
         return false
     end
     for _, ignored in ipairs(archive.db.ignored or {}) do
         if
-            ignored.generation == self.reconcileGeneration
+            (ignored.generation == self.reconcileGeneration or ignored.generation == self.generation)
             and ignored.clientSessionID == snapshot.clientSessionID
             and ignored.name == snapshot.name
             and ignored.fingerprint == snapshot.fingerprint

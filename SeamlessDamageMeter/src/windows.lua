@@ -347,7 +347,7 @@ local function AddSessionDuration(description, session)
 end
 
 function app:ShowSessionMenu(frame)
-    MenuUtil.CreateContextMenu(frame.session, function(_, root)
+    local menu = MenuUtil.CreateContextMenu(frame.session, function(_, root)
         root:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
             local sessions = self.combatService:ListSessions()
@@ -422,6 +422,9 @@ function app:ShowSessionMenu(frame)
             end)
         end
     end)
+    if menu and menu.ScrollBox and menu.ScrollBox:IsShown() then
+        menu.ScrollBox:ScrollToEnd(true)
+    end
 end
 
 local function HideRowTooltip(row)

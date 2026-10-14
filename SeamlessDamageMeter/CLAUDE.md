@@ -2,22 +2,38 @@
 
 Optional feature addon for WoW Forever (`16001`), requiring SeamlessCore.
 `SeamlessDamageMeterDB` stores independent AceDB profiles containing window layouts and
-statistic/session selections. Combat data stays owned by `C_DamageMeter`.
+statistic/session selections. Client collection stays owned by `C_DamageMeter`; character-scoped
+`db.char.combatHistory` stores validated public completed fights independently of profiles.
 
-Load order: `core.lua` (lifecycle/database), `data.lua` (client API adapter),
-`blizzard.lua` (turns tracking on, keeps the game's meter window hidden),
+Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statistics/previews),
+`archive.lua` (schema/storage), `live.lua` (client API provider), `service.lua` (shared queries/cache),
+`breakdowns.lua` (enemy relationships/comparisons/reports), `capture.lua` (bounded capture/retries),
+`blizzard.lua` (controls native meter visibility without forcing its CVar on),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
 `editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
-`windows.lua` (pooled frames and menus), `options.lua` (General, Windows, Profiles).
+`windows.lua` (pooled frames and menus), `analysis.lua` (detail/copy panel),
+`options.lua` (General, Windows, History, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
 Use the exported client API documentation under `../_data/BlizzardInterfaceCode` when
 extending statistics. Combat names and amounts can be secret: pass them directly to
 FontString and StatusBar setters. Do not compare, sort, concatenate or calculate with
 them. Preserve the client's source order and do not modify returned data tables.
-Only layout and selections belong in SavedVariables; never persist combat results.
+Persist only service-owned public snapshots copied through the explicit allowlists in `archive.lua`.
+Validate restored archives before querying them. Never store secret values, frames/functions,
+or references to API tables. Windows, menus, analysis and timers query `app.combatService`;
+only `live.lua` calls combat APIs. Edit Mode samples never read or capture live combat.
+Live readability uses `canaccesstable` and allows secret leaves to reach widgets. Never reuse
+archive table rejection for live rendering: `issecrettable` may flag readable secret-bearing tables.
+Source query arguments must be public; use `UnitGUID("player")` for local-player rows and public
+creature IDs where available. Other restricted player identities remain unavailable, never guessed.
+Saved fights remain queryable without tracking or the API. Archive IDs are independent of
+client IDs; generation-scoped live selections must not revive after reset/reload. Duplicate updates
+replace snapshots rather than append or add totals twice. Capture runs with every window hidden.
+See `docs/damage-meter-history.md` for architecture, limits and in-game acceptance checks.
 
-One shared timer refreshes visible windows, with per-refresh caching for matching views.
+One shared timer refreshes visible windows; the service shares live reads and archive indexes.
+A separate bounded capture timer handles completed fights after restrictions clear.
 Frames and rows are reused. Every profile always contains slots 1�10; only a fresh/reset
 profile activates slot 1 by default. A profile with all slots inactive stays inactive.
 Hidden active windows are restored via `/sdm show`; this does not activate inactive slots.
@@ -56,7 +72,10 @@ through number abbreviation. An offscreen local player stays visible in a separa
 Hovering a combat row (including the pinned player) shows its selected session's spell
 breakdown in a headerless, pooled hover panel. Each entry is a bar using the main window's
 texture, row height/spacing, font and color settings, with totals, rates and public percentage
-shares. Icons follow the API's specialization/class metadata, falling back to the spell
+shares in separate right-aligned columns. The same numeric columns are used in main meter rows.
+Widths depend only on public window/font settings, never combat text measurements. Keep columns
+aligned across pooled rows; clear unavailable percentages and hide rate columns for action counts.
+Icons follow the API's specialization/class metadata, falling back to the spell
 texture from `C_Spell`. Deaths show recap event bars scaled against recap max health.
 Preserve API ordering and send restricted names/amounts directly to labels and status bars;
 omit percentages when their inputs are secret. Refresh the owned tooltip with its pooled
@@ -66,11 +85,27 @@ row's top corners so its width matches the full bar including its icon. Its heig
 at 75% of the screen. Mouse wheel over the owner scrolls an overflowing
 breakdown; otherwise it keeps the window's normal scrolling. The panel never captures mouse
 input, so moving off the owner dismisses it.
+Damage/DPS Targets and enemy damage taken Contributors use the service's EnemyDamageTaken
+contribution index. Combine public contributor rows by name, preserve client creature IDs and
+label incomplete reconciliation. Targets show share of player damage / share of enemy damage
+received; contributor percentages use enemy damage received. Units already combined by the API
+cannot be separated. Never infer complete target totals from player spell summaries.
+Use separate pooled combat and post-combat hover frames. Combat hover queries only the normal
+source spell breakdown and never requests target/contributor analysis. Switch pools on refresh
+when combat state changes, hiding the former owner and resetting the new pool's scroll offset.
+Normal API spell breakdowns stay visible in combat. After combat, append target headings/rows only when target
+data exists; unavailable targets never replace spells or add a restriction warning to the hover.
+Target availability is determined from the required public enemy/contributor fields, not a blanket
+combat flag. Optional secret GUIDs/spell IDs are ignored and unavailable rates remain blank.
+Enemy hover likewise retains its normal API details until public contributor analysis is available.
+Left-click a public row for spell flags, target analysis, saved metadata and copyable reports.
+Saved session menus expose pin/delete/compare. History defaults to 50 unpinned fights per
+character; pins survive retention. Clearing archives does not reset the client meter.
 Rows use full square icons sized to the row height and an original grayscale shaded fill
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
 the generator uses only our own formula and reads no reference assets. Amount-based statistics
-show total and rate in compact form; DPS/HPS swap their order, and action counts omit rates.
+show total and rate in separate columns; DPS/HPS swap their order, and action counts omit rates.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`
 (for example `SeamlessDamageMeterWindow1`). The suffix is the fixed slot number, not its
@@ -124,16 +159,23 @@ height slider is ignored. Manual height is preserved for when fixed height is di
 `showResizeHandle` defaults to true and hides/disables the grip in normal and Edit Mode.
 Both settings and the line count support shared defaults and per-window overrides.
 
+Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
+Run `lua src/tests/damage-meter-blizzard.lua` for native CVar/visibility isolation and Edit Mode hiding.
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone
 window regression harness (template independence, restricted data, collapse persistence,
 scrolling, shared reads, expired history, empty data and deactivating every window).
 
+Native meter visibility uses an OnShow script hook, never a hook of its timer updater. Native Hide,
+UpdateShownState and tracking-CVar calls go through `securecallfunction` with original Blizzard/C
+functions only; addon closures never gain secret access. Do not run the native timer pipeline
+directly from addon callbacks or modify Blizzard methods/state. A reload clears old hooks/taint.
+
 In-game verification: enable tracking, attack a target, add a second window and select
 DPS or healing independently. Verify current/overall/history selection, scrolling with
 a group, drag/resize, hide/show, deactivating every window, reload persistence and profile
-switch/reset. Clear Blizzard history while viewing an old fight and verify the empty
-state. Check both in and out of combat, including restricted combat values.
+switch/reset. Clear Blizzard history while viewing a saved fight and verify its data remains available.
+Expired unsaved selections and deleted archives must show an unavailable state. Check both in and out of combat, including restricted combat values.
 Verify default changes propagate only to inherited settings, including fonts and colors;
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.

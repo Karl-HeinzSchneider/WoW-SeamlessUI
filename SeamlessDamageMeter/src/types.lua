@@ -2,6 +2,10 @@
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0
 ---@field db AceDBObject-3.0
+---@field archive table Public snapshot storage and schema validation.
+---@field live table Client combat API provider.
+---@field combatService table Shared live/archive queries, capture queue and notifications.
+---@field analysisWindow table? Pooled detail, comparison and report window.
 ---@field windows table[]
 ---@field windowFrames table<number, table> Frames indexed by persistent window ID.
 ---@field statistics table[]
@@ -9,4 +13,6 @@
 ---@field windowDefaults table
 ---@field windowOptions table
 ---@field editModeHooked boolean?
----@field detailTooltip table? Shared pooled spell-bar hover panel; never saved.
+---@field detailTooltip table? Currently active hover panel; never saved.
+---@field combatSpellTooltip table? Pooled combat spell-only hover panel.
+---@field postCombatTooltip table? Pooled post-combat hover panel with target analysis.

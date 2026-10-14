@@ -44,6 +44,10 @@ app.core = {
         local args =
             { general = { type = "group", name = "General", args = spec.general }, windows = spec.tabs.windows }
         args.windows.type = "group"
+        for key, tab in pairs(spec.tabs) do
+            tab.type = "group"
+            args[key] = tab
+        end
         registry:ValidateOptionsTable({ type = "group", name = "Test", args = args }, name)
     end,
 }

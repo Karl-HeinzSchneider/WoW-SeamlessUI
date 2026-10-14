@@ -328,26 +328,46 @@ local function CreateFavorites(frame)
     overlay:Hide()
 end
 
+local function AddSessionDuration(description, session)
+    local duration = session.durationSeconds and SecondsToClock(session.durationSeconds) or ""
+    description:AddInitializer(function(button)
+        local time = button:AttachFontString()
+        time:SetFontObject("GameFontHighlightSmall")
+        time:SetWidth(55)
+        time:SetHeight(20)
+        time:SetPoint("RIGHT", -8, 0)
+        time:SetJustifyH("RIGHT")
+        time:SetText(duration)
+        local name = button.fontString
+        local width = 35 + name:GetUnboundedStringWidth() + 12 + 55
+        name:SetPoint("RIGHT", time, "LEFT", -12, 0)
+        return width, 20
+    end)
+end
+
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
-        if self:IsAvailable() and not (self.IsEditingWindows and self:IsEditingWindows()) then
-            local sessions = C_DamageMeter.GetAvailableCombatSessions()
+        if not (self.IsEditingWindows and self:IsEditingWindows()) then
+            local sessions = self.combatService:ListSessions()
             for _, session in ipairs(sessions) do
-                local name = session.name
-                if not name or name == "" then
-                    name = (DAMAGE_METER_COMBAT_NUMBER or "Combat %d"):format(session.sessionID)
-                end
-                local label = name
-                if session.durationSeconds then
-                    label = ("%s [%s]"):format(name, SecondsToClock(session.durationSeconds))
-                end
-                root:CreateRadio(label, function()
-                    return frame.config.sessionID == session.sessionID
+                local name = session.name ~= "" and session.name
+                    or ("Combat " .. (session.archiveID or session.sessionID))
+                local label = self.combatService:Describe(session, true)
+                local description = root:CreateRadio(label, function()
+                    return session.archiveID and frame.config.archiveID == session.archiveID
+                        or (
+                            not session.archiveID
+                            and not frame.config.archiveID
+                            and frame.config.sessionID == session.sessionID
+                        )
                 end, function()
                     frame.config.sessionID, frame.config.sessionName = session.sessionID, name
+                    frame.config.archiveID, frame.config.sessionGeneration =
+                        session.archiveID, session.sessionGeneration
                     frame.offset = 0
                     self:RefreshWindows()
                 end)
+                AddSessionDuration(description, session)
             end
             if #sessions > 0 then
                 root:CreateDivider()
@@ -357,11 +377,35 @@ function app:ShowSessionMenu(frame)
             local label = key == "Current" and (DAMAGE_METER_CURRENT_SESSION or key)
                 or (DAMAGE_METER_OVERALL_SESSION or key)
             root:CreateRadio(label, function()
-                return not frame.config.sessionID and frame.config.session == key
+                return not frame.config.archiveID and not frame.config.sessionID and frame.config.session == key
             end, function()
                 frame.config.session, frame.config.sessionID, frame.config.sessionName = key, nil, nil
+                frame.config.archiveID, frame.config.sessionGeneration = nil, nil
                 frame.offset = 0
                 self:RefreshWindows()
+            end)
+        end
+        local fight = self.combatService:GetMetadata(frame.config)
+        if fight then
+            root:CreateDivider()
+            root:CreateButton(fight.pinned and "Unpin selected fight" or "Pin selected fight", function()
+                self.combatService:Pin(fight.id)
+            end)
+            root:CreateButton("Fight details / copy report", function()
+                self:ShowAnalysis(frame.config)
+            end)
+            local compare = root:CreateButton("Compare with saved fight")
+            for _, session in ipairs(self.combatService:ListSessions()) do
+                if session.archiveID and session.archiveID ~= fight.id then
+                    local description = compare:CreateButton(self.combatService:Describe(session, true), function()
+                        self:ShowComparison(fight.id, session.archiveID, frame.config.statistic)
+                    end)
+                    AddSessionDuration(description, session)
+                end
+            end
+            local delete = root:CreateButton("Delete selected saved fight")
+            delete:CreateButton("Confirm deletion", function()
+                self.combatService:Delete(fight.id)
             end)
         end
     end)
@@ -379,6 +423,70 @@ local function IsPublic(value)
     return not (issecretvalue and issecretvalue(value))
 end
 
+local function Percentage(amount, total)
+    if IsPublic(amount) and IsPublic(total) and type(amount) == "number" and type(total) == "number" and total > 0 then
+        return math.floor(amount / total * 100 + 0.5)
+    end
+end
+
+local function SetNumericText(label, value, rate)
+    if not IsPublic(value) then
+        label:SetFormattedText(rate and "%.1f" or "%.0f", value)
+    else
+        label:SetText(value ~= nil and AbbreviateLargeNumbers(value) or "")
+    end
+end
+
+-- Fixed columns use public layout settings, never the width of restricted combat text.
+local function SetRowValues(row, config, amount, rate, percentage, enemyPercentage, showRate, rateFirst, showEnemy)
+    local labels = { row.enemyPercentageValue, row.value, row.secondaryValue, row.percentageValue }
+    local fontSize = app:GetWindowSetting(config, "fontSize")
+    local gap = math.max(3, fontSize * 0.35)
+    local widths = { fontSize * 2.75, fontSize * 4.5, fontSize * 4, fontSize * 2.75 }
+    local shown = { showEnemy, true, showRate, true }
+    local total, count = 0, 0
+    for index = 1, 4 do
+        -- Use the same scale for shared columns, including when a target-only column is present.
+        if index == 1 or shown[index] then
+            total, count = total + widths[index], count + 1
+        end
+    end
+    local available = app:GetWindowSetting(config, "width") - app:GetWindowSetting(config, "rowHeight") - 30
+    local factor = math.min(1, math.max(1, available * 0.7 - gap * (count - 1)) / total)
+    local offset = 3
+    for index = 4, 1, -1 do
+        local label = labels[index]
+        app:StyleWindowLabel(label, config)
+        label:SetJustifyH("RIGHT")
+        label:ClearAllPoints()
+        label:SetWidth(widths[index] * factor)
+        label:SetShown(shown[index] and true or false)
+        if shown[index] then
+            label:SetPoint("RIGHT", row, "RIGHT", -offset, 0)
+            offset = offset + widths[index] * factor + gap
+        end
+    end
+    row.name:ClearAllPoints()
+    row.name:SetPoint("LEFT", 2, 0)
+    row.name:SetPoint("RIGHT", showEnemy and row.enemyPercentageValue or row.value, "LEFT", -gap, 0)
+    local primary, secondary = amount, rate
+    if rateFirst then
+        primary, secondary = rate, amount
+    end
+    SetNumericText(row.value, primary, rateFirst)
+    SetNumericText(row.secondaryValue, secondary, not rateFirst)
+    if percentage ~= nil then
+        row.percentageValue:SetFormattedText("%d%%", percentage)
+    else
+        row.percentageValue:SetText("")
+    end
+    if enemyPercentage ~= nil then
+        row.enemyPercentageValue:SetFormattedText("%d%%", enemyPercentage)
+    else
+        row.enemyPercentageValue:SetText("")
+    end
+end
+
 local function CreateDetailTooltip()
     local tooltip = CreateFrame("Frame", nil, UIParent)
     tooltip:SetFrameStrata("TOOLTIP")
@@ -394,8 +502,13 @@ local function CreateDetailTooltip()
     tooltip.body:SetPoint("BOTTOMRIGHT", -5, 5)
     tooltip.body:SetClipsChildren(true)
     tooltip.body:EnableMouse(false)
+    tooltip.targetLabel = Label(tooltip.body)
+    tooltip.targetLabel:SetJustifyH("LEFT")
+    tooltip.targetLabel:SetWordWrap(false)
+    tooltip.targetMessage = Label(tooltip.body)
+    tooltip.targetMessage:SetJustifyH("LEFT")
+    tooltip.targetMessage:SetWordWrap(true)
     tooltip:Hide()
-    app.detailTooltip = tooltip
     return tooltip
 end
 
@@ -404,17 +517,55 @@ local function ShowRowTooltip(row, frame)
         HideRowTooltip(row)
         return
     end
-    local details = app:GetSourceDetails(frame.config, row.source)
-    if not details then
-        HideRowTooltip(row)
-        return
+    local details, detailReason = app:GetSourceDetails(frame.config, row.source)
+    details = details or { combatSpells = {}, totalAmount = row.source.totalAmount, maxAmount = row.source.totalAmount }
+    local spells = details.deathEvents or details.combatSpells or {}
+    local entries = {}
+    for _, spell in ipairs(spells) do
+        entries[#entries + 1] = spell
     end
-    local entries = details.deathEvents or details.combatSpells or {}
+    local inCombat = UnitAffectingCombat("player")
+    local targetDetails, targetReason
+    if not inCombat and (frame.config.statistic == "DamageDone" or frame.config.statistic == "Dps") then
+        targetDetails, targetReason = app:GetTargetBreakdown(frame.config, row.source)
+        if targetDetails and #targetDetails.entries > 0 then
+            entries[#entries + 1] = { isTargetHeading = true }
+            for _, target in ipairs(targetDetails.entries) do
+                entries[#entries + 1] = target
+            end
+            if targetDetails.message then
+                targetReason = targetDetails.message
+                entries[#entries + 1] = { isTargetMessage = true }
+            end
+        end
+    elseif not inCombat and frame.config.statistic == "EnemyDamageTaken" then
+        targetDetails, targetReason = app.combatService:GetEnemyContributors(frame.config, row.source)
+        if targetDetails and #targetDetails.entries > 0 then
+            entries = { { isTargetHeading = true } }
+            for _, contributor in ipairs(targetDetails.entries) do
+                entries[#entries + 1] = contributor
+            end
+            if not targetDetails.complete then
+                targetReason = "Available contributions only; totals do not fully reconcile."
+                entries[#entries + 1] = { isTargetMessage = true }
+            end
+        end
+    end
     if #entries == 0 then
-        HideRowTooltip(row)
-        return
+        targetReason = detailReason or "No details available."
+        entries[1] = { isTargetMessage = true }
     end
-    local tooltip = app.detailTooltip or CreateDetailTooltip()
+    local poolKey = inCombat and "combatSpellTooltip" or "postCombatTooltip"
+    local tooltip = app[poolKey]
+    if not tooltip then
+        tooltip = CreateDetailTooltip()
+        app[poolKey] = tooltip
+    end
+    if app.detailTooltip and app.detailTooltip ~= tooltip then
+        app.detailTooltip.owner = nil
+        app.detailTooltip:Hide()
+    end
+    app.detailTooltip = tooltip
     local config = frame.config
     local rowHeight = app:GetWindowSetting(config, "rowHeight")
     local spacing = app:GetWindowSetting(config, "rowSpacing")
@@ -434,6 +585,12 @@ local function ShowRowTooltip(row, frame)
     tooltip:SetPoint("BOTTOMLEFT", row.entry, "TOPLEFT", 0, 0)
     tooltip:SetPoint("BOTTOMRIGHT", row.entry, "TOPRIGHT", 0, 0)
     local statistic = app:GetStatistic(frame.config.statistic)
+    local showRate = not details.deathEvents and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
+    local showEnemy = targetDetails and #targetDetails.entries > 0 and statistic.key ~= "EnemyDamageTaken"
+    tooltip.targetLabel:Hide()
+    tooltip.targetMessage:Hide()
+    app:StyleWindowLabel(tooltip.targetLabel, config)
+    app:StyleWindowLabel(tooltip.targetMessage, config)
     for index = 1, math.min(capacity, #entries) do
         local spell = entries[index + tooltip.offset]
         local bar = tooltip.rows[index]
@@ -444,113 +601,102 @@ local function ShowRowTooltip(row, frame)
             bar:EnableMouse(false)
             tooltip.rows[index] = bar
         end
-        bar.entry:SetHeight(rowHeight)
-        bar.entry:ClearAllPoints()
-        bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
-        bar.entry:SetPoint("RIGHT", 0, 0)
-        bar:SetHeight(rowHeight)
-        bar:SetPoint("TOPLEFT", rowHeight, 0)
-        bar.icon:SetSize(rowHeight, rowHeight)
-        app:StyleWindowLabel(bar.name, config)
-        app:StyleWindowLabel(bar.value, config)
-        local name = spell.spellName
-        if IsPublic(name) and (name == nil or name == "") then
-            local spellID = spell.spellID or spell.spellId
-            name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
-            if details.deathEvents and spell.event == "SWING_DAMAGE" then
-                name = ACTION_SWING or "Melee"
-            elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
-                name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
-            end
-        end
-        local unit = spell.creatureName
-        if IsPublic(unit) and (unit == nil or unit == "") then
-            unit = spell.sourceName
-            if spell.combatSpellDetails then
-                unit = spell.combatSpellDetails.unitName
-            end
-        end
-        if not IsPublic(unit) or (unit ~= nil and unit ~= "") then
-            bar.name:SetFormattedText("%s (%s)", name, unit)
+        if spell.isTargetHeading or spell.isTargetMessage then
+            local label = spell.isTargetHeading and tooltip.targetLabel or tooltip.targetMessage
+            label:ClearAllPoints()
+            label:SetPoint("TOPLEFT", 2, -(index - 1) * (rowHeight + spacing))
+            label:SetPoint("RIGHT", -2, 0)
+            label:SetHeight(rowHeight)
+            local heading = frame.config.statistic == "EnemyDamageTaken" and "Contributors (% of enemy)"
+                or "Targets (% of enemy; % of yours)"
+            label:SetText(spell.isTargetHeading and heading or targetReason)
+            label:Show()
+            bar:Hide()
         else
-            bar.name:SetText(name)
-        end
-        local unitDetails = spell.combatSpellDetails or {}
-        local spellID = spell.spellID or spell.spellId
-        if details.deathEvents and spell.event == "SWING_DAMAGE" then
-            spellID = 88163
-        end
-        if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
-            bar.icon:SetTexture(unitDetails.specIconID)
-        elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
-            bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
-        else
-            bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
-        end
-        local amount = spell.totalAmount
-        if IsPublic(amount) and amount == nil then
-            amount = spell.amount
-        end
-        if IsPublic(amount) and amount == nil then
-            amount = 0
-        end
-        local rate = spell.amountPerSecond
-        local percentage
-        if IsPublic(amount) and IsPublic(details.totalAmount) and details.totalAmount and details.totalAmount > 0 then
-            percentage = math.floor(amount / details.totalAmount * 100 + 0.5)
-        end
-        if (not IsPublic(rate) or rate ~= nil) and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" then
-            local primary, secondary = amount, rate
-            if statistic.rate then
-                primary, secondary = rate, amount
-            end
-            if IsPublic(primary) and IsPublic(secondary) then
-                if percentage then
-                    bar.value:SetFormattedText(
-                        "%s (%s) %d%%",
-                        AbbreviateLargeNumbers(primary),
-                        AbbreviateLargeNumbers(secondary),
-                        percentage
-                    )
-                else
-                    bar.value:SetFormattedText(
-                        "%s (%s)",
-                        AbbreviateLargeNumbers(primary),
-                        AbbreviateLargeNumbers(secondary)
-                    )
+            bar.entry:SetHeight(rowHeight)
+            bar.entry:ClearAllPoints()
+            bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
+            bar.entry:SetPoint("RIGHT", 0, 0)
+            bar:SetHeight(rowHeight)
+            bar:SetPoint("TOPLEFT", rowHeight, 0)
+            bar.icon:SetSize(rowHeight, rowHeight)
+            app:StyleWindowLabel(bar.name, config)
+            app:StyleWindowLabel(bar.value, config)
+            local name = spell.spellName
+            if IsPublic(name) and (name == nil or name == "") then
+                local spellID = spell.spellID or spell.spellId
+                name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
+                if details.deathEvents and spell.event == "SWING_DAMAGE" then
+                    name = ACTION_SWING or "Melee"
+                elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
+                    name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
                 end
-            elseif percentage then
-                bar.value:SetFormattedText("%.1f (%.1f) %d%%", primary, secondary, percentage)
-            else
-                bar.value:SetFormattedText("%.1f (%.1f)", primary, secondary)
             end
-        elseif IsPublic(amount) then
-            if percentage then
-                bar.value:SetFormattedText("%s %d%%", AbbreviateLargeNumbers(amount), percentage)
-            else
-                bar.value:SetText(AbbreviateLargeNumbers(amount))
+            local unit = spell.creatureName
+            if IsPublic(unit) and (unit == nil or unit == "") then
+                unit = spell.sourceName
+                if spell.combatSpellDetails then
+                    unit = spell.combatSpellDetails.unitName
+                end
             end
-        else
-            bar.value:SetFormattedText("%.0f", amount)
+            if not inCombat and (not IsPublic(unit) or (unit ~= nil and unit ~= "")) then
+                bar.name:SetFormattedText("%s (%s)", name, unit)
+            else
+                bar.name:SetText(name)
+            end
+            local unitDetails = spell.combatSpellDetails or {}
+            local spellID = spell.spellID or spell.spellId
+            if details.deathEvents and spell.event == "SWING_DAMAGE" then
+                spellID = 88163
+            end
+            if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
+                bar.icon:SetTexture(unitDetails.specIconID)
+            elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
+                bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
+            else
+                bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
+            end
+            local amount = spell.totalAmount
+            if IsPublic(amount) and amount == nil then
+                amount = spell.amount
+            end
+            if IsPublic(amount) and amount == nil then
+                amount = 0
+            end
+            local rate = spell.amountPerSecond
+            local total = spell.isTarget and targetDetails.totalAmount or details.totalAmount
+            local percentage = Percentage(amount, total)
+            local enemyPercentage = spell.isTarget and spell.enemyShare and math.floor(spell.enemyShare + 0.5) or nil
+            SetRowValues(
+                bar,
+                config,
+                amount,
+                rate,
+                percentage,
+                enemyPercentage,
+                showRate,
+                statistic.rate,
+                showEnemy and spell.isTarget
+            )
+            -- The API provides the scale; restricted amounts go directly to the widgets.
+            local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
+            if IsPublic(maximum) and maximum == nil then
+                maximum = 1
+            end
+            bar:SetMinMaxValues(0, maximum)
+            bar:SetValue(amount)
+            local classFilename = unitDetails.unitClassFilename
+            if not classFilename or classFilename == "" then
+                classFilename = row.source.classFilename
+            end
+            local color = RAID_CLASS_COLORS[classFilename]
+            if color and app:GetWindowSetting(config, "classColors") then
+                bar:SetStatusBarColor(color.r, color.g, color.b, 1)
+            else
+                bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
+            end
+            bar:Show()
         end
-        -- The API provides the scale; restricted amounts go directly to the widgets.
-        local maximum = details.maxAmount
-        if IsPublic(maximum) and maximum == nil then
-            maximum = 1
-        end
-        bar:SetMinMaxValues(0, maximum)
-        bar:SetValue(amount)
-        local classFilename = unitDetails.unitClassFilename
-        if not classFilename or classFilename == "" then
-            classFilename = row.source.classFilename
-        end
-        local color = RAID_CLASS_COLORS[classFilename]
-        if color and app:GetWindowSetting(config, "classColors") then
-            bar:SetStatusBarColor(color.r, color.g, color.b, 1)
-        else
-            bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
-        end
-        bar:Show()
     end
     for index = math.min(capacity, #entries) + 1, #tooltip.rows do
         tooltip.rows[index]:Hide()
@@ -593,6 +739,8 @@ CreateRow = function(frame, index)
     entry:SetScript("OnMouseUp", function(_, button)
         if button == "RightButton" then
             app:ToggleFavorites(frame)
+        elseif button == "LeftButton" and row.source and not row.preview then
+            app:ShowAnalysis(frame.config, row.source)
         end
     end)
     row:SetScript("OnHide", function()
@@ -619,6 +767,13 @@ CreateRow = function(frame, index)
     row.value = Label(row, "NumberFontNormal")
     row.value:SetPoint("RIGHT", -3, 0)
     row.value:SetJustifyH("RIGHT")
+    row.value:SetWordWrap(false)
+    for _, key in ipairs({ "secondaryValue", "percentageValue", "enemyPercentageValue" }) do
+        row[key] = Label(row, "NumberFontNormal")
+        row[key]:SetJustifyH("RIGHT")
+        row[key]:SetWordWrap(false)
+        row[key]:Hide()
+    end
     row.name:SetPoint("RIGHT", row.value, "LEFT", -25, 0)
     if index > 0 then
         frame.rows[index] = row
@@ -643,26 +798,18 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     else
         row.icon:SetTexture(nil)
     end
-    local amount = source.totalAmount
-    local secondary = source.amountPerSecond
-    if statistic.rate then
-        amount = source.amountPerSecond
-        secondary = source.totalAmount
-    end
-    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
-    if showRate and issecretvalue and (issecretvalue(amount) or issecretvalue(secondary)) then
-        row.value:SetFormattedText(statistic.rate and "%.1f (%.0f)" or "%.0f (%.1f)", amount, secondary)
-    elseif showRate then
-        row.value:SetFormattedText(
-            DAMAGE_METER_ENTRY_FORMAT_COMPACT or "%s (%s)",
-            AbbreviateLargeNumbers(amount),
-            AbbreviateLargeNumbers(secondary)
-        )
-    elseif issecretvalue and issecretvalue(amount) then
-        row.value:SetFormattedText("%.0f", amount)
-    else
-        row.value:SetText(AbbreviateLargeNumbers(amount))
-    end
+    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" and statistic.key ~= "Deaths"
+    SetRowValues(
+        row,
+        config,
+        source.totalAmount,
+        source.amountPerSecond,
+        Percentage(source.totalAmount, session.totalAmount),
+        nil,
+        showRate,
+        statistic.rate,
+        false
+    )
     row:SetMinMaxValues(0, session.maxAmount)
     row:SetValue(source.totalAmount)
     local color = RAID_CLASS_COLORS[source.classFilename]
@@ -685,6 +832,7 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
     frame.session.text:SetText(
         preview and "Preview"
+            or (config.archiveID and ("S" .. config.archiveID))
             or config.sessionID
             or (
                 config.session == "Overall" and DAMAGE_METER_OVERALL_SESSION_SHORT
@@ -692,15 +840,12 @@ function app:RefreshWindow(frame, session, message)
             )
     )
     frame.session:SetWidth(preview and 60 or frame.session.normalWidth)
-    local duration = session and session.durationSeconds
-    if not preview and self:IsAvailable() and not config.sessionID and UnitAffectingCombat("player") then
-        duration = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType[config.session])
-    end
+    local duration = self.combatService:GetDuration(config, session)
     if
         not (issecretvalue and issecretvalue(duration))
         and duration
         and duration > 0
-        and (preview or config.sessionID or UnitAffectingCombat("player"))
+        and (preview or config.archiveID or config.sessionID or UnitAffectingCombat("player"))
     then
         frame.timer:SetFormattedText("[%s]", SecondsToClock(duration))
     else
@@ -801,16 +946,12 @@ function app:RefreshWindow(frame, session, message)
 end
 
 function app:RefreshWindows()
-    -- Share API reads between windows showing the same session and statistic.
-    local cache = {}
+    self.combatService:BeginRefresh()
     for _, frame in ipairs(self.windows) do
         if frame:IsShown() then
             local config = frame.config
-            local key = config.statistic .. ":" .. (config.sessionID or config.session)
-            if not cache[key] then
-                cache[key] = { self:GetSession(config) }
-            end
-            self:RefreshWindow(frame, cache[key][1], cache[key][2])
+            local session, message = self:GetSession(config)
+            self:RefreshWindow(frame, session, message)
         end
     end
 end

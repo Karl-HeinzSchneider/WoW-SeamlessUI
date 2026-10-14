@@ -297,6 +297,124 @@ function app:BuildWindowOptions()
     self.windowOptions.args = args
 end
 
+function app:HistoryOptions()
+    local function Selected()
+        return self.archive:Get(self.historySelection)
+    end
+    return {
+        name = "History",
+        order = 20,
+        args = {
+            info = {
+                type = "description",
+                order = 1,
+                name = "Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. Pinned fights are kept outside the recent-fight limit.\nLeft-click a meter row for spell, target and contributor analysis. Select fights from a window's session menu.\n",
+            },
+            retention = {
+                type = "range",
+                name = "Recent unpinned fights",
+                order = 10,
+                min = 1,
+                max = 500,
+                step = 1,
+                get = function()
+                    return self.archive.db.retention
+                end,
+                set = function(_, value)
+                    self.archive.db.retention = value
+                    self.archive:Prune()
+                    self.combatService:Invalidate()
+                    self.combatService:Notify()
+                end,
+            },
+            fight = {
+                type = "select",
+                name = "Saved fight",
+                order = 20,
+                width = "full",
+                values = function()
+                    local values = {}
+                    for _, entry in ipairs(self.combatService:ListSessions()) do
+                        if entry.archiveID then
+                            values[tostring(entry.archiveID)] = self.combatService:Describe(entry)
+                        end
+                    end
+                    return values
+                end,
+                get = function()
+                    return self.historySelection and tostring(self.historySelection)
+                end,
+                set = function(_, value)
+                    self.historySelection = tonumber(value)
+                end,
+            },
+            status = {
+                type = "description",
+                order = 25,
+                name = function()
+                    local fight = Selected()
+                    if not fight then
+                        return "Select a saved fight."
+                    end
+                    return fight.complete and "All supported categories and source details captured."
+                        or "Incomplete capture: some categories or source details are missing."
+                end,
+            },
+            pin = {
+                type = "toggle",
+                name = "Pin selected fight",
+                order = 30,
+                disabled = function()
+                    return not Selected()
+                end,
+                get = function()
+                    local fight = Selected()
+                    return fight and fight.pinned or false
+                end,
+                set = function(_, value)
+                    if Selected() and Selected().pinned ~= value then
+                        self.combatService:Pin(self.historySelection)
+                    end
+                end,
+            },
+            inspect = {
+                type = "execute",
+                name = "Open fight details / report",
+                order = 40,
+                disabled = function()
+                    return not Selected()
+                end,
+                func = function()
+                    self:ShowAnalysis({ archiveID = self.historySelection, statistic = "DamageDone" })
+                end,
+            },
+            delete = {
+                type = "execute",
+                name = "Delete selected fight",
+                order = 50,
+                confirm = true,
+                disabled = function()
+                    return not Selected()
+                end,
+                func = function()
+                    self.combatService:Delete(self.historySelection)
+                    self.historySelection = nil
+                end,
+            },
+            clear = {
+                type = "execute",
+                name = "Clear saved history",
+                order = 60,
+                confirm = "Delete all saved fights, including pinned fights? Blizzard tracking is not reset.",
+                func = function()
+                    self.combatService:ClearHistory()
+                    self.historySelection = nil
+                end,
+            },
+        },
+    }
+end
+
 function app:RegisterOptions()
     self:PrepareWindowSettings()
     self.windowOptions = { name = "Windows", order = 10, childGroups = "tree", args = {} }
@@ -313,7 +431,7 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. The gear menu activates, hides or deactivates windows; the collapse button folds the bars away and keeps the header visible. Combat history is owned by the game and is not saved by this addon.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Left-click a row for detailed analysis. Completed public fights are saved through reload/relog; manage them in History. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n",
                     },
                     add = {
                         type = "execute",
@@ -378,15 +496,15 @@ function app:RegisterOptions()
                         type = "toggle",
                         order = 10,
                         width = "full",
-                        name = "Combat tracking",
-                        desc = "The game setting that records combat statistics. This addon needs it and turns it on when it loads.",
+                        name = "Enable the game's damage meter UI",
+                        desc = "Controls Blizzard's own meter window. Seamless queries the combat API independently of this setting.",
                         descStyle = "inline",
                         hidden = C_CVar.GetCVar("damageMeterEnabled") == nil,
                         get = function()
                             return C_CVar.GetCVarBool("damageMeterEnabled")
                         end,
                         set = function(_, value)
-                            C_CVar.SetCVar("damageMeterEnabled", value and "1" or "0")
+                            self:SetCombatTracking(value)
                         end,
                     },
                     hideBlizzard = {
@@ -409,9 +527,10 @@ function app:RegisterOptions()
         },
         tabs = {
             windows = self.windowOptions,
+            history = self:HistoryOptions(),
             credits = {
                 name = "Credits",
-                order = 20,
+                order = 30,
                 args = {
                     teelo = {
                         type = "description",

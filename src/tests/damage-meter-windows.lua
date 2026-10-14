@@ -93,6 +93,18 @@ function methods:SetHeight(height)
         self.scripts.OnSizeChanged(self)
     end
 end
+function methods:SetVerticalScroll(offset)
+    self.verticalScroll = offset
+end
+function methods:GetVerticalScroll()
+    return self.verticalScroll or 0
+end
+function methods:GetVerticalScrollRange()
+    return math.max(0, (self.scrollChild and self.scrollChild:GetHeight() or 0) - self:GetHeight())
+end
+function methods:SetScrollChild(child)
+    self.scrollChild = child
+end
 function methods:SetSize(width, height)
     self.width = width
     self:SetHeight(height)
@@ -1203,6 +1215,7 @@ assert(meter.config.overrides.x == savedX, "Do not inspect restricted geometry i
 print("Damage meter Edit Mode regressions OK")
 
 -- Saved history uses the same windows and analysis panel without any live APIs.
+GameTooltip = object()
 combat = false
 function date(_, timestamp)
     return tostring(timestamp)
@@ -1283,12 +1296,33 @@ meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
 local analysis = app.analysisWindow
 assert(
     analysis:IsShown()
-        and analysis.text.text:find("avoidable", 1, true)
-        and analysis.text.text:find("overkill 10", 1, true)
+        and analysis.dashboard:IsShown()
+        and not analysis.scroll:IsShown()
+        and analysis.spells.rows[1].tip:find("Avoidable", 1, true)
+        and analysis.spells.rows[1].tip:find("Overkill: 10", 1, true)
 )
 analysis.buttons.targets.scripts.OnClick()
-assert(analysis.text.text:find("Wolf", 1, true) and analysis.text.text:find("100.0% / 100.0%", 1, true))
+assert(analysis.targets.rows[1].name.text:find("Wolf", 1, true))
+assert(analysis.targets.rows[1].values[3].text == "100.0%")
+assert(analysis.targets.rows[1].tip:find("100.0%", 1, true))
+local firstSpell = analysis.spells.rows[1]
+analysis.actors.rows[1].scripts.OnClick()
+assert(analysis.spells.rows[1] == firstSpell, "Actor selection reuses detail rows")
+analysis.sessions.rows[2].scripts.OnClick()
+assert(analysis.config.session == "Overall" and not analysis.config.archiveID)
+assert(not firstSpell:IsShown(), "Changing to an unavailable session clears stale spell rows")
+analysis.sessions.rows[3].scripts.OnClick()
+assert(analysis.config.archiveID == archiveID and firstSpell:IsShown(), "Saved fight selection restores actor details")
+local savedSource = app.archive:Get(archiveID).categories.DamageDone.session.combatSources[1]
+local savedAmount = savedSource.totalAmount
+savedSource.totalAmount = secret
+app:RefreshAnalysis()
+assert(analysis.spells.rows[1].values[3].text == "", "Restricted actor totals never enter share arithmetic")
+savedSource.totalAmount = savedAmount
+app:RefreshAnalysis()
+assert(analysis.spells.rows[1].values[3].text == "100.0%", "Public shares return after restrictions clear")
 analysis.buttons.report.scripts.OnClick()
+assert(not analysis.dashboard:IsShown() and analysis.scroll:IsShown())
 assert(analysis.text.text:find("Seamless: Saved boss", 1, true))
 app:ShowComparison(archiveID, archiveID, "DamageDone")
 assert(analysis.text.text:find("difference 0", 1, true))
@@ -1298,8 +1332,14 @@ analysis.buttons.targets.scripts.OnClick()
 assert(analysis.text.text:find("Wolf", 1, true))
 app:ShowAnalysis(meter.config)
 assert(analysis.text.text:find("Saved fight", 1, true))
+analysis.buttons.spells.scripts.OnClick()
 app.combatService:Delete(archiveID)
 app:RefreshWindows()
+app:RefreshAnalysis()
+assert(
+    not firstSpell:IsShown() and not analysis.targets.rows[1]:IsShown(),
+    "Deleting a fight clears both breakdown lists"
+)
 assert(meter.message.text == "This saved fight was deleted.")
 C_DamageMeter = realAPI
 print("Damage meter archived windows and analysis regressions OK")

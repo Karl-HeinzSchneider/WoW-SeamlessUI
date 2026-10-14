@@ -12,7 +12,7 @@ Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statist
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
 `editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
 `windows.lua` (pooled frames and menus), `analysis.lua` (detail/copy panel),
-`options.lua` (General, Windows, History, Profiles).
+`options.lua` (General, Windows, Skin, History, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
 Use the exported client API documentation under `../_data/BlizzardInterfaceCode` when
@@ -46,7 +46,12 @@ windows may anchor to inactive windows. Adding activates the first inactive slot
 preserves its settings. Old increasing IDs migrate to free slots while preserving settings
 and remapping anchors; valid existing slot IDs stay unchanged. Excess windows from very
 old profiles are retained in `profile.legacyWindows`.
-`profile.windowDefaults` supplies appearance and geometry; `config.overrides` stores only
+`profile.skins` holds named appearance settings; every window selects `config.skin`, defaulting to
+`default` (Default). The Skin tab uses a tree list like Windows and can add copies of Default.
+Fonts, colors, header controls, row height/spacing and icon visibility resolve exclusively from
+the selected skin. Legacy appearance defaults migrate to Default; explicit window appearance
+overrides migrate to separate named skins to preserve their look. Migration is idempotent.
+`profile.windowDefaults` supplies geometry; `config.overrides` stores only
 explicit overrides (nil inherits; false is a valid toggle override). Old width/height/x/y
 fields migrate into overrides. Dragging overrides X/Y, resizing also overrides width/height.
 `config.anchorTo` is a window ID or nil for UIParent; reject circular anchors. Deactivating an
@@ -56,14 +61,13 @@ Window rendering uses plain Lua-created frames without inherited frame templates
 mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default to 24 pixels with
 4 pixels between them. The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
-from hiding a window. `hideTypeSelector` defaults to false and supports shared defaults and
-window overrides; hiding it removes the category arrow and its clicks while retaining the label.
+from hiding a window. `hideTypeSelector` defaults to false and is configured per skin; hiding it removes the category arrow and its clicks while retaining the label.
 Header order is type arrow, category label, then combat timer. The 25-pixel selector stays
 at the left edge (X 3), with its arrow centered vertically opposite the red collapse button.
 The category starts at X 28, Y -9 within the header and never moves when the timer changes.
 Hiding the selector preserves the category label's position and reserved arrow space.
 The timer follows the category label on the same line, left aligned with natural text width.
-`hideCombatTimer` defaults to false and supports shared defaults and window overrides,
+`hideCombatTimer` defaults to false and is configured per skin,
 including Edit Mode previews. Toggling it preserves the category position.
 Save the expanded height and keep the header position stable when
 collapsing, expanding and reloading. Guard geometry callbacks during layout restoration.

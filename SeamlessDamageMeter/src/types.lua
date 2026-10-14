@@ -10,6 +10,9 @@
 ---@field windowFrames table<number, table> Frames indexed by persistent window ID.
 ---@field statistics table[]
 ---@field MAX_WINDOWS integer
+---@field skinDefaults table
+---@field skinOptions table
+---@field newSkinName string?
 ---@field windowDefaults table
 ---@field windowOptions table
 ---@field editModeHooked boolean?

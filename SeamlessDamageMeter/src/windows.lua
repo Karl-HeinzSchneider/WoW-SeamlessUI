@@ -451,7 +451,9 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
             total, count = total + widths[index], count + 1
         end
     end
-    local available = app:GetWindowSetting(config, "width") - app:GetWindowSetting(config, "rowHeight") - 30
+    local available = app:GetWindowSetting(config, "width")
+        - (app:GetWindowSetting(config, "showIcons") and app:GetWindowSetting(config, "rowHeight") or 0)
+        - 30
     local factor = math.min(1, math.max(1, available * 0.7 - gap * (count - 1)) / total)
     local offset = 3
     for index = 4, 1, -1 do
@@ -618,7 +620,8 @@ local function ShowRowTooltip(row, frame)
             bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
             bar.entry:SetPoint("RIGHT", 0, 0)
             bar:SetHeight(rowHeight)
-            bar:SetPoint("TOPLEFT", rowHeight, 0)
+            bar:SetPoint("TOPLEFT", app:GetWindowSetting(config, "showIcons") and rowHeight or 0, 0)
+            bar.icon:SetShown(app:GetWindowSetting(config, "showIcons"))
             bar.icon:SetSize(rowHeight, rowHeight)
             app:StyleWindowLabel(bar.name, config)
             app:StyleWindowLabel(bar.value, config)
@@ -786,7 +789,8 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     local rowHeight = app:GetWindowSetting(config, "rowHeight")
     row.entry:SetHeight(rowHeight)
     row:SetHeight(rowHeight)
-    row:SetPoint("TOPLEFT", rowHeight, 0)
+    row:SetPoint("TOPLEFT", app:GetWindowSetting(config, "showIcons") and rowHeight or 0, 0)
+    row.icon:SetShown(app:GetWindowSetting(config, "showIcons"))
     row.icon:SetSize(rowHeight, rowHeight)
     app:StyleWindowLabel(row.name, config)
     app:StyleWindowLabel(row.value, config)

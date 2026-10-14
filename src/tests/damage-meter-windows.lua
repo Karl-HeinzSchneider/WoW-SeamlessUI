@@ -266,7 +266,7 @@ assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type s
 local categoryAnchor = frame.statistic.text.points.TOPLEFT
 assert(categoryAnchor[4] == 25 and categoryAnchor[5] == -9, "Category text must sit at the reference header height")
 local categoryWidth = frame.statistic.text:GetWidth()
-frame.config.overrides.hideTypeSelector = true
+app.db.profile.skins.default.settings.hideTypeSelector = true
 app:RebuildWindows()
 assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
 for index, value in ipairs(categoryAnchor) do
@@ -281,29 +281,34 @@ assert(
     "Timer must use natural width and left alignment"
 )
 assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains the category label")
-frame.config.overrides.hideTypeSelector = false
+app.db.profile.skins.default.settings.hideTypeSelector = false
 app:RebuildWindows()
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Selector can be restored")
 assert(frame.statistic.points.TOPLEFT[2] == frame and frame.statistic.points.TOPLEFT[4] == 3)
 assert(frame.timer.points.LEFT[2] == frame.statistic.text, "Timer follows the category label")
 assert(frame.timer:IsShown(), "Combat timer is visible by default")
-app.db.profile.windowDefaults.hideCombatTimer = true
+app.db.profile.skins.default.settings.hideCombatTimer = true
 app:RebuildWindows()
 assert(not frame.timer:IsShown(), "Combat timer inherits the shared hide setting")
-frame.config.overrides.hideCombatTimer = false
+app.db.profile.skins.default.settings.hideCombatTimer = false
 app:RebuildWindows()
-assert(frame.timer:IsShown(), "A false override restores the combat timer")
-frame.config.overrides.hideCombatTimer = true
+assert(frame.timer:IsShown(), "A skin edit restores the combat timer")
+app.db.profile.skins.default.settings.hideCombatTimer = true
 app:RebuildWindows()
-assert(not frame.timer:IsShown(), "A window override hides the combat timer")
-frame.config.overrides.hideCombatTimer = nil
-app.db.profile.windowDefaults.hideCombatTimer = false
+assert(not frame.timer:IsShown(), "A skin edit hides the combat timer")
+app.db.profile.skins.default.settings.hideCombatTimer = false
 app:RebuildWindows()
 assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
 for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
 end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
+app.db.profile.skins.default.settings.showIcons = false
+app:RebuildWindows()
+assert(not frame.rows[1].icon:IsShown() and frame.rows[1].points.TOPLEFT[2] == 0)
+app.db.profile.skins.default.settings.showIcons = true
+app:RebuildWindows()
+assert(frame.rows[1].icon:IsShown() and frame.rows[1].points.TOPLEFT[2] == 24)
 assert(frame.rows[1]:GetHeight() == 24 and frame.rows[1].entry:GetHeight() == 24)
 assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() == 24)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
@@ -401,15 +406,16 @@ frame.config.statistic = "Dps"
 app:RefreshWindows()
 assert(detailBar.value.text == "5" and detailBar.secondaryValue.text == "25", "DPS uses rate before total")
 frame.config.statistic = "DamageDone"
-frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing = 30, 6
-frame.config.overrides.classColors = false
+app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.settings.rowSpacing = 30, 6
+app.db.profile.skins.default.settings.classColors = false
 app:RefreshWindows()
 assert(
     detailBar:GetHeight() == 30 and detailBar.icon:GetWidth() == 30,
     "Detail rows inherit owner appearance overrides"
 )
 assert(detailBar.color[1] == app:GetWindowSetting(frame.config, "barColor")[1])
-frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing, frame.config.overrides.classColors = nil, nil, nil
+app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.settings.rowSpacing, app.db.profile.skins.default.settings.classColors =
+    24, 4, true
 app:RefreshWindows()
 frame.rows[1].entry.scripts.OnLeave()
 assert(details.combatSpells[1].name == nil, "Returned spell tables stay untouched")
@@ -915,7 +921,7 @@ slot.config.hidden = true
 slot.config.collapsed = true
 slot.config.statistic = "Dps"
 slot.config.sessionID = 99
-slot.config.overrides.fontSize = 20
+app.db.profile.skins.default.settings.fontSize = 20
 app:RebuildWindows()
 assert(not slot:IsShown() and app:GetUnusedWindowSlot() == nil, "Hidden windows must retain their slot")
 local previousConfig = slot.config
@@ -924,7 +930,7 @@ assert(slot.config == previousConfig and not slot:IsShown())
 assert(app:GetUnusedWindowSlot() == 3)
 app:AddWindow()
 assert(app.windowFrames[3] == slot and slot:IsShown(), "Reactivation must reuse the slot's frame")
-assert(slot.config == previousConfig and slot.config.overrides.fontSize == 20)
+assert(slot.config == previousConfig and app:GetWindowSetting(slot.config, "fontSize") == 20)
 assert(slot.config.statistic == "Dps" and slot.config.session == "Current")
 assert(not slot.config.hidden and slot.config.collapsed and slot.config.sessionID == 99)
 for _ = 1, 25 do

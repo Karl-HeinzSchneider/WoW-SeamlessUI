@@ -13,7 +13,7 @@ local anchors = {
     BOTTOMRIGHT = "Bottom right",
 }
 
--- Both views use the same definitions, so new settings always support inheritance.
+-- Layout controls inherit window defaults; appearance controls belong to skins.
 local settings = {
     { key = "width", name = "Width", type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = "Height", type = "range", min = 120, max = 900, step = 1 },
@@ -51,6 +51,7 @@ local settings = {
             return values
         end,
     },
+    { key = "showIcons", name = "Show icons", type = "toggle" },
     { key = "fontSize", name = "Font size", type = "range", min = 8, max = 24, step = 1 },
     {
         key = "fontFlags",
@@ -80,7 +81,7 @@ local function CopyValue(value)
     return value
 end
 
-local function SettingControl(definition, config, inherited)
+local function SettingControl(definition, config, inherited, skin)
     local key = definition.key
     local control = {
         type = definition.type,
@@ -94,7 +95,9 @@ local function SettingControl(definition, config, inherited)
         values = definition.values,
         get = function()
             local value
-            if not config or inherited then
+            if skin then
+                value = skin.settings[key]
+            elseif not config or inherited then
                 value = app.db.profile.windowDefaults[key]
             else
                 value = app:GetWindowSetting(config, key)
@@ -107,7 +110,7 @@ local function SettingControl(definition, config, inherited)
             return value
         end,
         set = function(_, value, g, b, a)
-            local target = config and config.overrides or app.db.profile.windowDefaults
+            local target = skin and skin.settings or (config and config.overrides or app.db.profile.windowDefaults)
             if definition.type == "color" then
                 target[key] = { value, g, b, a }
             elseif definition.type == "input" then
@@ -148,41 +151,43 @@ local function AppearanceOptions(config)
     }
     for order, definition in ipairs(settings) do
         local key = definition.key
-        if config then
-            local default = SettingControl(definition, config, true)
-            default.order = 1
-            local value = SettingControl(definition, config, false)
-            value.order = 3
-            args[key] = {
-                type = "group",
-                inline = true,
-                name = definition.name,
-                order = order * 10,
-                args = {
-                    default = default,
-                    override = {
-                        type = "toggle",
-                        name = "Override",
-                        order = 2,
-                        width = 0.5,
-                        get = function()
-                            return config.overrides[key] ~= nil
-                        end,
-                        set = function(_, enabled)
-                            config.overrides[key] = enabled and CopyValue(app.db.profile.windowDefaults[key]) or nil
-                            -- A false toggle value is itself a valid override.
-                            if enabled and app.db.profile.windowDefaults[key] == false then
-                                config.overrides[key] = false
-                            end
-                            app:RebuildWindows()
-                        end,
+        if app.skinDefaults[key] == nil then
+            if config then
+                local default = SettingControl(definition, config, true)
+                default.order = 1
+                local value = SettingControl(definition, config, false)
+                value.order = 3
+                args[key] = {
+                    type = "group",
+                    inline = true,
+                    name = definition.name,
+                    order = order * 10,
+                    args = {
+                        default = default,
+                        override = {
+                            type = "toggle",
+                            name = "Override",
+                            order = 2,
+                            width = 0.5,
+                            get = function()
+                                return config.overrides[key] ~= nil
+                            end,
+                            set = function(_, enabled)
+                                config.overrides[key] = enabled and CopyValue(app.db.profile.windowDefaults[key]) or nil
+                                -- A false toggle value is itself a valid override.
+                                if enabled and app.db.profile.windowDefaults[key] == false then
+                                    config.overrides[key] = false
+                                end
+                                app:RebuildWindows()
+                            end,
+                        },
+                        value = value,
                     },
-                    value = value,
-                },
-            }
-        else
-            args[key] = SettingControl(definition)
-            args[key].order = order * 10
+                }
+            else
+                args[key] = SettingControl(definition)
+                args[key].order = order * 10
+            end
         end
     end
     return args
@@ -261,6 +266,26 @@ function app:BuildWindowOptions()
                         self:SetWindowEnabled(config, value)
                     end,
                 },
+                skin = {
+                    type = "select",
+                    name = "Skin",
+                    order = 3,
+                    width = "full",
+                    values = function()
+                        local values = {}
+                        for key, skin in pairs(self.db.profile.skins) do
+                            values[key] = skin.name
+                        end
+                        return values
+                    end,
+                    get = function()
+                        return config.skin
+                    end,
+                    set = function(_, value)
+                        config.skin = value
+                        self:RebuildWindows()
+                    end,
+                },
                 anchorTo = {
                     type = "select",
                     name = "Anchored to",
@@ -295,6 +320,70 @@ function app:BuildWindowOptions()
         }
     end
     self.windowOptions.args = args
+end
+
+function app:BuildSkinOptions()
+    if not self.skinOptions then
+        return
+    end
+    local args = {}
+    local keys = {}
+    for key in pairs(self.db.profile.skins) do
+        if key ~= "default" then
+            keys[#keys + 1] = key
+        end
+    end
+    table.sort(keys)
+    table.insert(keys, 1, "default")
+    for index, key in ipairs(keys) do
+        local skin = self.db.profile.skins[key]
+        local controls = {
+            info = {
+                type = "description",
+                order = 0,
+                name = "Appearance settings apply to every window using this skin. New skins start with a copy of Default.",
+            },
+        }
+        for order, definition in ipairs(settings) do
+            if self.skinDefaults[definition.key] ~= nil then
+                controls[definition.key] = SettingControl(definition, nil, nil, skin)
+                controls[definition.key].order = order * 10
+            end
+        end
+        args[key] = { type = "group", name = skin.name, order = index, args = controls }
+    end
+    args.add = {
+        type = "group",
+        name = "Add skin",
+        order = 10000,
+        args = {
+            name = {
+                type = "input",
+                name = "Skin name",
+                order = 1,
+                width = "full",
+                get = function()
+                    return self.newSkinName or ""
+                end,
+                set = function(_, value)
+                    self.newSkinName = value
+                end,
+            },
+            create = {
+                type = "execute",
+                name = "Add skin",
+                order = 2,
+                disabled = function()
+                    return not self.newSkinName or not self.newSkinName:match("%S")
+                end,
+                func = function()
+                    self:AddSkin(self.newSkinName or "")
+                    self.newSkinName = nil
+                end,
+            },
+        },
+    }
+    self.skinOptions.args = args
 end
 
 function app:HistoryOptions()
@@ -418,7 +507,9 @@ end
 function app:RegisterOptions()
     self:PrepareWindowSettings()
     self.windowOptions = { name = "Windows", order = 10, childGroups = "tree", args = {} }
+    self.skinOptions = { name = "Skin", order = 15, childGroups = "tree", args = {} }
     self:BuildWindowOptions()
+    self:BuildSkinOptions()
     self.core:RegisterOptions(appName, {
         title = "Damage Meter",
         general = {
@@ -527,6 +618,7 @@ function app:RegisterOptions()
         },
         tabs = {
             windows = self.windowOptions,
+            skin = self.skinOptions,
             history = self:HistoryOptions(),
             credits = {
                 name = "Credits",

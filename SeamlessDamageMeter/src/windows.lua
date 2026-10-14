@@ -4,6 +4,7 @@ local _, app = ...
 app.windows = {}
 app.windowFrames = {}
 local HEADER_HEIGHT = 32
+local SESSION_MENU_MAX_HEIGHT = 240
 local CreateRow
 
 local function ScrollOffsetKey(frame)
@@ -347,6 +348,7 @@ end
 
 function app:ShowSessionMenu(frame)
     MenuUtil.CreateContextMenu(frame.session, function(_, root)
+        root:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
             local sessions = self.combatService:ListSessions()
             for _, session in ipairs(sessions) do
@@ -395,6 +397,7 @@ function app:ShowSessionMenu(frame)
                 self:ShowAnalysis(frame.config)
             end)
             local compare = root:CreateButton("Compare with saved fight")
+            compare:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
             for _, session in ipairs(self.combatService:ListSessions()) do
                 if session.archiveID and session.archiveID ~= fight.id then
                     local description = compare:CreateButton(self.combatService:Describe(session, true), function()

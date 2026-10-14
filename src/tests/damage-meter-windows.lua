@@ -659,6 +659,9 @@ assert(frame.statistic:GetFrameLevel() == 2 and frame.session:GetFrameLevel() ==
 local menuRoot
 local function menuDescription(label)
     local description = { label = label, entries = {} }
+    function description:SetScrollMode(height)
+        self.maxScrollHeight = height
+    end
     function description:AddInitializer(initializer)
         self.initializer = initializer
     end

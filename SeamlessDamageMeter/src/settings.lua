@@ -5,14 +5,19 @@ app.MAX_WINDOWS = 10
 app.windowDefaults = {
     width = 400,
     height = 200,
-    fixedHeight = false,
+    fixedHeight = true,
     visibleLines = 7,
     showResizeHandle = true,
+    lockSize = false,
     scale = 1,
     point = "CENTER",
     relativePoint = "CENTER",
     x = 0,
     y = 0,
+}
+
+app.skinDefaults = {
+    showIcons = true,
     font = "Friz Quadrata TT",
     fontSize = 12,
     fontFlags = "",
@@ -33,6 +38,15 @@ function app:GetWindowSetting(config, key)
         local spacing = self:GetWindowSetting(config, "rowSpacing")
         return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
     end
+    if self.skinDefaults[key] ~= nil then
+        local skins = self.db.profile.skins
+        local skin = skins and (skins[config.skin or "default"] or skins.default)
+        local value = skin and skin.settings[key]
+        if value ~= nil then
+            return value
+        end
+        return self.skinDefaults[key]
+    end
     local value = config.overrides and config.overrides[key]
     if value ~= nil then
         return value
@@ -40,8 +54,51 @@ function app:GetWindowSetting(config, key)
     return self.db.profile.windowDefaults[key]
 end
 
+local function CopySettings(source)
+    local result = {}
+    for key, fallback in pairs(app.skinDefaults) do
+        local value = source[key]
+        if value == nil then
+            value = fallback
+        end
+        result[key] = type(value) == "table" and { unpack(value) } or value
+    end
+    return result
+end
+
+function app:AddSkin(name)
+    name = name:match("^%s*(.-)%s*$")
+    if name == "" then
+        return
+    end
+    local skins = self.db.profile.skins
+    local id = 1
+    while skins["skin" .. id] do
+        id = id + 1
+    end
+    local key = "skin" .. id
+    skins[key] = { name = name, settings = CopySettings(skins.default.settings) }
+    self:UpdateWindowOptions()
+    return key
+end
+
 function app:PrepareWindowSettings()
     local profile = self.db.profile
+    profile.skins = profile.skins or {}
+    if not profile.skins.default then
+        profile.skins.default = { name = "Default", settings = CopySettings(profile.windowDefaults) }
+    end
+    for _, skin in pairs(profile.skins) do
+        skin.settings = skin.settings or {}
+        for key, value in pairs(self.skinDefaults) do
+            if skin.settings[key] == nil then
+                skin.settings[key] = type(value) == "table" and { unpack(value) } or value
+            end
+        end
+    end
+    for key in pairs(self.skinDefaults) do
+        profile.windowDefaults[key] = nil
+    end
     profile.favorites = profile.favorites or {}
     profile.maxVisibleFavorites = math.max(0, math.min(20, math.floor(tonumber(profile.maxVisibleFavorites) or 6)))
     if not profile.fixedWindowSlots then
@@ -105,6 +162,29 @@ function app:PrepareWindowSettings()
     end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
+        if not config.skin then
+            config.skin = "default"
+            local customized = false
+            local settings = CopySettings(profile.skins.default.settings)
+            for key in pairs(self.skinDefaults) do
+                if config.overrides[key] ~= nil then
+                    settings[key] = type(config.overrides[key]) == "table" and { unpack(config.overrides[key]) }
+                        or config.overrides[key]
+                    customized = true
+                end
+            end
+            if customized then
+                local key = "legacyWindow" .. config.id
+                profile.skins[key] = { name = "Window " .. config.id .. " (migrated)", settings = settings }
+                config.skin = key
+            end
+        end
+        if not profile.skins[config.skin] then
+            config.skin = "default"
+        end
+        for key in pairs(self.skinDefaults) do
+            config.overrides[key] = nil
+        end
         if config.favorites then
             for slot, key in pairs(config.favorites) do
                 if profile.favorites[slot] == nil then
@@ -156,6 +236,7 @@ end
 function app:UpdateWindowOptions()
     if self.windowOptions then
         self:BuildWindowOptions()
+        self:BuildSkinOptions()
         self.core:RefreshOptions("SeamlessDamageMeter")
     end
 end

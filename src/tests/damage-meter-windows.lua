@@ -266,6 +266,8 @@ LibStub = function()
 end
 assert(loadfile("SeamlessDamageMeter/src/settings.lua"))("SeamlessDamageMeter", app)
 app.db.profile.windowDefaults = app.windowDefaults
+assert(app.windowDefaults.fixedHeight and app.windowDefaults.visibleLines == 7)
+app.db.profile.windowDefaults.fixedHeight = false
 assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 for _, name in ipairs({ "archive", "live", "service", "breakdowns", "capture" }) do
     assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
@@ -278,7 +280,7 @@ assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type s
 local categoryAnchor = frame.statistic.text.points.TOPLEFT
 assert(categoryAnchor[4] == 25 and categoryAnchor[5] == -9, "Category text must sit at the reference header height")
 local categoryWidth = frame.statistic.text:GetWidth()
-frame.config.overrides.hideTypeSelector = true
+app.db.profile.skins.default.settings.hideTypeSelector = true
 app:RebuildWindows()
 assert(not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled)
 for index, value in ipairs(categoryAnchor) do
@@ -293,29 +295,34 @@ assert(
     "Timer must use natural width and left alignment"
 )
 assert(frame.statistic.text.text == "Damage done", "Hiding the selector retains the category label")
-frame.config.overrides.hideTypeSelector = false
+app.db.profile.skins.default.settings.hideTypeSelector = false
 app:RebuildWindows()
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Selector can be restored")
 assert(frame.statistic.points.TOPLEFT[2] == frame and frame.statistic.points.TOPLEFT[4] == 3)
 assert(frame.timer.points.LEFT[2] == frame.statistic.text, "Timer follows the category label")
 assert(frame.timer:IsShown(), "Combat timer is visible by default")
-app.db.profile.windowDefaults.hideCombatTimer = true
+app.db.profile.skins.default.settings.hideCombatTimer = true
 app:RebuildWindows()
 assert(not frame.timer:IsShown(), "Combat timer inherits the shared hide setting")
-frame.config.overrides.hideCombatTimer = false
+app.db.profile.skins.default.settings.hideCombatTimer = false
 app:RebuildWindows()
-assert(frame.timer:IsShown(), "A false override restores the combat timer")
-frame.config.overrides.hideCombatTimer = true
+assert(frame.timer:IsShown(), "A skin edit restores the combat timer")
+app.db.profile.skins.default.settings.hideCombatTimer = true
 app:RebuildWindows()
-assert(not frame.timer:IsShown(), "A window override hides the combat timer")
-frame.config.overrides.hideCombatTimer = nil
-app.db.profile.windowDefaults.hideCombatTimer = false
+assert(not frame.timer:IsShown(), "A skin edit hides the combat timer")
+app.db.profile.skins.default.settings.hideCombatTimer = false
 app:RebuildWindows()
 assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
 for id = 2, 10 do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
 end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
+app.db.profile.skins.default.settings.showIcons = false
+app:RebuildWindows()
+assert(not frame.rows[1].icon:IsShown() and frame.rows[1].points.TOPLEFT[2] == 0)
+app.db.profile.skins.default.settings.showIcons = true
+app:RebuildWindows()
+assert(frame.rows[1].icon:IsShown() and frame.rows[1].points.TOPLEFT[2] == 24)
 assert(frame.rows[1]:GetHeight() == 24 and frame.rows[1].entry:GetHeight() == 24)
 assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() == 24)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
@@ -413,15 +420,16 @@ frame.config.statistic = "Dps"
 app:RefreshWindows()
 assert(detailBar.value.text == "5" and detailBar.secondaryValue.text == "25", "DPS uses rate before total")
 frame.config.statistic = "DamageDone"
-frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing = 30, 6
-frame.config.overrides.classColors = false
+app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.settings.rowSpacing = 30, 6
+app.db.profile.skins.default.settings.classColors = false
 app:RefreshWindows()
 assert(
     detailBar:GetHeight() == 30 and detailBar.icon:GetWidth() == 30,
     "Detail rows inherit owner appearance overrides"
 )
 assert(detailBar.color[1] == app:GetWindowSetting(frame.config, "barColor")[1])
-frame.config.overrides.rowHeight, frame.config.overrides.rowSpacing, frame.config.overrides.classColors = nil, nil, nil
+app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.settings.rowSpacing, app.db.profile.skins.default.settings.classColors =
+    24, 4, true
 app:RefreshWindows()
 frame.rows[1].entry.scripts.OnLeave()
 assert(details.combatSpells[1].name == nil, "Returned spell tables stay untouched")
@@ -665,6 +673,9 @@ local function menuDescription(label)
         child.selected, child.choose = selected, choose
         table.insert(self.entries, child)
         return child
+    end
+    function description:CreateTitle(text)
+        table.insert(self.entries, { title = text })
     end
     function description:CreateDivider()
         table.insert(self.entries, { divider = true })
@@ -927,7 +938,7 @@ slot.config.hidden = true
 slot.config.collapsed = true
 slot.config.statistic = "Dps"
 slot.config.sessionID = 99
-slot.config.overrides.fontSize = 20
+app.db.profile.skins.default.settings.fontSize = 20
 app:RebuildWindows()
 assert(not slot:IsShown() and app:GetUnusedWindowSlot() == nil, "Hidden windows must retain their slot")
 local previousConfig = slot.config
@@ -936,7 +947,7 @@ assert(slot.config == previousConfig and not slot:IsShown())
 assert(app:GetUnusedWindowSlot() == 3)
 app:AddWindow()
 assert(app.windowFrames[3] == slot and slot:IsShown(), "Reactivation must reuse the slot's frame")
-assert(slot.config == previousConfig and slot.config.overrides.fontSize == 20)
+assert(slot.config == previousConfig and app:GetWindowSetting(slot.config, "fontSize") == 20)
 assert(slot.config.statistic == "Dps" and slot.config.session == "Current")
 assert(not slot.config.hidden and slot.config.collapsed and slot.config.sessionID == 99)
 for _ = 1, 25 do
@@ -992,11 +1003,28 @@ function eme:RegisterResizable(frame, minimum, maximum, step)
     assert(minimum == 50 and maximum == 200 and step == 5)
 end
 function eme:RegisterSlider(frame, name, key, callback, minimum, maximum, step)
-    assert(name == (key == "width" and "Width" or "Height"))
-    assert(minimum == (key == "width" and 200 or 120))
-    assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    if key == "visibleLines" then
+        assert(name == "Row count" and minimum == 1 and maximum == 30 and step == 1)
+    else
+        assert(name == (key == "width" and "Width" or "Height"))
+        assert(minimum == (key == "width" and 200 or 120))
+        assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    end
     frame.editModeSliders = frame.editModeSliders or {}
     frame.editModeSliders[key] = callback
+end
+function eme:RegisterCustomCheckbox(frame, name, checked, unchecked, key)
+    frame.editModeChecks = frame.editModeChecks or {}
+    frame.editModeChecks[key] = { checked = checked, unchecked = unchecked }
+    unchecked(true)
+end
+function eme:RegisterDropdown(frame, factory, key)
+    assert(key == "skin")
+    return factory:Create_UIDropDownMenu(nil, object(frame))
+end
+function eme:RegisterCustomButton(frame, name, callback, key)
+    assert(key == "editSkin" and name == "Edit selected skin")
+    frame.editSkin = callback
 end
 function eme:SetDontResize(frame)
     frame.EMEDontResize = true
@@ -1104,6 +1132,99 @@ ClickWindow(meter, false, "RightButton")
 assert(meter.config.enabled, "The library's right-click reset must not deactivate a slot")
 EditModeManagerFrame:ExitEditMode()
 assert(meter:IsShown() and meter.config.enabled, "A checked slot must remain usable after Edit Mode")
+
+EditModeManagerFrame:EnterEditMode()
+local draggingSettings, dialogRefreshes = false, 0
+EditModeExpandedSystemSettingsDialog = {
+    attachedToSystem = meter,
+    pools = {
+        EnumerateActiveByTemplate = function()
+            local yielded = false
+            return function()
+                if not yielded then
+                    yielded = true
+                    return {
+                        Slider = {
+                            Slider = {
+                                IsDraggingThumb = function()
+                                    return draggingSettings
+                                end,
+                            },
+                        },
+                    }
+                end
+            end
+        end,
+    },
+    UpdateSettings = function()
+        dialogRefreshes = dialogRefreshes + 1
+        meter.editModeSliders.visibleLines(25)
+    end,
+}
+app:SyncWindowEditMode(meter)
+assert(dialogRefreshes == 1 and app:GetWindowSetting(meter.config, "visibleLines") == 7)
+draggingSettings = true
+app:SyncWindowEditMode(meter)
+assert(dialogRefreshes == 1, "Avoid rebuilding pooled EME sliders during a drag")
+draggingSettings = false
+EditModeExpandedSystemSettingsDialog = nil
+meter.editModeChecks.fixedHeight.checked()
+assert(app:GetWindowSetting(meter.config, "fixedHeight"))
+meter.config.overrides.visibleLines = 7.25
+app:SyncWindowEditMode(meter)
+assert(app:GetWindowSetting(meter.config, "visibleLines") == 7.25, "Edit Mode must preserve fractional addon values")
+assert(eme.framesDB[meter.system].settings[18].visibleLines == 7)
+meter.editModeSliders.visibleLines(8)
+assert(app:GetWindowSetting(meter.config, "visibleLines") == 8)
+assert(meter:GetHeight() == 40 + 8 * 28 - 4)
+meter.editModeChecks.lockSize.checked()
+assert(not meter.resize:IsShown() and not meter.resize.mouseEnabled)
+local lockedWidth = meter:GetWidth()
+meter.editModeSliders.width(lockedWidth + 100)
+meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
+assert(meter:GetWidth() == lockedWidth and not meter.editing)
+meter.editModeChecks.lockSize.unchecked(false)
+assert(meter.resize:IsShown() and meter.resize.mouseEnabled)
+meter.editModeChecks.fixedHeight.unchecked(false)
+assert(not app:GetWindowSetting(meter.config, "fixedHeight"))
+assert(eme.framesDB[meter.system].settings[12].fixedHeight == 0)
+assert(eme.framesDB[meter.system].settings[18].visibleLines == 8)
+app.db.profile.skins.testSkin = { name = "Test skin", settings = { rowHeight = 32 } }
+meter.skinDropdown:GetScript("OnClick")(meter.skinDropdown)
+local skinChoice
+for _, choice in ipairs(menuRoot.entries) do
+    if choice.label == "Test skin" then
+        skinChoice = choice
+    end
+end
+assert(skinChoice, "Skin dropdown must include custom skins")
+skinChoice.choose()
+assert(meter.config.skin == "testSkin" and app:GetWindowSetting(meter.config, "rowHeight") == 32)
+assert(meter.skinDropdown.text == "Skin: Test skin")
+local openedSkin
+app.core.OpenOptions = function(_, name, tab)
+    assert(name == "SeamlessDamageMeter" and tab == "skin")
+end
+local previousStub = LibStub
+LibStub = function(name)
+    if name == "AceConfigDialog-3.0" then
+        return {
+            SelectGroup = function(_, name, tab, skin)
+                openedSkin = skin
+            end,
+        }
+    end
+    return previousStub(name)
+end
+meter.editSkin()
+assert(openedSkin == "testSkin")
+LibStub = previousStub
+meter.config.skin = "default"
+app:RebuildWindows()
+EditModeManagerFrame:ExitEditMode()
+local savedLines = meter.config.overrides.visibleLines
+meter.editModeSliders.visibleLines(12)
+assert(meter.config.overrides.visibleLines == savedLines, "Outside-Edit-Mode callbacks must not change rows")
 
 local realAPI = liveAPI
 C_DamageMeter = setmetatable({}, {

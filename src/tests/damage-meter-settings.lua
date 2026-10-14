@@ -17,7 +17,16 @@ end
 local old = { id = 1, width = 450, height = 230, x = 12.5, y = -25, favorites = { "Dps" } }
 local fresh = { id = 2, overrides = {}, favorites = { "DamageDone", "HealingDone" } }
 app.db = { profile = { windows = { old, fresh }, windowDefaults = copy(app.windowDefaults) } }
+app.db.profile.windowDefaults.fontSize = 15
+old.overrides = { classColors = false, textColor = { 0.2, 0.3, 0.4, 1 } }
 app:PrepareWindowSettings()
+assert(fresh.skin == "default" and old.skin ~= "default")
+assert(app:GetWindowSetting(fresh, "fontSize") == 15)
+assert(app:GetWindowSetting(old, "classColors") == false)
+assert(app:GetWindowSetting(old, "textColor")[1] == 0.2)
+assert(old.overrides.classColors == nil and app.db.profile.windowDefaults.fontSize == nil)
+app:PrepareWindowSettings()
+assert(app:GetWindowSetting(old, "classColors") == false)
 assert(app.db.profile.maxVisibleFavorites == 6)
 assert(app.db.profile.favorites[1] == "Dps" and app.db.profile.favorites[2] == "HealingDone")
 assert(old.favorites == nil and fresh.favorites == nil)
@@ -26,7 +35,7 @@ assert(app:GetWindowSetting(fresh, "width") == 400)
 app.db.profile.windowDefaults.width = 500
 assert(app:GetWindowSetting(fresh, "width") == 500)
 assert(app:GetWindowSetting(old, "width") == 450)
-fresh.overrides.classColors = false
+app.db.profile.skins.default.settings.classColors = false
 assert(app:GetWindowSetting(fresh, "classColors") == false)
 assert(app:CanAnchorTo(old, 2))
 fresh.anchorTo = 1
@@ -39,6 +48,7 @@ C_CVar = {
     end,
 }
 app.core = {
+    RefreshOptions = function() end,
     RegisterOptions = function(_, name, spec)
         app.optionSpec = spec
         local args =
@@ -62,30 +72,34 @@ favoriteLimit.set(nil, 3)
 assert(favoriteLimit.get() == 3 and refreshed == 1 and app.db.profile.favorites[2] == "HealingDone")
 local values = app.windowOptions.args.window2.args
 local defaults = app.windowOptions.args.defaults.args
-assert(defaults.fixedHeight.get() == false and defaults.visibleLines.get() == 7)
+assert(defaults.fixedHeight.get() == true and defaults.visibleLines.get() == 7)
 assert(defaults.visibleLines.step == 0.25 and defaults.showResizeHandle.get() == true)
 fresh.overrides.fixedHeight = true
 for _, lines in ipairs({ 7, 7.25, 7.5, 7.75 }) do
     fresh.overrides.visibleLines = lines
     assert(app:GetWindowSetting(fresh, "height") == 40 + lines * 28 - 4)
 end
-fresh.overrides.rowHeight, fresh.overrides.rowSpacing = 20, 2
+app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.settings.rowSpacing = 20, 2
 assert(app:GetWindowSetting(fresh, "height") == 40 + 7.75 * 22 - 2)
 fresh.overrides.fixedHeight = false
 assert(app:GetWindowSetting(fresh, "height") == app.db.profile.windowDefaults.height)
 fresh.overrides.fixedHeight, fresh.overrides.visibleLines = nil, nil
-fresh.overrides.rowHeight, fresh.overrides.rowSpacing = nil, nil
+app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.settings.rowSpacing = 24, 4
 app.RebuildWindows = function() end
-app.db.profile.windowDefaults.classColors = false
-assert(defaults.classColors.get() == false)
-assert(values.classColors.args.default.get() == false)
-values.classColors.args.override.set(nil, true)
-assert(fresh.overrides.classColors == false)
-values.classColors.args.override.set(nil, false)
-assert(fresh.overrides.classColors == nil)
-values.textColor.args.override.set(nil, true)
-fresh.overrides.textColor[1] = 0.25
-assert(app.db.profile.windowDefaults.textColor[1] == 1)
+local skinControls = app.skinOptions.args.default.args
+assert(values.classColors == nil and defaults.fontSize == nil)
+skinControls.classColors.set(nil, false)
+assert(app:GetWindowSetting(fresh, "classColors") == false)
+local skinID = app:AddSkin("Custom")
+fresh.skin = skinID
+app.db.profile.skins[skinID].settings.textColor[1] = 0.25
+assert(app.db.profile.skins.default.settings.textColor[1] == 1)
+app.db.profile.skins[skinID].settings.rowHeight = 30
+assert(app:GetWindowSetting(fresh, "rowHeight") == 30)
+assert(app:GetWindowSetting(old, "rowHeight") == 24)
+app:PrepareWindowSettings()
+assert(fresh.skin == skinID and app:GetWindowSetting(fresh, "rowHeight") == 30)
+assert(app:AddSkin("  ") == nil)
 assert(values.x.args.value.validate(nil, "12.125") == true)
 assert(type(values.x.args.value.validate(nil, "no")) == "string")
 app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
@@ -112,7 +126,12 @@ local existing = { id = 1, anchorTo = 18, overrides = {} }
 app.db.profile = { windows = { highID, existing, anchor }, nextID = 28, windowDefaults = copy(app.windowDefaults) }
 app:PrepareWindowSettings()
 assert(existing.id == 1 and highID.id == 2 and anchor.id == 3)
-assert(highID.anchorTo == 3 and existing.anchorTo == 2 and highID.overrides.fontSize == 19)
+assert(
+    highID.anchorTo == 3
+        and existing.anchorTo == 2
+        and app:GetWindowSetting(highID, "fontSize") == 19
+        and highID.overrides.fontSize == nil
+)
 assert(app.db.profile.nextID == nil and app.db.profile.fixedWindowSlots)
 assert(app:GetUnusedWindowSlot() == 4)
 app:PrepareWindowSettings()

@@ -116,7 +116,8 @@ function service:GetEnemyIndex(config)
         end
         -- Partial relationships are labelled rather than silently presented as complete.
         if
-            math.abs(accounted - publicEnemy.totalAmount) > math.max(0.01, math.abs(publicEnemy.totalAmount) * 0.000001)
+            math.abs(accounted - publicEnemy.totalAmount)
+            > math.max(0.01, math.abs(publicEnemy.totalAmount) * 0.000001)
         then
             index.complete = false
         end

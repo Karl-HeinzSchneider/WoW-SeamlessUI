@@ -20,9 +20,9 @@
     "package:local": "tsx src/package-local.ts"
   },
   "devDependencies": {
-    "@johnnymorganz/stylua-bin": "^2.5.2",
+    "@johnnymorganz/stylua-bin": "2.5.2",
     "@types/node": "^22.0.0",
-    "prettier": "^3.9.9",
+    "prettier": "3.9.9",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }

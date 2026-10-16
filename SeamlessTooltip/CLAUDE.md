@@ -92,7 +92,7 @@ One file per tooltip enhancement, listed by options section.
 - `targetline.lua` — `TargetLine`: a Unit post-call adds "T: Name" for `<unit>target` (class
   color for players, `unitTooltip.UnitColor` otherwise; ">>YOU<<" in red when it targets you and
   `you` is set). World units keep their tooltip while hovered, so a `GameTooltip` `OnUpdate` hook
-  re-checks the target every 0.2 s and rewrites the line (or adds it; "T: -" once the target is
+  re-checks the target every 0.05 s and rewrites the line (or adds it; "T: -" once the target is
   gone). No line while `UnitExists`/`UnitIsUnit`/`UnitName` are secret.
 - `targetedby.lua` — `TargetedBy`: in a group, the members whose target is the unit (`raid<n>`,
   else `player` + `party<n>`, `UnitIsUnit`): "Targeted by (2): Name, Name" in class colors, at most

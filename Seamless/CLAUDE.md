@@ -9,6 +9,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
+- `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
   Can show the framerate once on startup (off by default); its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,
@@ -32,6 +33,10 @@ Declare `## Dependencies: Seamless` in every feature TOC. At file load, obtain t
 core through `LibStub("AceAddon-3.0"):GetAddon("Seamless")`; no new global is needed.
 
 - `core.logger`: shared logger; its threshold follows the core profile.
+- `core:GetQuestLogSummary()`: a fresh table with `totalQuests`, `completedQuests` (ready to
+  turn in), and `completedQuestXP` (the sum of client-reported XP rewards for those completed
+  quests). Counts all non-header log entries, including quests under collapsed headers, without
+  changing the selected quest or header states. Call again on `QUEST_LOG_UPDATE` to refresh.
 - `core:RegisterOptions(addonName, spec)`: register the addon's panel, from the options module's
   `OnInitialize` (after its database exists). `spec`: `title` (panel name), `general` (AceConfig
   args of the General tab), optional `tabs` (AceConfig groups by key, each with `order` and `name`;

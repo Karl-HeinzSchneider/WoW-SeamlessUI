@@ -59,7 +59,7 @@ used; shared preferences are stored independently in SeamlessDB.
   `Texture:GetAtlas()`. Changes go through `SetHealthAtlas`, which uses the owning
   bar setter and standalone legacy fills. Native atlas-hook arguments are ignored.
 - `GetStatusBarTexture` obtains only the named bar's texture object. Do not inspect
-  its rendered values, UVs or dimensions. All layout geometry waits out combat;
+  its rendered values, UVs or dimensions. Layout selection and protected geometry wait out combat; unprotected target visuals repair in combat;
   health color/fill updates use constant arguments without inspecting bar values.
 - Restore static atlases with `resetTexCoords = true`. Reapply fixed current
   definitions, not observed client state. Keep native root positions and scale.

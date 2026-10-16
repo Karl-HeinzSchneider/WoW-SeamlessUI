@@ -74,8 +74,17 @@ function module:CheckPaths(frame, context, paths)
 end
 
 function module:Edit(region, changes)
-    if InCombatLockdown() or not self:CheckRegion(region, "fixed geometry") then
+    if not self:CheckRegion(region, "fixed geometry") then
         return
+    end
+    if InCombatLockdown() then
+        if not self:CheckRegion(region, "combat geometry", { "IsProtected" }) then
+            return
+        end
+        local protected = region:IsProtected()
+        if not self:Readable(protected) or protected then
+            return
+        end
     end
     local function Call(name, ...)
         if self:CheckRegion(region, "fixed geometry", { name }) then
@@ -369,7 +378,17 @@ local function Initialize()
 end
 
 function module:Refresh(restore)
-    if (not enabled and not restore) or not app.db or InCombatLockdown() then
+    if (not enabled and not restore) or not app.db then
+        return
+    end
+    if InCombatLockdown() then
+        -- Preserve the active layout even if a profile change is pending. Only
+        -- target-family visual regions are repaired; Edit checks protection.
+        if enabled and applied and not writing then
+            writing = true
+            self:RepairTargets(app.unitFrames:All())
+            writing = false
+        end
         return
     end
     local legacy = not restore and app.db.profile.layout == "legacy"

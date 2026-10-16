@@ -71,13 +71,14 @@ power/classification data are skipped with deduplicated logger warnings. Power
 kinds without specific artwork use the native mana fallback without a warning.
 Party temporary health loss uses the player atlas, matching the exported template.
 
-Geometry and layout selection changes wait until combat ends. The final
+Protected geometry and layout selection changes wait until combat ends. The final
 profile selection is applied after `PLAYER_REGEN_ENABLED`. Health tint and fill
 updates use constant atlas/file arguments through the native status-bar setter;
 they do not perform geometry work or arithmetic on health/power values. Named
 static atlas changes are repaired synchronously in their secure post-hooks,
-including during combat, without resizing/reanchoring. Native combat updates can
-still change geometry; Legacy geometry is reapplied after lockdown.
+including during combat. Target-family updates also reapply fixed geometry to
+unprotected visual regions, checking IsProtected before each edit. Protected
+regions wait until lockdown ends; no protected root is moved.
 
 Repairs run before native update calls return; no next-frame timer exposes new
 art with old coordinates. A private cache of the addon's last writes is invalidated

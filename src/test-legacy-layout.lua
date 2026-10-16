@@ -20,45 +20,48 @@ local callbacks = {}
 local function Object()
     return setmetatable({ shown = true }, { __index = methods })
 end
-local function Geometry()
-    assert(not combat, "geometry mutation during combat")
+local function Geometry(region)
+    assert(not combat or not region.protected, "protected geometry mutation during combat")
     geometryWrites = geometryWrites + 1
+end
+function methods:IsProtected()
+    return self.protected or false
 end
 function methods:IsForbidden()
     return false
 end
 function methods:SetWidth(v)
-    Geometry()
+    Geometry(self)
     assert(canaccessvalue(v))
     self.width = v
 end
 function methods:SetHeight(v)
-    Geometry()
+    Geometry(self)
     assert(canaccessvalue(v))
     self.height = v
 end
 function methods:SetPoint(...)
-    Geometry()
+    Geometry(self)
     self.point = { ... }
 end
 function methods:ClearAllPoints()
-    Geometry()
+    Geometry(self)
     self.point = nil
 end
 function methods:SetJustifyH(v)
-    Geometry()
+    Geometry(self)
     self.justify = v
 end
 function methods:SetDrawLayer(...)
-    Geometry()
+    Geometry(self)
     self.layer = { ... }
 end
 function methods:SetScale(v)
-    Geometry()
+    Geometry(self)
     self.scale = v
 end
 function methods:SetShown(v)
-    Geometry()
+    Geometry(self)
     self.shown = v
 end
 function methods:Show()
@@ -262,7 +265,15 @@ local function Target(unit)
     Path(frame, prefix .. "Name")
     Path(frame, prefix .. "ReputationColor")
     Path(frame, "TargetFrameContent.TargetFrameContentContextual.PvpBackgroundIcon")
+    function frame:UpdateHealthBarVisuals()
+        local container = self.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+        -- Simulate the native Camelot layout reset, including during combat.
+        container.height, container.width = 15, 126
+        container.point = { "BOTTOMRIGHT", self.TargetFrameContainer, "LEFT", 147, -9 }
+        container.HealthBar.point = { "TOPLEFT", container, "TOPLEFT", 0, 3 }
+    end
     function frame:CheckClassification()
+        self:UpdateHealthBarVisuals()
         self.TargetFrameContainer.FrameTexture:SetAtlas("UI-HUD-UnitFrame-Target-PortraitOn", true)
     end
     return frame
@@ -400,7 +411,20 @@ assert(#pending == 0, "target update must not defer repair until the next render
 combat = true
 TargetFrame:CheckClassification()
 assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "combat must not expose native sheet coordinates")
+local targetContainer = TargetFrame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+assert(targetContainer.height == 20 and targetContainer.point[4] == 149)
+assert(targetContainer.HealthBar.point[4] == 0 and targetContainer.HealthBar.point[5] == 0)
+classification = "minus"
+TargetFrame:CheckClassification()
+assert(targetContainer.height == 12 and targetContainer.width == 125)
+assert(targetContainer.point[4] == 148)
+targetContainer.protected = true
+TargetFrame:CheckClassification()
+assert(targetContainer.height == 15, "protected container must wait out combat")
+targetContainer.protected = false
+classification = "normal"
 combat = false
+layout:Refresh()
 -- Native updates with secret arguments must not be inspected by our hooks.
 health.fill:SetAtlas("UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health")
 assert(health.fill.file:find("health%-status"), "class color lost after native atlas update")

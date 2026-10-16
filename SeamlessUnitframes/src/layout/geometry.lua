@@ -23,6 +23,9 @@ local function Point(region, point, relative, relativePoint, x, y, width, height
 end
 
 local function PvP(icon, parent, side, x, legacy)
+    if InCombatLockdown() then
+        return
+    end
     if not module:CheckRegion(icon, "PvP icon", { "IsShown" }) then
         return
     end
@@ -499,6 +502,18 @@ local function Party(frame, old)
         module:Art(frame.PetFrame.Texture, P .. "Party-PortraitOn", true)
         module:Art(frame.PetFrame.Flash, P .. "Party-PortraitOn-InCombat", true)
         module:Bar(frame.PetFrame.HealthBar, P .. "Party-PortraitOn-Bar-Health")
+    end
+end
+
+function module:RepairTargets(roots)
+    for _, frame in ipairs(roots) do
+        if
+            self:CheckRegion(frame, "combat target root")
+            and self:Readable(frame.TargetFrameContent)
+            and frame.TargetFrameContent
+        then
+            Target(frame, true)
+        end
     end
 end
 

@@ -5,6 +5,6 @@ app.dbDefaults = {
     profile = {
         logLevel = "INFO",
         minimap = { hide = false, minimapPos = 200 },
-        tweaks = { reloadShortcut = true, showFramerateOnStartup = true },
+        tweaks = { reloadShortcut = true, showFramerateOnStartup = false },
     },
 }

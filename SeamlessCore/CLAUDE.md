@@ -10,9 +10,10 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `db.lua`: defaults for `SeamlessCoreDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
-  Shows the framerate once on startup by default; its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
+  Can show the framerate once on startup (off by default); its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,
-  "Seamless": General (minimap button, log level, a button per enabled feature addon), Tweaks, Profiles.
+  "Seamless": General (minimap button, log level, a button per enabled feature addon), Profiles.
+  Core tweaks have their own "Tweaks" child category (General, Profiles), using the Core database.
 - `minimapbutton.lua`: the suite's single launcher.
 - `src/types.lua`: annotations only, not loaded by the TOC.
 

@@ -229,8 +229,14 @@ function module:OnInitialize()
                 },
             },
         },
-        tabs = {
+        db = app.db,
+    })
+    self:Register(appName .. "Tweaks", {
+        title = "Tweaks",
+        general = {
             tweaks = {
+                type = "group",
+                inline = true,
                 order = 10,
                 name = "Tweaks",
                 get = function(info)
@@ -261,7 +267,7 @@ function module:OnInitialize()
             },
         },
         db = app.db,
-    })
+    }, self.panels[appName].id)
 end
 
 -- A feature addon's panel, below Core's; its button joins Core's Addons list.

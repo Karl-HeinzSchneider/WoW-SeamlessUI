@@ -63,10 +63,18 @@ used; shared preferences are stored independently in SeamlessCoreDB.
   health color/fill updates use constant arguments without inspecting bar values.
 - Restore static atlases with `resetTexCoords = true`. Reapply fixed current
   definitions, not observed client state. Keep native root positions and scale.
-  Player health uses BACKGROUND sublevel 1 in Legacy to sit above the red loss
-  fill; Current restores sublevel 0. No frame-level getter/arithmetic is needed.
+  Do not change draw/frame levels to work around health-loss flashes. In Legacy,
+  the animated loss bar uses the live bar's white fill and class/reaction tint;
+  native alpha/timing stays intact. Restore its native red tint in Current.
+- Apply native-update repairs synchronously. Do not queue texture repair for the
+  next rendered frame. Named static atlas hooks rebind old artwork immediately,
+  without geometry changes in combat. Cache only our own last writes, invalidate
+  on native setters, and avoid replacing unchanged health fills on value updates.
+- Party temporary health loss uses the Player atlas (CharacterFrameOnParty for
+  that style), as in PartyFrameTemplates.xml. Unknown power types use the native
+  mana fallback; they are not unexpected errors.
 - Treat gameplay results and frame fields as potentially secret; check access
-  before comparison, branching, concatenation or indexing. Unsupported/inaccessible
+  before comparison, branching, concatenation or indexing. Inaccessible
   power and classification data are skipped with a deduplicated diagnostic.
 - Run `lua src/test-legacy-layout.lua`: its rendering getters throw if called.
   Also run `python -m unittest src/test_legacy_unitframe_atlas.py`.

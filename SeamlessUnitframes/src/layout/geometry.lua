@@ -52,22 +52,42 @@ local function PvP(icon, parent, side, x, legacy)
 end
 
 local powerNames = { MANA = "Mana", RAGE = "Rage", FOCUS = "Focus", ENERGY = "Energy", RUNIC_POWER = "RunicPower" }
+-- Full atlas overrides in the client's PowerBarColorUtil.lua.
+local powerAtlases = {
+    LUNAR_POWER = "Unit_Druid_AstralPower_Fill",
+    MAELSTROM = "Unit_Shaman_Maelstrom_Fill",
+    INSANITY = "Unit_Priest_Insanity_Fill",
+    FURY = "Unit_DemonHunter_Fury_Fill",
+    PAIN = "_DemonHunter-DemonicPainBar",
+    EBON_MIGHT = "Unit_Evoker_EbonMight_Fill",
+}
 local function Power(bar, family, unit, alternate)
     if not module:Readable(unit) or type(unit) ~= "string" then
         module:Warn("power artwork", "inaccessible unit token")
         return
     end
-    local _, token = UnitPowerType(unit)
+    local _, token, altR = UnitPowerType(unit)
     if not module:Readable(token) then
         module:Warn("power artwork", "inaccessible power type")
         return
     end
-    local element = powerNames[token]
-    if not element then
-        module:Warn("power artwork", "unsupported power type")
+    local fullAtlas = powerAtlases[token]
+    if fullAtlas then
+        module:Bar(bar, fullAtlas)
         return
     end
-    local suffix = alternate and (element == "Mana" or element == "Energy") and "-ClassResource" or ""
+    local element = powerNames[token]
+    if not element then
+        -- UnitFrameManaBar_UpdateType uses Mana (or its tintable variant) when
+        -- the power definition has no resource-specific atlas element.
+        if not module:Readable(altR) then
+            module:Warn("power artwork", "inaccessible fallback color")
+            return
+        end
+        element = altR and "Mana-Status" or "Mana"
+    end
+    local suffix = alternate and powerNames[token] and (element == "Mana" or element == "Energy") and "-ClassResource"
+        or ""
     module:Bar(bar, P .. family .. suffix .. "-Bar-" .. element)
 end
 
@@ -109,7 +129,6 @@ local function Player(frame, old)
     module:Edit(art.PlayerPortraitMask, { width = 60, height = 60 })
     module:Bar(health, P .. "Player-PortraitOn-Bar-Health", true)
     module:Bar(container.PlayerFrameTempMaxHealthLoss, P .. "Player-PortraitOn-Bar-TempHPLoss")
-    module:Bar(container.PlayerFrameHealthBarAnimatedLoss, P .. "Player-PortraitOn-Bar-Health")
     module:Art(
         container.HealthBarMask,
         old and healthOnly and not vehicle and "plunderstorm-ui-hud-unitframe-player-portraiton-bar-health-mask"
@@ -472,7 +491,7 @@ local function Party(frame, old)
     if module:CheckPaths(frame, "Party temporary health loss", { "HealthBarContainer.TempMaxHealthLoss" }) then
         module:Bar(
             container.TempMaxHealthLoss,
-            P .. (character and "CharacterFrameOnParty-PortraitOn" or "Party-PortraitOn") .. "-Bar-TempHPLoss"
+            P .. (character and "CharacterFrameOnParty-PortraitOn" or "Player-PortraitOn") .. "-Bar-TempHPLoss"
         )
     end
     -- Party pets are separate named buttons, never traversed as generic children.

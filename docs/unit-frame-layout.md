@@ -66,27 +66,40 @@ Only secure post-hooks observe client update functions and known instance method
 No Blizzard function, mixin, script or protected frame state field is replaced.
 Native hook arguments are ignored. All bookkeeping uses private addon tables.
 Gameplay classification, art-state fields and power tokens are access-checked
-before comparison or indexing. Unavailable components and unsupported/inaccessible
-power/classification data are skipped with deduplicated logger warnings.
+before comparison or indexing. Unavailable components and inaccessible
+power/classification data are skipped with deduplicated logger warnings. Power
+kinds without specific artwork use the native mana fallback without a warning.
+Party temporary health loss uses the player atlas, matching the exported template.
 
-Geometry, layering and layout selection changes wait until combat ends. The final
+Geometry and layout selection changes wait until combat ends. The final
 profile selection is applied after `PLAYER_REGEN_ENABLED`. Health tint and fill
 updates use constant atlas/file arguments through the native status-bar setter;
-they do not perform geometry work or arithmetic on health/power values. Native
-updates during combat can temporarily restore current geometry/art; the addon
-reapplies Legacy after lockdown. This implementation does not claim uninterrupted
-legacy geometry during combat.
+they do not perform geometry work or arithmetic on health/power values. Named
+static atlas changes are repaired synchronously in their secure post-hooks,
+including during combat, without resizing/reanchoring. Native combat updates can
+still change geometry; Legacy geometry is reapplied after lockdown.
+
+Repairs run before native update calls return; no next-frame timer exposes new
+art with old coordinates. A private cache of the addon's last writes is invalidated
+by native atlas/bar setters. Ordinary health-value updates reapply tints without
+replacing unchanged fill textures. No native atlas names or hook arguments are read.
 
 Switching to Current retires each known artwork override, resets static atlas UVs,
 and applies the fixed current definitions. Root positions, scales, gameplay state
 and visibility remain client-owned. Other addons' custom geometry is not captured
-or replayed. The live player health fill uses BACKGROUND sublevel 1 in Legacy so
-the native red loss fill stays behind it; Current restores sublevel 0.
+or replayed. Draw and frame levels remain native. When a legacy player health
+bar has a class/reaction tint, its animated-loss bar uses the same white fill and
+tint. This prevents the initial loss-overlay frame from flashing red over live
+health while preserving native loss timing/alpha. Default coloring and Current
+restore its native red tint.
 
 The offline Lua fixture makes all rendering/discovery getters and `HookScript`
 throw. It exercises initial Current inactivity, repeated switching, fixed current
 restoration, class/reaction color modes, minus targets, party/vehicle/resource
-styles, missing components, secret inputs and combat deferral. Python tests check
+styles, missing components, secret inputs and combat deferral. It also asserts
+synchronous target-art repair, no texture writes on ordinary health updates,
+matching loss colors, native red restoration, and power fallback without warnings.
+Python tests check
 BLP dimensions, deterministic generation and source pixels. These checks cannot
 prove live-client visual correctness or taint safety.
 

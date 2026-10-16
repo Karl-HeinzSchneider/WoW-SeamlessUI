@@ -111,7 +111,7 @@ end
 ---@param bar SeamlessUnitframes.HealthColor.HealthBar
 ---@param key string
 local function Apply(bar, key)
-    if settingAtlas then
+    if settingAtlas or app.legacyLayout:IsWriting() then
         return
     end
     local atlas, texture = app.legacyLayout:HealthAtlas(bar, key)
@@ -134,6 +134,9 @@ local function Apply(bar, key)
         colored[bar] = nil
         bar:SetStatusBarColor(DefaultColor(bar))
     end
+    if key == "player" then
+        app.legacyLayout:PlayerLoss(color)
+    end
 end
 
 -- Colors one health bar if it belongs to a unit frame in app.unitFrames.
@@ -152,14 +155,23 @@ local function Update(bar)
     end
     ---@cast bar SeamlessUnitframes.HealthColor.HealthBar
     if not known[bar] then
-        known[bar] = key
         -- The game swaps the fill atlas on its own (target classification, vehicles, party art);
         -- put the white one back each time.
         local texture = bar:GetStatusBarTexture()
         if not app.legacyLayout:CheckRegion(texture, "health color hook", { "SetAtlas" }) then
             return
         end
+        -- Install the layout invalidation hook before our repaint hooks.
+        if not app.legacyLayout:HealthAtlas(bar, key) then
+            return
+        end
+        known[bar] = key
         hooksecurefunc(texture, "SetAtlas", function()
+            if not settingAtlas then
+                Apply(bar, key)
+            end
+        end)
+        hooksecurefunc(bar, "SetStatusBarTexture", function()
             if not settingAtlas then
                 Apply(bar, key)
             end

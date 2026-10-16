@@ -9,7 +9,9 @@ app.legacyLayout = layout
 -- Definitions own atlas names and geometry. Never snapshot live rendering state:
 -- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
 local warnings, bindings, hooked, artwork = {}, {}, {}, {}
-local enabled, applied, writing, scheduled, initialized = false, false, false, false, false
+local painted, watchedBars, watchedFills, watchedArt = {}, {}, {}, {}
+local lossColored = false
+local enabled, applied, writing, initialized = false, false, false, false
 local legacyMode = false
 
 function module:Readable(value)
@@ -98,6 +100,44 @@ function module:Edit(region, changes)
     end
 end
 
+function module:IsWriting()
+    return writing
+end
+
+local function WatchBar(bar, texture)
+    if
+        not layout:CheckRegion(bar, "named bar hooks", { "GetStatusBarTexture", "SetStatusBarTexture" })
+        or not layout:CheckRegion(texture, "named fill hook", { "SetAtlas" })
+    then
+        return false
+    end
+    -- Only named bars; ignore setter arguments, which may be secret. A native
+    -- replacement invalidates our own last-write cache without reading texture state.
+    if not watchedBars[bar] then
+        watchedBars[bar] = true
+        hooksecurefunc(bar, "SetStatusBarTexture", function()
+            if not writing then
+                if not layout:CheckRegion(bar, "bar artwork update", { "GetStatusBarTexture" }) then
+                    return
+                end
+                local fill = bar:GetStatusBarTexture()
+                if layout:Readable(fill) and fill ~= nil then
+                    painted[fill] = nil
+                end
+            end
+        end)
+    end
+    if not watchedFills[texture] then
+        watchedFills[texture] = true
+        hooksecurefunc(texture, "SetAtlas", function()
+            if not writing then
+                painted[texture] = nil
+            end
+        end)
+    end
+    return true
+end
+
 local function Paint(texture, atlas, useSize, bar)
     if not layout:Readable(atlas) or type(atlas) ~= "string" then
         layout:Warn("fixed artwork", "invalid atlas definition")
@@ -105,6 +145,13 @@ local function Paint(texture, atlas, useSize, bar)
     end
     if not layout:CheckRegion(texture, "fixed artwork", { "SetAtlas", "SetTexture", "SetTexCoord" }) then
         return false
+    end
+    if bar and not WatchBar(bar, texture) then
+        return false
+    end
+    local last = painted[texture]
+    if last and last.atlas == atlas and last.legacy == legacyMode and last.useSize == useSize then
+        return true
     end
     local data = legacyMode and app.legacyAtlases[atlas:lower()] or nil
     artwork[texture] = { atlas = atlas, useSize = useSize, bar = bar }
@@ -137,12 +184,31 @@ local function Paint(texture, atlas, useSize, bar)
     else
         texture:SetAtlas(atlas, useSize or false, nil, true)
     end
+    painted[texture] = { atlas = atlas, legacy = legacyMode, useSize = useSize }
     writing = previous
     return true
 end
 
 function module:Art(texture, atlas, useSize)
-    return Paint(texture, atlas, useSize)
+    if not Paint(texture, atlas, useSize) then
+        return false
+    end
+    if not watchedArt[texture] then
+        watchedArt[texture] = true
+        hooksecurefunc(texture, "SetAtlas", function()
+            if writing then
+                return
+            end
+            painted[texture] = nil
+            local definition = artwork[texture]
+            if legacyMode and definition then
+                -- Rebind old artwork before the native call returns, including
+                -- in combat. Do not resize/reanchor protected regions in combat.
+                Paint(texture, definition.atlas, not InCombatLockdown() and definition.useSize)
+            end
+        end)
+    end
+    return true
 end
 
 -- Only explicitly listed bars are bound. No children, regions, or runtime atlas
@@ -155,10 +221,13 @@ function module:Bar(bar, atlas, health)
     if not self:CheckRegion(texture, "named bar fill") then
         return
     end
-    bindings[texture] = { atlas = atlas, bar = bar }
-    if health then
-        self:HealthLayers(bar)
+    local previous = bindings[texture]
+    if health and previous and previous.atlas == atlas .. "-Status" then
+        -- A geometry refresh must not turn an already tinted health fill green
+        -- only for the color refresh below to replace it with white again.
+        atlas = previous.atlas
     end
+    bindings[texture] = { atlas = atlas, bar = bar }
     Paint(texture, atlas, false, bar)
 end
 
@@ -201,6 +270,9 @@ function module:HealthAtlas(bar, key)
     if not self:CheckRegion(texture, "health color fill") then
         return nil
     end
+    if not WatchBar(bar, texture) then
+        return nil
+    end
     bindings[texture] = { atlas = atlas, bar = bar }
     return atlas, texture
 end
@@ -225,23 +297,41 @@ function module:SetHealthAtlas(texture, atlas)
     return false
 end
 
-function module:HealthLayers(bar)
-    if not PlayerFrame or not self:Readable(PlayerFrame.healthbar) or bar ~= PlayerFrame.healthbar then
+-- AnimatedHealthLossMixin owns its timings and alpha. Match the selected live
+-- fill/tint so its full-width starting frame cannot flash red over a colored bar.
+function module:PlayerLoss(color)
+    if not legacyMode and not lossColored then
         return
     end
-    local texture = bar:GetStatusBarTexture()
-    self:Edit(texture, { layer = { "BACKGROUND", legacyMode and 1 or 0 } })
+    if
+        not self:CheckPaths(PlayerFrame, "Player loss color", {
+            "PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.PlayerFrameHealthBarAnimatedLoss",
+        })
+    then
+        return
+    end
+    local bar =
+        PlayerFrame.PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.PlayerFrameHealthBarAnimatedLoss
+    if not self:CheckRegion(bar, "Player loss color", { "SetStatusBarColor" }) then
+        return
+    end
+    local colored = legacyMode and color
+    self:Bar(bar, "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health" .. (colored and "-Status" or ""))
+    if colored then
+        bar:SetStatusBarColor(color:GetRGB())
+    else
+        bar:SetStatusBarColor(1, 0, 0)
+    end
+    lossColored = colored and true or false
 end
 
 local function Request()
-    if writing or scheduled or not enabled then
+    if writing or not enabled then
         return
     end
-    scheduled = true
-    C_Timer.After(0, function()
-        scheduled = false
-        layout:Refresh()
-    end)
+    -- Repair in the native update's call stack. Waiting one rendered frame lets
+    -- new atlas art draw with old coordinates/geometry and causes a rectangle flash.
+    layout:Refresh()
 end
 
 local function Hook(object, name)

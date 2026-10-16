@@ -97,6 +97,7 @@ end
 function methods:SetStatusBarTexture(v)
     artworkWrites = artworkWrites + 1
     assert(type(v) == "string")
+    assert(v ~= "UI-HUD-UnitFrame-Party-PortraitOn-Bar-TempHPLoss", "party uses the player loss atlas")
     self.fill.file, self.fill.atlas = v, nil
     if not v:find("assets/legacy/", 1, true) then
         self.fill.atlas = v
@@ -261,6 +262,9 @@ local function Target(unit)
     Path(frame, prefix .. "Name")
     Path(frame, prefix .. "ReputationColor")
     Path(frame, "TargetFrameContent.TargetFrameContentContextual.PvpBackgroundIcon")
+    function frame:CheckClassification()
+        self.TargetFrameContainer.FrameTexture:SetAtlas("UI-HUD-UnitFrame-Target-PortraitOn", true)
+    end
     return frame
 end
 TargetFrame, FocusFrame = Target("target"), Target("focus")
@@ -354,7 +358,7 @@ Mode("legacy")
 assert(HasOld(health.fill) and HasOld(mana.fill))
 assert(PlayerName.width == 96 and PlayerName.justify == "LEFT")
 assert(health.height == 19 and health.point[5] == 0)
-assert(health.fill.layer[1] == "BACKGROUND" and health.fill.layer[2] == 1, "loss feedback must stay behind live health")
+assert(health.fill.layer == nil, "layout must leave native draw layers alone")
 assert(HasOld(PlayerFrame.PlayerFrameContainer.FrameTexture))
 assert(#warnings == 0, "unexpected missing fixture components")
 local oldHooks = hookCount
@@ -364,7 +368,7 @@ for i = 1, 4 do
     assert(PlayerName.width == 116 and PlayerName.justify == "CENTER")
     assert(health.height == 20 and health.point[5] == 3)
     assert(PlayerFrame.PlayerFrameContainer.FrameTexture.coords == nil, "old static UVs leaked into new layout")
-    assert(health.fill.layer[1] == "BACKGROUND")
+    assert(health.fill.layer == nil)
     Mode("legacy")
 end
 assert(hookCount == oldHooks, "duplicate hooks on toggles")
@@ -374,6 +378,29 @@ end
 app.healthColor:Refresh()
 assert(HasOld(health.fill) and health.fill.file:find("health%-status"))
 assert(health.color[1] == 0.2)
+assert(
+    loss.color[1] == health.color[1] and loss.color[2] == health.color[2] and loss.color[3] == health.color[3],
+    "loss overlay must not flash red over a class bar"
+)
+assert(loss.fill.file:find("health%-status"), "colored loss requires the white fill")
+local beforeHealthRefresh = artworkWrites
+app.healthColor:Refresh()
+UnitFrameHealthBar_Update(health)
+assert(artworkWrites == beforeHealthRefresh, "ordinary health updates must not replace unchanged fills")
+Mode("legacy")
+local beforeStableRefresh = artworkWrites
+Mode("legacy")
+assert(artworkWrites == beforeStableRefresh, "stable layout refresh must not swap green/white fills")
+TargetFrame:CheckClassification()
+assert(
+    HasOld(TargetFrame.TargetFrameContainer.FrameTexture),
+    "target artwork repair must happen before native update returns"
+)
+assert(#pending == 0, "target update must not defer repair until the next rendered frame")
+combat = true
+TargetFrame:CheckClassification()
+assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "combat must not expose native sheet coordinates")
+combat = false
 -- Native updates with secret arguments must not be inspected by our hooks.
 health.fill:SetAtlas("UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health")
 assert(health.fill.file:find("health%-status"), "class color lost after native atlas update")
@@ -387,6 +414,16 @@ for _, colorMode in ipairs({ "default", "reaction", "classReaction", "class" }) 
     app.healthColor:Refresh()
     assert(HasOld(health.fill), "color option lost standalone bar binding")
 end
+powerToken = "AMMOSLOT"
+local warningCount = #warnings
+Mode("legacy")
+assert(mana.fill.file:find("bar%-mana"), "native unknown-power fallback must use mana")
+assert(#warnings == warningCount, "normal power fallback must not warn")
+powerToken = "INSANITY"
+Mode("legacy")
+assert(mana.fill.atlas == "Unit_Priest_Insanity_Fill", "full resource atlas must stay native")
+powerToken = "MANA"
+Mode("legacy")
 classToken = secret
 app.healthColor:Refresh()
 assert(health.fill.file:find("health.blp", 1, true), "secret class should fall back without indexing")
@@ -394,6 +431,10 @@ classToken = "MAGE"
 app.healthColor:Refresh()
 Mode("current")
 assert(health.fill.atlas == "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health-Status")
+assert(
+    loss.color[1] == 1 and loss.color[2] == 0 and loss.color[3] == 0,
+    "Current must restore the native red loss tint"
+)
 classification = "minus"
 Mode("legacy")
 local targetHealth = TargetFrame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer.HealthBar

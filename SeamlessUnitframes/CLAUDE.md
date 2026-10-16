@@ -15,11 +15,12 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
 5. `options.lua`: the Unit Frames panel (Settings > AddOns > Seamless) via `core:RegisterOptions`:
    General (health bar color per unit frame), Target (threat percentage, quest icon), Profiles.
    Getters follow the active profile; CVAR_UPDATE refreshes external threat changes.
-6. `src/healthcolor/healthcolor.lua`: feature implementation.
+6. `src/layout/atlas.lua`, `layout.lua`, `geometry.lua`: optional legacy layout.
+7. `src/healthcolor/healthcolor.lua`: feature implementation.
    `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
    objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.
    The `targetQuestIcon` profile settings control enablement, scale and offsets (disabled by default).
-7. `SeamlessUnitframes.lua`: load diagnostic.
+8. `SeamlessUnitframes.lua`: load diagnostic.
 
 Every new runtime Lua/XML file must be listed in dependency order in the TOC.
 New feature settings need defaults in `db.lua` and controls in `options.lua`.
@@ -39,6 +40,20 @@ used; shared preferences are stored independently in SeamlessCoreDB.
   player's class; disconnected players and units whose class or reaction is secret keep the
   default color. It restores only the bars it colored. `Refresh()` reapplies after a setting
   changed.
+
+### `src/layout/`
+
+- `atlas.lua`: generated old exported artwork coordinates; regenerate with
+  `python src/generate-legacy-unitframe-atlas.py`. Approved original BLP sheets live
+  in `assets/legacy/`. See `docs/unit-frame-layout.md` for provenance and limitations.
+- `layout.lua`: profile-aware `app.legacyLayout`; Current is inert until Legacy is
+  selected. Private snapshots track subsequent client changes through secure
+  post-hooks. All mutations defer during combat, including restoration.
+- `geometry.lua`: pre-70425 player, target/focus/boss, pet/ToT, party and combo
+  geometry. Never write addon state onto protected frame tables.
+- Health colors must use `app.legacyLayout:GetAtlas(texture)` rather than reading
+  `GetAtlas()` directly: bundled old art uses a raw texture with a logical atlas name.
+- Run `lua src/test-legacy-layout.lua` for offline restoration/combat tests.
 
 ### Annotations (not in the TOC)
 

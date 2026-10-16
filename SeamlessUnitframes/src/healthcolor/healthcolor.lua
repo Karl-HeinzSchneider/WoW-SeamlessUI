@@ -135,7 +135,7 @@ end
 ---@param key string
 local function Apply(bar, key)
     local texture = bar:GetStatusBarTexture()
-    local atlas = texture and texture:GetAtlas()
+    local atlas = texture and app.legacyLayout:GetAtlas(texture)
     if not atlas or atlas == "" then
         return
     end

@@ -12,6 +12,9 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
 - `questlog.lua`: displays completed quest count and XP in the quest log/world map header,
   left of its minimize button; refreshes when shown and when quest data or player level changes.
+- `xptooltip.lua`: appends completed quest count and XP to the player XP bar/rested tick
+  tooltip. Controlled by the profile's `tweaks.questXPTooltip` toggle (on by default) under Tweaks;
+  reads the current profile and quest summary on each hover.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
   Can show the framerate once on startup (off by default); its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,

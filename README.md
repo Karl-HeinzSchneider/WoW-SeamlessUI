@@ -14,11 +14,43 @@ A modular World of Warcraft addon suite for WoW Forever.
   anchoring, scale, shared-media backgrounds and borders, player/NPC text, status and raid markers,
   targets, health bars, item details and vendor prices, spell IDs and aura casters.
 
+## Installation and usage
+
+Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`) from the release zip into your client's
+`Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
+WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
+
+- `/seamless`: open Settings > AddOns > Seamless.
+- `/rl`: reload the UI. Enabled by default; toggle it in Settings > AddOns > Seamless > Tweaks.
+- Core can show the FPS counter on startup (off by default). Enable this in the Tweaks category; Ctrl+R still toggles the counter normally.
+- `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
+- `/seamless reset`: reset the current core profile (shared preferences only).
+- `/seamlessunitframes`: open the Unit Frames options.
+- `/seamlessunitframes reset`: reset the current Unitframes profile.
+- `/seamlesstooltip`: open the Tooltip options.
+- `/seamlesstooltip reset`: reset the current Tooltip profile.
+
+Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`; Tooltip keeps
+`SeamlessTooltipDB` and all feature keys from the standalone addon. Core preferences
+use `SeamlessCoreDB`; logging and minimap preferences initially use the core defaults.
+Each feature manages its own profiles, independently of the core profile.
+
+Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
+addon's own sections, and Profiles last, where its profiles are selected, created, copied, deleted
+and reset.
+
+When replacing standalone SeamlessTooltip, replace its existing AddOns folder with the suite version
+and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to
+the old repository must be replaced with one pointing to this repo; `dev:link` refuses to overwrite it.
+
+## Internal development modules
+
+SeamlessChat and SeamlessDamageMeter are unfinished and excluded from public release archives.
+Their source remains in this repository for internal development and testing.
+
 - **SeamlessChat** (optional): shared chat layouts/colors/channels, input history, timestamps,
   persistent message history, copy and searchable log windows, clickable URLs, short channel labels,
   class colors, fading and backgrounds.
-
-## Installation and usage
 
 **SeamlessDamageMeter** (optional) provides multiple movable, resizable meter windows using
 the client's `C_DamageMeter` combat statistics. Each window independently selects damage,
@@ -44,47 +76,18 @@ enabled for data. Fight history belongs to Blizzard and may expire or reset inde
 of saved layouts. This first version intentionally focuses on the base windows, without
 spell drilldowns or an independent combat recorder.
 
-Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`, `SeamlessChat`) from the release zip into your client's
-`Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
-WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
-
-- `/seamless`: open Settings > AddOns > Seamless.
-- `/rl`: reload the UI. Enabled by default; toggle it on the Tweaks tab of Seamless in Settings.
-- Core also shows the FPS counter on startup by default. Disable this on the Tweaks tab; Ctrl+R still toggles the counter normally.
-- `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
-- `/seamless reset`: reset the current core profile (shared preferences only).
-- `/seamlessunitframes`: open the Unit Frames options.
-- `/seamlessunitframes reset`: reset the current Unitframes profile.
-- `/seamlesstooltip`: open the Tooltip options.
-- `/seamlesstooltip reset`: reset the current Tooltip profile.
-- `/seamlesschat`: open the Chat options; `save`/`apply` manage its shared chat setup.
-- `/seamlesschat log` or `/seamlesschat search <text>`: open the searchable chat log.
-- `/seamlesschat reset`: reset the current Chat profile.
-
-Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`; Tooltip keeps
-`SeamlessTooltipDB` and all feature keys from the standalone addon. Core preferences
-use `SeamlessCoreDB`; logging and minimap preferences initially use the core defaults.
-Each feature manages its own profiles, independently of the core profile.
-Chat retains `SeamlessChatDB`, `SeamlessChatHistoryDB` and `SeamlessChatLogDB`, including existing
-sync snapshots, input history and per-character message data.
-
-Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
-addon's own sections, and Profiles last, where its profiles are selected, created, copied, deleted
-and reset.
-
-When replacing standalone SeamlessTooltip or SeamlessChat, replace its existing AddOns folder with the suite version
-and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to
-the old repository must be replaced with one pointing to this repo; `dev:link` refuses to overwrite it.
-
 ## Development
 
 Node 20+; run `npm install` once. `npm run dev:link -- "<WoW>/Interface/AddOns"` links every addon
 into a client; rerun it after this upgrade to link Core too. `/reload` picks up changes.
 `npm run format` formats the repo; `npm run check` validates it (Lua 5.1 `luac` required).
-`npm run package:addons` creates a suite zip in `dist/`; `npm run package:local` uses the release packager.
+`npm run package:addons` creates a source zip of the public addons in `dist/`; it leaves version
+tokens unchanged. `npm run package:local` uses the release packager and replaces version tokens.
+Both include only Core, Tooltip and Unitframes as listed in `.pkgmeta`. Use the release packager
+for distributable archives.
 
 To add a feature, create `SeamlessFeature/SeamlessFeature.toc` with `## Dependencies: SeamlessCore`,
-list its runtime files, and add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
+list its runtime files, and, once ready for public release, add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
 Use the core API documented in [SeamlessCore/CLAUDE.md](SeamlessCore/CLAUDE.md) for shared options
 and logging. Keep feature state in its private addon table and its own SavedVariables.
 No core code change is needed to register another feature.

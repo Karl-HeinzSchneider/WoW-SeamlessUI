@@ -25,7 +25,8 @@ TOC is an independently selectable addon.
 
 Every feature addon must declare `## Dependencies: SeamlessCore`; `check:addons` enforces
 this and checks dependency cycles. Addons are discovered automatically by tooling; add each
-new addon to `.pkgmeta` move-folders for releases. Users enable or disable feature addons
+release-ready addon to `.pkgmeta` move-folders for releases. Internal addons must stay in its ignore list.
+Only Core, Tooltip and Unitframes currently ship; Chat and DamageMeter are internal. Users enable or disable feature addons
 in the game's AddOns screen and reload. Core works without any feature addon enabled.
 
 ## Working on the code
@@ -46,7 +47,7 @@ WoW addons are plain Lua/XML files loaded by the game; there is no build step. T
 | `npm run check:xml`                | Validates every addon XML against Blizzard's `UI.xsd` via python + lxml; skipped when `../_data/BlizzardInterfaceCode` is absent.                                                                                                   |
 | `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                                                                           |
 | `npm run dev:link -- <AddOns dir>` | Symlink (junction on Windows) every addon into a client; refuses to replace a path that isn't already our link.                                                                                                                     |
-| `npm run package:addons`           | Deterministic `dist/Seamless-<version>.zip` of all addons (gitignored), without `CLAUDE.md` files.                                                                                                                                  |
+| `npm run package:addons`           | Deterministic `dist/Seamless-<version>.zip` of public addons listed in `.pkgmeta` move-folders (gitignored), without `CLAUDE.md` files.                                                                                             |
 | `npm run package:local`            | The BigWigs packager the release workflows use (`.pkgmeta`), run locally without uploading: addon folders and zip in `.release/` (gitignored). Extra `release.sh` options go after `--`. On Windows it needs Git for Windows' bash. |
 
 Static checks also used ad hoc: `lua-language-server --check` (config in `.luarc.json`; `lib/` is

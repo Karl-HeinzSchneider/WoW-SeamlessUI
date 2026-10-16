@@ -10,6 +10,8 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
+- `questlog.lua`: displays completed quest count and XP in the quest log/world map header,
+  left of its minimize button; refreshes when shown and when quest data or player level changes.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
   Can show the framerate once on startup (off by default); its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,

@@ -6,8 +6,8 @@ changes no frames until Legacy has been selected. Existing health-color settings
 remain independent.
 
 **Legacy (before 70425)** uses the old exported artwork and pre-update geometry.
-Switching back restores the latest sizes, anchors, justification, layering and
-atlases requested by the client, including updates received while Legacy was active.
+Switching back applies explicit 70425 sizes, anchors, justification, layering and
+atlas definitions. It never restores snapshots of live rendering state.
 The selection belongs to the Unit Frames appearance profile and follows profile
 copy/reset/switch operations.
 
@@ -45,55 +45,50 @@ lua src/test-legacy-layout.lua
 ```
 
 The generated table contains only changed effective atlas entries. Unchanged art
-continues to use the client. Health colors use the layout module's logical atlas
-name when its texture is backed by bundled artwork, preserving white health fills
-and restoring the current client atlas when Legacy is deselected.
-The offline integration test runs the actual health-color module through default,
-class, reaction and combined modes in both layouts, including NPCs, tap denial,
-disconnection, repeated toggles and native bar redraws with secret values.
-Changing between a default and tinted legacy fill during combat is deferred until
-combat ends, so the color module cannot replace a standalone fill with sheet UVs.
-Reaction/class tint updates that keep the same fill remain independent.
-Legacy keeps the player's red animated-loss bar below the live health bar, so
-damage feedback trails the lost portion rather than covering the class-colored
-fill. Its native frame level is restored when leaving Legacy.
+continues to use the client. Health colors resolve atlas names from fixed frame
+families; they never read live texture atlas names. Default, class, reaction and
+combined modes use the same bar setter in either layout. The existing target and
+minus-target white fills are unchanged across the atlas lookups and remain native.
+The party vehicle fill has no white variant and keeps its native color.
 
-Restoration explicitly resets atlas coordinates on frame sprites and masks;
-reapplying an atlas without resetting coordinates can retain the old sheet's UVs.
-Native explicit coordinate changes observed while Legacy is active are preserved.
-All logical legacy overrides are retired before native setters run, and nested
-write guards preserve the outer restoration state during synchronous callbacks.
+## Combat and secret-value boundary
 
-## Combat and taint boundary
+The layout defines both builds explicitly in `geometry.lua`, using the source
+references above. It visits only named player, target/focus, boss, pet/ToT and
+party components (including named party pets). No recursive child/region discovery,
+render snapshots, atlas-size inference or anchor enumeration remains. It does not
+call `GetAtlas`, dimension getters, `GetPoint`, `GetNumPoints`, `GetTexCoord` or
+`GetFrameLevel`. Builder/spender and resource feedback descendants are untouched.
+`GetStatusBarTexture` retrieves only the fill object of an explicitly named bar.
+Visibility reads for the extra PvP background are access-checked before branching.
 
-Only secure post-hooks observe client changes. No Blizzard global function or
-mixin is replaced. Snapshot and override state lives in private tables, not on
-protected frames. The module never changes unit attributes, event registrations
-or scripts on the game's unit buttons. Root visibility changes are observed through
-`hooksecurefunc` on `Show` and `SetShown`; no descendant script handlers are hooked.
+Only secure post-hooks observe client update functions and known instance methods.
+No Blizzard function, mixin, script or protected frame state field is replaced.
+Native hook arguments are ignored. All bookkeeping uses private addon tables.
+Gameplay classification, art-state fields and power tokens are access-checked
+before comparison or indexing. Unavailable components and unsupported/inaccessible
+power/classification data are skipped with deduplicated logger warnings.
 
-All layout writes, including restoration and late frame discovery, are deferred
-while `InCombatLockdown()` is true. The last profile selection is applied after
-`PLAYER_REGEN_ENABLED`. A native layout refresh during combat can temporarily
-restore current geometry/art until combat ends; the addon deliberately does not
-fight protected frame updates during lockdown. This is a limitation of this
-implementation, not a claim of uninterrupted legacy geometry during combat.
-Offline tests assert that no layout mutation happens during lockdown; they cannot
-prove live-client taint behavior.
+Geometry, layering and layout selection changes wait until combat ends. The final
+profile selection is applied after `PLAYER_REGEN_ENABLED`. Health tint and fill
+updates use constant atlas/file arguments through the native status-bar setter;
+they do not perform geometry work or arithmetic on health/power values. Native
+updates during combat can temporarily restore current geometry/art; the addon
+reapplies Legacy after lockdown. This implementation does not claim uninterrupted
+legacy geometry during combat.
 
-Texture dimensions can also be secret outside combat. Atlas-size inference checks
-access before comparing them. Secret dimensions remain client-owned: the module
-does not resize them or replay them through size setters during restoration.
-Anchor counts and every anchor component are also checked before iteration,
-comparison or restoration. Secret anchors remain client-owned; independently
-readable artwork properties can still be applied. A fresh native clear/set-all
-anchor update establishes a new baseline after an inaccessible snapshot.
+Switching to Current retires each known artwork override, resets static atlas UVs,
+and applies the fixed current definitions. Root positions, scales, gameplay state
+and visibility remain client-owned. Other addons' custom geometry is not captured
+or replayed. The live player health fill uses BACKGROUND sublevel 1 in Legacy so
+the native red loss fill stays behind it; Current restores sublevel 0.
 
-Callbacks use AceAddon's returned module instance, whose prototype is a separate
-table. Geometry validates nested frame paths before using them. Missing methods,
-incomplete layouts and forbidden regions produce a warning naming the failed
-operation/path, once per distinct issue per session; later refreshes retry frames
-that finish initializing.
+The offline Lua fixture makes all rendering/discovery getters and `HookScript`
+throw. It exercises initial Current inactivity, repeated switching, fixed current
+restoration, class/reaction color modes, minus targets, party/vehicle/resource
+styles, missing components, secret inputs and combat deferral. Python tests check
+BLP dimensions, deterministic generation and source pixels. These checks cannot
+prove live-client visual correctness or taint safety.
 
 ## In-game validation still required
 

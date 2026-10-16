@@ -47,26 +47,29 @@ used; shared preferences are stored independently in SeamlessCoreDB.
   `python src/generate-legacy-unitframe-atlas.py`. Approved original BLP sheets live
   in `assets/legacy/`. See `docs/unit-frame-layout.md` for provenance and limitations.
 - `layout.lua`: profile-aware `app.legacyLayout`; Current is inert until Legacy is
-  selected. Private snapshots track subsequent client changes through secure
-  post-hooks. All mutations defer during combat, including restoration.
-- `geometry.lua`: pre-70425 player, target/focus/boss, pet/ToT, party and combo
-  geometry. Never write addon state onto protected frame tables.
-- Validate frame paths and required methods before access (`CheckPaths`/`CheckRegion`).
-  Report unexpected missing/forbidden components through the shared logger, with
-  duplicate suppression. Callbacks must use the Ace instance, not its prototype.
-- Health colors must use `app.legacyLayout:GetAtlas(texture)` rather than reading
-  `GetAtlas()` directly: bundled old art uses a raw texture with a logical atlas name.
-  Atlas changes go through `SetHealthAtlas`, preserving native status-bar binding
-  and deferring legacy fill swaps during combat.
-- Status-bar fills must use standalone extracted art through the owning bar's
-  `SetStatusBarTexture`. Do not apply raw atlas-sheet coordinates to a fill texture:
-  native redraws reset them, including when bar values are secret.
-- Restore static atlases with `resetTexCoords = true`, then restore any observed
-  native explicit UVs. Write guards must preserve their previous state across
-  nested callbacks. Keep the animated loss bar behind live player health.
-- Treat anchor counts and all `GetPoint` results as potentially secret. Validate
-  access before iteration/comparison; never replace or replay unknown anchors.
-- Run `lua src/test-legacy-layout.lua` for offline restoration/combat tests.
+  selected. Only named components are modified. No recursive frame/region scans
+  or runtime rendering snapshots: atlas names, geometry and restoration come from
+  fixed build definitions. Never call render getters to infer a layout.
+- `geometry.lua`: explicit 70374 and 70425 player, target/focus/boss, pet/ToT,
+  party and combo definitions. Never write addon state onto protected frame tables.
+- Validate nested frame paths and setter methods (`CheckPaths`/`CheckRegion`).
+  Missing/forbidden components produce deduplicated shared logger warnings.
+  Callbacks use the Ace instance, not its separate prototype.
+- Health colors use `HealthAtlas(bar, key)` to resolve a known family. Never read
+  `Texture:GetAtlas()`. Changes go through `SetHealthAtlas`, which uses the owning
+  bar setter and standalone legacy fills. Native atlas-hook arguments are ignored.
+- `GetStatusBarTexture` obtains only the named bar's texture object. Do not inspect
+  its rendered values, UVs or dimensions. All layout geometry waits out combat;
+  health color/fill updates use constant arguments without inspecting bar values.
+- Restore static atlases with `resetTexCoords = true`. Reapply fixed current
+  definitions, not observed client state. Keep native root positions and scale.
+  Player health uses BACKGROUND sublevel 1 in Legacy to sit above the red loss
+  fill; Current restores sublevel 0. No frame-level getter/arithmetic is needed.
+- Treat gameplay results and frame fields as potentially secret; check access
+  before comparison, branching, concatenation or indexing. Unsupported/inaccessible
+  power and classification data are skipped with a deduplicated diagnostic.
+- Run `lua src/test-legacy-layout.lua`: its rendering getters throw if called.
+  Also run `python -m unittest src/test_legacy_unitframe_atlas.py`.
 
 ### Annotations (not in the TOC)
 

@@ -28,7 +28,7 @@ local LABEL = NORMAL_FONT_COLOR:WrapTextInColorCode("T:")
 local YOU_COLOR = CreateColor(1, 0.25, 0.25)
 local NO_TARGET = GRAY_FONT_COLOR:WrapTextInColorCode("-")
 -- How often the shown line is checked for a new target, in seconds.
-local UPDATE_INTERVAL = 0.2
+local UPDATE_INTERVAL = 0.05
 
 -- The target line of the unit GameTooltip shows: the unit, the line's number (nil until the unit
 -- had a target) and its text.

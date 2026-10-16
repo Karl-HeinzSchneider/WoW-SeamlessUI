@@ -9,6 +9,7 @@ local feature = app.features:NewFeature("CursorAnchor", {
     desc = "Shows tooltips at the mouse cursor instead of the screen corner. Unit frame tooltips stay in "
         .. 'the corner; action button tooltips follow "Anchor to action buttons" while that is on.',
     order = 10,
+    enabled = false,
     defaults = {
         position = "ANCHOR_CURSOR_RIGHT",
         offsetX = 16,

@@ -32,7 +32,7 @@ One file per tooltip enhancement, listed by options section.
 
 #### All tooltips (`all`)
 
-- `cursoranchor.lua` — `CursorAnchor`: post-hooks the global `GameTooltip_SetDefaultAnchor` and
+- `cursoranchor.lua` — `CursorAnchor` (off by default): post-hooks the global `GameTooltip_SetDefaultAnchor` and
   re-owns the tooltip with a cursor anchor (`position`: `ANCHOR_CURSOR_RIGHT` by default,
   `offsetX` = 16, `offsetY` = 0). Action buttons call the default anchor before `SetAction`, so
   `ActionButtonAnchor` wins for them while both are on. Unit frames (a parent with `.unit` or a

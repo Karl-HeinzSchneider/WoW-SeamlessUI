@@ -116,6 +116,15 @@ local function Watch(region)
             end
         end)
     end
+    if type(region.GetFrameLevel) == "function" and type(region.SetFrameLevel) == "function" then
+        state.frameLevel = region:GetFrameLevel()
+        hooksecurefunc(region, "SetFrameLevel", function()
+            if not writing then
+                state.frameLevel = region:GetFrameLevel()
+                Request()
+            end
+        end)
+    end
     regions[region] = state
     for _, method in ipairs({ "SetWidth", "SetHeight", "SetSize" }) do
         hooksecurefunc(region, method, function()
@@ -185,11 +194,15 @@ function module:Edit(region, changes)
     if changes.layer and not self:CheckRegion(region, "texture layer", { "GetDrawLayer", "SetDrawLayer" }) then
         return
     end
+    if changes.frameLevel and not self:CheckRegion(region, "frame stacking", { "GetFrameLevel", "SetFrameLevel" }) then
+        return
+    end
     local state = Watch(region)
     if not state then
         return
     end
     state.owned = state.owned or {}
+    local wasWriting = writing
     writing = true
     if changes.width and Readable(state.width) then
         state.owned.width = true
@@ -212,12 +225,29 @@ function module:Edit(region, changes)
         state.owned.layer = true
         region:SetDrawLayer(unpack(changes.layer))
     end
-    writing = false
+    if changes.frameLevel and Readable(state.frameLevel) then
+        state.owned.frameLevel = true
+        region:SetFrameLevel(changes.frameLevel)
+    end
+    writing = wasWriting
 end
 
 function module:GetAtlas(texture)
     local state = textures[texture]
     return state and state.overridden and (state.legacyAtlas or state.atlas) or texture:GetAtlas()
+end
+
+local function ReadableCoords(...)
+    local coords = { ... }
+    if #coords == 0 then
+        return nil
+    end
+    for _, value in ipairs(coords) do
+        if not Readable(value) then
+            return nil
+        end
+    end
+    return coords
 end
 
 local function WatchTexture(texture)
@@ -241,6 +271,9 @@ local function WatchTexture(texture)
         atlas = nil
     end
     local state = { atlas = atlas }
+    if type(texture.GetTexCoord) == "function" then
+        state.nativeCoords = ReadableCoords(texture:GetTexCoord())
+    end
     textures[texture] = state
     local info = atlas and C_Texture.GetAtlasInfo(atlas)
     -- Status-bar fill sizes may be secret even outside combat. Check access
@@ -253,9 +286,12 @@ local function WatchTexture(texture)
         and Readable(info.height)
         and width == info.width
         and height == info.height
-    hooksecurefunc(texture, "SetAtlas", function(_, name, useSize)
+    hooksecurefunc(texture, "SetAtlas", function(_, name, useSize, _, resetTexCoords)
         if not writing then
             state.atlas, state.useSize, state.overridden, state.legacyAtlas = name, useSize, false, nil
+            if resetTexCoords then
+                state.nativeCoords = nil
+            end
             -- SetAtlas's C implementation can resize without calling Lua SetSize.
             local regionState = regions[texture]
             if regionState and useSize then
@@ -267,8 +303,13 @@ local function WatchTexture(texture)
     hooksecurefunc(texture, "SetTexture", function()
         if not writing then
             -- A raw replacement belongs to the client or another addon.
-            state.atlas, state.overridden, state.legacyAtlas = nil, false, nil
+            state.atlas, state.overridden, state.legacyAtlas, state.nativeCoords = nil, false, nil, nil
             Request()
+        end
+    end)
+    hooksecurefunc(texture, "SetTexCoord", function(_, ...)
+        if not writing then
+            state.nativeCoords = ReadableCoords(...)
         end
     end)
 end
@@ -359,6 +400,7 @@ local function SetArtwork(texture, state, data, atlas)
             return false
         end
     end
+    local wasWriting = writing
     writing = true
     local success
     if bar then
@@ -369,9 +411,9 @@ local function SetArtwork(texture, state, data, atlas)
         texture:SetTexture(data[1])
         texture:SetTexCoord(data[4], data[5], data[6], data[7])
     else
-        texture:SetAtlas(atlas)
+        texture:SetAtlas(atlas, false, nil, true)
     end
-    writing = false
+    writing = wasWriting
     if success == false then
         layout:Warn("status-bar artwork", "client rejected fill " .. atlas)
         return false
@@ -383,7 +425,7 @@ end
 -- onto a bar that is currently rendering a standalone legacy fill.
 function module:SetHealthAtlas(texture, atlas)
     local state = textures[texture]
-    if state and state.overridden and state.bar then
+    if state and state.overridden and state.bar and app.db.profile.layout == "legacy" then
         if InCombatLockdown() then
             Request()
             return false
@@ -397,7 +439,7 @@ function module:SetHealthAtlas(texture, atlas)
         state.legacyAtlas = atlas
         return true
     end
-    texture:SetAtlas(atlas)
+    texture:SetAtlas(atlas, false, nil, true)
     return true
 end
 
@@ -454,15 +496,26 @@ function module:Art(texture, atlas, useSize, preserveStatus)
 end
 
 local function Restore()
+    local wasWriting = writing
     writing = true
+    local restoreTextures = {}
     for texture, state in pairs(textures) do
         if state.overridden and layout:CheckRegion(texture, "atlas restoration", { "SetAtlas" }) then
+            restoreTextures[#restoreTextures + 1] = { texture, state }
             state.overridden = false
             state.legacyAtlas = nil
-            if state.bar and layout:CheckRegion(state.bar, "status-bar restoration", { "SetStatusBarTexture" }) then
-                state.bar:SetStatusBarTexture(state.atlas)
-            else
-                texture:SetAtlas(state.atlas, state.useSize)
+        end
+    end
+    -- Retire every logical legacy override before invoking client setters, whose
+    -- secure post-hooks can synchronously ask the color module for another atlas.
+    for _, entry in ipairs(restoreTextures) do
+        local texture, state = entry[1], entry[2]
+        if state.bar and layout:CheckRegion(state.bar, "status-bar restoration", { "SetStatusBarTexture" }) then
+            state.bar:SetStatusBarTexture(state.atlas)
+        else
+            texture:SetAtlas(state.atlas, state.useSize, nil, true)
+            if state.nativeCoords then
+                texture:SetTexCoord(unpack(state.nativeCoords))
             end
         end
     end
@@ -487,10 +540,13 @@ local function Restore()
             if owned.layer then
                 region:SetDrawLayer(unpack(state.layer))
             end
+            if owned.frameLevel and Readable(state.frameLevel) then
+                region:SetFrameLevel(state.frameLevel)
+            end
             state.owned = nil
         end
     end
-    writing = false
+    writing = wasWriting
     if type(layout.HideLegacyBackgrounds) == "function" then
         layout:HideLegacyBackgrounds()
     else

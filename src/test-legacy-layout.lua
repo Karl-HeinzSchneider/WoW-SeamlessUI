@@ -13,6 +13,7 @@ local function Object(kind, parent)
         regions = {},
         shown = true,
         justify = "CENTER",
+        frameLevel = 8,
     }, { __index = methods })
     if parent then
         local list = kind == "Texture" and parent.regions or parent.children
@@ -81,12 +82,22 @@ end
 function methods:GetAtlas()
     return self.atlas
 end
-function methods:SetAtlas(atlas, useSize)
+function methods:SetAtlas(atlas, useSize, _, resetTexCoords)
     Mutation()
     self.atlas, self.texture = atlas, nil
+    if resetTexCoords then
+        self.coords = { 0, 1, 0, 1 }
+    end
     if useSize then
         self.width, self.height = 130, 22
     end
+end
+function methods:GetFrameLevel()
+    return self.frameLevel
+end
+function methods:SetFrameLevel(level)
+    Mutation()
+    self.frameLevel = level
 end
 function methods:SetTexture(texture)
     Mutation()
@@ -95,6 +106,9 @@ end
 function methods:SetTexCoord(...)
     Mutation()
     self.coords = { ... }
+end
+function methods:GetTexCoord()
+    return unpack(self.coords or { 0, 1, 0, 1 })
 end
 function methods:GetRegions()
     return unpack(self.regions)
@@ -273,6 +287,7 @@ local content = Part(PlayerFrame, "PlayerFrameContent")
 local main = Part(content, "PlayerFrameContentMain")
 local container = Part(main, "HealthBarsContainer")
 Part(container, "HealthBar")
+local lossOverlay = Part(container, "PlayerFrameHealthBarAnimatedLoss")
 Part(container, "HealthBarMask", "Texture")
 local mana = Part(Part(main, "ManaBarArea"), "ManaBar")
 Part(mana, "ManaBarMask", "Texture")
@@ -291,12 +306,17 @@ local originalHeight = container:GetHeight()
 app.db.profile.layout = "legacy"
 module:Refresh()
 assert(container:GetHeight() ~= originalHeight)
+assert(
+    lossOverlay:GetFrameLevel() < container.HealthBar:GetFrameLevel(),
+    "damage-loss overlay must be behind live health"
+)
 assert(PlayerName:GetJustifyH() == "LEFT")
 PlayerFrame.unit = "vehicle"
 module:Refresh()
 app.db.profile.layout = "current"
 module:Refresh()
 assert(container:GetHeight() == originalHeight)
+assert(lossOverlay:GetFrameLevel() == 8, "restore native loss-overlay stacking")
 assert(PlayerName:GetJustifyH() == "CENTER")
 local restored = { container:GetPoint(1) }
 for i, value in ipairs(originalPoint) do
@@ -623,4 +643,59 @@ for _, mode in ipairs({ "class", "default", "class", "default" }) do
     Drain()
     assert(not playerBar.asset:find("/legacy/", 1, true))
 end
-print("Legacy layout: frame safety, native bar redraws/secret values, all health-color modes and layout toggles OK")
+-- Full sprite/mask restoration, not just status-bar asset names. Atlas setters
+-- preserve explicit UVs unless resetTexCoords is explicitly requested.
+local staticRoot = Object()
+roots[#roots + 1] = staticRoot
+local staticTextures = {}
+for name, data in pairs(app.legacyAtlases) do
+    if not data[8] then
+        local sprite = Object("Texture", staticRoot)
+        sprite:SetAtlas(name, true, nil, true)
+        staticTextures[#staticTextures + 1] = { sprite = sprite, atlas = name }
+    end
+end
+for _ = 1, 3 do
+    app.db.profile.layout = "legacy"
+    module:Refresh()
+    Drain()
+    for _, entry in ipairs(staticTextures) do
+        assert(entry.sprite.texture, "legacy static art must use the old sheet")
+    end
+    app.db.profile.layout = "current"
+    module:Refresh()
+    Drain()
+    for _, entry in ipairs(staticTextures) do
+        local sprite = entry.sprite
+        assert(sprite:GetAtlas() == entry.atlas)
+        assert(
+            sprite.coords[1] == 0 and sprite.coords[2] == 1 and sprite.coords[3] == 0 and sprite.coords[4] == 1,
+            "restored native atlas retained old sheet coordinates"
+        )
+        assert(sprite:GetWidth() == 130 and sprite:GetHeight() == 22, "native sprite/mask size was not restored")
+    end
+end
+local custom = staticTextures[1].sprite
+app.db.profile.layout = "legacy"
+module:Refresh()
+Drain()
+custom:SetTexCoord(0.1, 0.9, 0.2, 0.8)
+module:Refresh()
+Drain()
+app.db.profile.layout = "current"
+module:Refresh()
+Drain()
+assert(custom.coords[1] == 0.1 and custom.coords[3] == 0.2, "restore native explicit coordinates")
+app.db.profile.layout = "legacy"
+module:Refresh()
+Drain()
+custom:SetAtlas(staticTextures[1].atlas, true, nil, true)
+module:Refresh()
+Drain()
+app.db.profile.layout = "current"
+module:Refresh()
+Drain()
+assert(custom.coords[1] == 0 and custom.coords[3] == 0, "native atlas reset must retire previous explicit coordinates")
+print(
+    "Legacy layout: damage stacking, full sprite/mask restoration, color integration, frame safety and secret values OK"
+)

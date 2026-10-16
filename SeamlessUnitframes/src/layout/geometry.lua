@@ -61,6 +61,17 @@ local function Player(frame)
     end
     local container = main.HealthBarsContainer
     local health = container.HealthBar
+    local loss = container.PlayerFrameHealthBarAnimatedLoss
+    if loss then
+        if module:CheckRegion(health, "Player health stacking", { "GetFrameLevel" }) then
+            local level = health:GetFrameLevel()
+            if not canaccessvalue or canaccessvalue(level) then
+                module:Edit(loss, { frameLevel = math.max(0, level - 1) })
+            else
+                module:Warn("Player health stacking", "inaccessible frame level")
+            end
+        end
+    end
     local mana = main.ManaBarArea.ManaBar
     local vehicle = frame.unit == "vehicle"
     local alternate = PlayerFrame_GetAlternatePowerBar()

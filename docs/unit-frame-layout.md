@@ -54,6 +54,15 @@ disconnection, repeated toggles and native bar redraws with secret values.
 Changing between a default and tinted legacy fill during combat is deferred until
 combat ends, so the color module cannot replace a standalone fill with sheet UVs.
 Reaction/class tint updates that keep the same fill remain independent.
+Legacy keeps the player's red animated-loss bar below the live health bar, so
+damage feedback trails the lost portion rather than covering the class-colored
+fill. Its native frame level is restored when leaving Legacy.
+
+Restoration explicitly resets atlas coordinates on frame sprites and masks;
+reapplying an atlas without resetting coordinates can retain the old sheet's UVs.
+Native explicit coordinate changes observed while Legacy is active are preserved.
+All logical legacy overrides are retired before native setters run, and nested
+write guards preserve the outer restoration state during synchronous callbacks.
 
 ## Combat and taint boundary
 

@@ -61,6 +61,9 @@ used; shared preferences are stored independently in SeamlessCoreDB.
 - Status-bar fills must use standalone extracted art through the owning bar's
   `SetStatusBarTexture`. Do not apply raw atlas-sheet coordinates to a fill texture:
   native redraws reset them, including when bar values are secret.
+- Restore static atlases with `resetTexCoords = true`, then restore any observed
+  native explicit UVs. Write guards must preserve their previous state across
+  nested callbacks. Keep the animated loss bar behind live player health.
 - Run `lua src/test-legacy-layout.lua` for offline restoration/combat tests.
 
 ### Annotations (not in the TOC)

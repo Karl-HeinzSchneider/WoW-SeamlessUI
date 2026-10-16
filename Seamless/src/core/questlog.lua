@@ -15,12 +15,15 @@ function module:Refresh()
     local frame = WorldMapFrame
     local border = frame and frame.BorderFrame
     local minimize = border and border.MaximizeMinimizeFrame
-    if not minimize then
+    local title = border and border.TitleContainer
+    if not minimize or not title then
         return
     end
 
     if not self.text then
-        self.text = border:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        -- The border's NineSlice covers font strings on the border itself.
+        -- Use the title's higher frame level while anchoring beside the button.
+        self.text = title:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
         self.text:SetPoint("RIGHT", minimize, "LEFT", -8, 0)
         self.text:SetJustifyH("RIGHT")
         frame:HookScript("OnShow", function()

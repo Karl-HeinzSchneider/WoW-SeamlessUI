@@ -64,6 +64,12 @@ Texture dimensions can also be secret outside combat. Atlas-size inference check
 access before comparing them. Secret dimensions remain client-owned: the module
 does not resize them or replay them through size setters during restoration.
 
+Callbacks use AceAddon's returned module instance, whose prototype is a separate
+table. Geometry validates nested frame paths before using them. Missing methods,
+incomplete layouts and forbidden regions produce a warning naming the failed
+operation/path, once per distinct issue per session; later refreshes retry frames
+that finish initializing.
+
 ## In-game validation still required
 
 - Login/reload with Current and with Legacy saved; repeatedly toggle both ways.

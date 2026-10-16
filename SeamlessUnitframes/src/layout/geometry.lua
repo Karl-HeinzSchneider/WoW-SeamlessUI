@@ -5,6 +5,9 @@ local module = app.legacyLayout
 local backgrounds = {}
 
 local function Point(region, point, relative, relativePoint, x, y, width, height, justify)
+    if not module:CheckRegion(relative, "geometry anchor") then
+        return
+    end
     module:Edit(region, {
         point = { point, relative, relativePoint, x, y },
         width = width,
@@ -14,12 +17,18 @@ local function Point(region, point, relative, relativePoint, x, y, width, height
 end
 
 local function PvP(icon, parent, relativePoint, x)
-    if not icon then
+    if
+        not module:CheckRegion(icon, "PvP icon", { "IsShown" })
+        or not module:CheckRegion(parent, "PvP background parent", { "CreateTexture" })
+    then
         return
     end
     local background = backgrounds[icon]
     if not background then
         background = parent:CreateTexture(nil, "OVERLAY", nil, relativePoint == "TOPLEFT" and 3 or -1)
+        if not module:CheckRegion(background, "PvP background", { "SetAtlas", "SetScale", "SetPoint", "SetShown" }) then
+            return
+        end
         background:SetAtlas("UI-HUD-UnitFrame-SmallCircle", true)
         background:SetScale(0.8)
         background:SetPoint("TOP", parent, relativePoint, x, -50)
@@ -30,6 +39,21 @@ local function PvP(icon, parent, relativePoint, x)
 end
 
 local function Player(frame)
+    if
+        not module:CheckPaths(frame, "Player", {
+            "PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.HealthBar",
+            "PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.HealthBarMask",
+            "PlayerFrameContent.PlayerFrameContentMain.ManaBarArea.ManaBar.ManaBarMask",
+            "PlayerFrameContent.PlayerFrameContentMain.StatusTexture",
+            "PlayerFrameContainer.FrameFlash",
+        }) or not module:CheckRegion(PlayerName, "PlayerName", { "GetParent" })
+    then
+        return
+    end
+    if type(PlayerFrame_GetAlternatePowerBar) ~= "function" then
+        module:Warn("Player", "missing PlayerFrame_GetAlternatePowerBar")
+        return
+    end
     local main = frame.PlayerFrameContent.PlayerFrameContentMain
     local contextual = frame.PlayerFrameContent.PlayerFrameContentContextual
     if contextual and contextual.AttackIcon then
@@ -102,6 +126,20 @@ local function Player(frame)
 end
 
 local function Target(frame)
+    if
+        not module:CheckPaths(frame, "Target/Focus/Boss", {
+            "TargetFrameContent.TargetFrameContentMain.HealthBarsContainer.HealthBar.HealthBarTexture",
+            "TargetFrameContent.TargetFrameContentMain.HealthBarsContainer.HealthBarMask",
+            "TargetFrameContent.TargetFrameContentMain.HealthBarsContainer.TempMaxHealthLoss.TempMaxHealthLossTexture",
+            "TargetFrameContent.TargetFrameContentMain.Name",
+            "TargetFrameContent.TargetFrameContentMain.ReputationColor",
+            "TargetFrameContent.TargetFrameContentMain.ManaBar.RightText",
+            "TargetFrameContent.TargetFrameContentContextual",
+            "TargetFrameContainer.Flash",
+        })
+    then
+        return
+    end
     local main = frame.TargetFrameContent.TargetFrameContentMain
     local contextual = frame.TargetFrameContent.TargetFrameContentContextual
     local container = main.HealthBarsContainer
@@ -139,6 +177,14 @@ local function Small(frame, pet)
     local portrait = pet and PetPortrait or frame.Portrait
     local health = pet and PetFrameHealthBar or frame.HealthBar
     local mana = pet and PetFrameManaBar or frame.ManaBar
+    if
+        not module:CheckRegion(name, "Pet/ToT name")
+        or not module:CheckRegion(portrait, "Pet/ToT portrait")
+        or not module:CheckRegion(health, "Pet/ToT health bar")
+        or not module:CheckRegion(mana, "Pet/ToT power bar")
+    then
+        return
+    end
     Point(name, "TOPLEFT", portrait, "TOPRIGHT", 2, 0, nil, nil, "LEFT")
     if pet then
         Point(health, "BOTTOMLEFT", portrait, "RIGHT", 2, -3.5)
@@ -152,6 +198,19 @@ local function Small(frame, pet)
 end
 
 local function Party(frame)
+    if
+        not module:CheckPaths(frame, "Party", {
+            "Name",
+            "HealthBarContainer.HealthBar",
+            "HealthBarContainer.HealthBarMask",
+            "ManaBar.ManaBarMask",
+            "PartyMemberOverlay.RoleIcon",
+            "PartyMemberOverlay.Status",
+            "Flash",
+        })
+    then
+        return
+    end
     local vehicle = frame.state == "vehicle"
     local character = frame.frameType == "CharacterFrameOn"
     local healthOnly = not vehicle and not character and UNIT_FRAME_SHOW_HEALTH_ONLY
@@ -216,7 +275,7 @@ function module:ApplyGeometry(roots)
             Party(frame)
         end
     end
-    if ComboFrame and TargetFrame then
+    if ComboFrame and module:CheckRegion(TargetFrame, "combo target", { "GetPortrait" }) then
         Point(ComboFrame, "CENTER", TargetFrame:GetPortrait(), "CENTER", 0, 2)
     end
 end

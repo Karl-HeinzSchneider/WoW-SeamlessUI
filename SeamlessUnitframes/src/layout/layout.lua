@@ -3,15 +3,77 @@ local _, app = ...
 
 ---@class SeamlessUnitframes.LegacyLayout : AceModule, AceEvent-3.0
 local module = {}
-app.legacyLayout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
+local layout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
+app.legacyLayout = layout
 
 -- All bookkeeping is private. Never replace a Blizzard function, assign a mixin
 -- member, or write layout/state fields onto a protected frame.
 local regions, textures, frames = {}, {}, {}
 local writing, scheduled, initialized, enabled, applied = false, false, false, false, false
+local warnings = {}
+local regionMethods = {
+    "GetWidth",
+    "GetHeight",
+    "GetNumPoints",
+    "GetPoint",
+    "SetWidth",
+    "SetHeight",
+    "SetSize",
+    "SetPoint",
+    "SetAllPoints",
+    "ClearAllPoints",
+}
 
 local function Readable(value)
     return not canaccessvalue or canaccessvalue(value)
+end
+
+function module:Warn(context, reason)
+    local key = context .. ": " .. reason
+    if not warnings[key] then
+        warnings[key] = true
+        app.logger:warn("Legacy unit frames: %s; skipping this operation", key)
+    end
+end
+
+function module:CheckRegion(region, context, methods)
+    if not Readable(region) then
+        self:Warn(context, "inaccessible region")
+        return false
+    end
+    if region == nil or (type(region) ~= "table" and type(region) ~= "userdata") then
+        self:Warn(context, "missing or invalid region")
+        return false
+    end
+    if type(region.IsForbidden) == "function" and region:IsForbidden() then
+        self:Warn(context, "forbidden region")
+        return false
+    end
+    for _, name in ipairs(methods or {}) do
+        if type(region[name]) ~= "function" then
+            self:Warn(context, "missing method " .. name)
+            return false
+        end
+    end
+    return true
+end
+
+-- Validate every nested path before applying a frame's geometry. A client change
+-- or an incompletely initialized frame should produce a useful warning, not a nil call.
+function module:CheckPaths(frame, context, paths)
+    for _, path in ipairs(paths) do
+        local value = frame
+        for key in path:gmatch("[^.]+") do
+            if not self:CheckRegion(value, context .. "." .. path) then
+                return false
+            end
+            value = value[key]
+        end
+        if not self:CheckRegion(value, context .. "." .. path, { "GetParent" }) then
+            return false
+        end
+    end
+    return true
 end
 
 local function Points(region)
@@ -29,11 +91,14 @@ local function Request()
     scheduled = true
     C_Timer.After(0, function()
         scheduled = false
-        module:Refresh()
+        layout:Refresh()
     end)
 end
 
 local function Watch(region)
+    if not layout:CheckRegion(region, "layout snapshot", regionMethods) then
+        return nil
+    end
     local state = regions[region]
     if state then
         return state
@@ -111,10 +176,19 @@ end
 -- Called only outside combat; individual properties are restored only when we
 -- changed them. Native updates continue to replace their saved values.
 function module:Edit(region, changes)
-    if not region then
+    if not self:CheckRegion(region, "geometry region", regionMethods) then
+        return
+    end
+    if changes.justify and not self:CheckRegion(region, "text alignment", { "GetJustifyH", "SetJustifyH" }) then
+        return
+    end
+    if changes.layer and not self:CheckRegion(region, "texture layer", { "GetDrawLayer", "SetDrawLayer" }) then
         return
     end
     local state = Watch(region)
+    if not state then
+        return
+    end
     state.owned = state.owned or {}
     writing = true
     if changes.width and Readable(state.width) then
@@ -147,7 +221,19 @@ function module:GetAtlas(texture)
 end
 
 local function WatchTexture(texture)
+    if not layout:CheckRegion(texture, "texture discovery") then
+        return
+    end
     if textures[texture] or not texture.SetAtlas then
+        return
+    end
+    if
+        not layout:CheckRegion(
+            texture,
+            "atlas texture",
+            { "GetAtlas", "GetWidth", "GetHeight", "SetTexture", "SetTexCoord" }
+        )
+    then
         return
     end
     local atlas = texture:GetAtlas()
@@ -188,14 +274,14 @@ local function WatchTexture(texture)
 end
 
 local function Scan(frame)
-    if not frame or (frame.IsForbidden and frame:IsForbidden()) then
-        return
+    if not layout:CheckRegion(frame, "frame discovery", { "GetChildren", "GetRegions" }) then
+        return false
     end
     if frames[frame] then
         for _, child in ipairs({ frame:GetChildren() }) do
             Scan(child)
         end
-        return
+        return true
     end
     frames[frame] = true
     for _, region in ipairs({ frame:GetRegions() }) do
@@ -212,9 +298,10 @@ local function Scan(frame)
                     local current = frame:GetStatusBarTexture()
                     if current then
                         WatchTexture(current)
-                        textures[current].atlas = atlas
-                        textures[current].overridden = false
-                        textures[current].legacyAtlas = nil
+                        local state = textures[current]
+                        if state then
+                            state.atlas, state.overridden, state.legacyAtlas = atlas, false, nil
+                        end
                     end
                     Request()
                 end
@@ -226,8 +313,10 @@ local function Scan(frame)
                 if current then
                     WatchTexture(current)
                     local state = textures[current]
-                    state.atlas, state.overridden, state.legacyAtlas = current:GetAtlas(), false, nil
-                    state.useSize = false
+                    if state then
+                        state.atlas, state.overridden, state.legacyAtlas = current:GetAtlas(), false, nil
+                        state.useSize = false
+                    end
                 end
                 Request()
             end
@@ -236,6 +325,7 @@ local function Scan(frame)
     for _, child in ipairs({ frame:GetChildren() }) do
         Scan(child)
     end
+    return true
 end
 
 local function Roots()
@@ -252,16 +342,15 @@ end
 local function ApplyTextures()
     for texture, state in pairs(textures) do
         local data = state.atlas and app.legacyAtlases[state.atlas:lower()]
-        if data then
+        if data and Watch(texture) then
             state.legacyAtlas = nil
-            Watch(texture)
             writing = true
             texture:SetTexture(data[1])
             texture:SetTexCoord(data[4], data[5], data[6], data[7])
             writing = false
             state.overridden = true
             if state.useSize then
-                module:Edit(texture, { width = data[2], height = data[3] })
+                layout:Edit(texture, { width = data[2], height = data[3] })
             end
         end
     end
@@ -275,6 +364,10 @@ function module:Art(texture, atlas, useSize, preserveStatus)
     end
     WatchTexture(texture)
     local state = textures[texture]
+    if not state then
+        self:Warn("art override", "texture could not be observed")
+        return
+    end
     if not state.atlas then
         -- Respect a raw texture replacement owned by another addon.
         return
@@ -286,7 +379,9 @@ function module:Art(texture, atlas, useSize, preserveStatus)
         end
     end
     local data = app.legacyAtlases[atlas:lower()]
-    Watch(texture)
+    if not Watch(texture) then
+        return
+    end
     writing = true
     if data then
         texture:SetTexture(data[1])
@@ -307,7 +402,7 @@ end
 local function Restore()
     writing = true
     for texture, state in pairs(textures) do
-        if state.overridden then
+        if state.overridden and layout:CheckRegion(texture, "atlas restoration", { "SetAtlas" }) then
             state.overridden = false
             state.legacyAtlas = nil
             texture:SetAtlas(state.atlas, state.useSize)
@@ -315,7 +410,7 @@ local function Restore()
     end
     for region, state in pairs(regions) do
         local owned = state.owned
-        if owned then
+        if owned and layout:CheckRegion(region, "geometry restoration", regionMethods) then
             if owned.width and Readable(state.width) then
                 region:SetWidth(state.width)
             end
@@ -338,7 +433,11 @@ local function Restore()
         end
     end
     writing = false
-    module:HideLegacyBackgrounds()
+    if type(layout.HideLegacyBackgrounds) == "function" then
+        layout:HideLegacyBackgrounds()
+    else
+        layout:Warn("restoration", "geometry module is missing HideLegacyBackgrounds")
+    end
     applied = false
 end
 
@@ -381,14 +480,21 @@ function module:Refresh()
         end
         return
     end
+    if type(self.ApplyGeometry) ~= "function" then
+        self:Warn("refresh", "geometry module is missing ApplyGeometry")
+        return
+    end
     Initialize()
     local roots = Roots()
+    local readyRoots = {}
     for _, frame in ipairs(roots) do
-        Scan(frame)
-        if not regions[frame] then
+        if Scan(frame) and Watch(frame) then
+            readyRoots[#readyRoots + 1] = frame
+        end
+        if regions[frame] and not regions[frame].hookedRoot then
             -- Hook instance methods, not shared mixin tables. Late-created party
             -- and ToT frames are discovered by UnitFrame_Initialize / group events.
-            Watch(frame)
+            regions[frame].hookedRoot = true
             for _, name in ipairs({ "CheckClassification", "UpdateArt", "UpdateNameTextAnchors", "Show", "SetShown" }) do
                 if type(frame[name]) == "function" then
                     hooksecurefunc(frame, name, Request)
@@ -399,7 +505,7 @@ function module:Refresh()
     applied = true
     -- Apply art before explicit geometry: some masks have deliberate size overrides.
     ApplyTextures()
-    self:ApplyGeometry(roots)
+    self:ApplyGeometry(readyRoots)
     app.healthColor:Refresh()
 end
 
@@ -427,7 +533,7 @@ function module:OnDisable()
         waiter:RegisterEvent("PLAYER_REGEN_ENABLED")
         waiter:SetScript("OnEvent", function(self)
             if enabled and app.db.profile.layout == "legacy" then
-                module:Refresh()
+                layout:Refresh()
             else
                 Restore()
             end

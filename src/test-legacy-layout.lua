@@ -160,8 +160,13 @@ local function Drain()
     end
 end
 
-local roots, recolors = {}, 0
+local roots, recolors, warnings = {}, 0, {}
 local app = {
+    logger = {
+        warn = function(_, format, ...)
+            warnings[#warnings + 1] = string.format(format, ...)
+        end,
+    },
     db = { profile = { layout = "current" } },
     unitFrames = {
         All = function()
@@ -174,9 +179,10 @@ local app = {
         end,
     },
     addon = {
-        NewModule = function(_, _, module)
-            function module:RegisterEvent() end
-            return module
+        NewModule = function(_, _, prototype)
+            -- AceAddon returns a distinct instance inheriting from the prototype.
+            -- Methods added by a later file exist only on that returned instance.
+            return setmetatable({ RegisterEvent = function() end }, { __index = prototype })
         end,
     },
 }
@@ -395,4 +401,43 @@ texture:SetSize(secretWidth, 22)
 app.db.profile.layout = "current"
 module:Refresh()
 assert(rawequal(texture.width, secretWidth), "secret native width must not be replayed to SetWidth")
-print("Legacy layout: restoration, combat deferral, state changes and opaque secret dimensions OK")
+-- A later file adds geometry to Ace's returned instance, not to its prototype.
+local geometry = module.ApplyGeometry
+module.ApplyGeometry = nil
+app.db.profile.layout = "legacy"
+local warningCount, beforeMissing = #warnings, writes
+module:OnProfileRefresh()
+Drain()
+module:Refresh()
+assert(writes == beforeMissing)
+assert(#warnings == warningCount + 1 and warnings[#warnings]:find("missing ApplyGeometry", 1, true))
+module.ApplyGeometry = geometry
+
+-- Incomplete layouts log the missing path and recover on a later refresh.
+local targetMana = tm.ManaBar
+tm.ManaBar = nil
+warningCount = #warnings
+module:Refresh()
+module:Refresh()
+assert(#warnings == warningCount + 1)
+assert(warnings[#warnings]:find("TargetFrameContent.TargetFrameContentMain.ManaBar.RightText", 1, true))
+tm.ManaBar = targetMana
+module:Refresh()
+assert(targetMana:GetWidth() == 134)
+
+local forbidden = Object()
+function forbidden:IsForbidden()
+    return true
+end
+function forbidden:GetChildren()
+    error("forbidden frame was traversed")
+end
+roots[#roots + 1] = forbidden
+warningCount = #warnings
+module:Refresh()
+module:Refresh()
+assert(#warnings == warningCount + 1 and warnings[#warnings]:find("forbidden region", 1, true))
+table.remove(roots)
+app.db.profile.layout = "current"
+module:Refresh()
+print("Legacy layout: Ace instances, frame validation/logging, restoration, combat deferral and secret dimensions OK")

@@ -51,6 +51,9 @@ used; shared preferences are stored independently in SeamlessCoreDB.
   post-hooks. All mutations defer during combat, including restoration.
 - `geometry.lua`: pre-70425 player, target/focus/boss, pet/ToT, party and combo
   geometry. Never write addon state onto protected frame tables.
+- Validate frame paths and required methods before access (`CheckPaths`/`CheckRegion`).
+  Report unexpected missing/forbidden components through the shared logger, with
+  duplicate suppression. Callbacks must use the Ace instance, not its prototype.
 - Health colors must use `app.legacyLayout:GetAtlas(texture)` rather than reading
   `GetAtlas()` directly: bundled old art uses a raw texture with a logical atlas name.
 - Run `lua src/test-legacy-layout.lua` for offline restoration/combat tests.

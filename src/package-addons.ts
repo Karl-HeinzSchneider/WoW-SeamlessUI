@@ -1,10 +1,15 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 import { addonVersion, requireAddons } from "./addons.js";
-import { packageName, ROOT } from "./config.js";
+import { packageName, releaseAddonNames, ROOT } from "./config.js";
 import { createZip, directoryEntries, fileNamePart } from "./zip.js";
 
-const addons = requireAddons();
+const available = requireAddons();
+const addons = releaseAddonNames().map((name) => {
+  const addon = available.find((candidate) => candidate.name === name);
+  if (!addon) throw new Error(`release addon ${name} has no matching TOC`);
+  return addon;
+});
 const versions = [...new Set(addons.map(addonVersion))];
 const version = versions.length === 1 ? versions[0]! : "mixed";
 const outputDir = resolve(ROOT, "dist");

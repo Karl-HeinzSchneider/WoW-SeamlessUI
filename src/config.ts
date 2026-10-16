@@ -35,3 +35,12 @@ export function packageName(): string {
   if (!name) throw new Error(".pkgmeta has no package-as line");
   return name;
 }
+
+/** Public addon folders listed in our flat .pkgmeta move-folders mapping. */
+export function releaseAddonNames(): string[] {
+  const pkgmeta = readFileSync(resolve(ROOT, ".pkgmeta"), "utf-8");
+  const section = /^move-folders:\s*\r?\n((?:[ \t]+[^\n]*\n|\r?\n)*)/m.exec(pkgmeta)?.[1];
+  const names = [...(section ?? "").matchAll(/^  [^\s#][^:\r\n]*: ([A-Za-z0-9_-]+)\s*$/gm)].map((match) => match[1]!);
+  if (names.length === 0) throw new Error(".pkgmeta has no release addon folders");
+  return names;
+}

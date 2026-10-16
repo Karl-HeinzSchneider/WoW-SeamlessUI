@@ -10,6 +10,10 @@ app.legacyLayout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
 local regions, textures, frames = {}, {}, {}
 local writing, scheduled, initialized, enabled, applied = false, false, false, false, false
 
+local function Readable(value)
+    return not canaccessvalue or canaccessvalue(value)
+end
+
 local function Points(region)
     local points = {}
     for i = 1, region:GetNumPoints() do
@@ -113,11 +117,11 @@ function module:Edit(region, changes)
     local state = Watch(region)
     state.owned = state.owned or {}
     writing = true
-    if changes.width then
+    if changes.width and Readable(state.width) then
         state.owned.width = true
         region:SetWidth(changes.width)
     end
-    if changes.height then
+    if changes.height and Readable(state.height) then
         state.owned.height = true
         region:SetHeight(changes.height)
     end
@@ -147,10 +151,22 @@ local function WatchTexture(texture)
         return
     end
     local atlas = texture:GetAtlas()
+    if not Readable(atlas) then
+        atlas = nil
+    end
     local state = { atlas = atlas }
     textures[texture] = state
     local info = atlas and C_Texture.GetAtlasInfo(atlas)
-    state.useSize = info and texture:GetWidth() == info.width and texture:GetHeight() == info.height
+    -- Status-bar fill sizes may be secret even outside combat. Check access
+    -- before equality; never infer atlas sizing from a secret dimension.
+    local width, height = texture:GetWidth(), texture:GetHeight()
+    state.useSize = info ~= nil
+        and Readable(width)
+        and Readable(height)
+        and Readable(info.width)
+        and Readable(info.height)
+        and width == info.width
+        and height == info.height
     hooksecurefunc(texture, "SetAtlas", function(_, name, useSize)
         if not writing then
             state.atlas, state.useSize, state.overridden, state.legacyAtlas = name, useSize, false, nil
@@ -301,10 +317,10 @@ local function Restore()
     for region, state in pairs(regions) do
         local owned = state.owned
         if owned then
-            if owned.width then
+            if owned.width and Readable(state.width) then
                 region:SetWidth(state.width)
             end
-            if owned.height then
+            if owned.height and Readable(state.height) then
                 region:SetHeight(state.height)
             end
             if owned.points then

@@ -31,10 +31,12 @@ function methods:GetHeight()
     return self.height
 end
 function methods:SetWidth(value)
+    assert(not canaccessvalue or canaccessvalue(value), "secret width passed to setter")
     Mutation()
     self.width = value
 end
 function methods:SetHeight(value)
+    assert(not canaccessvalue or canaccessvalue(value), "secret height passed to setter")
     Mutation()
     self.height = value
 end
@@ -344,6 +346,48 @@ combat = false
 module:Refresh()
 assert(th:GetHeight() == 20 and ph:GetWidth() == 100)
 assert(fill:GetAtlas() == "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Health-Status")
-print(
-    "Legacy layout: inert default, restoration, native updates, late frames, combat deferral, toggles, vehicles, classifications, party styles OK"
-)
+
+-- Secret dimensions are opaque: comparing them can throw in the real client.
+-- Distinct sentinels with an equality trap reproduce that failure offline.
+local secretMeta = {
+    __eq = function()
+        error("secret dimension compared")
+    end,
+}
+local secretWidth, secretHeight = setmetatable({}, secretMeta), setmetatable({}, secretMeta)
+local secretInfoWidth, secretInfoHeight = setmetatable({}, secretMeta), setmetatable({}, secretMeta)
+local secrets = { [secretWidth] = true, [secretHeight] = true, [secretInfoWidth] = true, [secretInfoHeight] = true }
+function canaccessvalue(value)
+    return not secrets[value]
+end
+local nativeInfo = C_Texture.GetAtlasInfo
+C_Texture.GetAtlasInfo = function(name)
+    if name == originalAtlas then
+        return { width = secretInfoWidth, height = secretInfoHeight }
+    end
+    return nativeInfo(name)
+end
+local secretTexture = Object("Texture", Object("Frame", root))
+secretTexture:SetAtlas(originalAtlas)
+secretTexture.width, secretTexture.height = secretWidth, secretHeight
+app.db.profile.layout = "legacy"
+module:Refresh()
+module:Edit(secretTexture, { width = 42, height = 17 })
+assert(rawequal(secretTexture.width, secretWidth) and rawequal(secretTexture.height, secretHeight))
+app.db.profile.layout = "current"
+module:Refresh()
+assert(secretTexture:GetAtlas() == originalAtlas)
+assert(rawequal(secretTexture.width, secretWidth) and rawequal(secretTexture.height, secretHeight))
+
+-- A native update can make a previously readable, owned dimension secret.
+C_Texture.GetAtlasInfo = nativeInfo
+app.db.profile.layout = "legacy"
+module:Refresh()
+texture:SetWidth(222)
+texture.width = secretWidth
+-- The secure hook records the now-secret result returned by GetWidth.
+texture:SetSize(secretWidth, 22)
+app.db.profile.layout = "current"
+module:Refresh()
+assert(rawequal(texture.width, secretWidth), "secret native width must not be replayed to SetWidth")
+print("Legacy layout: restoration, combat deferral, state changes and opaque secret dimensions OK")

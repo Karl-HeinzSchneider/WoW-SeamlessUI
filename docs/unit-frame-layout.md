@@ -59,6 +59,10 @@ implementation, not a claim of uninterrupted legacy geometry during combat.
 Offline tests assert that no layout mutation happens during lockdown; they cannot
 prove live-client taint behavior.
 
+Texture dimensions can also be secret outside combat. Atlas-size inference checks
+access before comparing them. Secret dimensions remain client-owned: the module
+does not resize them or replay them through size setters during restoration.
+
 ## In-game validation still required
 
 - Login/reload with Current and with Legacy saved; repeatedly toggle both ways.

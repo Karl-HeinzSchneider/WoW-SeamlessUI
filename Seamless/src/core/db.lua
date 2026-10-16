@@ -5,6 +5,13 @@ app.dbDefaults = {
     profile = {
         logLevel = "INFO",
         minimap = { hide = false, minimapPos = 200 },
-        tweaks = { reloadShortcut = true, showFramerateOnStartup = false, questXPTooltip = true },
+        tweaks = {
+            reloadShortcut = true,
+            showFramerateOnStartup = false,
+            questXPTooltip = true,
+            enhancedXPTooltip = true,
+            restedXPCap = 150,
+            restedXPRate = 5,
+        },
     },
 }

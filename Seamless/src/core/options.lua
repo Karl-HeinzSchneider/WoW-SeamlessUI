@@ -271,6 +271,38 @@ function module:OnInitialize()
                         desc = "Adds the number of completed quests and their total XP reward to the player XP bar tooltip. Takes effect on the next hover.",
                         descStyle = "inline",
                     },
+                    enhancedXPTooltip = {
+                        type = "toggle",
+                        order = 40,
+                        width = "full",
+                        name = "Enhance the XP tooltip",
+                        desc = "Shows XP to the next level, rested XP as a percentage of a level, and estimated time to the configured rested cap while resting in an inn or city. Takes effect on the next hover.",
+                        descStyle = "inline",
+                    },
+                    restedXPCap = {
+                        type = "range",
+                        order = 41,
+                        name = "Rested XP cap (%)",
+                        desc = "Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly.",
+                        min = 1,
+                        max = 500,
+                        step = 1,
+                        disabled = function()
+                            return not app.db.profile.tweaks.enhancedXPTooltip
+                        end,
+                    },
+                    restedXPRate = {
+                        type = "range",
+                        order = 42,
+                        name = "Rested XP per 8 hours (%)",
+                        desc = "Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent.",
+                        min = 0.1,
+                        max = 100,
+                        step = 0.1,
+                        disabled = function()
+                            return not app.db.profile.tweaks.enhancedXPTooltip
+                        end,
+                    },
                 },
             },
         },

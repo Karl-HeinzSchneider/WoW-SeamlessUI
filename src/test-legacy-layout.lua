@@ -102,7 +102,9 @@ end
 function methods:GetChildren()
     return unpack(self.children)
 end
-function methods:HookScript() end
+function methods:HookScript()
+    error("forbidden script handler")
+end
 function methods:CreateTexture()
     return Object("Texture", self)
 end
@@ -196,6 +198,9 @@ app.db.profile.layout = "legacy"
 module:Refresh()
 assert(texture.texture and texture.texture:find("assets/legacy/"))
 assert(module:GetAtlas(texture) == originalAtlas)
+root:SetShown(true)
+assert(#pending > 0, "root visibility must request refresh through a secure method post-hook")
+Drain()
 local nativeWidth = 151
 texture:SetWidth(nativeWidth)
 texture:SetPoint("CENTER", root, "CENTER", 9, 10)

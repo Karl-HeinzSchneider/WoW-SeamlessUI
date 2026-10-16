@@ -48,7 +48,8 @@ and restoring the current client atlas when Legacy is deselected.
 Only secure post-hooks observe client changes. No Blizzard global function or
 mixin is replaced. Snapshot and override state lives in private tables, not on
 protected frames. The module never changes unit attributes, event registrations
-or scripts on the game's unit buttons. Show observers use `HookScript`.
+or scripts on the game's unit buttons. Root visibility changes are observed through
+`hooksecurefunc` on `Show` and `SetShown`; no descendant script handlers are hooked.
 
 All layout writes, including restoration and late frame discovery, are deferred
 while `InCombatLockdown()` is true. The last profile selection is applied after

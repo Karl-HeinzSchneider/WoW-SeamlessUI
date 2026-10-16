@@ -233,7 +233,6 @@ local function Scan(frame)
             end
         end)
     end
-    frame:HookScript("OnShow", Request)
     for _, child in ipairs({ frame:GetChildren() }) do
         Scan(child)
     end
@@ -370,7 +369,7 @@ function module:Refresh()
         return
     end
     local legacy = app.db.profile.layout == "legacy"
-    -- Includes profile changes, disable/restore, deferred OnShow, vehicle and
+    -- Includes profile changes, disable/restore, visibility, vehicle and
     -- classification updates. Never resize/reanchor protected children in combat.
     if InCombatLockdown() then
         return
@@ -390,7 +389,7 @@ function module:Refresh()
             -- Hook instance methods, not shared mixin tables. Late-created party
             -- and ToT frames are discovered by UnitFrame_Initialize / group events.
             Watch(frame)
-            for _, name in ipairs({ "CheckClassification", "UpdateArt", "UpdateNameTextAnchors" }) do
+            for _, name in ipairs({ "CheckClassification", "UpdateArt", "UpdateNameTextAnchors", "Show", "SetShown" }) do
                 if type(frame[name]) == "function" then
                     hooksecurefunc(frame, name, Request)
                 end

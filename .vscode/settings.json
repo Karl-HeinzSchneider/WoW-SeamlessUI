@@ -14,7 +14,7 @@
   "[lua]": {
     "editor.defaultFormatter": "JohnnyMorganz.stylua"
   },
-  "stylua.targetReleaseVersion": "latest",
+  "stylua.targetReleaseVersion": "v2.6.0",
   "[xml]": {
     "editor.defaultFormatter": "redhat.vscode-xml"
   },

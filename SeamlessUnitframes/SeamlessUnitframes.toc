@@ -1,5 +1,6 @@
 ## Interface: 16001
 ## Title: Seamless: Unit Frames
+## Group: SeamlessCore
 ## Notes: Configurable unit-frame layouts and health colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
 ## IconTexture: Interface\Icons\INV_Misc_QuestionMark
 ## Author: Karl-HeinzSchneider

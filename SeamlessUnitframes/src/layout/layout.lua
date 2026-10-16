@@ -10,6 +10,7 @@ app.legacyLayout = layout
 -- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
 local warnings, bindings, hooked, artwork = {}, {}, {}, {}
 local painted, watchedBars, watchedFills, watchedArt = {}, {}, {}, {}
+local visualBars = {}
 local lossColored = false
 local enabled, applied, writing, initialized = false, false, false, false
 local legacyMode = false
@@ -158,6 +159,11 @@ local function Paint(texture, atlas, useSize, bar)
     if bar and not WatchBar(bar, texture) then
         return false
     end
+    local visual = bar and visualBars[bar]
+    if visual and legacyMode then
+        Paint(visual:GetStatusBarTexture(), atlas, false, visual)
+        texture:SetAlpha(0)
+    end
     local last = painted[texture]
     if last and last.atlas == atlas and last.legacy == legacyMode and last.useSize == useSize then
         return true
@@ -196,6 +202,58 @@ local function Paint(texture, atlas, useSize, bar)
     painted[texture] = { atlas = atlas, legacy = legacyMode, useSize = useSize }
     writing = previous
     return true
+end
+
+-- A native target status bar explicitly inherits SecureFrameTemplate. Its
+-- Camelot update can resize it in combat, but an addon cannot undo that resize.
+-- Mirror setters into an ordinary visual bar instead; values may be secret and
+-- are forwarded verbatim, never inspected or used in layout arithmetic.
+function module:MirrorBar(source, visual, health, unit)
+    visualBars[source] = visual
+    hooksecurefunc(source, "SetMinMaxValues", function(_, ...)
+        visual:SetMinMaxValues(...)
+    end)
+    hooksecurefunc(source, "SetValue", function(_, ...)
+        visual:SetValue(...)
+    end)
+    hooksecurefunc(source, "SetStatusBarColor", function(_, ...)
+        visual:SetStatusBarColor(...)
+    end)
+    if health then
+        -- Max-health-loss updates shrink the live bar through this setter.
+        hooksecurefunc(source, "SetWidth", function(_, ...)
+            visual:SetWidth(...)
+        end)
+    end
+    hooksecurefunc(source, "SetAlpha", function(_, ...)
+        visual:SetAlpha(...)
+    end)
+    hooksecurefunc(source, "Show", function()
+        visual:SetShown(legacyMode)
+    end)
+    hooksecurefunc(source, "Hide", function()
+        visual:Hide()
+    end)
+    hooksecurefunc(source, "SetShown", function(_, shown)
+        visual:SetShown(legacyMode and shown)
+    end)
+    if health then
+        visual:SetMinMaxValues(0, UnitHealthMax(unit))
+        visual:SetValue(UnitHealth(unit))
+        visual:SetStatusBarColor(0, 1, 0)
+    else
+        visual:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
+        visual:SetMinMaxValues(0, 1)
+        visual:SetValue(0)
+        visual:SetStatusBarColor(1, 1, 1)
+    end
+end
+
+function module:ShowVisualBars(legacy)
+    for source, visual in pairs(visualBars) do
+        visual:SetShown(legacy and source:IsShown())
+        source:GetStatusBarTexture():SetAlpha(legacy and 0 or 1)
+    end
 end
 
 function module:Art(texture, atlas, useSize)
@@ -435,6 +493,7 @@ function module:Refresh(restore)
         end
     end
     self:ApplyGeometry(roots, legacy)
+    self:ShowVisualBars(legacy)
     writing = previous
     applied = legacy
     if not legacy then

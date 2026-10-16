@@ -59,7 +59,8 @@ used; shared preferences are stored independently in SeamlessDB.
   `Texture:GetAtlas()`. Changes go through `SetHealthAtlas`, which uses the owning
   bar setter and standalone legacy fills. Native atlas-hook arguments are ignored.
 - `GetStatusBarTexture` obtains only the named bar's texture object. Do not inspect
-  its rendered values, UVs or dimensions. Layout selection and protected geometry wait out combat; unprotected target visuals repair in combat;
+  its rendered values, UVs or dimensions. Layout selection and protected geometry wait out combat;
+  unprotected target/focus health visuals mirror native setters, forwarding secret values directly;
   health color/fill updates use constant arguments without inspecting bar values.
 - Restore static atlases with `resetTexCoords = true`. Reapply fixed current
   definitions, not observed client state. Keep native root positions and scale.
@@ -68,7 +69,8 @@ used; shared preferences are stored independently in SeamlessDB.
   native alpha/timing stays intact. Restore its native red tint in Current.
 - Apply native-update repairs synchronously. Do not queue texture repair for the
   next rendered frame. Named static atlas hooks rebind old artwork immediately,
-  without geometry changes in combat. Cache only our own last writes, invalidate
+  without protected geometry changes in combat. Target/focus native health bars inherit secure
+  templates: use ordinary visual bars, never anchor protected frames to them. Cache only our own last writes, invalidate
   on native setters, and avoid replacing unchanged health fills on value updates.
 - Party temporary health loss uses the Player atlas (CharacterFrameOnParty for
   that style), as in PartyFrameTemplates.xml. Unknown power types use the native

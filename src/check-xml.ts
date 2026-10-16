@@ -4,18 +4,9 @@ import { spawnSync } from "node:child_process";
 import { requireAddons } from "./addons.js";
 import { ROOT } from "./config.js";
 
-const schema = resolve(
-  ROOT,
-  "..",
-  "_data",
-  "BlizzardInterfaceCode",
-  "Interface",
-  "AddOns",
-  "Blizzard_SharedXML",
-  "UI.xsd",
-);
+const schema = resolve(ROOT, "..", "_data", "wow_classic_beta", "Interface", "AddOns", "Blizzard_SharedXML", "UI.xsd");
 if (!existsSync(schema)) {
-  console.log("XML validation skipped: ../_data/BlizzardInterfaceCode is not installed");
+  console.log("XML validation skipped: ../_data/wow_classic_beta is not installed");
   process.exit(0);
 }
 
@@ -24,7 +15,8 @@ const script = [
   "from lxml import etree",
   "import sys",
   "schema = etree.XMLSchema(etree.parse(sys.argv[1]))",
-  "files = [p for root in sys.argv[2:] for p in Path(root).rglob('*.xml')]",
+  // Vendored libraries under lib/ are third-party code, like for LuaLS, StyLua and Prettier.
+  "files = [p for root in sys.argv[2:] for p in Path(root).rglob('*.xml') if 'lib' not in p.relative_to(root).parts]",
   "failed = []",
   "for path in files:",
   "    doc = etree.parse(str(path))",

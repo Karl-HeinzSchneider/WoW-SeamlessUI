@@ -15,7 +15,7 @@ Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statist
 `options.lua` (General, Windows, Skin, History, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
-Use the exported client API documentation under `../_data/BlizzardInterfaceCode` when
+Use the exported client API documentation under `../_data/wow_classic_beta` when
 extending statistics. Combat names and amounts can be secret: pass them directly to
 FontString and StatusBar setters. Do not compare, sort, concatenate or calculate with
 them. Preserve the client's source order and do not modify returned data tables.

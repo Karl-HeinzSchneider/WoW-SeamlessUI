@@ -44,7 +44,7 @@ WoW addons are plain Lua/XML files loaded by the game; there is no build step. T
 | `npm run format`                   | Prettier (`.prettierrc.json`, `.prettierignore`) on TS/JSON/Markdown/YAML, then StyLua (`stylua.toml`, `.styluaignore`) on Lua. Leaves XML to the editor. `npm run format:check` only reports.                                      |
 | `npm run check:addons`             | Every TOC load entry exists (a `[TextLocale]` entry for every client language), all feature addons depend on `Seamless`, no dependency cycles.                                                                                      |
 | `npm run check:lua`                | `luac -p` on every addon Lua file (needs a Lua 5.1 `luac` on PATH).                                                                                                                                                                 |
-| `npm run check:xml`                | Validates every addon XML against Blizzard's `UI.xsd` via python + lxml; skipped when `../_data/BlizzardInterfaceCode` is absent.                                                                                                   |
+| `npm run check:xml`                | Validates every addon XML against Blizzard's `UI.xsd` via python + lxml; skipped when `../_data/wow_classic_beta` is absent; `lib/` is not checked.                                                                                 |
 | `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                                                                           |
 | `npm run dev:link -- <AddOns dir>` | Symlink (junction on Windows) every addon into a client; refuses to replace a path that isn't already our link.                                                                                                                     |
 | `npm run package:addons`           | Deterministic `dist/Seamless-<version>.zip` of public addons listed in `.pkgmeta` move-folders (gitignored), without `CLAUDE.md` files.                                                                                             |
@@ -109,7 +109,7 @@ repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the proj
 Every XML file starts with `<Ui xmlns="http://www.blizzard.com/wow/ui/">` and **no**
 `xsi:schemaLocation` â€” the client ignores it and a wrong path makes the VS Code XML extension
 report errors. Schema validation comes from `xml.fileAssociations` in `.vscode/settings.json`
-(mapping `**/*.xml` to `../_data/BlizzardInterfaceCode/.../Blizzard_SharedXML/UI.xsd`) and from
+(mapping `**/*.xml` to `../_data/wow_classic_beta/.../Blizzard_SharedXML/UI.xsd`) and from
 `npm run check:xml`. Lua mixin files must be listed in the TOC _before_ the XML that references
 them.
 
@@ -124,7 +124,7 @@ script file with raw strings).
 A developer may place Blizzard's exported interface files in `../_data/` (a sibling of the repo,
 `E:\Projects\_data\` here â€” outside the repo, so nothing needs gitignoring):
 
-- `../_data/BlizzardInterfaceCode/` â€” from `/run ExportInterfaceFiles("code")`: Lua/XML of all
+- `../_data/wow_classic_beta/` â€” the WoW Forever (classic beta) client's `/run ExportInterfaceFiles("code")`: Lua/XML of all
   FrameXML/AddOns.
 - `../_data/BlizzardInterfaceArt/` â€” from `/run ExportInterfaceFiles("art")`: every texture as
   `.blp` under `BlizzardInterfaceArt/Interface/...`.
@@ -135,7 +135,7 @@ If they exist, **read them, never edit them**:
   strings. Prefer it over memory; this client's API differs from retail and from Classic.
 - Art: verify that a texture path used in code exists (case-insensitive) and browse for suitable
   icons/textures by name. `.blp` can't be viewed; the file list is what matters. Atlas names
-  (`atlas="..."`) are _not_ in the export â€” find them in XML usages under `BlizzardInterfaceCode`.
+  (`atlas="..."`) are _not_ in the export â€” find them in XML usages under `wow_classic_beta`.
 
 Never list anything from these folders in a TOC or copy files out of them into the repo.
 

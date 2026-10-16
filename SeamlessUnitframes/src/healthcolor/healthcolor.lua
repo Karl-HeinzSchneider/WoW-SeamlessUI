@@ -64,13 +64,14 @@ end
 ---@param atlas string
 local function SetAtlas(texture, atlas)
     settingAtlas = true
-    texture:SetAtlas(atlas)
+    local applied = app.legacyLayout:SetHealthAtlas(texture, atlas)
     settingAtlas = false
+    return applied
 end
 
 -- False for nil and for a secret value (the client hides a unit's identity in some situations).
 local function Readable(value)
-    return value ~= nil and (not canaccessvalue or canaccessvalue(value))
+    return (not canaccessvalue or canaccessvalue(value)) and value ~= nil
 end
 
 ---@param unit string
@@ -143,17 +144,17 @@ local function Apply(bar, key)
     local color = BarColor(bar, key)
     local statusAtlas = color and StatusAtlas(atlas)
     if color and statusAtlas then
-        if atlas ~= statusAtlas then
-            SetAtlas(texture, statusAtlas)
+        if atlas ~= statusAtlas and not SetAtlas(texture, statusAtlas) then
+            return
         end
         bar:SetStatusBarColor(color:GetRGB())
         colored[bar] = true
     elseif colored[bar] then
         -- Only undo what this module did, so a bar it never colored is left alone.
-        colored[bar] = nil
-        if IsStatusAtlas(atlas) then
-            SetAtlas(texture, atlas:sub(1, -#STATUS_SUFFIX - 1))
+        if IsStatusAtlas(atlas) and not SetAtlas(texture, atlas:sub(1, -#STATUS_SUFFIX - 1)) then
+            return
         end
+        colored[bar] = nil
         bar:SetStatusBarColor(DefaultColor(bar))
     end
 end

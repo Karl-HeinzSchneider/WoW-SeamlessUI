@@ -440,4 +440,187 @@ assert(#warnings == warningCount + 1 and warnings[#warnings]:find("forbidden reg
 table.remove(roots)
 app.db.profile.layout = "current"
 module:Refresh()
-print("Legacy layout: Ace instances, frame validation/logging, restoration, combat deferral and secret dimensions OK")
+
+-- Model native bar redraws separately from Texture:SetTexCoord: SetValue writes
+-- engine-owned UVs directly and never calls Lua texture methods.
+local function StatusBar(parent, atlas)
+    local bar = Object("Frame", parent)
+    local fill = Object("Texture", bar)
+    function bar:GetStatusBarTexture()
+        return fill
+    end
+    function bar:SetStatusBarTexture(asset)
+        Mutation()
+        self.asset = asset
+        if asset:find("Interface/", 1, true) then
+            fill.atlas, fill.texture = nil, asset
+        else
+            fill.atlas, fill.texture = asset, nil
+        end
+        fill.coords = { 0, 1, 0, 1 }
+    end
+    function bar:SetValue(value)
+        -- The client can render secret values; addon code must not inspect them.
+        self.value = value
+        local fraction = canaccessvalue(value) and value or 0.37
+        fill.coords = { 0, fraction, 0, 1 }
+    end
+    function bar:SetStatusBarColor(r, g, b)
+        self.color = { r, g, b }
+    end
+    bar:SetStatusBarTexture(atlas)
+    return bar, fill
+end
+local colorRoot = Object()
+colorRoot.key = "target"
+roots[#roots + 1] = colorRoot
+local healthAtlas = "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Health"
+local healthBar, healthFill = StatusBar(colorRoot, healthAtlas)
+local powerBar, powerFill = StatusBar(colorRoot, "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Mana")
+colorRoot.healthbar = healthBar
+healthBar.unit, healthBar.unitFrame, healthBar.lockColor = "testtarget", colorRoot, true
+app.unitFrames.KeyOf = function(_, frame)
+    return frame and frame.key
+end
+local unitState = { player = true, connected = true, denied = false, reaction = { 1, 0, 0 } }
+function UnitFrameHealthBar_Update() end
+function UnitExists()
+    return true
+end
+function UnitIsConnected()
+    return unitState.connected
+end
+function UnitIsPlayer()
+    return unitState.player
+end
+function UnitClass()
+    return "Mage", "MAGE"
+end
+function UnitPlayerControlled()
+    return unitState.player
+end
+function UnitIsTapDenied()
+    return unitState.denied
+end
+function UnitSelectionColor()
+    return unpack(unitState.reaction)
+end
+function CreateColor(r, g, b)
+    return {
+        r = r,
+        g = g,
+        b = b,
+        SetRGB = function(self, red, green, blue)
+            self.r, self.g, self.b = red, green, blue
+        end,
+        GetRGB = function(self)
+            return self.r, self.g, self.b
+        end,
+    }
+end
+RAID_CLASS_COLORS = { MAGE = CreateColor(0.2, 0.4, 0.9) }
+app.logger.debug = function() end
+app.db.profile.unitFrames = { target = { healthBarColor = "class" } }
+assert(loadfile("SeamlessUnitframes/src/healthcolor/healthcolor.lua"))("test", app)
+app.healthColor:OnInitialize()
+app.healthColor:OnEnable()
+local function Color(r, g, b)
+    assert(healthBar.color[1] == r and healthBar.color[2] == g and healthBar.color[3] == b)
+end
+for _, selection in ipairs({ "current", "legacy", "current", "legacy" }) do
+    app.db.profile.layout = selection
+    for _, mode in ipairs({ "default", "class", "reaction", "classReaction" }) do
+        app.db.profile.unitFrames.target.healthBarColor = mode
+        unitState.player, unitState.connected, unitState.denied = true, true, false
+        module:Refresh()
+        app.healthColor:Refresh()
+        Drain()
+        if mode == "default" then
+            Color(1, 1, 1)
+        elseif mode == "reaction" then
+            Color(1, 0, 0)
+        else
+            Color(0.2, 0.4, 0.9)
+        end
+        for _, fraction in ipairs({ 0, 0.25, 0.75, 1, secretWidth }) do
+            healthBar:SetValue(fraction)
+            powerBar:SetValue(fraction)
+            if selection == "legacy" then
+                local logicalHealth = module:GetAtlas(healthFill)
+                if app.legacyAtlases[logicalHealth:lower()] then
+                    assert(healthBar.asset:find("/legacy/bars/", 1, true), "health must use standalone native fill")
+                else
+                    assert(healthBar.asset == logicalHealth, "unchanged health atlas must be assigned through the bar")
+                end
+                assert(powerBar.asset:find("/legacy/bars/", 1, true), "power must use standalone native fill")
+                assert(healthFill.coords[1] == 0 and healthFill.coords[3] == 0 and healthFill.coords[4] == 1)
+                assert(powerFill.coords[1] == 0 and powerFill.coords[4] == 1)
+            end
+        end
+    end
+end
+unitState.player = false
+app.healthColor:Refresh()
+Drain()
+Color(1, 0, 0)
+unitState.denied = true
+app.healthColor:Refresh()
+Drain()
+Color(0.5, 0.5, 0.5)
+unitState.connected = false
+app.healthColor:Refresh()
+Drain()
+Color(1, 1, 1)
+unitState.player, unitState.connected, unitState.denied = true, true, false
+app.db.profile.unitFrames.target.healthBarColor = "default"
+module:Refresh()
+Drain()
+local defaultFill = healthBar.asset
+combat = true
+app.db.profile.unitFrames.target.healthBarColor = "class"
+app.healthColor:Refresh()
+Drain()
+assert(healthBar.asset == defaultFill, "combat color change must not reset legacy fill to an atlas sheet")
+Color(1, 1, 1)
+combat = false
+module:Refresh()
+Drain()
+Color(0.2, 0.4, 0.9)
+assert(module:GetAtlas(healthFill):lower():sub(-7) == "-status")
+combat = true
+app.db.profile.unitFrames.target.healthBarColor = "default"
+app.healthColor:Refresh()
+Drain()
+Color(0.2, 0.4, 0.9)
+combat = false
+module:Refresh()
+Drain()
+Color(1, 1, 1)
+assert(healthBar.asset == defaultFill)
+app.db.profile.layout = "current"
+module:Refresh()
+Drain()
+assert(healthBar.asset == healthAtlas, "restore native health atlas through the owning bar")
+assert(powerBar.asset == "UI-HUD-UnitFrame-Target-PortraitOn-Bar-Mana")
+local playerColorRoot = Object()
+playerColorRoot.key = "player"
+roots[#roots + 1] = playerColorRoot
+local playerBar, playerFill = StatusBar(playerColorRoot, "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health")
+playerColorRoot.healthbar = playerBar
+playerBar.unit, playerBar.unitFrame, playerBar.lockColor = "testplayer", playerColorRoot, true
+app.db.profile.unitFrames.player = { healthBarColor = "class" }
+for _, mode in ipairs({ "class", "default", "class", "default" }) do
+    app.db.profile.layout = "legacy"
+    app.db.profile.unitFrames.player.healthBarColor = mode
+    module:Refresh()
+    Drain()
+    assert(playerBar.asset:find("/legacy/bars/player%-portraiton%-bar%-health"))
+    assert((module:GetAtlas(playerFill):lower():sub(-7) == "-status") == (mode == "class"))
+    playerBar:SetValue(secretWidth)
+    assert(playerFill.coords[1] == 0 and playerFill.coords[4] == 1)
+    app.db.profile.layout = "current"
+    module:Refresh()
+    Drain()
+    assert(not playerBar.asset:find("/legacy/", 1, true))
+end
+print("Legacy layout: frame safety, native bar redraws/secret values, all health-color modes and layout toggles OK")

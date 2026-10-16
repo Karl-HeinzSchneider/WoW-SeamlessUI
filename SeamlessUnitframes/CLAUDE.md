@@ -56,6 +56,11 @@ used; shared preferences are stored independently in SeamlessCoreDB.
   duplicate suppression. Callbacks must use the Ace instance, not its prototype.
 - Health colors must use `app.legacyLayout:GetAtlas(texture)` rather than reading
   `GetAtlas()` directly: bundled old art uses a raw texture with a logical atlas name.
+  Atlas changes go through `SetHealthAtlas`, preserving native status-bar binding
+  and deferring legacy fill swaps during combat.
+- Status-bar fills must use standalone extracted art through the owning bar's
+  `SetStatusBarTexture`. Do not apply raw atlas-sheet coordinates to a fill texture:
+  native redraws reset them, including when bar values are secret.
 - Run `lua src/test-legacy-layout.lua` for offline restoration/combat tests.
 
 ### Annotations (not in the TOC)

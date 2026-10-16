@@ -21,6 +21,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.8515625,
         0.865234375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-energy.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-focus"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -30,6 +31,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.869140625,
         0.8828125,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-focus.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-health"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -39,6 +41,7 @@ app.legacyAtlases = {
         0.259765625,
         0.6640625,
         0.68359375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-health.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-health-status"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -48,6 +51,7 @@ app.legacyAtlases = {
         0.9873046875,
         0.3828125,
         0.40234375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-health-status.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-mana"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -57,6 +61,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.904296875,
         0.91796875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-mana.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-mana-status"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -66,6 +71,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.88671875,
         0.900390625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-mana-status.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-rage"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -75,6 +81,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.921875,
         0.935546875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-rage.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-bar-runicpower"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -84,6 +91,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.939453125,
         0.953125,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/characterframeonparty-portraiton-bar-runicpower.blp",
     },
     ["ui-hud-unitframe-characterframeonparty-portraiton-incombat"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -120,6 +128,7 @@ app.legacyAtlases = {
         0.5625,
         0.69921875,
         0.7265625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-energy.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-focus"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -129,6 +138,7 @@ app.legacyAtlases = {
         0.859375,
         0.69921875,
         0.7265625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-focus.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-health"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -138,6 +148,7 @@ app.legacyAtlases = {
         0.27734375,
         0.65234375,
         0.69140625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-health.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-health-status"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -147,6 +158,7 @@ app.legacyAtlases = {
         0.55859375,
         0.65234375,
         0.69140625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-health-status.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-mana"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -156,6 +168,7 @@ app.legacyAtlases = {
         0.29296875,
         0.74609375,
         0.7734375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-mana.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-mana-mask"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframeportraitonmanamask.blp",
@@ -174,6 +187,7 @@ app.legacyAtlases = {
         0.58984375,
         0.74609375,
         0.7734375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-mana-status.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-rage"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -183,6 +197,7 @@ app.legacyAtlases = {
         0.88671875,
         0.74609375,
         0.7734375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-rage.blp",
     },
     ["ui-hud-unitframe-party-portraiton-bar-runicpower"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -192,6 +207,7 @@ app.legacyAtlases = {
         0.29296875,
         0.78125,
         0.80859375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/party-portraiton-bar-runicpower.blp",
     },
     ["ui-hud-unitframe-party-portraiton-incombat"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uipartyframe.blp",
@@ -246,6 +262,7 @@ app.legacyAtlases = {
         0.6708984375,
         0.63671875,
         0.65625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-energy.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-focus"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -255,6 +272,7 @@ app.legacyAtlases = {
         0.7939453125,
         0.63671875,
         0.65625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-focus.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-health"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -264,6 +282,7 @@ app.legacyAtlases = {
         0.7978515625,
         0.46484375,
         0.50390625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-health.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-health-mask"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframeplayerhealthmask.blp",
@@ -282,6 +301,7 @@ app.legacyAtlases = {
         0.9208984375,
         0.46484375,
         0.50390625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-health-status.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-mana"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -291,6 +311,7 @@ app.legacyAtlases = {
         0.9169921875,
         0.63671875,
         0.65625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-mana.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-mana-mask"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframeplayermanamask.blp",
@@ -309,6 +330,7 @@ app.legacyAtlases = {
         0.4248046875,
         0.66015625,
         0.6796875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-mana-status.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-rage"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -318,6 +340,7 @@ app.legacyAtlases = {
         0.5478515625,
         0.66015625,
         0.6796875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-rage.blp",
     },
     ["ui-hud-unitframe-player-portraiton-bar-runicpower"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -327,6 +350,7 @@ app.legacyAtlases = {
         0.6708984375,
         0.66015625,
         0.6796875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-bar-runicpower.blp",
     },
     ["ui-hud-unitframe-player-portraiton-classresource"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -345,6 +369,7 @@ app.legacyAtlases = {
         0.7939453125,
         0.66015625,
         0.6796875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-classresource-bar-energy.blp",
     },
     ["ui-hud-unitframe-player-portraiton-classresource-bar-mana"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -354,6 +379,7 @@ app.legacyAtlases = {
         0.9169921875,
         0.66015625,
         0.6796875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/player-portraiton-classresource-bar-mana.blp",
     },
     ["ui-hud-unitframe-player-portraiton-cornerembellishment"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -435,6 +461,7 @@ app.legacyAtlases = {
         0.6845703125,
         0.5078125,
         0.53125,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-minusmob-portraiton-bar-health.blp",
     },
     ["ui-hud-unitframe-target-minusmob-portraiton-bar-health-mask"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframeminusmobhealthmask.blp",
@@ -453,6 +480,7 @@ app.legacyAtlases = {
         0.9453125,
         0.58984375,
         0.609375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-minusmob-portraiton-bar-mana.blp",
     },
     ["ui-hud-unitframe-target-minusmob-portraiton-incombat"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -489,6 +517,7 @@ app.legacyAtlases = {
         0.5517578125,
         0.546875,
         0.56640625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-energy.blp",
     },
     ["ui-hud-unitframe-target-portraiton-bar-focus"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -498,6 +527,7 @@ app.legacyAtlases = {
         0.6845703125,
         0.546875,
         0.56640625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-focus.blp",
     },
     ["ui-hud-unitframe-target-portraiton-bar-health"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -507,6 +537,7 @@ app.legacyAtlases = {
         0.9296875,
         0.416015625,
         0.455078125,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-health.blp",
     },
     ["ui-hud-unitframe-target-portraiton-bar-health-mask"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframetargethealthmask.blp",
@@ -525,6 +556,7 @@ app.legacyAtlases = {
         0.8173828125,
         0.546875,
         0.56640625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-mana.blp",
     },
     ["ui-hud-unitframe-target-portraiton-bar-mana-mask"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframetargetmanamask.blp",
@@ -543,6 +575,7 @@ app.legacyAtlases = {
         0.9501953125,
         0.546875,
         0.56640625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-mana-status.blp",
     },
     ["ui-hud-unitframe-target-portraiton-bar-rage"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -552,6 +585,7 @@ app.legacyAtlases = {
         0.4345703125,
         0.58984375,
         0.609375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-rage.blp",
     },
     ["ui-hud-unitframe-target-portraiton-bar-runicpower"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -561,6 +595,7 @@ app.legacyAtlases = {
         0.5673828125,
         0.58984375,
         0.609375,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/target-portraiton-bar-runicpower.blp",
     },
     ["ui-hud-unitframe-target-portraiton-boss-gold"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframeboss.blp",
@@ -633,6 +668,7 @@ app.legacyAtlases = {
         0.861328125,
         0.150390625,
         0.1640625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-energy.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-focus"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -642,6 +678,7 @@ app.legacyAtlases = {
         0.935546875,
         0.150390625,
         0.1640625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-focus.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-health"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -651,6 +688,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.7109375,
         0.73046875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-health.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-health-status"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -660,6 +698,7 @@ app.legacyAtlases = {
         0.2587890625,
         0.734375,
         0.75390625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-health-status.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-mana"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -669,6 +708,7 @@ app.legacyAtlases = {
         0.2626953125,
         0.78125,
         0.794921875,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-mana.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-mana-status"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -678,6 +718,7 @@ app.legacyAtlases = {
         0.2626953125,
         0.798828125,
         0.8125,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-mana-status.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-rage"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -687,6 +728,7 @@ app.legacyAtlases = {
         0.2626953125,
         0.81640625,
         0.830078125,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-rage.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-bar-runicpower"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",
@@ -696,6 +738,7 @@ app.legacyAtlases = {
         0.2626953125,
         0.833984375,
         0.84765625,
+        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/targetoftarget-portraiton-bar-runicpower.blp",
     },
     ["ui-hud-unitframe-targetoftarget-portraiton-incombat"] = {
         "Interface/AddOns/SeamlessUnitframes/assets/legacy/uiunitframe.blp",

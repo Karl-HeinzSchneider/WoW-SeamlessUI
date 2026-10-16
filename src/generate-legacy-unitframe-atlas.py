@@ -15,6 +15,47 @@ OUTPUT = ROOT / "SeamlessUnitframes/src/layout/atlas.lua"
 ASSETS = ROOT / "SeamlessUnitframes/assets/legacy"
 
 
+def bar_asset(name):
+    if "-bar-" in name and not name.endswith("-mask"):
+        return "bars/" + name.removeprefix("ui-hud-unitframe-") + ".blp"
+    return None
+
+
+def extract_bar(row):
+    """Copy old BGRA samples into a standalone power-of-two BLP2 fill.
+
+    A status bar redraws UVs internally. It cannot safely use an arbitrary atlas
+    rectangle supplied with Texture:SetTexCoord, especially with secret values.
+    No new art is drawn: nearest resampling uses only the source region's pixels.
+    """
+    source = (ASSETS / Path(row["textureFilename"]).name).read_bytes()
+    magic, version, encoding, alpha, alpha_encoding, mipmaps, width, height = struct.unpack_from("<4sI4BII", source)
+    if (magic, version, encoding, alpha, alpha_encoding) != (b"BLP2", 1, 3, 8, 8):
+        raise ValueError("Bar extraction requires the exported uncompressed BGRA BLP2 sheet")
+    offset = struct.unpack_from("<I", source, 20)[0]
+    size = struct.unpack_from("<I", source, 84)[0]
+    if size != width * height * 4 or offset + size > len(source):
+        raise ValueError("Invalid BLP2 source pixel payload")
+    member = row["member"]
+    left, top = member["CommittedLeft"], member["CommittedTop"]
+    crop_width, crop_height = row["regionWidth"], row["regionHeight"]
+    if not (0 <= left < left + crop_width <= width and 0 <= top < top + crop_height <= height):
+        raise ValueError("Bar region lies outside its old sheet")
+    out_width = 1 << (crop_width - 1).bit_length()
+    out_height = 1 << (crop_height - 1).bit_length()
+    pixels = bytearray()
+    for y in range(out_height):
+        sy = top + min(crop_height - 1, (2 * y + 1) * crop_height // (2 * out_height))
+        for x in range(out_width):
+            sx = left + min(crop_width - 1, (2 * x + 1) * crop_width // (2 * out_width))
+            start = offset + (sy * width + sx) * 4
+            pixels.extend(source[start:start + 4])
+    header_size = 148 + 1024
+    header = struct.pack("<4sI4BII16I16I", b"BLP2", 1, 3, 8, 8, 0, out_width, out_height,
+                         header_size, *([0] * 15), len(pixels), *([0] * 15))
+    return header + bytes(1024) + pixels
+
+
 def preferred(variants):
     return min(variants, key=lambda row: (-row["atlas"]["UiTextureAtlasSetID"], row["atlas"]["UiCanvasID"]))
 
@@ -73,6 +114,12 @@ def generate(art_dir=None):
         path = "Interface/AddOns/SeamlessUnitframes/assets/legacy/" + Path(row["textureFilename"]).name
         lines.extend([f'    ["{name}"] = {{', f'        "{path}",'])
         lines.extend(f"        {value}," for value in values)
+        bar = bar_asset(name)
+        if bar:
+            destination = ASSETS / bar
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(extract_bar(row))
+            lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/{bar}",')
         lines.append("    },")
     lines.append("}\n")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

@@ -36,6 +36,33 @@ class LegacyAtlasTests(unittest.TestCase):
         finally:
             GENERATOR.OUTPUT.write_bytes(original)
 
+    def test_standalone_bars_contain_only_old_region_pixels(self):
+        expected = set()
+        for name, row in GENERATOR.entries().items():
+            relative = GENERATOR.bar_asset(name)
+            if not relative:
+                continue
+            path = GENERATOR.ASSETS / relative
+            expected.add(path)
+            source = (GENERATOR.ASSETS / Path(row["textureFilename"]).name).read_bytes()
+            output = path.read_bytes()
+            source_width = struct.unpack_from("<I", source, 12)[0]
+            source_offset = struct.unpack_from("<I", source, 20)[0]
+            width, height = struct.unpack_from("<II", output, 12)
+            offset = struct.unpack_from("<I", output, 20)[0]
+            self.assertEqual(width & (width - 1), 0)
+            self.assertEqual(height & (height - 1), 0)
+            self.assertEqual(len(output) - offset, width * height * 4)
+            member = row["member"]
+            pixels = set()
+            for y in range(member["CommittedTop"], member["CommittedBottom"]):
+                for x in range(member["CommittedLeft"], member["CommittedRight"]):
+                    start = source_offset + (y * source_width + x) * 4
+                    pixels.add(source[start:start + 4])
+            rendered = {output[i:i + 4] for i in range(offset, len(output), 4)}
+            self.assertTrue(rendered <= pixels, name)
+        self.assertEqual(set((GENERATOR.ASSETS / "bars").glob("*.blp")), expected)
+
 
 if __name__ == "__main__":
     unittest.main()

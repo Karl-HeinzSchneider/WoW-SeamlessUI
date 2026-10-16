@@ -291,6 +291,9 @@ local function Scan(frame)
         local texture = frame:GetStatusBarTexture()
         if texture then
             WatchTexture(texture)
+            if textures[texture] then
+                textures[texture].bar = frame
+            end
         end
         if frame.SetStatusBarAtlas then
             hooksecurefunc(frame, "SetStatusBarAtlas", function(_, atlas)
@@ -300,6 +303,7 @@ local function Scan(frame)
                         WatchTexture(current)
                         local state = textures[current]
                         if state then
+                            state.bar = frame
                             state.atlas, state.overridden, state.legacyAtlas = atlas, false, nil
                         end
                     end
@@ -314,6 +318,7 @@ local function Scan(frame)
                     WatchTexture(current)
                     local state = textures[current]
                     if state then
+                        state.bar = frame
                         state.atlas, state.overridden, state.legacyAtlas = current:GetAtlas(), false, nil
                         state.useSize = false
                     end
@@ -339,17 +344,70 @@ local function Roots()
     return roots
 end
 
+local function SetArtwork(texture, state, data, atlas)
+    local bar = state.bar
+    if bar then
+        if not layout:CheckRegion(bar, "status-bar artwork", { "GetStatusBarTexture", "SetStatusBarTexture" }) then
+            return false
+        end
+        if bar:GetStatusBarTexture() ~= texture then
+            layout:Warn("status-bar artwork", "fill texture was replaced")
+            return false
+        end
+        if data and not data[8] then
+            layout:Warn("status-bar artwork", "no standalone fill for " .. atlas)
+            return false
+        end
+    end
+    writing = true
+    local success
+    if bar then
+        -- Let the status bar own all fill UVs. Raw sheet coordinates on its
+        -- Texture are overwritten by native redraws, including secret values.
+        success = bar:SetStatusBarTexture(data and data[8] or atlas)
+    elseif data then
+        texture:SetTexture(data[1])
+        texture:SetTexCoord(data[4], data[5], data[6], data[7])
+    else
+        texture:SetAtlas(atlas)
+    end
+    writing = false
+    if success == false then
+        layout:Warn("status-bar artwork", "client rejected fill " .. atlas)
+        return false
+    end
+    return true
+end
+
+-- Health colors must change the logical atlas without putting sheet UVs back
+-- onto a bar that is currently rendering a standalone legacy fill.
+function module:SetHealthAtlas(texture, atlas)
+    local state = textures[texture]
+    if state and state.overridden and state.bar then
+        if InCombatLockdown() then
+            Request()
+            return false
+        end
+        local data = app.legacyAtlases[atlas:lower()]
+        if not SetArtwork(texture, state, data, atlas) then
+            return false
+        end
+        local nativeBase = state.atlas:gsub("%-[Ss][Tt][Aa][Tt][Uu][Ss]$", "")
+        state.atlas = atlas:lower():sub(-7) == "-status" and nativeBase .. "-Status" or nativeBase
+        state.legacyAtlas = atlas
+        return true
+    end
+    texture:SetAtlas(atlas)
+    return true
+end
+
 local function ApplyTextures()
     for texture, state in pairs(textures) do
         local data = state.atlas and app.legacyAtlases[state.atlas:lower()]
         if data and Watch(texture) then
             state.legacyAtlas = nil
-            writing = true
-            texture:SetTexture(data[1])
-            texture:SetTexCoord(data[4], data[5], data[6], data[7])
-            writing = false
-            state.overridden = true
-            if state.useSize then
+            state.overridden = SetArtwork(texture, state, data, state.atlas)
+            if state.overridden and state.useSize and not state.bar then
                 layout:Edit(texture, { width = data[2], height = data[3] })
             end
         end
@@ -382,16 +440,12 @@ function module:Art(texture, atlas, useSize, preserveStatus)
     if not Watch(texture) then
         return
     end
-    writing = true
-    if data then
-        texture:SetTexture(data[1])
-        texture:SetTexCoord(data[4], data[5], data[6], data[7])
-    else
-        texture:SetAtlas(atlas)
+    state.overridden = SetArtwork(texture, state, data, atlas)
+    if not state.overridden then
+        return
     end
-    writing = false
-    state.overridden, state.legacyAtlas = true, atlas
-    if useSize then
+    state.legacyAtlas = atlas
+    if useSize and not state.bar then
         local info = not data and C_Texture.GetAtlasInfo(atlas)
         if data or info then
             self:Edit(texture, { width = data and data[2] or info.width, height = data and data[3] or info.height })
@@ -405,7 +459,11 @@ local function Restore()
         if state.overridden and layout:CheckRegion(texture, "atlas restoration", { "SetAtlas" }) then
             state.overridden = false
             state.legacyAtlas = nil
-            texture:SetAtlas(state.atlas, state.useSize)
+            if state.bar and layout:CheckRegion(state.bar, "status-bar restoration", { "SetStatusBarTexture" }) then
+                state.bar:SetStatusBarTexture(state.atlas)
+            else
+                texture:SetAtlas(state.atlas, state.useSize)
+            end
         end
     end
     for region, state in pairs(regions) do

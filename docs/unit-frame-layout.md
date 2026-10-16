@@ -25,6 +25,12 @@ The approved art source is the user's complete local pre-update export at
 `D:/Spiele/World of Warcraft/_classic_beta_/BlizzardInterfaceArt`.
 Ten original BLP sheets are copied without conversion into the addon. The atlas
 generator validates their BLP dimensions against the 70374 lookup before copying.
+Status-bar fills are extracted from those sheets into 43 standalone uncompressed
+BLP files. Their canvases use power-of-two dimensions with nearest resampling of
+the original region's BGRA pixels; no new artwork is drawn. The owning status bar
+receives the standalone file through `SetStatusBarTexture` and owns its fill UVs.
+This prevents native value updates from sampling unrelated atlas-sheet artwork
+and requires no Lua arithmetic on health/power values, including secret values.
 It selects the exported shared atlas sheets, not the unverified alternate atlas-set
 variants also present in the DB2 reference. The export does not contain the
 `c60` unit/party sheets. PvP faction icons therefore retain their client atlas;
@@ -42,6 +48,12 @@ The generated table contains only changed effective atlas entries. Unchanged art
 continues to use the client. Health colors use the layout module's logical atlas
 name when its texture is backed by bundled artwork, preserving white health fills
 and restoring the current client atlas when Legacy is deselected.
+The offline integration test runs the actual health-color module through default,
+class, reaction and combined modes in both layouts, including NPCs, tap denial,
+disconnection, repeated toggles and native bar redraws with secret values.
+Changing between a default and tinted legacy fill during combat is deferred until
+combat ends, so the color module cannot replace a standalone fill with sheet UVs.
+Reaction/class tint updates that keep the same fill remain independent.
 
 ## Combat and taint boundary
 

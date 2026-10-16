@@ -26,6 +26,7 @@ local unitFrames = {
 -- User settings, switchable per character via AceDBOptions.
 ---@class SeamlessUnitframes.DB.Profile
 local profile = {
+    layout = "current",
     unitFrames = unitFrames,
     targetQuestIcon = { enabled = false, scale = 1.7, x = -30, y = 25 },
 }

@@ -14,6 +14,8 @@
 ---@field options SeamlessUnitframes.Options  # AceConfig panel under Settings > AddOns > Seamless
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
+---@field legacyLayout SeamlessUnitframes.LegacyLayout
+---@field legacyAtlases table<string, table>
 ---@field questIcons SeamlessUnitframes.QuestIcons
 ---@field targetQuestIcon SeamlessUnitframes.TargetQuestIcon
 

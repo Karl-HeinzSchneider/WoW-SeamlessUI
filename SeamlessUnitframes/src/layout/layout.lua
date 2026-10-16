@@ -1,0 +1,469 @@
+---@type string, SeamlessUnitframes
+local _, app = ...
+
+---@class SeamlessUnitframes.LegacyLayout : AceModule, AceEvent-3.0
+local module = {}
+local layout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
+app.legacyLayout = layout
+
+-- Definitions own atlas names and geometry. Never snapshot live rendering state:
+-- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
+local warnings, bindings, hooked, artwork = {}, {}, {}, {}
+local painted, watchedBars, watchedFills, watchedArt = {}, {}, {}, {}
+local lossColored = false
+local enabled, applied, writing, initialized = false, false, false, false
+local legacyMode = false
+
+function module:Readable(value)
+    return not canaccessvalue or canaccessvalue(value)
+end
+
+function module:Warn(context, reason)
+    local message = context .. ": " .. reason
+    if not warnings[message] then
+        warnings[message] = true
+        app.logger:warn("Legacy unit frames: %s; skipping this operation", message)
+    end
+end
+
+function module:CheckRegion(region, context, methods)
+    if not self:Readable(region) then
+        self:Warn(context, "inaccessible region")
+        return false
+    end
+    if region == nil or (type(region) ~= "table" and type(region) ~= "userdata") then
+        self:Warn(context, "missing region")
+        return false
+    end
+    local forbiddenMethod = region.IsForbidden
+    if not self:Readable(forbiddenMethod) then
+        self:Warn(context, "inaccessible forbidden check")
+        return false
+    end
+    if type(forbiddenMethod) == "function" then
+        local forbidden = region:IsForbidden()
+        if not self:Readable(forbidden) or forbidden then
+            self:Warn(context, "forbidden or inaccessible region")
+            return false
+        end
+    end
+    for _, name in ipairs(methods or {}) do
+        local method = region[name]
+        if not self:Readable(method) or type(method) ~= "function" then
+            self:Warn(context, "missing or inaccessible method " .. name)
+            return false
+        end
+    end
+    return true
+end
+
+function module:CheckPaths(frame, context, paths)
+    for _, path in ipairs(paths) do
+        local value = frame
+        for key in path:gmatch("[^.]+") do
+            if not self:CheckRegion(value, context .. "." .. path) then
+                return false
+            end
+            value = value[key]
+        end
+        if not self:CheckRegion(value, context .. "." .. path) then
+            return false
+        end
+    end
+    return true
+end
+
+function module:Edit(region, changes)
+    if InCombatLockdown() or not self:CheckRegion(region, "fixed geometry") then
+        return
+    end
+    local function Call(name, ...)
+        if self:CheckRegion(region, "fixed geometry", { name }) then
+            region[name](region, ...)
+        end
+    end
+    if changes.width then
+        Call("SetWidth", changes.width)
+    end
+    if changes.height then
+        Call("SetHeight", changes.height)
+    end
+    if changes.point then
+        Call("ClearAllPoints")
+        Call("SetPoint", unpack(changes.point))
+    end
+    if changes.justify then
+        Call("SetJustifyH", changes.justify)
+    end
+    if changes.layer then
+        Call("SetDrawLayer", unpack(changes.layer))
+    end
+end
+
+function module:IsWriting()
+    return writing
+end
+
+local function WatchBar(bar, texture)
+    if
+        not layout:CheckRegion(bar, "named bar hooks", { "GetStatusBarTexture", "SetStatusBarTexture" })
+        or not layout:CheckRegion(texture, "named fill hook", { "SetAtlas" })
+    then
+        return false
+    end
+    -- Only named bars; ignore setter arguments, which may be secret. A native
+    -- replacement invalidates our own last-write cache without reading texture state.
+    if not watchedBars[bar] then
+        watchedBars[bar] = true
+        hooksecurefunc(bar, "SetStatusBarTexture", function()
+            if not writing then
+                if not layout:CheckRegion(bar, "bar artwork update", { "GetStatusBarTexture" }) then
+                    return
+                end
+                local fill = bar:GetStatusBarTexture()
+                if layout:Readable(fill) and fill ~= nil then
+                    painted[fill] = nil
+                end
+            end
+        end)
+    end
+    if not watchedFills[texture] then
+        watchedFills[texture] = true
+        hooksecurefunc(texture, "SetAtlas", function()
+            if not writing then
+                painted[texture] = nil
+            end
+        end)
+    end
+    return true
+end
+
+local function Paint(texture, atlas, useSize, bar)
+    if not layout:Readable(atlas) or type(atlas) ~= "string" then
+        layout:Warn("fixed artwork", "invalid atlas definition")
+        return false
+    end
+    if not layout:CheckRegion(texture, "fixed artwork", { "SetAtlas", "SetTexture", "SetTexCoord" }) then
+        return false
+    end
+    if bar and not WatchBar(bar, texture) then
+        return false
+    end
+    local last = painted[texture]
+    if last and last.atlas == atlas and last.legacy == legacyMode and last.useSize == useSize then
+        return true
+    end
+    local data = legacyMode and app.legacyAtlases[atlas:lower()] or nil
+    artwork[texture] = { atlas = atlas, useSize = useSize, bar = bar }
+    local previous = writing
+    writing = true
+    if bar then
+        if not layout:CheckRegion(bar, "fixed bar artwork", { "SetStatusBarTexture" }) then
+            writing = previous
+            return false
+        end
+        if data and not data[8] then
+            writing = previous
+            layout:Warn(atlas, "standalone fill missing")
+            return false
+        end
+        -- The native bar setter accepts atlas names as well as file paths.
+        -- Standalone files let the engine own fill UVs at every health/power value.
+        local success = bar:SetStatusBarTexture(data and data[8] or atlas)
+        if not layout:Readable(success) or success == false then
+            writing = previous
+            layout:Warn(atlas, "client rejected status-bar artwork")
+            return false
+        end
+    elseif data then
+        texture:SetTexture(data[1])
+        texture:SetTexCoord(data[4], data[5], data[6], data[7])
+        if useSize then
+            layout:Edit(texture, { width = data[2], height = data[3] })
+        end
+    else
+        texture:SetAtlas(atlas, useSize or false, nil, true)
+    end
+    painted[texture] = { atlas = atlas, legacy = legacyMode, useSize = useSize }
+    writing = previous
+    return true
+end
+
+function module:Art(texture, atlas, useSize)
+    if not Paint(texture, atlas, useSize) then
+        return false
+    end
+    if not watchedArt[texture] then
+        watchedArt[texture] = true
+        hooksecurefunc(texture, "SetAtlas", function()
+            if writing then
+                return
+            end
+            painted[texture] = nil
+            local definition = artwork[texture]
+            if legacyMode and definition then
+                -- Rebind old artwork before the native call returns, including
+                -- in combat. Do not resize/reanchor protected regions in combat.
+                Paint(texture, definition.atlas, not InCombatLockdown() and definition.useSize)
+            end
+        end)
+    end
+    return true
+end
+
+-- Only explicitly listed bars are bound. No children, regions, or runtime atlas
+-- names are enumerated, stored, compared, lowercased, or used as table keys.
+function module:Bar(bar, atlas, health)
+    if not self:CheckRegion(bar, "named bar", { "GetStatusBarTexture", "SetStatusBarTexture" }) then
+        return
+    end
+    local texture = bar:GetStatusBarTexture()
+    if not self:CheckRegion(texture, "named bar fill") then
+        return
+    end
+    local previous = bindings[texture]
+    if health and previous and previous.atlas == atlas .. "-Status" then
+        -- A geometry refresh must not turn an already tinted health fill green
+        -- only for the color refresh below to replace it with white again.
+        atlas = previous.atlas
+    end
+    bindings[texture] = { atlas = atlas, bar = bar }
+    Paint(texture, atlas, false, bar)
+end
+
+-- Resolve only addon-owned names from known frame families, never GetAtlas().
+function module:HealthAtlas(bar, key)
+    if not self:CheckRegion(bar, "health color bar", { "GetStatusBarTexture" }) then
+        return nil
+    end
+    local family = key == "player" and "Player"
+        or ((key == "pet" or key == "targettarget" or key == "focustarget") and "TargetofTarget" or "Target")
+    if key == "party" then
+        local frame = bar.unitFrame
+        if not self:CheckRegion(frame, "party health color") then
+            return nil
+        end
+        if not self:Readable(frame.state) or not self:Readable(frame.frameType) then
+            self:Warn("party health color", "inaccessible art style")
+            return nil
+        end
+        family = frame.state == "vehicle" and "Party-PortraitOn-Vehicle"
+            or (frame.frameType == "CharacterFrameOn" and "CharacterFrameOnParty-PortraitOn" or "Party-PortraitOn")
+    else
+        if legacyMode and family == "Target" then
+            local unit = bar.unit
+            if self:Readable(unit) and type(unit) == "string" then
+                local classification = UnitClassification(unit)
+                if not self:Readable(classification) then
+                    self:Warn("health color artwork", "inaccessible classification")
+                    return nil
+                end
+                if classification == "minus" then
+                    family = "Target-MinusMob"
+                end
+            end
+        end
+        family = family .. "-PortraitOn"
+    end
+    local atlas = "UI-HUD-UnitFrame-" .. family .. "-Bar-Health"
+    local texture = bar:GetStatusBarTexture()
+    if not self:CheckRegion(texture, "health color fill") then
+        return nil
+    end
+    if not WatchBar(bar, texture) then
+        return nil
+    end
+    bindings[texture] = { atlas = atlas, bar = bar }
+    return atlas, texture
+end
+
+function module:HasHealthStatus(atlas)
+    -- These families have a white variant in the exported atlas tables.
+    return atlas ~= "UI-HUD-UnitFrame-Party-PortraitOn-Vehicle-Bar-Health"
+end
+
+function module:SetHealthAtlas(texture, atlas)
+    if not self:Readable(texture) or texture == nil then
+        return false
+    end
+    local binding = bindings[texture]
+    if not binding then
+        return false
+    end
+    if Paint(texture, atlas, false, binding.bar) then
+        binding.atlas = atlas
+        return true
+    end
+    return false
+end
+
+-- AnimatedHealthLossMixin owns its timings and alpha. Match the selected live
+-- fill/tint so its full-width starting frame cannot flash red over a colored bar.
+function module:PlayerLoss(color)
+    if not legacyMode and not lossColored then
+        return
+    end
+    if
+        not self:CheckPaths(PlayerFrame, "Player loss color", {
+            "PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.PlayerFrameHealthBarAnimatedLoss",
+        })
+    then
+        return
+    end
+    local bar =
+        PlayerFrame.PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.PlayerFrameHealthBarAnimatedLoss
+    if not self:CheckRegion(bar, "Player loss color", { "SetStatusBarColor" }) then
+        return
+    end
+    local colored = legacyMode and color
+    self:Bar(bar, "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health" .. (colored and "-Status" or ""))
+    if colored then
+        bar:SetStatusBarColor(color:GetRGB())
+    else
+        bar:SetStatusBarColor(1, 0, 0)
+    end
+    lossColored = colored and true or false
+end
+
+local function Request()
+    if writing or not enabled then
+        return
+    end
+    -- Repair in the native update's call stack. Waiting one rendered frame lets
+    -- new atlas art draw with old coordinates/geometry and causes a rectangle flash.
+    layout:Refresh()
+end
+
+local function Hook(object, name)
+    if hooked[object] == nil then
+        hooked[object] = {}
+    end
+    if not hooked[object][name] and layout:Readable(object[name]) and type(object[name]) == "function" then
+        hooked[object][name] = true
+        -- Ignore all native arguments: they may contain secret strings/numbers.
+        hooksecurefunc(object, name, Request)
+    end
+end
+
+local function Initialize()
+    if initialized then
+        return
+    end
+    initialized = true
+    for _, name in ipairs({
+        "UnitFrame_Initialize",
+        "UnitFrameManaBar_UpdateType",
+        "PlayerFrame_ToPlayerArt",
+        "PlayerFrame_ToVehicleArt",
+        "PlayerFrame_UpdatePlayerNameTextAnchor",
+        "PlayerFrame_UpdateHealthBarVisuals",
+        "PlayerFrame_UpdateManaBarVisuals",
+        "PlayerFrame_UpdateFlashTextureVisuals",
+        "PlayerFrame_UpdateStatusTextureVisuals",
+        "PlayerFrame_UpdatePvPStatus",
+    }) do
+        if type(_G[name]) == "function" then
+            hooksecurefunc(name, Request)
+        end
+    end
+end
+
+function module:Refresh(restore)
+    if (not enabled and not restore) or not app.db or InCombatLockdown() then
+        return
+    end
+    local legacy = not restore and app.db.profile.layout == "legacy"
+    if not legacy and not applied then
+        return
+    end
+    Initialize()
+    legacyMode = legacy
+    local roots = app.unitFrames:All()
+    for i = 1, 5 do
+        local frame = _G["Boss" .. i .. "TargetFrame"]
+        if frame then
+            roots[#roots + 1] = frame
+        end
+    end
+    for _, frame in ipairs(roots) do
+        if self:CheckRegion(frame, "unit frame") then
+            for _, name in ipairs({
+                "CheckClassification",
+                "UpdateArt",
+                "UpdateHealthBarVisuals",
+                "ToPlayerArt",
+                "ToVehicleArt",
+                "ToCharacterStyleArt",
+                "UpdateNameTextAnchors",
+                "Show",
+                "SetShown",
+            }) do
+                Hook(frame, name)
+            end
+        end
+    end
+    if type(self.ApplyGeometry) ~= "function" then
+        self:Warn("refresh", "missing fixed layout definitions")
+        return
+    end
+    local previous = writing
+    writing = true
+    if not legacy then
+        -- Retire every file override, including a temporarily unavailable named
+        -- component. These are our own constant definitions, never snapshots.
+        for texture, definition in pairs(artwork) do
+            Paint(texture, definition.atlas, definition.useSize, definition.bar)
+        end
+    end
+    self:ApplyGeometry(roots, legacy)
+    writing = previous
+    applied = legacy
+    if not legacy then
+        self:HideLegacyBackgrounds()
+    end
+    if app.healthColor then
+        app.healthColor:Refresh()
+    end
+end
+
+function module:OnEnable()
+    enabled = true
+    for _, event in ipairs({
+        "PLAYER_REGEN_ENABLED",
+        "PLAYER_ENTERING_WORLD",
+        "GROUP_ROSTER_UPDATE",
+        "ADDON_LOADED",
+        "UNIT_FACTION",
+        "UNIT_FLAGS",
+        "PLAYER_FLAGS_CHANGED",
+        "UNIT_DISPLAYPOWER",
+    }) do
+        self:RegisterEvent(event, Request)
+    end
+    self:Refresh()
+end
+
+function module:OnDisable()
+    enabled = false
+    if not applied then
+        return
+    end
+    if InCombatLockdown() then
+        -- This is our own event frame; no Blizzard script is replaced or hooked.
+        local waiter = CreateFrame("Frame")
+        waiter:RegisterEvent("PLAYER_REGEN_ENABLED")
+        waiter:SetScript("OnEvent", function(self)
+            if not enabled then
+                layout:Refresh(true)
+            end
+            self:UnregisterAllEvents()
+            self:SetScript("OnEvent", nil)
+        end)
+    else
+        self:Refresh(true)
+    end
+end
+
+function module:OnProfileRefresh()
+    Request()
+end

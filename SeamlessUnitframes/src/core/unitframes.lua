@@ -38,7 +38,7 @@ end
 ---@param unitFrame Frame?
 ---@return string?
 function unitFrames:KeyOf(unitFrame)
-    if not unitFrame then
+    if (canaccessvalue and not canaccessvalue(unitFrame)) or not unitFrame then
         return nil
     end
     for _, entry in ipairs(self.list) do
@@ -46,8 +46,13 @@ function unitFrames:KeyOf(unitFrame)
             return entry.key
         end
     end
-    if PartyFrame and unitFrame:GetParent() == PartyFrame then
-        return "party"
+    if PartyFrame then
+        for i = 1, 4 do
+            local member = PartyFrame["MemberFrame" .. i]
+            if (not canaccessvalue or canaccessvalue(member)) and member == unitFrame then
+                return "party"
+            end
+        end
     end
 end
 
@@ -58,14 +63,14 @@ function unitFrames:All()
     local frames = {}
     for _, entry in ipairs(self.list) do
         local frame = entry.frameName and _G[entry.frameName]
-        if frame then
+        if (not canaccessvalue or canaccessvalue(frame)) and frame then
             frames[#frames + 1] = frame
         end
     end
     if PartyFrame then
-        for i = 1, MAX_PARTY_MEMBERS or 4 do
+        for i = 1, 4 do
             local memberFrame = PartyFrame["MemberFrame" .. i]
-            if memberFrame then
+            if (not canaccessvalue or canaccessvalue(memberFrame)) and memberFrame then
                 frames[#frames + 1] = memberFrame
             end
         end

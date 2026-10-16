@@ -128,7 +128,24 @@ end
 function module:OnInitialize()
     app.core:RegisterOptions(appName, {
         title = "Unit Frames",
-        general = { healthBarColors = HealthBarColors() },
+        general = {
+            layout = {
+                type = "select",
+                order = 1,
+                name = "Unit frame layout",
+                desc = "Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends.",
+                values = { current = "Current (70425)", legacy = "Legacy (before 70425)" },
+                sorting = { "current", "legacy" },
+                get = function()
+                    return app.db.profile.layout
+                end,
+                set = function(_, value)
+                    app.db.profile.layout = value
+                    app.legacyLayout:Refresh()
+                end,
+            },
+            healthBarColors = HealthBarColors(),
+        },
         tabs = { target = TargetTab() },
         db = app.db,
     })

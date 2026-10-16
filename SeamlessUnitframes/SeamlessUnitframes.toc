@@ -1,6 +1,6 @@
 ## Interface: 16001
 ## Title: Seamless: Unit Frames
-## Notes: Configurable unit-frame health colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## Notes: Configurable unit-frame layouts and health colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
 ## IconTexture: Interface\Icons\INV_Misc_QuestionMark
 ## Author: Karl-HeinzSchneider
 ## Version: |cff8080ff@project-version@|r
@@ -17,6 +17,9 @@ src\core\unitframes.lua
 src\core\questicons.lua
 src\core\options.lua
 
+src\layout\atlas.lua
+src\layout\layout.lua
+src\layout\geometry.lua
 src\healthcolor\healthcolor.lua
 src\questicon\targetquesticon.lua
 

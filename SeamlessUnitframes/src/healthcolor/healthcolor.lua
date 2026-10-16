@@ -21,62 +21,30 @@ app.healthColor = addon:NewModule("HealthColor", module, "AceEvent-3.0") --[[@as
 ---@field unitFrame Frame?
 ---@field lockColor boolean?  # the game never recolors the bar; its atlas carries the color
 
-local STATUS_SUFFIX = "-Status"
-local STATUS_SUFFIX_LOWER = STATUS_SUFFIX:lower()
--- What the target frame shows for a mob someone else tagged.
 local TAP_DENIED_COLOR = CreateColor(0.5, 0.5, 0.5)
--- Reused for every UnitSelectionColor result; read right away by Apply.
 local reactionColor = CreateColor(0, 0, 0)
-
--- Every health bar seen (its texture is hooked once) with its unit frame key, and the ones
--- showing our color now.
----@type table<SeamlessUnitframes.HealthColor.HealthBar, string>
-local known = {}
----@type table<SeamlessUnitframes.HealthColor.HealthBar, true>
-local colored = {}
--- Health bar atlas -> its white variant, or false when there is none.
----@type table<string, string|false>
-local statusAtlases = {}
+local known, colored = {}, {}
 local settingAtlas = false
-
----@param atlas string
-local function IsStatusAtlas(atlas)
-    return atlas:lower():sub(-#STATUS_SUFFIX) == STATUS_SUFFIX_LOWER
-end
-
--- The white variant of a health bar atlas, or nil when the game has none (e.g. the minus-mob bar).
----@param atlas string
----@return string?
-local function StatusAtlas(atlas)
-    if IsStatusAtlas(atlas) then
-        return atlas
-    end
-    local status = statusAtlases[atlas]
-    if status == nil then
-        local candidate = atlas .. STATUS_SUFFIX
-        status = C_Texture.GetAtlasInfo(candidate) and candidate or false
-        statusAtlases[atlas] = status
-    end
-    return status or nil
-end
 
 ---@param texture Texture
 ---@param atlas string
 local function SetAtlas(texture, atlas)
     settingAtlas = true
-    texture:SetAtlas(atlas)
+    local applied = app.legacyLayout:SetHealthAtlas(texture, atlas)
     settingAtlas = false
+    return applied
 end
 
 -- False for nil and for a secret value (the client hides a unit's identity in some situations).
 local function Readable(value)
-    return value ~= nil and (not canaccessvalue or canaccessvalue(value))
+    return (not canaccessvalue or canaccessvalue(value)) and value ~= nil
 end
 
 ---@param unit string
 ---@return ColorMixin?
 local function ClassColor(unit)
-    if not UnitIsPlayer(unit) then
+    local isPlayer = UnitIsPlayer(unit)
+    if not Readable(isPlayer) or not isPlayer then
         return nil
     end
     local _, class = UnitClass(unit)
@@ -89,11 +57,12 @@ end
 ---@param unit string
 ---@return ColorMixin?
 local function ReactionColor(unit)
-    if not UnitPlayerControlled(unit) and UnitIsTapDenied(unit) then
+    local controlled, denied = UnitPlayerControlled(unit), UnitIsTapDenied(unit)
+    if Readable(controlled) and not controlled and Readable(denied) and denied then
         return TAP_DENIED_COLOR
     end
     local r, g, b = UnitSelectionColor(unit)
-    if not Readable(r) then
+    if not Readable(r) or not Readable(g) or not Readable(b) then
         return nil
     end
     reactionColor:SetRGB(r, g, b)
@@ -103,10 +72,14 @@ end
 -- The color the game gives a health bar (see UnitFrameHealthBar_Update).
 ---@param bar SeamlessUnitframes.HealthColor.HealthBar
 local function DefaultColor(bar)
-    if bar.lockColor then
+    if Readable(bar.lockColor) and bar.lockColor then
         return 1, 1, 1
-    elseif bar.unit and not UnitIsConnected(bar.unit) then
-        return 0.5, 0.5, 0.5
+    end
+    if Readable(bar.unit) then
+        local connected = UnitIsConnected(bar.unit)
+        if Readable(connected) and not connected then
+            return 0.5, 0.5, 0.5
+        end
     end
     return 0, 1, 0
 end
@@ -118,7 +91,11 @@ end
 local function BarColor(bar, key)
     local mode = app.db.profile.unitFrames[key].healthBarColor
     local unit = bar.unit
-    if mode == "default" or not unit or not UnitExists(unit) or not UnitIsConnected(unit) then
+    if mode == "default" or not Readable(unit) then
+        return nil
+    end
+    local exists, connected = UnitExists(unit), UnitIsConnected(unit)
+    if not Readable(exists) or not exists or not Readable(connected) or not connected then
         return nil
     end
     -- A pet has no class; it takes its owner's. In a vehicle the pet frame shows the player.
@@ -134,27 +111,31 @@ end
 ---@param bar SeamlessUnitframes.HealthColor.HealthBar
 ---@param key string
 local function Apply(bar, key)
-    local texture = bar:GetStatusBarTexture()
-    local atlas = texture and texture:GetAtlas()
-    if not atlas or atlas == "" then
+    if settingAtlas or app.legacyLayout:IsWriting() then
         return
     end
-
+    local atlas, texture = app.legacyLayout:HealthAtlas(bar, key)
+    if not atlas then
+        return
+    end
     local color = BarColor(bar, key)
-    local statusAtlas = color and StatusAtlas(atlas)
-    if color and statusAtlas then
-        if atlas ~= statusAtlas then
-            SetAtlas(texture, statusAtlas)
+    if color and app.legacyLayout:HasHealthStatus(atlas) then
+        -- Reassert on native updates even if our own logical name is unchanged:
+        -- the client may have just reset the underlying fill to green.
+        if not SetAtlas(texture, atlas .. "-Status") then
+            return
         end
         bar:SetStatusBarColor(color:GetRGB())
         colored[bar] = true
     elseif colored[bar] then
-        -- Only undo what this module did, so a bar it never colored is left alone.
-        colored[bar] = nil
-        if IsStatusAtlas(atlas) then
-            SetAtlas(texture, atlas:sub(1, -#STATUS_SUFFIX - 1))
+        if not SetAtlas(texture, atlas) then
+            return
         end
+        colored[bar] = nil
         bar:SetStatusBarColor(DefaultColor(bar))
+    end
+    if key == "player" then
+        app.legacyLayout:PlayerLoss(color)
     end
 end
 
@@ -162,16 +143,35 @@ end
 ---@param bar StatusBar?
 local function Update(bar)
     ---@cast bar SeamlessUnitframes.HealthColor.HealthBar?
-    local key = bar and unitFrames:KeyOf(bar.unitFrame)
+    if not app.legacyLayout:CheckRegion(bar, "health update", { "GetStatusBarTexture", "SetStatusBarColor" }) then
+        return
+    end
+    if not Readable(bar.unitFrame) then
+        return
+    end
+    local key = unitFrames:KeyOf(bar.unitFrame)
     if not key then
         return
     end
     ---@cast bar SeamlessUnitframes.HealthColor.HealthBar
     if not known[bar] then
-        known[bar] = key
         -- The game swaps the fill atlas on its own (target classification, vehicles, party art);
         -- put the white one back each time.
-        hooksecurefunc(bar:GetStatusBarTexture(), "SetAtlas", function()
+        local texture = bar:GetStatusBarTexture()
+        if not app.legacyLayout:CheckRegion(texture, "health color hook", { "SetAtlas" }) then
+            return
+        end
+        -- Install the layout invalidation hook before our repaint hooks.
+        if not app.legacyLayout:HealthAtlas(bar, key) then
+            return
+        end
+        known[bar] = key
+        hooksecurefunc(texture, "SetAtlas", function()
+            if not settingAtlas then
+                Apply(bar, key)
+            end
+        end)
+        hooksecurefunc(bar, "SetStatusBarTexture", function()
             if not settingAtlas then
                 Apply(bar, key)
             end
@@ -200,7 +200,9 @@ end
 -- Recolors every health bar, after a setting changed.
 function module:Refresh()
     for _, frame in ipairs(unitFrames:All()) do
-        Update(frame.healthbar)
+        if Readable(frame.healthbar) and frame.healthbar then
+            Update(frame.healthbar)
+        end
     end
     -- Party frames are pooled and may have been swapped; recolor every bar ever seen as well.
     ApplyAll()

@@ -15,11 +15,12 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
 5. `options.lua`: the Unit Frames panel (Settings > AddOns > Seamless) via `core:RegisterOptions`:
    General (health bar color per unit frame), Target (threat percentage, quest icon), Profiles.
    Getters follow the active profile; CVAR_UPDATE refreshes external threat changes.
-6. `src/healthcolor/healthcolor.lua`: feature implementation.
+6. `src/layout/atlas.lua`, `layout.lua`, `geometry.lua`: optional legacy layout.
+7. `src/healthcolor/healthcolor.lua`: feature implementation.
    `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
    objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.
    The `targetQuestIcon` profile settings control enablement, scale and offsets (disabled by default).
-7. `SeamlessUnitframes.lua`: load diagnostic.
+8. `SeamlessUnitframes.lua`: load diagnostic.
 
 Every new runtime Lua/XML file must be listed in dependency order in the TOC.
 New feature settings need defaults in `db.lua` and controls in `options.lua`.
@@ -39,6 +40,44 @@ used; shared preferences are stored independently in SeamlessCoreDB.
   player's class; disconnected players and units whose class or reaction is secret keep the
   default color. It restores only the bars it colored. `Refresh()` reapplies after a setting
   changed.
+
+### `src/layout/`
+
+- `atlas.lua`: generated old exported artwork coordinates; regenerate with
+  `python src/generate-legacy-unitframe-atlas.py`. Approved original BLP sheets live
+  in `assets/legacy/`. See `docs/unit-frame-layout.md` for provenance and limitations.
+- `layout.lua`: profile-aware `app.legacyLayout`; Current is inert until Legacy is
+  selected. Only named components are modified. No recursive frame/region scans
+  or runtime rendering snapshots: atlas names, geometry and restoration come from
+  fixed build definitions. Never call render getters to infer a layout.
+- `geometry.lua`: explicit 70374 and 70425 player, target/focus/boss, pet/ToT,
+  party and combo definitions. Never write addon state onto protected frame tables.
+- Validate nested frame paths and setter methods (`CheckPaths`/`CheckRegion`).
+  Missing/forbidden components produce deduplicated shared logger warnings.
+  Callbacks use the Ace instance, not its separate prototype.
+- Health colors use `HealthAtlas(bar, key)` to resolve a known family. Never read
+  `Texture:GetAtlas()`. Changes go through `SetHealthAtlas`, which uses the owning
+  bar setter and standalone legacy fills. Native atlas-hook arguments are ignored.
+- `GetStatusBarTexture` obtains only the named bar's texture object. Do not inspect
+  its rendered values, UVs or dimensions. All layout geometry waits out combat;
+  health color/fill updates use constant arguments without inspecting bar values.
+- Restore static atlases with `resetTexCoords = true`. Reapply fixed current
+  definitions, not observed client state. Keep native root positions and scale.
+  Do not change draw/frame levels to work around health-loss flashes. In Legacy,
+  the animated loss bar uses the live bar's white fill and class/reaction tint;
+  native alpha/timing stays intact. Restore its native red tint in Current.
+- Apply native-update repairs synchronously. Do not queue texture repair for the
+  next rendered frame. Named static atlas hooks rebind old artwork immediately,
+  without geometry changes in combat. Cache only our own last writes, invalidate
+  on native setters, and avoid replacing unchanged health fills on value updates.
+- Party temporary health loss uses the Player atlas (CharacterFrameOnParty for
+  that style), as in PartyFrameTemplates.xml. Unknown power types use the native
+  mana fallback; they are not unexpected errors.
+- Treat gameplay results and frame fields as potentially secret; check access
+  before comparison, branching, concatenation or indexing. Inaccessible
+  power and classification data are skipped with a deduplicated diagnostic.
+- Run `lua src/test-legacy-layout.lua`: its rendering getters throw if called.
+  Also run `python -m unittest src/test_legacy_unitframe_atlas.py`.
 
 ### Annotations (not in the TOC)
 

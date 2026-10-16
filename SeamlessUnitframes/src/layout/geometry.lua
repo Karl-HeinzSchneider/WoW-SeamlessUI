@@ -2,6 +2,8 @@
 local _, app = ...
 local module = app.legacyLayout
 local backgrounds = {}
+local targetVisuals = {}
+local redirectedMasks = {}
 local P = "UI-HUD-UnitFrame-"
 
 local function Equal(value, expected)
@@ -23,6 +25,9 @@ local function Point(region, point, relative, relativePoint, x, y, width, height
 end
 
 local function PvP(icon, parent, side, x, legacy)
+    if InCombatLockdown() then
+        return
+    end
     if not module:CheckRegion(icon, "PvP icon", { "IsShown" }) then
         return
     end
@@ -240,6 +245,128 @@ local function Player(frame, old)
     )
 end
 
+local function PredictionVisuals(source, visual, old, nativeMask, visualMask)
+    if InCombatLockdown() then
+        return
+    end
+    local owner, mask = old and visual or source, old and visualMask or nativeMask
+    for _, key in ipairs({ "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }) do
+        local segment = source[key]
+        if module:CheckRegion(segment, "target prediction", { "SetParent", "SetAllPoints", "SetStatusBar" }) then
+            segment:SetParent(owner)
+            segment:SetStatusBar(owner)
+            segment:ClearAllPoints()
+            segment:SetAllPoints(owner)
+            for _, textureKey in ipairs({ "Fill", "TiledFillOverlay" }) do
+                local texture = segment[textureKey]
+                if module:Readable(texture) and texture then
+                    texture:RemoveMaskTexture(old and nativeMask or visualMask)
+                    texture:AddMaskTexture(mask)
+                end
+            end
+            local fillMask = segment.FillMask
+            if module:CheckRegion(fillMask, "target prediction mask", { "SetPoint" }) then
+                redirectedMasks[fillMask] = old
+                if not redirectedMasks[segment] then
+                    redirectedMasks[segment] = true
+                    local redirecting = false
+                    hooksecurefunc(fillMask, "SetPoint", function(_, point, relative, ...)
+                        if
+                            not redirecting
+                            and redirectedMasks[fillMask]
+                            and module:Readable(relative)
+                            and relative == source:GetStatusBarTexture()
+                        then
+                            redirecting = true
+                            -- Forward native offsets, including secrets, without reading them.
+                            fillMask:SetPoint(point, visual:GetStatusBarTexture(), ...)
+                            redirecting = false
+                        end
+                    end)
+                end
+            end
+        end
+    end
+    for _, key in ipairs({ "OverAbsorbGlow", "OverHealAbsorbGlow" }) do
+        local glow = source[key]
+        if module:CheckRegion(glow, "target absorb glow", { "SetParent", "ClearAllPoints", "SetPoint" }) then
+            glow:SetParent(owner)
+            glow:ClearAllPoints()
+            if key == "OverAbsorbGlow" then
+                glow:SetPoint("TOPLEFT", owner, "TOPRIGHT", -7, 0)
+                glow:SetPoint("BOTTOMLEFT", owner, "BOTTOMRIGHT", -7, 0)
+            else
+                glow:SetPoint("BOTTOMRIGHT", owner, "BOTTOMLEFT", 7, 0)
+                glow:SetPoint("TOPRIGHT", owner, "TOPLEFT", 7, 0)
+            end
+        end
+    end
+end
+
+local function TargetVisual(frame, main, old)
+    if frame ~= TargetFrame and frame ~= FocusFrame then
+        return main.HealthBarsContainer
+    end
+    local visual = targetVisuals[frame]
+    if old and not visual and not InCombatLockdown() then
+        -- Ordinary frames have no secure template or protected children. They
+        -- inherit visibility and scale, but are never anchors for protected bars.
+        visual = CreateFrame("Frame", nil, main)
+        visual.HealthBar = CreateFrame("StatusBar", nil, visual)
+        visual.TempMaxHealthLoss = CreateFrame("StatusBar", nil, visual)
+        visual.HealthBarMask = visual:CreateMaskTexture(nil, "ARTWORK")
+        for _, key in ipairs({ "HealthBar", "TempMaxHealthLoss" }) do
+            local bar = visual[key]
+            bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+            -- Match TargetFrame.xml so native prediction segments remain above
+            -- the health fill after their parent moves to the visual bar.
+            module:Edit(bar:GetStatusBarTexture(), { layer = { "BACKGROUND", 0 } })
+            bar:GetStatusBarTexture():AddMaskTexture(visual.HealthBarMask)
+            module:MirrorBar(main.HealthBarsContainer[key], bar, key == "HealthBar", frame.unit)
+        end
+        -- Keep native SetText/status logic and fonts. These regions are not
+        -- protected frames; anchor them once to the stable visual container.
+        targetVisuals[frame] = visual
+    end
+    if old and visual then
+        for _, key in ipairs({ "HealthBarText", "LeftText", "RightText", "DeadText", "UnconsciousText" }) do
+            local text = main.HealthBarsContainer[key]
+            if module:CheckRegion(text, "target health text") then
+                if not InCombatLockdown() and module:CheckRegion(text, "target text owner", { "SetParent" }) then
+                    text:SetParent(visual.HealthBar)
+                end
+                local side = key == "LeftText" and "LEFT" or (key == "RightText" and "RIGHT" or "CENTER")
+                Point(text, side, visual, side, key == "LeftText" and 2 or (key == "RightText" and -5 or 0), 0)
+            end
+        end
+    elseif not old and visual then
+        for _, key in ipairs({ "HealthBarText", "LeftText", "RightText", "DeadText", "UnconsciousText" }) do
+            local side = key == "LeftText" and "LEFT" or (key == "RightText" and "RIGHT" or "CENTER")
+            if module:CheckRegion(main.HealthBarsContainer[key], "native target text owner", { "SetParent" }) then
+                main.HealthBarsContainer[key]:SetParent(main.HealthBarsContainer)
+            end
+            Point(
+                main.HealthBarsContainer[key],
+                side,
+                main.HealthBarsContainer,
+                side,
+                key == "LeftText" and 2 or (key == "RightText" and -5 or 0),
+                0
+            )
+        end
+    end
+    if visual then
+        PredictionVisuals(
+            main.HealthBarsContainer.HealthBar,
+            visual.HealthBar,
+            old,
+            main.HealthBarsContainer.HealthBarMask,
+            visual.HealthBarMask
+        )
+    end
+    return old and visual or main.HealthBarsContainer
+end
+
 local function Target(frame, old)
     if
         not module:CheckPaths(frame, "Target/Focus/Boss", {
@@ -258,15 +385,21 @@ local function Target(frame, old)
         return
     end
     local main = frame.TargetFrameContent.TargetFrameContentMain
-    local art, container = frame.TargetFrameContainer, main.HealthBarsContainer
+    local art = frame.TargetFrameContainer
     if not module:Readable(frame.unit) or type(frame.unit) ~= "string" then
         module:Warn("Target", "inaccessible unit")
+        return
+    end
+    local container = TargetVisual(frame, main, old)
+    if not container then
         return
     end
     local classification = UnitClassification(frame.unit)
     if not module:Readable(classification) then
         module:Warn("Target", "inaccessible classification")
-        return
+        -- Camelot uses the full health bar for every classification. Retain a
+        -- valid fixed layout when the client withholds the target classification.
+        classification = "normal"
     end
     local minus = classification == "minus"
     local rare = classification == "rare" or classification == "rareelite"
@@ -283,8 +416,10 @@ local function Target(frame, old)
         module:Art(art.BossPortraitFrameTexture, P .. "Target-PortraitOn-" .. decoration, true)
     end
     module:Art(main.ReputationColor, P .. "Target-PortraitOn-Type", true)
-    module:Bar(container.HealthBar, P .. family .. "-Bar-Health", true)
-    module:Bar(container.TempMaxHealthLoss, P .. family .. "-Bar-TempHPLoss")
+    -- Source bindings own the selected health tint; Paint mirrors that same
+    -- binding into the visual without replacing a white fill with green first.
+    module:Bar(main.HealthBarsContainer.HealthBar, P .. family .. "-Bar-Health", true)
+    module:Bar(main.HealthBarsContainer.TempMaxHealthLoss, P .. family .. "-Bar-TempHPLoss")
     module:Art(container.HealthBarMask, P .. family .. "-Bar-Health-Mask", true)
     module:Art(main.ManaBar.ManaBarMask, P .. "Target-PortraitOn-Bar-Mana-Mask", true)
     Power(main.ManaBar, "Target-PortraitOn", frame.unit)
@@ -321,7 +456,23 @@ local function Target(frame, old)
         old and minus and 12 or 20
     )
     Point(container.HealthBarMask, "TOPLEFT", container, "TOPLEFT", -1, old and (minus and 2 or 6) or 9)
-    Point(main.ManaBar, "TOPRIGHT", container, "BOTTOMRIGHT", old and 8 or 4, -1, 134, 10)
+    Point(
+        container.TempMaxHealthLoss,
+        "TOPLEFT",
+        container,
+        "TOPLEFT",
+        0,
+        0,
+        old and minus and 125 or 126,
+        old and minus and 12 or 20
+    )
+    -- The mana bar is protected: anchoring it to our visual would protect that
+    -- visual as well. Use the equivalent fixed native-art anchor in Legacy.
+    if old then
+        Point(main.ManaBar, "TOPRIGHT", art, "LEFT", minus and 156 or 157, minus and -2 or -11, 134, 10)
+    else
+        Point(main.ManaBar, "TOPRIGHT", container, "BOTTOMRIGHT", 4, -1, 134, 10)
+    end
     Point(main.ManaBar.RightText, "RIGHT", main.ManaBar, "RIGHT", old and -13 or -3, 0)
     local flashParent = art
     if not old and module:CheckPaths(TargetFrame, "native target flash anchor", { "TargetFrameContainer" }) then
@@ -499,6 +650,18 @@ local function Party(frame, old)
         module:Art(frame.PetFrame.Texture, P .. "Party-PortraitOn", true)
         module:Art(frame.PetFrame.Flash, P .. "Party-PortraitOn-InCombat", true)
         module:Bar(frame.PetFrame.HealthBar, P .. "Party-PortraitOn-Bar-Health")
+    end
+end
+
+function module:RepairTargets(roots)
+    for _, frame in ipairs(roots) do
+        if
+            self:CheckRegion(frame, "combat target root")
+            and self:Readable(frame.TargetFrameContent)
+            and frame.TargetFrameContent
+        then
+            Target(frame, true)
+        end
     end
 end
 

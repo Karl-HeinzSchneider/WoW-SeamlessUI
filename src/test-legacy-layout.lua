@@ -20,45 +20,98 @@ local callbacks = {}
 local function Object()
     return setmetatable({ shown = true }, { __index = methods })
 end
-local function Geometry()
-    assert(not combat, "geometry mutation during combat")
+Enum = { StatusBarFillStyle = { Reverse = 1 } }
+local createdFrames = {}
+function CreateFrame(kind, _, parent)
+    local frame = Object()
+    frame.kind, frame.parent = kind, parent
+    if kind == "StatusBar" then
+        frame.fill = Object()
+    end
+    createdFrames[#createdFrames + 1] = frame
+    return frame
+end
+function methods:SetStatusBar(bar)
+    self.statusBar = bar
+end
+function methods:SetAllPoints(relative)
+    self.allPoints = relative
+end
+function methods:RemoveMaskTexture(mask)
+    if self.mask == mask then
+        self.mask = nil
+    end
+end
+function methods:CreateMaskTexture()
+    return Object()
+end
+function methods:AddMaskTexture(mask)
+    self.mask = mask
+end
+function methods:SetParent(parent)
+    assert(not combat, "reparenting during combat")
+    self.parent = parent
+end
+function methods:SetFillStyle(style)
+    self.fillStyle = style
+end
+function methods:SetAlpha(alpha)
+    self.alpha = alpha
+end
+function methods:SetMinMaxValues(...)
+    self.range = { ... }
+end
+function methods:SetValue(...)
+    self.values = { ... }
+end
+function UnitHealth()
+    return secret
+end
+function UnitHealthMax()
+    return secret
+end
+local function Geometry(region)
+    assert(not combat or not region.protected, "protected geometry mutation during combat")
     geometryWrites = geometryWrites + 1
+end
+function methods:IsProtected()
+    return self.protected or false
 end
 function methods:IsForbidden()
     return false
 end
 function methods:SetWidth(v)
-    Geometry()
+    Geometry(self)
     assert(canaccessvalue(v))
     self.width = v
 end
 function methods:SetHeight(v)
-    Geometry()
+    Geometry(self)
     assert(canaccessvalue(v))
     self.height = v
 end
 function methods:SetPoint(...)
-    Geometry()
+    Geometry(self)
     self.point = { ... }
 end
 function methods:ClearAllPoints()
-    Geometry()
+    Geometry(self)
     self.point = nil
 end
 function methods:SetJustifyH(v)
-    Geometry()
+    Geometry(self)
     self.justify = v
 end
 function methods:SetDrawLayer(...)
-    Geometry()
+    Geometry(self)
     self.layer = { ... }
 end
 function methods:SetScale(v)
-    Geometry()
+    Geometry(self)
     self.scale = v
 end
 function methods:SetShown(v)
-    Geometry()
+    Geometry(self)
     self.shown = v
 end
 function methods:Show()
@@ -113,6 +166,9 @@ local function ForbiddenGetter()
 end
 for _, method in ipairs({
     "GetAtlas",
+    "GetSize",
+    "GetMinMaxValues",
+    "GetValue",
     "GetWidth",
     "GetHeight",
     "GetPoint",
@@ -249,11 +305,24 @@ PlayerFrame.healthbar = health
 local function Target(unit)
     local frame = Object()
     frame.unit = unit
+    frame.protected = true
     for _, key in ipairs({ "FrameTexture", "Flash", "BossPortraitFrameTexture", "Portrait" }) do
         Path(frame, "TargetFrameContainer." .. key)
     end
     local prefix = "TargetFrameContent.TargetFrameContentMain."
     frame.healthbar = Path(frame, prefix .. "HealthBarsContainer.HealthBar", true)
+    for _, key in ipairs({ "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }) do
+        Path(frame, prefix .. "HealthBarsContainer.HealthBar." .. key .. ".Fill")
+        Path(frame, prefix .. "HealthBarsContainer.HealthBar." .. key .. ".FillMask")
+    end
+    Path(frame, prefix .. "HealthBarsContainer.HealthBar.TotalAbsorbBar.TiledFillOverlay")
+    Path(frame, prefix .. "HealthBarsContainer.HealthBar.OverAbsorbGlow")
+    Path(frame, prefix .. "HealthBarsContainer.HealthBar.OverHealAbsorbGlow")
+    frame.healthbar.protected = true
+    frame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer.protected = true
+    for _, key in ipairs({ "HealthBarText", "LeftText", "RightText", "DeadText", "UnconsciousText" }) do
+        Path(frame, prefix .. "HealthBarsContainer." .. key)
+    end
     Path(frame, prefix .. "HealthBarsContainer.HealthBarMask")
     Path(frame, prefix .. "HealthBarsContainer.TempMaxHealthLoss", true)
     Path(frame, prefix .. "ManaBar", true)
@@ -262,7 +331,15 @@ local function Target(unit)
     Path(frame, prefix .. "Name")
     Path(frame, prefix .. "ReputationColor")
     Path(frame, "TargetFrameContent.TargetFrameContentContextual.PvpBackgroundIcon")
+    function frame:UpdateHealthBarVisuals()
+        local container = self.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+        -- Simulate the native Camelot layout reset, including during combat.
+        container.height, container.width = 15, 126
+        container.point = { "BOTTOMRIGHT", self.TargetFrameContainer, "LEFT", 147, -9 }
+        container.HealthBar.point = { "TOPLEFT", container, "TOPLEFT", 0, 3 }
+    end
     function frame:CheckClassification()
+        self:UpdateHealthBarVisuals()
         self.TargetFrameContainer.FrameTexture:SetAtlas("UI-HUD-UnitFrame-Target-PortraitOn", true)
     end
     return frame
@@ -361,6 +438,8 @@ assert(health.height == 19 and health.point[5] == 0)
 assert(health.fill.layer == nil, "layout must leave native draw layers alone")
 assert(HasOld(PlayerFrame.PlayerFrameContainer.FrameTexture))
 assert(#warnings == 0, "unexpected missing fixture components")
+Mode("current")
+Mode("legacy")
 local oldHooks = hookCount
 for i = 1, 4 do
     Mode("current")
@@ -400,7 +479,48 @@ assert(#pending == 0, "target update must not defer repair until the next render
 combat = true
 TargetFrame:CheckClassification()
 assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "combat must not expose native sheet coordinates")
+local targetContainer = TargetFrame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+local targetVisual = targetContainer.LeftText.point[2]
+assert(targetContainer.height == 15, "native protected reset remains client-owned")
+assert(targetVisual.height == 20 and targetVisual.point[4] == 149)
+assert(targetVisual.HealthBar.point[4] == 0 and targetVisual.HealthBar.point[5] == 0)
+assert(targetContainer.HealthBar.fill.alpha == 0)
+targetContainer.HealthBar:SetMinMaxValues(0, secret)
+targetContainer.HealthBar:SetValue(secret, secret)
+assert(rawequal(targetVisual.HealthBar.range[2], secret))
+assert(rawequal(targetVisual.HealthBar.values[1], secret))
+assert(rawequal(targetVisual.HealthBar.values[2], secret))
+classification = "minus"
+TargetFrame:CheckClassification()
+assert(targetVisual.height == 12 and targetVisual.width == 125)
+assert(targetVisual.point[4] == 148)
+classification = secret
+TargetFrame:CheckClassification()
+FocusFrame:CheckClassification()
+local focusContainer = FocusFrame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+local focusVisual = focusContainer.LeftText.point[2]
+assert(targetVisual.height == 20 and focusVisual.height == 20)
+assert(focusContainer.height == 15 and focusContainer.HealthBar.fill.alpha == 0)
+assert(targetVisual.HealthBar.fill.mask == targetVisual.HealthBarMask)
+assert(targetContainer.LeftText.parent == targetVisual.HealthBar)
+local prediction = targetContainer.HealthBar.MyHealPredictionBar
+assert(prediction.parent == targetVisual.HealthBar)
+assert(prediction.Fill.mask == targetVisual.HealthBarMask)
+prediction.FillMask:SetPoint("TOPLEFT", targetContainer.HealthBar.fill, "TOPRIGHT", secret, 0)
+assert(prediction.FillMask.point[2] == targetVisual.HealthBar.fill)
+assert(rawequal(prediction.FillMask.point[4], secret))
+local sourceLoss = targetContainer.TempMaxHealthLoss
+callbacks[sourceLoss].Show(sourceLoss)
+assert(targetVisual.TempMaxHealthLoss.shown)
+callbacks[sourceLoss].Hide(sourceLoss)
+assert(not targetVisual.TempMaxHealthLoss.shown)
+sourceLoss:SetAlpha(secret)
+assert(rawequal(targetVisual.TempMaxHealthLoss.alpha, secret))
+assert(targetVisual.TempMaxHealthLoss.fillStyle == Enum.StatusBarFillStyle.Reverse)
+assert(targetVisual.TempMaxHealthLoss.range[2] == 1)
+classification = "normal"
 combat = false
+layout:Refresh()
 -- Native updates with secret arguments must not be inspected by our hooks.
 health.fill:SetAtlas("UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health")
 assert(health.fill.file:find("health%-status"), "class color lost after native atlas update")
@@ -439,11 +559,17 @@ classification = "minus"
 Mode("legacy")
 local targetHealth = TargetFrame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer.HealthBar
 assert(
-    targetHealth.height == 12
+    targetVisual.HealthBar.height == 12
         and targetHealth.fill.atlas == "UI-HUD-UnitFrame-Target-MinusMob-PortraitOn-Bar-Health-Status"
 )
 Mode("current")
 assert(targetHealth.height == 20)
+assert(targetContainer.LeftText.parent == targetContainer)
+assert(prediction.parent == targetContainer.HealthBar)
+assert(prediction.Fill.mask == targetContainer.HealthBarMask)
+assert(targetContainer.LeftText.point[2] == targetContainer)
+assert(targetHealth.fill.alpha == 1 and not targetVisual.HealthBar.shown)
+assert(not focusVisual.HealthBar.shown)
 classification = secret
 powerToken = secret
 party.state = secret

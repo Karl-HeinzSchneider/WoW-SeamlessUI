@@ -71,13 +71,29 @@ power/classification data are skipped with deduplicated logger warnings. Power
 kinds without specific artwork use the native mana fallback without a warning.
 Party temporary health loss uses the player atlas, matching the exported template.
 
-Geometry and layout selection changes wait until combat ends. The final
+Protected geometry and layout selection changes wait until combat ends. The final
 profile selection is applied after `PLAYER_REGEN_ENABLED`. Health tint and fill
 updates use constant atlas/file arguments through the native status-bar setter;
-they do not perform geometry work or arithmetic on health/power values. Named
-static atlas changes are repaired synchronously in their secure post-hooks,
-including during combat, without resizing/reanchoring. Native combat updates can
-still change geometry; Legacy geometry is reapplied after lockdown.
+they do not perform arithmetic on health/power values.
+
+The Camelot `TargetFrameMixin:UpdateHealthBarVisuals` resets the health bar anchor
+to `(0, 3)`, container height to `15`, container anchor to `(147, -9)` and mask
+anchor to `(-1, 9)` on every target/focus update (`Camelot/TargetFrame.lua:73-80`).
+The native health bar and container explicitly inherit secure templates; a post-hook
+cannot restore their legacy geometry during combat.
+
+Legacy therefore draws target/focus health and temporary max-health loss through
+ordinary, unprotected visual bars created before combat. Native bar setters forward
+values, ranges, colors, alpha and visibility directly to those bars, including secret
+values without comparison or arithmetic. Existing native text regions retain their
+SetText logic and attach to the visual bar; Current restores their native ownership
+and anchors. Native source fills are transparent only in Legacy. The protected mana
+bar anchors directly to native artwork, never to a visual bar (which would propagate
+protection). Native prediction segments and absorb glows also attach to the visual health bar;
+their masks redirect native health-fill anchors without inspecting native offsets.
+Current restores their native ownership, masks and status-bar references.
+Native frames, events, targeting and tooltips remain in place. Layout
+repairs can resize the visuals in combat and skip every protected region.
 
 Repairs run before native update calls return; no next-frame timer exposes new
 art with old coordinates. A private cache of the addon's last writes is invalidated

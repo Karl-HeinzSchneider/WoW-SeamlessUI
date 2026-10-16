@@ -26,7 +26,7 @@ export const CLIENT_LOCALES = [
 ] as const;
 
 /** Required shared addon, independent of the suite archive name. */
-export const CORE_ADDON = "SeamlessCore";
+export const CORE_ADDON = "Seamless";
 
 /** `package-as` in .pkgmeta: the suite archive name. */
 export function packageName(): string {

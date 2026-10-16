@@ -1,10 +1,10 @@
 ## Interface: 16001
 ## Title: Seamless: Damage Meter
-## Group: SeamlessCore
+## Group: Seamless
 ## Notes: Multiple independent windows for the client's combat statistics.
 ## Author: Karl-HeinzSchneider
 ## Version: |cff8080ff@project-version@|r
-## Dependencies: SeamlessCore
+## Dependencies: Seamless
 ## SavedVariables: SeamlessDamageMeterDB
 ## X-License: MIT
 

@@ -274,7 +274,7 @@ end
 ---@param name string
 ---@param spec SeamlessCore.OptionsSpec
 function module:RegisterAddon(name, spec)
-    local root = assert(self.panels[appName], "SeamlessCore options must initialize before feature options")
+    local root = assert(self.panels[appName], "Seamless core options must initialize before feature options")
     self:Register(name, spec, root.id)
     self.addons[#self.addons + 1] = name
     self.addonButtons[name] = {

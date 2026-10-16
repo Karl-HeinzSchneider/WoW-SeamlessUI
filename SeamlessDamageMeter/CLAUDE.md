@@ -1,6 +1,6 @@
 # SeamlessDamageMeter
 
-Optional feature addon for WoW Forever (`16001`), requiring SeamlessCore.
+Optional feature addon for WoW Forever (`16001`), requiring Seamless.
 `SeamlessDamageMeterDB` stores independent AceDB profiles containing window layouts and
 statistic/session selections. Client collection stays owned by `C_DamageMeter`; character-scoped
 `db.char.combatHistory` stores validated public completed fights independently of profiles.

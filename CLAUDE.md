@@ -9,12 +9,12 @@ Seamless is a modular World of Warcraft addon suite (Lua 5.1 / Ace3), targeting 
 client in the TOCs (`16001` = WoW Forever). Each direct child folder with a same-named
 TOC is an independently selectable addon.
 
-- `SeamlessCore/`: required shared libraries, logger, AceDB core settings, minimap launcher,
+- `Seamless/`: required shared libraries, logger, AceDB core settings, minimap launcher,
   `/seamless`, the "Seamless" options panel and the AceConfig options layout every addon uses
   (General tab, the addon's tabs, Profiles tab). See its `CLAUDE.md` for the public API.
-- `SeamlessUnitframes/`: optional unit-frame features, depending on SeamlessCore. Keeps
+- `SeamlessUnitframes/`: optional unit-frame features, depending on Seamless. Keeps
   `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
-- `SeamlessTooltip/`: optional tooltip features, depending on SeamlessCore. Keeps
+- `SeamlessTooltip/`: optional tooltip features, depending on Seamless. Keeps
   `SeamlessTooltipDB` and existing profiles. See its `CLAUDE.md`.
 - `SeamlessChat/`: optional chat sync, history, copy/log windows and chat enhancements. Keeps
   its profile and per-character SavedVariables. See its `CLAUDE.md`.
@@ -23,7 +23,7 @@ TOC is an independently selectable addon.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `.github/`: release workflows using the BigWigs packager.
 
-Every feature addon must declare `## Dependencies: SeamlessCore`; `check:addons` enforces
+Every feature addon must declare `## Dependencies: Seamless`; `check:addons` enforces
 this and checks dependency cycles. Addons are discovered automatically by tooling; add each
 release-ready addon to `.pkgmeta` move-folders for releases. Internal addons must stay in its ignore list.
 Only Core, Tooltip and Unitframes currently ship; Chat and DamageMeter are internal. Users enable or disable feature addons
@@ -42,7 +42,7 @@ WoW addons are plain Lua/XML files loaded by the game; there is no build step. T
 | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `npm run check`                    | Everything below that validates, in order: typecheck, addons, Lua syntax, XML schema, formatting. Run it before finishing a change.                                                                                                 |
 | `npm run format`                   | Prettier (`.prettierrc.json`, `.prettierignore`) on TS/JSON/Markdown/YAML, then StyLua (`stylua.toml`, `.styluaignore`) on Lua. Leaves XML to the editor. `npm run format:check` only reports.                                      |
-| `npm run check:addons`             | Every TOC load entry exists (a `[TextLocale]` entry for every client language), all feature addons depend on `SeamlessCore`, no dependency cycles.                                                                                  |
+| `npm run check:addons`             | Every TOC load entry exists (a `[TextLocale]` entry for every client language), all feature addons depend on `Seamless`, no dependency cycles.                                                                                      |
 | `npm run check:lua`                | `luac -p` on every addon Lua file (needs a Lua 5.1 `luac` on PATH).                                                                                                                                                                 |
 | `npm run check:xml`                | Validates every addon XML against Blizzard's `UI.xsd` via python + lxml; skipped when `../_data/BlizzardInterfaceCode` is absent.                                                                                                   |
 | `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                                                                           |
@@ -58,7 +58,7 @@ excluded from LuaLS, StyLua and Prettier).
 ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
 
 - `config.ts` â€” `ROOT`, `CLIENT_LOCALES` (every `[TextLocale]` value), `packageName()` (the
-  `package-as` of `.pkgmeta`, used for zip names; `CORE_ADDON` identifies SeamlessCore).
+  `package-as` of `.pkgmeta`, used for zip names; `CORE_ADDON` identifies the core addon, Seamless).
 - `addons.ts` â€” `addonDirectories()` (every direct child with a same-named `.toc`),
   `addonVersion`, `walkFiles`.
 - `check-addons.ts`, `check-lua.ts`, `check-xml.ts`, `link-addons.ts`, `package-addons.ts`,

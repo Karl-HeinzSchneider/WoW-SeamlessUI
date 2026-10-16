@@ -1,9 +1,9 @@
 -- Run from the repository root: lua src/tests/damage-meter-settings.lua
 unpack = unpack or table.unpack
 local root = "SeamlessDamageMeter/src/"
-dofile("SeamlessCore/lib/LibStub/LibStub.lua")
-dofile("SeamlessCore/lib/CallbackHandler-1.0/CallbackHandler-1.0.lua")
-dofile("SeamlessCore/lib/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
+dofile("Seamless/lib/LibStub/LibStub.lua")
+dofile("Seamless/lib/CallbackHandler-1.0/CallbackHandler-1.0.lua")
+dofile("Seamless/lib/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
 local registry = LibStub("AceConfigRegistry-3.0")
 local app = {}
 assert(loadfile(root .. "archive.lua"))("SeamlessDamageMeter", app)

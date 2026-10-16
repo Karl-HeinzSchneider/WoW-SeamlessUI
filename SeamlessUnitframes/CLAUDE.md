@@ -1,6 +1,6 @@
 # SeamlessUnitframes
 
-Optional unit-frame addon in the Seamless suite. Requires `SeamlessCore`; no embedded libraries
+Optional unit-frame addon in the Seamless suite. Requires `Seamless`; no embedded libraries
 or separate minimap launcher. Users disable it through the game's AddOns screen and reload.
 Existing `SeamlessUnitframesDB` settings and profiles are retained.
 
@@ -24,8 +24,8 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
 
 Every new runtime Lua/XML file must be listed in dependency order in the TOC.
 New feature settings need defaults in `db.lua` and controls in `options.lua`.
-Shared services belong in SeamlessCore. The old logLevel/minimap SavedVariables are no longer
-used; shared preferences are stored independently in SeamlessCoreDB.
+Shared services belong in Seamless. The old logLevel/minimap SavedVariables are no longer
+used; shared preferences are stored independently in SeamlessDB.
 
 ### `src/healthcolor/`
 

@@ -1,11 +1,11 @@
 ## Interface: 16001
 ## Title: Seamless: Chat
-## Group: SeamlessCore
-## Notes: The default chat, but the same on every character: tabs, their channels and message types, colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/SeamlessCore/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## Group: Seamless
+## Notes: The default chat, but the same on every character: tabs, their channels and message types, colors. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/Seamless/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
 ## IconTexture: Interface\Icons\INV_Misc_Note_01
 ## Author: Karl-HeinzSchneider
 ## Version: |cff8080ff@project-version@|r
-## Dependencies: SeamlessCore
+## Dependencies: Seamless
 ## SavedVariables: SeamlessChatDB
 ## SavedVariablesPerCharacter: SeamlessChatHistoryDB, SeamlessChatLogDB
 ## X-License: MIT

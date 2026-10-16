@@ -1,4 +1,4 @@
-# SeamlessCore
+# Seamless (core)
 
 Required entry point for the Seamless suite. It works with no feature addons enabled.
 
@@ -7,7 +7,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `embeds.xml` loads all shared vendored libraries from `lib/`, including AceGUI, AceConfig,
   AceDBOptions, LibSharedMedia, LibEditModeOverride and EditModeExpanded-1.0. Never patch vendored code.
 - `src/core/logger.lua`: shared suite logger.
-- `db.lua`: defaults for `SeamlessCoreDB` (logging, minimap settings and tweaks).
+- `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
   Can show the framerate once on startup (off by default); its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
@@ -28,8 +28,8 @@ child. A panel is a tab group, always in this order:
    click, but never so much that it feels cramped. Group related controls into inline groups.
 3. **Profiles** — AceDBOptions for the addon's database, added by Core.
 
-Declare `## Dependencies: SeamlessCore` in every feature TOC. At file load, obtain the
-core through `LibStub("AceAddon-3.0"):GetAddon("SeamlessCore")`; no new global is needed.
+Declare `## Dependencies: Seamless` in every feature TOC. At file load, obtain the
+core through `LibStub("AceAddon-3.0"):GetAddon("Seamless")`; no new global is needed.
 
 - `core.logger`: shared logger; its threshold follows the core profile.
 - `core:RegisterOptions(addonName, spec)`: register the addon's panel, from the options module's

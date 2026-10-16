@@ -4,7 +4,7 @@ A modular World of Warcraft addon suite for WoW Forever.
 
 ## Addons
 
-- **SeamlessCore** (required): shared libraries, logging, profiles for shared settings, one
+- **Seamless** (required, the core): shared libraries, logging, profiles for shared settings, one
   minimap button and the **Seamless** entry in WoW Settings > AddOns.
 - **SeamlessUnitframes** (optional): per-frame health colors for player, pet, target, focus,
   their targets and party. Choose default, class, reaction or combined colors, and configure
@@ -16,7 +16,7 @@ A modular World of Warcraft addon suite for WoW Forever.
 
 ## Installation and usage
 
-Extract `SeamlessCore` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`) from the release zip into your client's
+Extract `Seamless` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`) from the release zip into your client's
 `Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
 WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
 
@@ -32,7 +32,7 @@ WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone
 
 Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`; Tooltip keeps
 `SeamlessTooltipDB` and all feature keys from the standalone addon. Core preferences
-use `SeamlessCoreDB`; logging and minimap preferences initially use the core defaults.
+use `SeamlessDB`; logging and minimap preferences initially use the core defaults.
 Each feature manages its own profiles, independently of the core profile.
 
 Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
@@ -86,9 +86,9 @@ tokens unchanged. `npm run package:local` uses the release packager and replaces
 Both include only Core, Tooltip and Unitframes as listed in `.pkgmeta`. Use the release packager
 for distributable archives.
 
-To add a feature, create `SeamlessFeature/SeamlessFeature.toc` with `## Dependencies: SeamlessCore`,
+To add a feature, create `SeamlessFeature/SeamlessFeature.toc` with `## Dependencies: Seamless`,
 list its runtime files, and, once ready for public release, add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
-Use the core API documented in [SeamlessCore/CLAUDE.md](SeamlessCore/CLAUDE.md) for shared options
+Use the core API documented in [Seamless/CLAUDE.md](Seamless/CLAUDE.md) for shared options
 and logging. Keep feature state in its private addon table and its own SavedVariables.
 No core code change is needed to register another feature.
 

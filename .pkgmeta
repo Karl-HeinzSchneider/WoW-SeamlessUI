@@ -1,9 +1,10 @@
-# Suite archive: each addon is a sibling folder in the zip.
+# Suite archive: the core addon Seamless/ is the package folder (its TOC supplies the project
+# ids); every feature addon is moved out next to it as a sibling folder in the zip.
 # Only release-ready addons belong in move-folders; ignore internal addons explicitly.
 package-as: Seamless
 
 move-folders:
-  Seamless/SeamlessCore: SeamlessCore
+  Seamless/Seamless: Seamless
   Seamless/SeamlessUnitframes: SeamlessUnitframes
   Seamless/SeamlessTooltip: SeamlessTooltip
 
@@ -26,7 +27,7 @@ ignore:
   - "*.md"
   # LuaLS annotation files; no TOC loads them.
   - SeamlessUnitframes/src/types.lua
-  - SeamlessCore/src/types.lua
+  - Seamless/src/types.lua
   - SeamlessTooltip/src/types.lua
   - SeamlessChat/src/types.lua
   - SeamlessDamageMeter/src/types.lua

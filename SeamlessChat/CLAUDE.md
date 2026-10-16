@@ -1,7 +1,7 @@
 # SeamlessChat
 
 Optional chat addon in the Seamless suite, imported from `../WoW-SeamlessChat`.
-Requires `SeamlessCore`; users enable/disable it in WoW's AddOns screen and reload.
+Requires `Seamless`; users enable/disable it in WoW's AddOns screen and reload.
 Preserves `SeamlessChatDB` (profiles, sync snapshots and character input history),
 `SeamlessChatHistoryDB` and `SeamlessChatLogDB` (per-character history and log).
 

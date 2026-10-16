@@ -1,7 +1,7 @@
 # SeamlessTooltip
 
 Optional tooltip addon in the Seamless suite, imported from `../WoW-SeamlessTooltip`.
-Requires `SeamlessCore`; users disable it through WoW's AddOns screen and reload.
+Requires `Seamless`; users disable it through WoW's AddOns screen and reload.
 `SeamlessTooltipDB`, feature keys and profiles are preserved from the standalone addon.
 The old local minimap/logLevel preferences are unused; shared preferences belong to Core.
 

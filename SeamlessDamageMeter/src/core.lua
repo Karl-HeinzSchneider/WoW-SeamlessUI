@@ -1,7 +1,7 @@
 ---@type string, SeamlessDamageMeter
 local appName, app = ...
 
-app.core = LibStub("AceAddon-3.0"):GetAddon("SeamlessCore")
+app.core = LibStub("AceAddon-3.0"):GetAddon("Seamless")
 app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local addon = app.addon
 

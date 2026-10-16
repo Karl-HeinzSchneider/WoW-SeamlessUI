@@ -11,7 +11,7 @@ app.addon = addon
 
 -- Called once, after ADDON_LOADED for this addon: SavedVariables are available now.
 function addon:OnInitialize()
-    local db = LibStub("AceDB-3.0"):New("SeamlessCoreDB", app.dbDefaults, true) --[[@as SeamlessCore.DB]]
+    local db = LibStub("AceDB-3.0"):New("SeamlessDB", app.dbDefaults, true) --[[@as SeamlessCore.DB]]
     self.db = db
     app.db = db
 
@@ -68,7 +68,7 @@ function addon:OnSlashCommand(input)
     end
 end
 
--- Available at file load to dependent addons through AceAddon:GetAddon("SeamlessCore").
+-- Available at file load to dependent addons through AceAddon:GetAddon("Seamless").
 addon.logger = app.logger
 
 -- Gives a feature addon its panel in Settings > AddOns > Seamless: a General tab, `spec.tabs`

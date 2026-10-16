@@ -77,9 +77,29 @@ function module:CheckPaths(frame, context, paths)
 end
 
 local function Points(region)
+    local count = region:GetNumPoints()
+    if not Readable(count) then
+        layout:Warn("anchor snapshot", "inaccessible point count")
+        return nil
+    end
+    if type(count) ~= "number" then
+        layout:Warn("anchor snapshot", "invalid point count")
+        return nil
+    end
     local points = {}
-    for i = 1, region:GetNumPoints() do
-        points[i] = { region:GetPoint(i) }
+    for i = 1, count do
+        local point = { region:GetPoint(i) }
+        for field = 1, 5 do
+            if not Readable(point[field]) then
+                layout:Warn("anchor snapshot", "inaccessible point component")
+                return nil
+            end
+        end
+        if type(point[1]) ~= "string" then
+            layout:Warn("anchor snapshot", "invalid point name")
+            return nil
+        end
+        points[i] = point
     end
     return points
 end
@@ -100,10 +120,14 @@ local function Watch(region)
         return nil
     end
     local state = regions[region]
+    local points = Points(region)
     if state then
+        if not points then
+            state.points = nil
+        end
         return state
     end
-    state = { width = region:GetWidth(), height = region:GetHeight(), points = Points(region) }
+    state = { width = region:GetWidth(), height = region:GetHeight(), points = points }
     if region.GetJustifyH then
         state.justify = region:GetJustifyH()
     end
@@ -149,9 +173,21 @@ local function Watch(region)
         if writing then
             return
         end
+        local points = Points(region)
+        if not Readable(point) or not points then
+            state.points = nil
+            layout:Warn("anchor update", "inaccessible point data")
+            return
+        end
+        if not state.points then
+            -- Do not invent missing native anchors after a secret update. A
+            -- native ClearAllPoints/SetAllPoints will establish a fresh baseline.
+            Request()
+            return
+        end
         -- Record the native point, without accidentally recording other anchors
         -- left by our layout. ClearAllPoints starts a new native anchor list.
-        for _, actual in ipairs(Points(region)) do
+        for _, actual in ipairs(points) do
             if actual[1] == point then
                 for i, previous in ipairs(state.points) do
                     if previous[1] == point then
@@ -212,7 +248,7 @@ function module:Edit(region, changes)
         state.owned.height = true
         region:SetHeight(changes.height)
     end
-    if changes.point then
+    if changes.point and state.points then
         state.owned.points = true
         region:ClearAllPoints()
         region:SetPoint(unpack(changes.point))
@@ -528,7 +564,7 @@ local function Restore()
             if owned.height and Readable(state.height) then
                 region:SetHeight(state.height)
             end
-            if owned.points then
+            if owned.points and state.points then
                 region:ClearAllPoints()
                 for _, point in ipairs(state.points) do
                     region:SetPoint(unpack(point))

@@ -696,6 +696,79 @@ app.db.profile.layout = "current"
 module:Refresh()
 Drain()
 assert(custom.coords[1] == 0 and custom.coords[3] == 0, "native atlas reset must retire previous explicit coordinates")
+-- Counts, names, relative frames and offsets can be secret independently. No
+-- secret count may become a loop bound; no secret anchor may be replayed.
+local anchorRoot = Object()
+roots[#roots + 1] = anchorRoot
+local secretCountTexture = Object("Texture", anchorRoot)
+secretCountTexture:SetAtlas(originalAtlas, true, nil, true)
+local pointReads = 0
+function secretCountTexture:GetNumPoints()
+    return secretWidth
+end
+function secretCountTexture:GetPoint()
+    pointReads = pointReads + 1
+    error("secret count was iterated")
+end
+warningCount = #warnings
+app.db.profile.layout = "legacy"
+module:Refresh()
+Drain()
+module:Edit(secretCountTexture, { point = { "CENTER", anchorRoot, "CENTER", 0, 0 } })
+assert(pointReads == 0 and #secretCountTexture.points == 0)
+assert(#warnings == warningCount + 1 and warnings[#warnings]:find("inaccessible point count", 1, true))
+module:Refresh()
+Drain()
+assert(#warnings == warningCount + 1, "secret anchor warnings must not spam")
+local secretOffsetTexture = Object("Texture", Object("Frame", anchorRoot))
+secretOffsetTexture:SetAtlas(originalAtlas, true, nil, true)
+secretOffsetTexture.points = { { "CENTER", anchorRoot, "CENTER", secretWidth, 0 } }
+module:Refresh()
+Drain()
+module:Edit(secretOffsetTexture, { point = { "TOPLEFT", anchorRoot, "TOPLEFT", 0, 0 } })
+assert(secretOffsetTexture.points[1][1] == "CENTER" and rawequal(secretOffsetTexture.points[1][4], secretWidth))
+app.db.profile.layout = "current"
+module:Refresh()
+Drain()
+assert(pointReads == 0 and rawequal(secretOffsetTexture.points[1][4], secretWidth))
+
+-- Native anchor updates may become secret after an ordinary baseline was saved.
+local liveAnchor = staticTextures[2].sprite
+app.db.profile.layout = "legacy"
+module:Refresh()
+Drain()
+module:Edit(liveAnchor, { point = { "CENTER", anchorRoot, "CENTER", 0, 0 } })
+liveAnchor:SetPoint("CENTER", anchorRoot, "CENTER", secretHeight, 0)
+module:Refresh()
+Drain()
+app.db.profile.layout = "current"
+module:Refresh()
+Drain()
+assert(rawequal(liveAnchor.points[1][4], secretHeight), "inaccessible native anchor must not be replaced on restore")
+liveAnchor:ClearAllPoints()
+liveAnchor:SetPoint("CENTER", anchorRoot, "CENTER", 13, 14)
+app.db.profile.layout = "legacy"
+module:Refresh()
+Drain()
+app.db.profile.layout = "current"
+module:Refresh()
+Drain()
+assert(liveAnchor.points[1][4] == 13 and liveAnchor.points[1][5] == 14, "fresh readable anchors must recover")
+for field = 1, 5 do
+    local opaque = Object("Texture", Object("Frame", anchorRoot))
+    opaque:SetAtlas(originalAtlas, true, nil, true)
+    local point = { "CENTER", anchorRoot, "CENTER", 1, 2 }
+    point[field] = secretWidth
+    opaque.points = { point }
+    app.db.profile.layout = "legacy"
+    module:Refresh()
+    Drain()
+    module:Edit(opaque, { point = { "TOPLEFT", anchorRoot, "TOPLEFT", 0, 0 } })
+    app.db.profile.layout = "current"
+    module:Refresh()
+    Drain()
+    assert(rawequal(opaque.points[1][field], secretWidth), "every secret point component must remain opaque")
+end
 print(
     "Legacy layout: damage stacking, full sprite/mask restoration, color integration, frame safety and secret values OK"
 )

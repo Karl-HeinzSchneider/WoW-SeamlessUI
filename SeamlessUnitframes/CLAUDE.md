@@ -64,6 +64,8 @@ used; shared preferences are stored independently in SeamlessCoreDB.
 - Restore static atlases with `resetTexCoords = true`, then restore any observed
   native explicit UVs. Write guards must preserve their previous state across
   nested callbacks. Keep the animated loss bar behind live player health.
+- Treat anchor counts and all `GetPoint` results as potentially secret. Validate
+  access before iteration/comparison; never replace or replay unknown anchors.
 - Run `lua src/test-legacy-layout.lua` for offline restoration/combat tests.
 
 ### Annotations (not in the TOC)

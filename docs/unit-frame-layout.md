@@ -84,6 +84,10 @@ prove live-client taint behavior.
 Texture dimensions can also be secret outside combat. Atlas-size inference checks
 access before comparing them. Secret dimensions remain client-owned: the module
 does not resize them or replay them through size setters during restoration.
+Anchor counts and every anchor component are also checked before iteration,
+comparison or restoration. Secret anchors remain client-owned; independently
+readable artwork properties can still be applied. A fresh native clear/set-all
+anchor update establishes a new baseline after an inaccessible snapshot.
 
 Callbacks use AceAddon's returned module instance, whose prototype is a separate
 table. Geometry validates nested frame paths before using them. Missing methods,

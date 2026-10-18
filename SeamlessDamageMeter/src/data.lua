@@ -17,7 +17,7 @@ app.statistics = {
     {
         key = "HealingDone",
         label = DAMAGE_METER_TYPE_HEALING_DONE or "Healing done",
-        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+        icon = "Interface\\Icons\\Spell_Nature_HealingTouch",
     },
     {
         key = "Hps",
@@ -28,17 +28,17 @@ app.statistics = {
     {
         key = "Absorbs",
         label = DAMAGE_METER_TYPE_ABSORBS or "Absorbs",
-        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+        icon = "Interface\\Icons\\Spell_Holy_PowerWordShield",
     },
     {
         key = "Interrupts",
         label = DAMAGE_METER_TYPE_INTERRUPTS or "Interrupts",
-        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+        icon = "Interface\\Icons\\Ability_Kick",
     },
     {
         key = "Dispels",
         label = DAMAGE_METER_TYPE_DISPELS or "Dispels",
-        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+        icon = "Interface\\Icons\\Spell_Holy_Renew",
     },
     {
         key = "DamageTaken",

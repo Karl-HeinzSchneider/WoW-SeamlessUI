@@ -184,12 +184,16 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
             },
             { DAMAGE_METER_CATEGORY_HEALING or "Healing", { "HealingDone", "Hps", "Absorbs" } },
             { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels", "Deaths" } },
+            { "Threat", { "Threat" } },
         }
         for _, category in ipairs(categories) do
             local menu = root:CreateButton(category[1])
             for _, key in ipairs(category[2]) do
                 local statistic = self:GetStatistic(key)
-                if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                if
+                    (key == "Threat" and UnitDetailedThreatSituation)
+                    or (self:IsAvailable() and Enum.DamageMeterType[key] ~= nil)
+                then
                     menu:CreateRadio(statistic.label, function()
                         if favoriteSlot then
                             return self.db.profile.favorites[favoriteSlot] == key
@@ -253,7 +257,10 @@ function app:UpdateFavorites(frame)
                 local key = self.db.profile.favorites[slot]
                 if mouseButton == "RightButton" or not key then
                     self:ShowStatisticMenu(frame, slot, owner)
-                elseif self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                elseif
+                    (key == "Threat" and UnitDetailedThreatSituation)
+                    or (self:IsAvailable() and Enum.DamageMeterType[key] ~= nil)
+                then
                     frame.config.statistic = key
                     frame.offset = 0
                     frame.favorites:Hide()
@@ -346,6 +353,9 @@ local function AddSessionDuration(description, session)
 end
 
 function app:ShowSessionMenu(frame)
+    if frame.config.statistic == "Threat" then
+        return
+    end
     local menu = MenuUtil.CreateContextMenu(frame.session, function(_, root)
         root:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
@@ -493,7 +503,7 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     end
     SetNumericText(row.value, primary, rateFirst)
     SetNumericText(row.secondaryValue, secondary, not rateFirst)
-    if percentage ~= nil then
+    if not IsPublic(percentage) or percentage ~= nil then
         row.percentageValue:SetFormattedText("%d%%", percentage)
     else
         row.percentageValue:SetText("")
@@ -531,7 +541,7 @@ local function CreateDetailTooltip()
 end
 
 local function ShowRowTooltip(row, frame)
-    if not row.source or row.preview or app:IsWindowCollapsed(frame.config) then
+    if not row.source or row.preview or frame.config.statistic == "Threat" or app:IsWindowCollapsed(frame.config) then
         HideRowTooltip(row)
         return
     end
@@ -811,7 +821,9 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     app:StyleWindowLabel(row.name, config)
     app:StyleWindowLabel(row.value, config)
     row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
-    if source.specIconID and source.specIconID ~= 0 then
+    if statistic.key == "Threat" and source.isPet then
+        row.icon:SetTexture(nil)
+    elseif source.specIconID and source.specIconID ~= 0 then
         row.icon:SetTexture(source.specIconID)
         row.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
     elseif source.classFilename and source.classFilename ~= "" then
@@ -819,22 +831,40 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     else
         row.icon:SetTexture(nil)
     end
-    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" and statistic.key ~= "Deaths"
+    local threat = statistic.key == "Threat"
+    local showRate = not threat
+        and statistic.key ~= "Interrupts"
+        and statistic.key ~= "Dispels"
+        and statistic.key ~= "Deaths"
+    local percentage = source.threatPercentage
+    if not threat then
+        percentage = Percentage(source.totalAmount, session.totalAmount)
+    end
     SetRowValues(
         row,
         config,
         source.totalAmount,
         source.amountPerSecond,
-        Percentage(source.totalAmount, session.totalAmount),
+        percentage,
         nil,
         showRate,
         statistic.rate,
         false
     )
-    row:SetMinMaxValues(0, session.maxAmount)
-    row:SetValue(source.totalAmount)
+    row:SetMinMaxValues(0, threat and 100 or session.maxAmount)
+    if threat then
+        row:SetValue(source.threatPercentage)
+    else
+        row:SetValue(source.totalAmount)
+    end
     local color = RAID_CLASS_COLORS[source.classFilename]
-    if color and app:GetWindowSetting(config, "classColors") then
+    if threat then
+        if source.isPet then
+            color = FACTION_BAR_COLORS[source.reaction]
+        end
+        color = color or FACTION_BAR_COLORS[5]
+    end
+    if color and (threat or app:GetWindowSetting(config, "classColors")) then
         row:SetStatusBarColor(color.r, color.g, color.b, 1)
     else
         row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
@@ -851,8 +881,15 @@ function app:RefreshWindow(frame, session, message)
     local collapsed = self:IsWindowCollapsed(config)
     local statistic = self:GetStatistic(config.statistic)
     frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
+    if statistic.key == "Threat" and not frame.favorites:IsShown() and session then
+        local targetName = session.targetName
+        if not IsPublic(targetName) or targetName ~= nil then
+            frame.statistic.text:SetFormattedText("Threat: %s", targetName)
+        end
+    end
     frame.session.text:SetText(
         preview and "Preview"
+            or (statistic.key == "Threat" and "")
             or (config.archiveID and ("S" .. config.archiveID))
             or config.sessionID
             or (
@@ -860,7 +897,8 @@ function app:RefreshWindow(frame, session, message)
                 or DAMAGE_METER_CURRENT_SESSION_SHORT
             )
     )
-    frame.session:SetWidth(preview and 60 or frame.session.normalWidth)
+    frame.session:SetWidth(preview and 60 or (statistic.key == "Threat" and 1 or frame.session.normalWidth))
+    frame.session:SetShown(statistic.key ~= "Threat")
     local duration = self.combatService:GetDuration(config, session)
     if
         not (issecretvalue and issecretvalue(duration))
@@ -880,7 +918,10 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:ClearAllPoints()
     frame.statistic.text:SetPoint("TOPLEFT", frame.statistic, "TOPLEFT", 25, -9)
     local availableWidth = math.max(0, frame:GetWidth() - 28 - frame.session:GetWidth() - 62)
-    local labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
+    local labelWidth = availableWidth
+    if statistic.key ~= "Threat" then
+        labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
+    end
     frame.statistic.text:SetWidth(labelWidth)
     frame.timer:ClearAllPoints()
     frame.timer:SetPoint("LEFT", frame.statistic.text, "RIGHT", 5, 0)
@@ -966,10 +1007,23 @@ function app:RefreshWindow(frame, session, message)
     frame.message:SetShown(#sources == 0)
 end
 
-function app:RefreshWindows()
+function app:RefreshThreatWindows()
+    self.combatService.cache["l:Threat"] = nil
+    if self.IsEditingWindows and self:IsEditingWindows() then
+        return
+    end
+    for _, frame in ipairs(self.windows) do
+        if frame:IsShown() and frame.config.statistic == "Threat" then
+            local session, message = self:GetSession(frame.config)
+            self:RefreshWindow(frame, session, message)
+        end
+    end
+end
+
+function app:RefreshWindows(skipThreat)
     self.combatService:BeginRefresh()
     for _, frame in ipairs(self.windows) do
-        if frame:IsShown() then
+        if frame:IsShown() and not (skipThreat and frame.config.statistic == "Threat") then
             local config = frame.config
             local session, message = self:GetSession(config)
             self:RefreshWindow(frame, session, message)

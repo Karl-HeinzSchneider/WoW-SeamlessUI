@@ -184,6 +184,7 @@ function CreateFrame(_, name, parent, template)
     return frame
 end
 RAID_CLASS_COLORS = { MAGE = { r = 0.2, g = 0.5, b = 1 } }
+FACTION_BAR_COLORS = { [4] = { r = 1, g = 1, b = 0 }, [5] = { r = 0, g = 0.6, b = 0.1 } }
 DAMAGE_METER_CURRENT_SESSION_SHORT = "C"
 DAMAGE_METER_OVERALL_SESSION_SHORT = "O"
 DAMAGE_METER_SOURCE_NAME = "%d. %s"
@@ -1451,3 +1452,93 @@ app:RefreshWindows()
 assert(meter.message.text == "This saved fight was deleted.")
 C_DamageMeter = realAPI
 print("Damage meter archived windows regressions OK")
+
+meter.config.statistic = "Threat"
+app.db.profile.skins.default.settings.classColors = false
+app:RefreshWindow(meter, {
+    maxAmount = 100,
+    targetName = secret,
+    combatSources = {
+        { name = "Tank", classFilename = "MAGE", totalAmount = secret, threatPercentage = secret },
+    },
+})
+assert(meter.session.text.text == "", "Threat hides the unused fight selector label")
+assert(meter.statistic.text.args[1] == secret, "Threat target names go directly to the header label")
+assert(meter.rows[1].statusValue == secret, "Restricted threat percentages go directly to the bar")
+assert(meter.rows[1].value.args[1] == secret, "Restricted threat totals go directly to the label")
+assert(meter.rows[1].percentageValue.args[1] == secret, "Restricted threat percentages go directly to the label")
+assert(not meter.rows[1].secondaryValue:IsShown(), "Threat has no rate column")
+assert(meter.rows[1].color[1] == RAID_CLASS_COLORS.MAGE.r, "Threat always uses class colors")
+app:RefreshWindow(meter, {
+    maxAmount = 100,
+    combatSources = {
+        {
+            name = "Pet",
+            classFilename = "MAGE",
+            isPet = true,
+            reaction = 4,
+            totalAmount = secret,
+            threatPercentage = secret,
+        },
+    },
+})
+assert(
+    meter.rows[1].color[1] == 1 and meter.rows[1].color[2] == 1 and meter.rows[1].color[3] == 0,
+    "Pet threat bars use reaction colors even when class colors are disabled"
+)
+app:RefreshWindow(meter, {
+    maxAmount = 100,
+    combatSources = {
+        { name = "Unknown pet", isPet = true, totalAmount = 1, threatPercentage = 1 },
+        { name = "Unknown player", totalAmount = 1, threatPercentage = 1 },
+    },
+})
+for index = 1, 2 do
+    assert(meter.rows[index].color[2] == FACTION_BAR_COLORS[5].g, "Unavailable colors use faction color 5")
+end
+meter.rows[1].entry.scripts.OnEnter()
+assert(not app.detailTooltip or not app.detailTooltip:IsShown(), "Threat does not request spell details")
+app:RefreshWindow(meter, { combatSources = {}, maxAmount = 100 })
+assert(meter.statistic.text.text == "Threat", "Threat without a target retains its title")
+assert(meter.message.text == "", "Threat without a target has no hint text")
+print("Damage meter threat window regressions OK")
+
+local originalGetSession, originalRefreshWindow = app.GetSession, app.RefreshWindow
+local originalWindows, originalEditing = app.windows, app.IsEditingWindows
+local threatReads, threatRenders = 0, 0
+app.windows =
+    { meter, {
+        config = { statistic = "DamageDone" },
+        IsShown = function()
+            return true
+        end,
+    } }
+function app:IsEditingWindows()
+    return false
+end
+function app:GetSession(config)
+    assert(config.statistic == "Threat", "Threat events do not refresh damage windows")
+    threatReads = threatReads + 1
+    return {}
+end
+function app:RefreshWindow()
+    threatRenders = threatRenders + 1
+end
+meter:Show()
+app.combatService.cache["l:Threat"] = { "stale" }
+app:RefreshThreatWindows()
+assert(threatReads == 1 and threatRenders == 1 and app.combatService.cache["l:Threat"] == nil)
+function app:IsEditingWindows()
+    return true
+end
+app:RefreshThreatWindows()
+assert(threatReads == 1, "Live events never query threat in Edit Mode")
+function app:IsEditingWindows()
+    return false
+end
+meter:Hide()
+app:RefreshThreatWindows()
+assert(threatReads == 1, "Hidden threat windows do not query live data")
+app.GetSession, app.RefreshWindow = originalGetSession, originalRefreshWindow
+app.windows, app.IsEditingWindows = originalWindows, originalEditing
+print("Damage meter threat event window regressions OK")

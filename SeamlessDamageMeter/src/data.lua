@@ -56,6 +56,7 @@ app.statistics = {
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
     },
     { key = "Deaths", label = DAMAGE_METER_TYPE_DEATHS or "Deaths", icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+    { key = "Threat", label = "Threat", icon = "Interface\\Icons\\INV_Misc_QuestionMark", liveOnly = true },
 }
 
 function app:IsAvailable()
@@ -108,6 +109,7 @@ function app:GetPreviewSession(config)
                 classFilename = character[2],
                 totalAmount = amount,
                 amountPerSecond = amount / session.durationSeconds,
+                threatPercentage = key == "Threat" and (100 - (index - 1) * 10) or nil,
             }
         end
         session.maxAmount = session.combatSources[1].totalAmount

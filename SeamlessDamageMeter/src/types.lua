@@ -1,4 +1,5 @@
 ---@class SeamlessDamageMeter
+---@field RefreshThreatWindows fun(self: SeamlessDamageMeter) Refresh visible threat windows immediately from client events.
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0
 ---@field db AceDBObject-3.0

@@ -128,3 +128,46 @@ end
 session = service:GetSession(config, "Threat")
 assert(session.isPreview and session.combatSources[1].threatPercentage == 100)
 print("Damage meter threat tests passed")
+
+local events, timers = {}, {}
+local addon = {}
+function LibStub()
+    return {
+        GetAddon = function()
+            return {}
+        end,
+        NewAddon = function()
+            return addon
+        end,
+    }
+end
+function addon:RegisterEvent(event, callback)
+    events[event] = callback
+end
+function addon:ScheduleRepeatingTimer(callback, interval)
+    timers[interval] = callback
+end
+assert(loadfile("SeamlessDamageMeter/src/core.lua"))("test", app)
+function addon:RefreshProfile() end
+function app:IsAvailable()
+    return false
+end
+function service:OnWorld() end
+local refreshes = 0
+function app:RefreshThreatWindows()
+    refreshes = refreshes + 1
+end
+addon:OnEnable()
+assert(events.UNIT_THREAT_LIST_UPDATE and events.UNIT_THREAT_SITUATION_UPDATE)
+assert(events.PLAYER_TARGET_CHANGED and events.UNIT_PET and events.GROUP_ROSTER_UPDATE)
+assert(events.NAME_PLATE_UNIT_ADDED and events.NAME_PLATE_UNIT_REMOVED)
+events.UNIT_THREAT_LIST_UPDATE("UNIT_THREAT_LIST_UPDATE", secret)
+events.UNIT_THREAT_SITUATION_UPDATE("UNIT_THREAT_SITUATION_UPDATE", secret)
+events.PLAYER_TARGET_CHANGED()
+assert(refreshes == 3, "Threat and target events refresh immediately without examining restricted payloads")
+function app:RefreshWindows(skipThreat)
+    assert(skipThreat == true)
+end
+addon[timers[0.5]](addon)
+assert(refreshes == 3, "The rate timer does not poll threat")
+print("Damage meter threat event regressions OK")

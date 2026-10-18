@@ -67,6 +67,23 @@ function addon:OnEnable()
             app.core:RefreshOptions(appName)
         end
     end)
+    for _, event in ipairs({
+        "UNIT_THREAT_LIST_UPDATE",
+        "UNIT_THREAT_SITUATION_UPDATE",
+        "PLAYER_TARGET_CHANGED",
+        "GROUP_ROSTER_UPDATE",
+        "UNIT_PET",
+        "UNIT_TARGET",
+        "PLAYER_FOCUS_CHANGED",
+        "UPDATE_MOUSEOVER_UNIT",
+        "NAME_PLATE_UNIT_ADDED",
+        "NAME_PLATE_UNIT_REMOVED",
+        "UNIT_NAME_UPDATE",
+    }) do
+        self:RegisterEvent(event, function()
+            app:RefreshThreatWindows()
+        end)
+    end
     if app:IsAvailable() then
         for _, event in ipairs({
             "DAMAGE_METER_COMBAT_SESSION_UPDATED",
@@ -87,7 +104,7 @@ function addon:OnEnable()
 end
 
 function addon:RefreshData()
-    app:RefreshWindows()
+    app:RefreshWindows(true)
 end
 
 function addon:OnDisable()

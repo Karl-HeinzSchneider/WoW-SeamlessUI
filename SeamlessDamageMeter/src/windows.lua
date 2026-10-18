@@ -1003,10 +1003,23 @@ function app:RefreshWindow(frame, session, message)
     frame.message:SetShown(#sources == 0)
 end
 
-function app:RefreshWindows()
+function app:RefreshThreatWindows()
+    self.combatService.cache["l:Threat"] = nil
+    if self.IsEditingWindows and self:IsEditingWindows() then
+        return
+    end
+    for _, frame in ipairs(self.windows) do
+        if frame:IsShown() and frame.config.statistic == "Threat" then
+            local session, message = self:GetSession(frame.config)
+            self:RefreshWindow(frame, session, message)
+        end
+    end
+end
+
+function app:RefreshWindows(skipThreat)
     self.combatService:BeginRefresh()
     for _, frame in ipairs(self.windows) do
-        if frame:IsShown() then
+        if frame:IsShown() and not (skipThreat and frame.config.statistic == "Threat") then
             local config = frame.config
             local session, message = self:GetSession(config)
             self:RefreshWindow(frame, session, message)

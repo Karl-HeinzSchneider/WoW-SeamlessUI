@@ -1481,3 +1481,42 @@ app:RefreshWindow(meter, { combatSources = {}, maxAmount = 100 })
 assert(meter.statistic.text.text == "Threat", "Threat without a target retains its title")
 assert(meter.message.text == "", "Threat without a target has no hint text")
 print("Damage meter threat window regressions OK")
+
+local originalGetSession, originalRefreshWindow = app.GetSession, app.RefreshWindow
+local originalWindows, originalEditing = app.windows, app.IsEditingWindows
+local threatReads, threatRenders = 0, 0
+app.windows = { meter, {
+    config = { statistic = "DamageDone" },
+    IsShown = function()
+        return true
+    end,
+} }
+function app:IsEditingWindows()
+    return false
+end
+function app:GetSession(config)
+    assert(config.statistic == "Threat", "Threat events do not refresh damage windows")
+    threatReads = threatReads + 1
+    return {}
+end
+function app:RefreshWindow()
+    threatRenders = threatRenders + 1
+end
+meter:Show()
+app.combatService.cache["l:Threat"] = { "stale" }
+app:RefreshThreatWindows()
+assert(threatReads == 1 and threatRenders == 1 and app.combatService.cache["l:Threat"] == nil)
+function app:IsEditingWindows()
+    return true
+end
+app:RefreshThreatWindows()
+assert(threatReads == 1, "Live events never query threat in Edit Mode")
+function app:IsEditingWindows()
+    return false
+end
+meter:Hide()
+app:RefreshThreatWindows()
+assert(threatReads == 1, "Hidden threat windows do not query live data")
+app.GetSession, app.RefreshWindow = originalGetSession, originalRefreshWindow
+app.windows, app.IsEditingWindows = originalWindows, originalEditing
+print("Damage meter threat event window regressions OK")

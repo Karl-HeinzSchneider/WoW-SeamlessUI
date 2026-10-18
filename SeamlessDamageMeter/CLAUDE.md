@@ -34,7 +34,11 @@ See `docs/damage-meter-history.md` for architecture, limits and in-game acceptan
 
 One shared timer refreshes visible windows; the service shares live reads and archive indexes.
 Threat is a live-only category against the current hostile NPC target, independent of the
-selected fight and damage-meter tracking. `live:GetThreatSession` queries Blizzard's
+normal 0.5-second refresh timer, selected fight and damage-meter tracking. Threat/list,
+target, roster, pet and discoverable-unit
+events refresh visible threat windows immediately, sharing one fresh read per event.
+The periodic rate refresh skips threat windows; Edit Mode ignores live threat events.
+`live:GetThreatSession` queries Blizzard's
 `UnitDetailedThreatSituation` for every party/raid player (including zero-threat players).
 Include their pets, plus distinct actors exposed through focus, mouseover, target-of-target
 and nameplate tokens when the API supplies threat. Pets and other non-player actors use green

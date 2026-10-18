@@ -80,11 +80,19 @@ function live:GetThreatSession()
                         local isPlayer = UnitIsPlayer(unit)
                         isPet = app.archive:IsPublic(isPlayer) and not isPlayer
                     end
+                    local reaction
+                    if isPet then
+                        local value = UnitReaction(unit, "player")
+                        if app.archive:IsPublic(value) and type(value) == "number" then
+                            reaction = value
+                        end
+                    end
                     local isLocalPlayer = UnitIsUnit(unit, "player")
                     session.combatSources[#session.combatSources + 1] = {
                         name = GetUnitName(unit, true),
                         classFilename = class,
                         isPet = isPet,
+                        reaction = reaction,
                         totalAmount = amount,
                         threatPercentage = percentage,
                         isLocalPlayer = app.archive:IsPublic(isLocalPlayer) and isLocalPlayer,

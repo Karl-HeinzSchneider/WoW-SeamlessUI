@@ -859,9 +859,13 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
         row:SetValue(source.totalAmount)
     end
     local color = RAID_CLASS_COLORS[source.classFilename]
-    if threat and source.isPet then
-        row:SetStatusBarColor(0, 1, 0, 1)
-    elseif color and (threat or app:GetWindowSetting(config, "classColors")) then
+    if threat then
+        if source.isPet then
+            color = FACTION_BAR_COLORS[source.reaction]
+        end
+        color = color or FACTION_BAR_COLORS[5]
+    end
+    if color and (threat or app:GetWindowSetting(config, "classColors")) then
         row:SetStatusBarColor(color.r, color.g, color.b, 1)
     else
         row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))

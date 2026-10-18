@@ -184,6 +184,7 @@ function CreateFrame(_, name, parent, template)
     return frame
 end
 RAID_CLASS_COLORS = { MAGE = { r = 0.2, g = 0.5, b = 1 } }
+FACTION_BAR_COLORS = { [4] = { r = 1, g = 1, b = 0 }, [5] = { r = 0, g = 0.6, b = 0.1 } }
 DAMAGE_METER_CURRENT_SESSION_SHORT = "C"
 DAMAGE_METER_OVERALL_SESSION_SHORT = "O"
 DAMAGE_METER_SOURCE_NAME = "%d. %s"
@@ -1468,13 +1469,30 @@ assert(meter.rows[1].color[1] == RAID_CLASS_COLORS.MAGE.r, "Threat always uses c
 app:RefreshWindow(meter, {
     maxAmount = 100,
     combatSources = {
-        { name = "Pet", classFilename = "MAGE", isPet = true, totalAmount = secret, threatPercentage = secret },
+        {
+            name = "Pet",
+            classFilename = "MAGE",
+            isPet = true,
+            reaction = 4,
+            totalAmount = secret,
+            threatPercentage = secret,
+        },
     },
 })
 assert(
-    meter.rows[1].color[1] == 0 and meter.rows[1].color[2] == 1 and meter.rows[1].color[3] == 0,
-    "Pet threat bars are green even when class colors are disabled"
+    meter.rows[1].color[1] == 1 and meter.rows[1].color[2] == 1 and meter.rows[1].color[3] == 0,
+    "Pet threat bars use reaction colors even when class colors are disabled"
 )
+app:RefreshWindow(meter, {
+    maxAmount = 100,
+    combatSources = {
+        { name = "Unknown pet", isPet = true, totalAmount = 1, threatPercentage = 1 },
+        { name = "Unknown player", totalAmount = 1, threatPercentage = 1 },
+    },
+})
+for index = 1, 2 do
+    assert(meter.rows[index].color[2] == FACTION_BAR_COLORS[5].g, "Unavailable colors use faction color 5")
+end
 meter.rows[1].entry.scripts.OnEnter()
 assert(not app.detailTooltip or not app.detailTooltip:IsShown(), "Threat does not request spell details")
 app:RefreshWindow(meter, { combatSources = {}, maxAmount = 100 })
@@ -1485,12 +1503,13 @@ print("Damage meter threat window regressions OK")
 local originalGetSession, originalRefreshWindow = app.GetSession, app.RefreshWindow
 local originalWindows, originalEditing = app.windows, app.IsEditingWindows
 local threatReads, threatRenders = 0, 0
-app.windows = { meter, {
-    config = { statistic = "DamageDone" },
-    IsShown = function()
-        return true
-    end,
-} }
+app.windows =
+    { meter, {
+        config = { statistic = "DamageDone" },
+        IsShown = function()
+            return true
+        end,
+    } }
 function app:IsEditingWindows()
     return false
 end

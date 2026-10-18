@@ -41,8 +41,10 @@ The periodic rate refresh skips threat windows; Edit Mode ignores live threat ev
 `live:GetThreatSession` queries Blizzard's
 `UnitDetailedThreatSituation` for every party/raid player (including zero-threat players).
 Include their pets, plus distinct actors exposed through focus, mouseover, target-of-target
-and nameplate tokens when the API supplies threat. Pets and other non-player actors use green
-bars; duplicate unit aliases are omitted. Guardians without accessible unit tokens cannot be queried.
+and nameplate tokens when the API supplies threat. Pets and other non-player actors use
+`FACTION_BAR_COLORS[UnitReaction(unit, "player")]`; missing or restricted reactions and
+missing player class colors fall back to `FACTION_BAR_COLORS[5]`. Reaction changes refresh
+through `UNIT_FACTION`. Duplicate unit aliases are omitted. Guardians without accessible unit tokens cannot be queried.
 Rows always use class colors and show total threat plus scaled aggro percentage (100% at
 aggro), with no rate or spell hover. Public totals sort descending; secret totals preserve
 roster order and pass directly to widgets. Threat snapshots are never archived.

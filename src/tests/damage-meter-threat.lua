@@ -49,6 +49,16 @@ end
 function UnitClass()
     return "Warrior", "WARRIOR"
 end
+function UnitReaction(unit, relativeTo)
+    assert(relativeTo == "player")
+    if unit == "partypet1" then
+        return secret
+    end
+    if unit == "nameplate2" then
+        return nil
+    end
+    return 4
+end
 function GetUnitName(unit)
     return unit
 end
@@ -97,6 +107,12 @@ local petCount = 0
 for _, source in ipairs(session.combatSources) do
     if source.isPet then
         petCount = petCount + 1
+    end
+    if source.name == "pet" then
+        assert(source.reaction == 4)
+    end
+    if source.name == "partypet1" or source.name == "nameplate2" then
+        assert(source.reaction == nil)
     end
 end
 assert(petCount == 3)

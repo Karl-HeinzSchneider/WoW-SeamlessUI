@@ -79,6 +79,7 @@ function addon:OnEnable()
         "NAME_PLATE_UNIT_ADDED",
         "NAME_PLATE_UNIT_REMOVED",
         "UNIT_NAME_UPDATE",
+        "UNIT_FACTION",
     }) do
         self:RegisterEvent(event, function()
             app:RefreshThreatWindows()

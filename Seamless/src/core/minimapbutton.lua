@@ -24,9 +24,20 @@ function module:OnInitialize()
         OnClick = function(_, button)
             self:OnClick(button)
         end,
-        OnTooltipShow = function(tooltip)
-            tooltip:AddLine(appName)
-            tooltip:AddLine("Left-click: options", 1, 1, 1)
+        OnEnter = function(frame)
+            -- The compartment also invokes OnEnter; only the minimap button needs a tooltip.
+            if frame ~= LibStub("LibDBIcon-1.0"):GetMinimapButton(appName) then
+                return
+            end
+            GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
+            GameTooltip:AddLine(appName)
+            GameTooltip:AddLine("Left-click: options", 1, 1, 1)
+            GameTooltip:Show()
+        end,
+        OnLeave = function(frame)
+            if GameTooltip:IsOwned(frame) then
+                GameTooltip:Hide()
+            end
         end,
     }
     self.ldb = LibStub("LibDataBroker-1.1"):NewDataObject(appName, launcher) --[[@as LibDataBroker.QuickLauncher]]

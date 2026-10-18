@@ -27,6 +27,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `minimapbutton.lua`: the suite's single launcher, shared by the minimap button and optional
   Blizzard addon compartment entry. Their visibility toggles are independent and profile-aware;
   the compartment entry defaults off and its toggle is disabled when the client lacks support.
+  Only the minimap button shows a hover tooltip; the compartment entry does not.
 - `src/types.lua`: annotations only, not loaded by the TOC.
 
 ## Options: one panel per addon, tabs inside

@@ -393,19 +393,6 @@ function app:ShowSessionMenu(frame)
             root:CreateButton(fight.pinned and "Unpin selected fight" or "Pin selected fight", function()
                 self.combatService:Pin(fight.id)
             end)
-            root:CreateButton("Fight details / copy report", function()
-                self:ShowAnalysis(frame.config)
-            end)
-            local compare = root:CreateButton("Compare with saved fight")
-            compare:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
-            for _, session in ipairs(self.combatService:ListSessions()) do
-                if session.archiveID and session.archiveID ~= fight.id then
-                    local description = compare:CreateButton(self.combatService:Describe(session, true), function()
-                        self:ShowComparison(fight.id, session.archiveID, frame.config.statistic)
-                    end)
-                    AddSessionDuration(description, session)
-                end
-            end
             local delete = root:CreateButton("Delete selected saved fight")
             delete:CreateButton("Confirm deletion", function()
                 self.combatService:Delete(fight.id)
@@ -758,8 +745,6 @@ CreateRow = function(frame, index)
     entry:SetScript("OnMouseUp", function(_, button)
         if button == "RightButton" then
             app:ToggleFavorites(frame)
-        elseif button == "LeftButton" and row.source and not row.preview then
-            app:ShowAnalysis(frame.config, row.source)
         end
     end)
     row:SetScript("OnHide", function()

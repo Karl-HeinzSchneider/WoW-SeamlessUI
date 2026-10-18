@@ -21,9 +21,6 @@ function addon:OnInitialize()
     app.combatService:Initialize(app.db.char)
     app.combatService:Subscribe(app, function(owner, historyChanged)
         owner:RefreshWindows()
-        if owner.RefreshAnalysis then
-            owner:RefreshAnalysis()
-        end
         if historyChanged then
             owner.core:RefreshOptions(appName)
         end
@@ -97,9 +94,6 @@ function addon:OnDisable()
     self:CancelAllTimers()
     self:UnregisterAllEvents()
     app:HideWindows()
-    if app.analysisWindow then
-        app.analysisWindow:Hide()
-    end
     app:UpdateBlizzardMeter()
 end
 

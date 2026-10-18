@@ -18,6 +18,7 @@ src\capture.lua
 src\blizzard.lua
 src\settings.lua
 src\editmode.lua
+src\icons.lua
 src\windows.lua
 src\analysis.lua
 src\options.lua

@@ -149,7 +149,7 @@ local function PopulateRow(panel, index, entry, maximum, total, color, counts)
     if id then
         row.icon:SetTexture(C_Spell.GetSpellTexture(id))
     elseif icon and icon ~= 0 then
-        row.icon:SetTexture(icon)
+        row.icon:SetTexture(app:GetSpecializationIcon(icon))
     elseif archive:IsPublic(class) and class and class ~= "" then
         row.icon:SetAtlas(GetClassAtlas(class))
     else

@@ -357,7 +357,7 @@ function app:ShowSessionMenu(frame)
     if frame.config.statistic == "Threat" then
         return
     end
-    local menu = MenuUtil.CreateContextMenu(frame.session, function(_, root)
+    local function GenerateMenu(_, root)
         root:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
             local sessions = self.combatService:ListSessions()
@@ -418,7 +418,15 @@ function app:ShowSessionMenu(frame)
                 self.combatService:ClearHistory()
             end)
         end
-    end)
+    end
+    local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
+    Menu.PopulateDescription(GenerateMenu, frame.session, root)
+    -- Prefer above the selector; the menu manager flips/clamps at screen edges.
+    local anchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", frame.session, "TOPRIGHT", 0, 2)
+    local menu = Menu.GetManager():OpenMenu(frame.session, root, anchor)
+    if menu then
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
     if menu and menu.ScrollBox and menu.ScrollBox:IsShown() then
         menu.ScrollBox:ScrollToEnd(true)
     end

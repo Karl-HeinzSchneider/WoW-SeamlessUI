@@ -50,7 +50,7 @@ local settings = {
         name = "Font",
         type = "select",
         values = function()
-            local values = {}
+            local values = { ["Default damage meter"] = "Default damage meter" }
             for name in pairs(LibStub("LibSharedMedia-3.0"):HashTable("font")) do
                 values[name] = name
             end

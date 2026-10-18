@@ -58,8 +58,12 @@ fields migrate into overrides. Dragging overrides X/Y, resizing also overrides w
 anchor target preserves the attachment and its geometry. Defaults are profile scoped.
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
-mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default to 24 pixels with
-4 pixels between them. The session selector shows a compact current/overall label or history
+mixins. Reuse client art and fonts.
+The default bar font resolves from `NumberFontNormal`, matching the native meter's locale-specific
+typeface; skin font size and outline settings still apply. Class bar RGB comes directly from
+`RAID_CLASS_COLORS` at full opacity, with no brightness adjustment; the grayscale fill shades it.
+The header is 32 pixels tall; rows default to 24 pixels with 4 pixels between them.
+The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
 from hiding a window. `hideTypeSelector` defaults to false and is configured per skin; hiding it removes the category arrow and its clicks while retaining the label.
 Header order is type arrow, category label, then combat timer. The 25-pixel selector stays
@@ -108,6 +112,9 @@ to 50 saved segments per character, configurable from 1 to the hard cap of 1,000
 toward the limit. Delete the oldest segment before inserting beyond the limit; lowering the
 limit prunes immediately. Removed segments must not return as live entries or be recaptured.
 Clearing archives does not reset the client meter.
+Specialization and spell textures crop 10% from each edge (`0.1`–`0.9` UVs) to remove baked-in
+borders. Apply the crop after setting each texture so pooled rows do not accumulate zoom;
+class atlas fallbacks retain their own atlas coordinates.
 Rows use full square icons sized to the row height and an original grayscale shaded fill
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;

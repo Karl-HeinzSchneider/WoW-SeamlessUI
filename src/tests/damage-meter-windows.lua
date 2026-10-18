@@ -25,6 +25,9 @@ end
 function methods:CreateFontString()
     return object(self)
 end
+function methods:SetFont(path, size, flags)
+    self.font = { path, size, flags }
+end
 function methods:SetParent(parent)
     self.parent = parent
 end
@@ -257,6 +260,11 @@ C_CVar = {
     end,
 }
 local app = { db = { profile = { windows = {}, nextID = 1, initialized = false } } }
+NumberFontNormal = {
+    GetFont = function()
+        return "native-meter-font", 14, "OUTLINE"
+    end,
+}
 LibStub = function()
     return {
         Fetch = function()
@@ -276,6 +284,11 @@ app.combatService:Initialize({})
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
+assert(frame.message.font[1] == "native-meter-font", "Default text uses the client's damage meter font")
+app.db.profile.skins.default.settings.font = "Custom font"
+app:StyleWindowLabel(frame.message, frame.config)
+assert(frame.message.font[1] == "test-font", "Custom skin fonts still resolve through shared media")
+app.db.profile.skins.default.settings.font = "Default damage meter"
 assert(frame.statistic.arrow:IsShown() and frame.statistic.mouseEnabled, "Type selector is visible by default")
 local categoryAnchor = frame.statistic.text.points.TOPLEFT
 assert(categoryAnchor[4] == 25 and categoryAnchor[5] == -9, "Category text must sit at the reference header height")
@@ -379,6 +392,12 @@ assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main ba
 assert(detailBar.icon.texture == 1001, "Spell icons come from C_Spell")
 assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.icon:GetWidth() == 24)
 assert(detailBar.color[1] == RAID_CLASS_COLORS.MAGE.r)
+assert(
+    detailBar.color[2] == RAID_CLASS_COLORS.MAGE.g
+        and detailBar.color[3] == RAID_CLASS_COLORS.MAGE.b
+        and detailBar.color[4] == 1,
+    "Class bars use unmodified class RGB at full opacity"
+)
 assert(
     not tooltip.targetLabel:IsShown() and not tooltip.targetMessage:IsShown() and tooltip.count == 1,
     "Combat hover shows only normal spells, without an unavailable target section"
@@ -828,6 +847,13 @@ assert(
 session.totalAmount = 24690
 app:RefreshWindows()
 assert(frame.rows[1].percentageValue.args[1] == 50)
+session.totalAmount = 12345
+local previousWidth = frame.config.overrides.width
+frame.config.overrides.width = 200
+app:RefreshWindows()
+assert(frame.rows[1].percentageValue.args[1] == 100)
+assert(frame.rows[1].percentageValue:GetWidth() >= 32, "100% keeps its full measured width in narrow windows")
+frame.config.overrides.width = previousWidth
 session.totalAmount = secret
 app:RefreshWindows()
 assert(frame.rows[1].percentageValue.text == "", "Restricted totals clear a previously visible public percentage")

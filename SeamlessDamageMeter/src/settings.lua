@@ -18,9 +18,9 @@ app.windowDefaults = {
 
 app.skinDefaults = {
     showIcons = true,
-    font = "Friz Quadrata TT",
-    fontSize = 12,
-    fontFlags = "OUTLINE",
+    font = "Default damage meter",
+    fontSize = 15,
+    fontFlags = "",
     textColor = { 1, 1, 1, 1 },
     barColor = { 0.35, 0.6, 0.8, 1 },
     classColors = true,
@@ -200,6 +200,14 @@ function app:PrepareWindowSettings()
                 config[key] = nil
             end
         end
+    end
+    if not profile.nativeBarFont then
+        for _, skin in pairs(profile.skins) do
+            if skin.settings.font == "Friz Quadrata TT" or skin.settings.font == "Arial Narrow" then
+                skin.settings.font = "Default damage meter"
+            end
+        end
+        profile.nativeBarFont = true
     end
 end
 

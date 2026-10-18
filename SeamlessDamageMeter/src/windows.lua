@@ -682,10 +682,10 @@ local function ShowRowTooltip(row, frame)
             if details.deathEvents and spell.event == "SWING_DAMAGE" then
                 spellID = 88163
             end
-            if unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
-                bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
-            elseif unitDetails.specIconID and unitDetails.specIconID ~= 0 then
+            if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
                 bar.icon:SetTexture(unitDetails.specIconID)
+            elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
+                bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
             else
                 bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
             end
@@ -825,10 +825,10 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     app:StyleWindowLabel(row.name, config)
     app:StyleWindowLabel(row.value, config)
     row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
-    if source.classFilename and source.classFilename ~= "" then
-        row.icon:SetAtlas(GetClassAtlas(source.classFilename))
-    elseif source.specIconID and source.specIconID ~= 0 then
+    if source.specIconID and source.specIconID ~= 0 then
         row.icon:SetTexture(source.specIconID)
+    elseif source.classFilename and source.classFilename ~= "" then
+        row.icon:SetAtlas(GetClassAtlas(source.classFilename))
     else
         row.icon:SetTexture(nil)
     end

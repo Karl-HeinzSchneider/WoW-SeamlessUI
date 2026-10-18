@@ -189,7 +189,7 @@ DAMAGE_METER_OVERALL_SESSION_SHORT = "O"
 DAMAGE_METER_SOURCE_NAME = "%d. %s"
 Enum = { DamageMeterSessionType = { Current = 0, Overall = 1 }, DamageMeterType = { DamageDone = 0, Dps = 1 } }
 function GetClassAtlas(class)
-    return "classicon-" .. string.lower(class)
+    return class
 end
 function UnitAffectingCombat()
     return false
@@ -284,10 +284,6 @@ app.combatService:Initialize({})
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
-session.combatSources[1].specIconID = 777
-app:RefreshWindows()
-assert(frame.rows[1].icon.atlas == "classicon-mage", "Main rows prefer class atlases over specialization icons")
-session.combatSources[1].specIconID = 0
 assert(frame.message.font[1] == "native-meter-font", "Default text uses the client's damage meter font")
 app.db.profile.skins.default.settings.font = "Custom font"
 app:StyleWindowLabel(frame.message, frame.config)
@@ -433,11 +429,11 @@ assert(detailBar.percentageValue.args[1] == 25, "Public spell shares occupy a se
 assert(app.detailTooltip == tooltip and tooltip.rows[1] == detailBar, "The panel and its bars are pooled")
 details.combatSpells[1].combatSpellDetails = { specIconID = 777, unitClassFilename = "MAGE", unitName = secret }
 app:RefreshWindows()
-assert(detailBar.icon.atlas == "classicon-mage", "Character creation class atlas takes precedence over specialization")
+assert(detailBar.icon.texture == 777, "API specialization icon takes precedence")
 assert(detailBar.name.args[2] == secret, "Restricted detail names go directly to labels")
 details.combatSpells[1].combatSpellDetails.specIconID = 0
 app:RefreshWindows()
-assert(detailBar.icon.atlas == "classicon-mage", "API unit class supplies the character creation class atlas")
+assert(detailBar.icon.atlas == "MAGE", "API unit class supplies an icon when there is no specialization")
 details.combatSpells[1].combatSpellDetails = nil
 frame.config.statistic = "Dps"
 app:RefreshWindows()
@@ -1276,7 +1272,7 @@ EditModeManagerFrame:EnterEditMode()
 assert(meter.config.collapsed and meter.body:IsShown(), "Collapsed slots must temporarily expand for preview")
 assert(meter:GetHeight() == app:GetWindowSetting(meter.config, "height"))
 assert(meter.session.text.text == "Preview")
-assert(meter.rows[1].name.args[2] == "Jaina" and meter.rows[1].icon.atlas == "classicon-mage")
+assert(meter.rows[1].name.args[2] == "Jaina" and meter.rows[1].icon.atlas == "MAGE")
 assert(meter.rows[1].statusValue == 125000 and meter.rows[2].statusValue == 112000)
 app.db.profile.locked = true
 meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")

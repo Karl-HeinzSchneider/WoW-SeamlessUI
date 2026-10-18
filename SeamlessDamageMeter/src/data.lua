@@ -3,18 +3,60 @@ local _, app = ...
 
 -- Rendering facade. All combat queries belong to the central service.
 app.statistics = {
-    { key = "DamageDone", label = DAMAGE_METER_TYPE_DAMAGE_DONE or "Damage done" },
-    { key = "Dps", label = DAMAGE_METER_TYPE_DPS or "DPS", rate = true },
-    { key = "HealingDone", label = DAMAGE_METER_TYPE_HEALING_DONE or "Healing done" },
-    { key = "Hps", label = DAMAGE_METER_TYPE_HPS or "HPS", rate = true },
-    { key = "Absorbs", label = DAMAGE_METER_TYPE_ABSORBS or "Absorbs" },
-    { key = "Interrupts", label = DAMAGE_METER_TYPE_INTERRUPTS or "Interrupts" },
-    { key = "Dispels", label = DAMAGE_METER_TYPE_DISPELS or "Dispels" },
-    { key = "DamageTaken", label = DAMAGE_METER_TYPE_DAMAGE_TAKEN or "Damage taken" },
-    { key = "AvoidableDamageTaken", label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken" },
-    { key = "EnemyDamageTaken", label = DAMAGE_METER_TYPE_ENEMY_DAMAGE_TAKEN or "Enemy damage taken" },
-    { key = "Deaths", label = DAMAGE_METER_TYPE_DEATHS or "Deaths" },
-    { key = "Threat", label = "Threat", liveOnly = true },
+    {
+        key = "DamageDone",
+        label = DAMAGE_METER_TYPE_DAMAGE_DONE or "Damage done",
+        icon = "Interface\\Icons\\Spell_Fire_FlameBolt",
+    },
+    {
+        key = "Dps",
+        label = DAMAGE_METER_TYPE_DPS or "DPS",
+        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+        rate = true,
+    },
+    {
+        key = "HealingDone",
+        label = DAMAGE_METER_TYPE_HEALING_DONE or "Healing done",
+        icon = "Interface\\Icons\\Spell_Nature_HealingTouch",
+    },
+    {
+        key = "Hps",
+        label = DAMAGE_METER_TYPE_HPS or "HPS",
+        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+        rate = true,
+    },
+    {
+        key = "Absorbs",
+        label = DAMAGE_METER_TYPE_ABSORBS or "Absorbs",
+        icon = "Interface\\Icons\\Spell_Holy_PowerWordShield",
+    },
+    {
+        key = "Interrupts",
+        label = DAMAGE_METER_TYPE_INTERRUPTS or "Interrupts",
+        icon = "Interface\\Icons\\Ability_Kick",
+    },
+    {
+        key = "Dispels",
+        label = DAMAGE_METER_TYPE_DISPELS or "Dispels",
+        icon = "Interface\\Icons\\Spell_Holy_Renew",
+    },
+    {
+        key = "DamageTaken",
+        label = DAMAGE_METER_TYPE_DAMAGE_TAKEN or "Damage taken",
+        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+    },
+    {
+        key = "AvoidableDamageTaken",
+        label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken",
+        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+    },
+    {
+        key = "EnemyDamageTaken",
+        label = DAMAGE_METER_TYPE_ENEMY_DAMAGE_TAKEN or "Enemy damage taken",
+        icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+    },
+    { key = "Deaths", label = DAMAGE_METER_TYPE_DEATHS or "Deaths", icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+    { key = "Threat", label = "Threat", icon = "Interface\\Icons\\INV_Misc_QuestionMark", liveOnly = true },
 }
 
 function app:IsAvailable()

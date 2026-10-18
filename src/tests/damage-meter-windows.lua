@@ -782,6 +782,7 @@ assert(not menuRoot.entries[1].entries[1].selected(), "Empty favorites have no s
 menuRoot.entries[1].entries[2].choose()
 assert(app.db.profile.favorites[1] == "Dps" and frame.config.statistic == "DamageDone")
 assert(favorite.row.name.text == "DPS" and frame.favorites:IsShown())
+assert(favorite.row.icon:IsShown() and favorite.row.icon.texture == "Interface\\Icons\\INV_Misc_QuestionMark")
 frame.offset = 5
 favorite.scripts.OnClick(favorite, "LeftButton")
 assert(frame.config.statistic == "Dps" and frame.offset == 0 and not frame.favorites:IsShown())
@@ -793,12 +794,14 @@ favorite.scripts.OnClick(favorite, "RightButton")
 assert(menuRoot.entries[1].entries[2].selected())
 menuRoot.entries[1].entries[1].choose()
 assert(app.db.profile.favorites[1] == "DamageDone" and frame.config.statistic == "Dps")
+assert(favorite.row.icon.texture == "Interface\\Icons\\Spell_Fire_FlameBolt")
 assert(frame.favorites:IsShown(), "Replacing a favorite keeps the shortcuts open")
 favorite.scripts.OnClick(favorite, "RightButton")
 menuRoot.entries[#menuRoot.entries].choose()
 assert(app.db.profile.favorites[1] == nil and favorite.row.name.text == "+ Set favorite")
+assert(favorite.row.icon.texture == "Interface\\Icons\\INV_Misc_QuestionMark")
 local selector = frame.favorites.buttons[7]
-assert(selector.row.name.text == "Select type" and selector.number.text == "")
+assert(selector.row.name.text == "Select type" and selector.row.icon:IsShown())
 for _, mouseButton in ipairs({ "LeftButton", "RightButton" }) do
     selector.scripts.OnClick(selector, mouseButton)
     menuRoot.entries[1].entries[1].choose()

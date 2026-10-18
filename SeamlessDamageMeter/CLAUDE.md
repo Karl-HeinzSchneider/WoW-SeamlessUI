@@ -135,6 +135,8 @@ The selector opens the normal type menu and changes the window's statistic witho
 Favorites reuse the combat row art, configured fonts, bar color, height and spacing, and
 the existing scrollbar with a separate scroll offset. Combat rows and the pinned player
 row are hidden while favorites are visible; live refreshes preserve the favorites view.
+Favorites show each statistic's explicit `icon` from `data.lua` instead of slot numbers.
+Damage done uses Fireball; other statistics, empty slots and Select type use question-mark placeholders.
 `profile.favorites` stores statistic keys by slot shared by every window; all slots start empty.
 Legacy window favorites migrate in window-slot order, filling only empty shared slots.
 Empty slots open the type menu to assign a favorite without changing the displayed type.

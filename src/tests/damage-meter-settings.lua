@@ -22,7 +22,7 @@ app.db.profile.windowDefaults.fontSize = 15
 app.db.profile.windowDefaults.font = "Friz Quadrata TT"
 old.overrides = { classColors = false, textColor = { 0.2, 0.3, 0.4, 1 } }
 app:PrepareWindowSettings()
-assert(app:GetWindowSetting(fresh, "font") == "Arial Narrow")
+assert(app:GetWindowSetting(fresh, "font") == "Default damage meter")
 assert(fresh.skin == "default" and old.skin ~= "default")
 assert(app:GetWindowSetting(fresh, "fontSize") == 15)
 assert(app:GetWindowSetting(old, "classColors") == false)

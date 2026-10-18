@@ -58,8 +58,12 @@ fields migrate into overrides. Dragging overrides X/Y, resizing also overrides w
 anchor target preserves the attachment and its geometry. Defaults are profile scoped.
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
-mixins. Reuse client art and fonts. The header is 32 pixels tall; rows default to 24 pixels with
-4 pixels between them. The session selector shows a compact current/overall label or history
+mixins. Reuse client art and fonts.
+The default bar font resolves from `NumberFontNormal`, matching the native meter's locale-specific
+typeface; skin font size and outline settings still apply. Class bar RGB comes directly from
+`RAID_CLASS_COLORS` at full opacity, with no brightness adjustment; the grayscale fill shades it.
+The header is 32 pixels tall; rows default to 24 pixels with 4 pixels between them.
+The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
 from hiding a window. `hideTypeSelector` defaults to false and is configured per skin; hiding it removes the category arrow and its clicks while retaining the label.
 Header order is type arrow, category label, then combat timer. The 25-pixel selector stays

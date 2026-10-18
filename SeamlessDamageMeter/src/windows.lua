@@ -1317,10 +1317,13 @@ end
 
 function app:StyleWindowLabel(label, config)
     local media = LibStub("LibSharedMedia-3.0")
-    label:SetFont(
-        media:Fetch("font", self:GetWindowSetting(config, "font")),
-        self:GetWindowSetting(config, "fontSize"),
-        self:GetWindowSetting(config, "fontFlags")
-    )
+    local font = self:GetWindowSetting(config, "font")
+    local fontPath
+    if font == "Default damage meter" then
+        fontPath = NumberFontNormal:GetFont()
+    else
+        fontPath = media:Fetch("font", font)
+    end
+    label:SetFont(fontPath, self:GetWindowSetting(config, "fontSize"), self:GetWindowSetting(config, "fontFlags"))
     label:SetTextColor(unpack(self:GetWindowSetting(config, "textColor")))
 end

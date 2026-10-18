@@ -454,34 +454,48 @@ local function SetNumericText(label, value, rate)
 end
 
 -- Fixed columns use public layout settings, never the width of restricted combat text.
+local percentageMeasure
 local function SetRowValues(row, config, amount, rate, percentage, enemyPercentage, showRate, rateFirst, showEnemy)
     local labels = { row.enemyPercentageValue, row.value, row.secondaryValue, row.percentageValue }
     local fontSize = app:GetWindowSetting(config, "fontSize")
     local gap = math.max(3, fontSize * 0.35)
-    local widths = { fontSize * 2.75, fontSize * 4.5, fontSize * 4, fontSize * 2.75 }
+    if not percentageMeasure then
+        percentageMeasure = Label(UIParent)
+        percentageMeasure:Hide()
+        percentageMeasure:SetText("100%")
+    end
+    app:StyleWindowLabel(percentageMeasure, config)
+    local percentageWidth = math.ceil(percentageMeasure:GetStringWidth()) + 4
+    local widths = { percentageWidth, fontSize * 4.5, fontSize * 4, percentageWidth }
     local shown = { showEnemy, true, showRate, true }
-    local total, count = 0, 0
+    local total, count, reserved = 0, 0, 0
     for index = 1, 4 do
-        -- Use the same scale for shared columns, including when a target-only column is present.
+        -- Reserve the target share even when hidden so shared numeric columns stay aligned.
         if index == 1 or shown[index] then
-            total, count = total + widths[index], count + 1
+            count = count + 1
+            if index == 1 or index == 4 then
+                reserved = reserved + widths[index]
+            else
+                total = total + widths[index]
+            end
         end
     end
     local available = app:GetWindowSetting(config, "width")
         - (app:GetWindowSetting(config, "showIcons") and app:GetWindowSetting(config, "rowHeight") or 0)
         - 30
-    local factor = math.min(1, math.max(1, available * 0.7 - gap * (count - 1)) / total)
+    local factor = math.min(1, math.max(1, available * 0.7 - reserved - gap * (count - 1)) / total)
     local offset = 3
     for index = 4, 1, -1 do
         local label = labels[index]
         app:StyleWindowLabel(label, config)
         label:SetJustifyH("RIGHT")
         label:ClearAllPoints()
-        label:SetWidth(widths[index] * factor)
+        local width = widths[index] * ((index == 1 or index == 4) and 1 or factor)
+        label:SetWidth(width)
         label:SetShown(shown[index] and true or false)
         if shown[index] then
             label:SetPoint("RIGHT", row, "RIGHT", -offset, 0)
-            offset = offset + widths[index] * factor + gap
+            offset = offset + width + gap
         end
     end
     row.name:ClearAllPoints()

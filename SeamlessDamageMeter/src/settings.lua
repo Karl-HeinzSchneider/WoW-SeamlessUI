@@ -18,7 +18,7 @@ app.windowDefaults = {
 
 app.skinDefaults = {
     showIcons = true,
-    font = "Friz Quadrata TT",
+    font = "Arial Narrow",
     fontSize = 12,
     fontFlags = "OUTLINE",
     textColor = { 1, 1, 1, 1 },
@@ -200,6 +200,14 @@ function app:PrepareWindowSettings()
                 config[key] = nil
             end
         end
+    end
+    if not profile.arialBarFont then
+        for _, skin in pairs(profile.skins) do
+            if skin.settings.font == "Friz Quadrata TT" then
+                skin.settings.font = "Arial Narrow"
+            end
+        end
+        profile.arialBarFont = true
     end
 end
 

@@ -19,14 +19,18 @@ local old = { id = 1, width = 450, height = 230, x = 12.5, y = -25, favorites = 
 local fresh = { id = 2, overrides = {}, favorites = { "DamageDone", "HealingDone" } }
 app.db = { profile = { windows = { old, fresh }, windowDefaults = copy(app.windowDefaults) } }
 app.db.profile.windowDefaults.fontSize = 15
+app.db.profile.windowDefaults.font = "Friz Quadrata TT"
 old.overrides = { classColors = false, textColor = { 0.2, 0.3, 0.4, 1 } }
 app:PrepareWindowSettings()
+assert(app:GetWindowSetting(fresh, "font") == "Arial Narrow")
 assert(fresh.skin == "default" and old.skin ~= "default")
 assert(app:GetWindowSetting(fresh, "fontSize") == 15)
 assert(app:GetWindowSetting(old, "classColors") == false)
 assert(app:GetWindowSetting(old, "textColor")[1] == 0.2)
 assert(old.overrides.classColors == nil and app.db.profile.windowDefaults.fontSize == nil)
+app.db.profile.skins.default.settings.font = "Friz Quadrata TT"
 app:PrepareWindowSettings()
+assert(app:GetWindowSetting(fresh, "font") == "Friz Quadrata TT", "Later font choices survive repeated preparation")
 assert(app:GetWindowSetting(old, "classColors") == false)
 assert(app.db.profile.maxVisibleFavorites == 6)
 assert(app.db.profile.favorites[1] == "Dps" and app.db.profile.favorites[2] == "HealingDone")

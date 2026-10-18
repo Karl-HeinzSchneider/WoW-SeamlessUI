@@ -828,6 +828,13 @@ assert(
 session.totalAmount = 24690
 app:RefreshWindows()
 assert(frame.rows[1].percentageValue.args[1] == 50)
+session.totalAmount = 12345
+local previousWidth = frame.config.overrides.width
+frame.config.overrides.width = 200
+app:RefreshWindows()
+assert(frame.rows[1].percentageValue.args[1] == 100)
+assert(frame.rows[1].percentageValue:GetWidth() >= 32, "100% keeps its full measured width in narrow windows")
+frame.config.overrides.width = previousWidth
 session.totalAmount = secret
 app:RefreshWindows()
 assert(frame.rows[1].percentageValue.text == "", "Restricted totals clear a previously visible public percentage")

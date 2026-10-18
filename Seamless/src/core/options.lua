@@ -196,6 +196,22 @@ function module:OnInitialize()
                             app.minimapButton:OnProfileRefresh()
                         end,
                     },
+                    compartment = {
+                        type = "toggle",
+                        order = 15,
+                        name = "Addon compartment entry",
+                        desc = "Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button.",
+                        disabled = function()
+                            return not LibStub("LibDBIcon-1.0"):IsButtonCompartmentAvailable()
+                        end,
+                        get = function()
+                            return app.db.profile.minimap.showInCompartment
+                        end,
+                        set = function(_, value)
+                            app.db.profile.minimap.showInCompartment = value
+                            app.minimapButton:OnProfileRefresh()
+                        end,
+                    },
                     logLevel = {
                         type = "select",
                         order = 20,

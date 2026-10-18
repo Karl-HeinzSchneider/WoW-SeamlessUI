@@ -35,12 +35,17 @@ function module:OnInitialize()
     log:debug("Minimap button registered")
 end
 
--- Re-read hide/position from the (possibly new) profile.
+-- Re-read launcher visibility/position from the (possibly new) profile.
 -- The addon's first OnProfileRefresh runs before module:OnInitialize, hence the guard.
 function module:OnProfileRefresh()
     local icon = LibStub("LibDBIcon-1.0")
     if icon:IsRegistered(appName) then
         icon:Refresh(appName, app.db.profile.minimap)
+        if app.db.profile.minimap.showInCompartment then
+            icon:AddButtonToCompartment(appName)
+        else
+            icon:RemoveButtonFromCompartment(appName)
+        end
     end
 end
 

@@ -24,7 +24,9 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,
   "Seamless": General (minimap button, log level, a button per enabled feature addon), Profiles.
   Core tweaks have their own "Tweaks" child category (General, Profiles), using the Core database.
-- `minimapbutton.lua`: the suite's single launcher.
+- `minimapbutton.lua`: the suite's single launcher, shared by the minimap button and optional
+  Blizzard addon compartment entry. Their visibility toggles are independent and profile-aware;
+  the compartment entry defaults off and its toggle is disabled when the client lacks support.
 - `src/types.lua`: annotations only, not loaded by the TOC.
 
 ## Options: one panel per addon, tabs inside

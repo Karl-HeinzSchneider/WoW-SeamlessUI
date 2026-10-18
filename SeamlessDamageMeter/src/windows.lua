@@ -684,10 +684,12 @@ local function ShowRowTooltip(row, frame)
             end
             if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
                 bar.icon:SetTexture(unitDetails.specIconID)
+                bar.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
             elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
                 bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
             else
                 bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
+                bar.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
             end
             local amount = spell.totalAmount
             if IsPublic(amount) and amount == nil then
@@ -827,6 +829,7 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
     if source.specIconID and source.specIconID ~= 0 then
         row.icon:SetTexture(source.specIconID)
+        row.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
     elseif source.classFilename and source.classFilename ~= "" then
         row.icon:SetAtlas(GetClassAtlas(source.classFilename))
     else

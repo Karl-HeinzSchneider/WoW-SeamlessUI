@@ -83,7 +83,8 @@ texture, row height/spacing, font and color settings, with totals, rates and pub
 shares in separate right-aligned columns. The same numeric columns are used in main meter rows.
 Widths depend only on public window/font settings, never combat text measurements. Keep columns
 aligned across pooled rows; clear unavailable percentages and hide rate columns for action counts.
-Icons follow the API's specialization/class metadata, falling back to the spell
+Icons prefer the API's class metadata via `GetClassAtlas` (`classicon-*` character creation art),
+then specialization icons when class metadata is absent, falling back to the spell
 texture from `C_Spell`. Deaths show recap event bars scaled against recap max health.
 Preserve API ordering and send restricted names/amounts directly to labels and status bars;
 omit percentages when their inputs are secret. Refresh the owned tooltip with its pooled

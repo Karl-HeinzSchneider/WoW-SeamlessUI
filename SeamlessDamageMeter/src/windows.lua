@@ -899,6 +899,7 @@ function app:RefreshWindow(frame, session, message)
             )
     )
     frame.session:SetWidth(preview and 60 or (statistic.key == "Threat" and 1 or frame.session.normalWidth))
+    frame.session:SetShown(statistic.key ~= "Threat")
     local duration = self.combatService:GetDuration(config, session)
     if
         not (issecretvalue and issecretvalue(duration))

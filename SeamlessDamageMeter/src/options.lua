@@ -403,7 +403,7 @@ function app:HistoryOptions()
             info = {
                 type = "description",
                 order = 1,
-                name = "Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. The oldest saved segment is deleted before adding a segment above your limit. Pinned segments also count toward the limit. The hard upper limit is 1,000 segments.\nLeft-click a meter row for spell, target and contributor analysis. Select fights from a window's session menu.\n",
+                name = "Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. The oldest saved segment is deleted before adding a segment above your limit. Pinned segments also count toward the limit. The hard upper limit is 1,000 segments.\nSelect fights from a window's session menu.\n",
             },
             retention = {
                 type = "range",
@@ -469,17 +469,6 @@ function app:HistoryOptions()
                     end
                 end,
             },
-            inspect = {
-                type = "execute",
-                name = "Open fight details / report",
-                order = 40,
-                disabled = function()
-                    return not Selected()
-                end,
-                func = function()
-                    self:ShowAnalysis({ archiveID = self.historySelection, statistic = "DamageDone" })
-                end,
-            },
             delete = {
                 type = "execute",
                 name = "Delete selected fight",
@@ -537,7 +526,7 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Left-click a row for detailed analysis. Completed public fights are saved through reload/relog; manage them in History. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Completed public fights are saved through reload/relog; manage them in History. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n",
                     },
                     add = {
                         type = "execute",

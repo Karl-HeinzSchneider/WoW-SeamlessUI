@@ -1465,6 +1465,16 @@ assert(meter.rows[1].value.args[1] == secret, "Restricted threat totals go direc
 assert(meter.rows[1].percentageValue.args[1] == secret, "Restricted threat percentages go directly to the label")
 assert(not meter.rows[1].secondaryValue:IsShown(), "Threat has no rate column")
 assert(meter.rows[1].color[1] == RAID_CLASS_COLORS.MAGE.r, "Threat always uses class colors")
+app:RefreshWindow(meter, {
+    maxAmount = 100,
+    combatSources = {
+        { name = "Pet", classFilename = "MAGE", isPet = true, totalAmount = secret, threatPercentage = secret },
+    },
+})
+assert(
+    meter.rows[1].color[1] == 0 and meter.rows[1].color[2] == 1 and meter.rows[1].color[3] == 0,
+    "Pet threat bars are green even when class colors are disabled"
+)
 meter.rows[1].entry.scripts.OnEnter()
 assert(not app.detailTooltip or not app.detailTooltip:IsShown(), "Threat does not request spell details")
 app:RefreshWindow(meter, { combatSources = {}, maxAmount = 100 })

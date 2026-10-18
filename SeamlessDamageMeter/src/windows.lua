@@ -822,7 +822,9 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     app:StyleWindowLabel(row.name, config)
     app:StyleWindowLabel(row.value, config)
     row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
-    if source.specIconID and source.specIconID ~= 0 then
+    if statistic.key == "Threat" and source.isPet then
+        row.icon:SetTexture(nil)
+    elseif source.specIconID and source.specIconID ~= 0 then
         row.icon:SetTexture(source.specIconID)
         row.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
     elseif source.classFilename and source.classFilename ~= "" then
@@ -857,7 +859,9 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
         row:SetValue(source.totalAmount)
     end
     local color = RAID_CLASS_COLORS[source.classFilename]
-    if color and (threat or app:GetWindowSetting(config, "classColors")) then
+    if threat and source.isPet then
+        row:SetStatusBarColor(0, 1, 0, 1)
+    elseif color and (threat or app:GetWindowSetting(config, "classColors")) then
         row:SetStatusBarColor(color.r, color.g, color.b, 1)
     else
         row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))

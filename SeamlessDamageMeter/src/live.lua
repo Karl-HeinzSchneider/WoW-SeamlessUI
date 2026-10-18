@@ -18,40 +18,81 @@ function live:GetThreatSession()
         return session
     end
     local units = {}
+    local function AddUnit(unit, isPet, optional)
+        units[#units + 1] = { token = unit, isPet = isPet, optional = optional }
+    end
     if IsInRaid() then
         for index = 1, GetNumGroupMembers() do
-            units[#units + 1] = "raid" .. index
+            AddUnit("raid" .. index)
+            AddUnit("raidpet" .. index, true)
         end
     else
-        units[1] = "player"
+        AddUnit("player")
+        AddUnit("pet", true)
         for index = 1, GetNumSubgroupMembers() do
-            units[#units + 1] = "party" .. index
+            AddUnit("party" .. index)
+            AddUnit("partypet" .. index, true)
         end
     end
+    -- Guardians and other actors have no complete roster API. Probe accessible
+    -- unit tokens, retaining only actors for which Blizzard supplies threat.
+    for _, token in ipairs({ "targettarget", "focus", "focustarget", "mouseover", "mouseovertarget" }) do
+        AddUnit(token, nil, true)
+    end
+    local prefix = IsInRaid() and "raid" or "party"
+    local members = IsInRaid() and GetNumGroupMembers() or GetNumSubgroupMembers()
+    for index = 1, members do
+        AddUnit(prefix .. index .. "target", nil, true)
+    end
+    for index = 1, 40 do
+        AddUnit("nameplate" .. index, nil, true)
+    end
+    local seen = {}
     local sortable = true
-    for _, unit in ipairs(units) do
+    for _, candidate in ipairs(units) do
+        local unit = candidate.token
         if UnitExists(unit) then
-            local ok, _, _, percentage, _, amount = pcall(UnitDetailedThreatSituation, unit, "target")
-            if not ok then
-                return nil, "Threat data is temporarily unavailable."
+            local duplicate = false
+            for _, previous in ipairs(seen) do
+                local same = UnitIsUnit(unit, previous)
+                if not app.archive:IsPublic(same) or same then
+                    duplicate = true
+                    break
+                end
             end
-            -- Check secrecy before nil: restricted leaves go straight to widgets.
-            if app.archive:IsPublic(amount) and amount == nil then
-                amount = 0
-            end
-            if app.archive:IsPublic(percentage) and percentage == nil then
-                percentage = 0
-            end
-            local _, class = UnitClass(unit)
-            session.combatSources[#session.combatSources + 1] = {
-                name = GetUnitName(unit, true),
-                classFilename = class,
-                totalAmount = amount,
-                threatPercentage = percentage,
-                isLocalPlayer = UnitIsUnit(unit, "player"),
-            }
-            if not app.archive:IsPublic(amount) then
-                sortable = false
+            if not duplicate then
+                local ok, _, _, percentage, _, amount = pcall(UnitDetailedThreatSituation, unit, "target")
+                if not ok and not candidate.optional then
+                    return nil, "Threat data is temporarily unavailable."
+                end
+                if ok and (not candidate.optional or not app.archive:IsPublic(amount) or amount ~= nil) then
+                    seen[#seen + 1] = unit
+                    -- Check secrecy before nil: restricted leaves go straight to widgets.
+                    if app.archive:IsPublic(amount) and amount == nil then
+                        amount = 0
+                    end
+                    if app.archive:IsPublic(percentage) and percentage == nil then
+                        percentage = 0
+                    end
+                    local _, class = UnitClass(unit)
+                    local isPet = candidate.isPet
+                    if candidate.optional then
+                        local isPlayer = UnitIsPlayer(unit)
+                        isPet = app.archive:IsPublic(isPlayer) and not isPlayer
+                    end
+                    local isLocalPlayer = UnitIsUnit(unit, "player")
+                    session.combatSources[#session.combatSources + 1] = {
+                        name = GetUnitName(unit, true),
+                        classFilename = class,
+                        isPet = isPet,
+                        totalAmount = amount,
+                        threatPercentage = percentage,
+                        isLocalPlayer = app.archive:IsPublic(isLocalPlayer) and isLocalPlayer,
+                    }
+                    if not app.archive:IsPublic(amount) then
+                        sortable = false
+                    end
+                end
             end
         end
     end

@@ -12,8 +12,24 @@ function app.archive:IsPublic(value)
     return not rawequal(value, secret)
 end
 local raid, hostile, restricted, calls = false, true, false, 0
-function UnitExists()
-    return true
+local extras = false
+function UnitExists(unit)
+    return unit == "target"
+        or unit == "player"
+        or unit:match("^party%d$")
+        or unit:match("^raid%d$")
+        or (
+            extras
+            and (
+                unit == "pet"
+                or unit == "partypet1"
+                or unit == "raidpet1"
+                or unit == "nameplate1"
+                or unit == "nameplate2"
+                or unit == "focus"
+                or unit == "mouseover"
+            )
+        )
 end
 function UnitCanAttack()
     return hostile
@@ -36,14 +52,24 @@ end
 function GetUnitName(unit)
     return unit
 end
-function UnitIsUnit(unit)
-    return unit == "player" or unit == "raid1"
+function UnitIsUnit(unit, other)
+    local aliases = { nameplate1 = "pet", raid1 = "player" }
+    return (aliases[unit] or unit) == (aliases[other] or other)
 end
 function UnitDetailedThreatSituation(unit, target)
     assert(target == "target")
     calls = calls + 1
     if restricted then
         return secret, secret, secret, secret, secret
+    end
+    if unit == "focus" then
+        error("Unavailable optional unit")
+    end
+    if unit == "mouseover" then
+        return
+    end
+    if unit == "pet" or unit == "partypet1" or unit == "raidpet1" or unit == "nameplate2" then
+        return false, 0, 75, 80, 30
     end
     if unit == "party2" or unit == "raid3" then
         return
@@ -63,6 +89,22 @@ assert(session.combatSources[3].totalAmount == 0)
 assert(session.combatSources[1].threatPercentage == 50)
 assert(service:GetSession(config, "Threat") == session and calls == 3)
 assert(service:GetDuration(config, session) == nil)
+service:BeginRefresh()
+extras = true
+session = service:GetSession(config, "Threat")
+assert(#session.combatSources == 6, "Pets and discoverable guardians are included without duplicate aliases")
+local petCount = 0
+for _, source in ipairs(session.combatSources) do
+    if source.isPet then
+        petCount = petCount + 1
+    end
+end
+assert(petCount == 3)
+service:BeginRefresh()
+raid = true
+session = service:GetSession(config, "Threat")
+assert(#session.combatSources == 6, "Raid pets and other accessible actors are included")
+extras = false
 service:BeginRefresh()
 raid, restricted = true, true
 session = service:GetSession(config, "Threat")
@@ -85,5 +127,4 @@ function app:IsEditingWindows()
 end
 session = service:GetSession(config, "Threat")
 assert(session.isPreview and session.combatSources[1].threatPercentage == 100)
-assert(calls == 6)
 print("Damage meter threat tests passed")

@@ -7,6 +7,18 @@ local HEADER_HEIGHT = 32
 local SESSION_MENU_MAX_HEIGHT = 240
 local CreateRow
 
+local function OpenMenuAbove(owner, generator)
+    local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
+    Menu.PopulateDescription(generator, owner, root)
+    -- Prefer above the selector; the menu manager flips/clamps at screen edges.
+    local anchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", owner, "TOPRIGHT", 0, 2)
+    local menu = Menu.GetManager():OpenMenu(owner, root, anchor)
+    if menu then
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+    end
+    return menu
+end
+
 local function ScrollOffsetKey(frame)
     return frame.favorites and frame.favorites:IsShown() and "favoriteOffset" or "offset"
 end
@@ -419,14 +431,7 @@ function app:ShowSessionMenu(frame)
             end)
         end
     end
-    local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
-    Menu.PopulateDescription(GenerateMenu, frame.session, root)
-    -- Prefer above the selector; the menu manager flips/clamps at screen edges.
-    local anchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", frame.session, "TOPRIGHT", 0, 2)
-    local menu = Menu.GetManager():OpenMenu(frame.session, root, anchor)
-    if menu then
-        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-    end
+    local menu = OpenMenuAbove(frame.session, GenerateMenu)
     if menu and menu.ScrollBox and menu.ScrollBox:IsShown() then
         menu.ScrollBox:ScrollToEnd(true)
     end
@@ -1102,7 +1107,7 @@ function app:CreateWindow(id)
         "ui-questtrackerbutton-red-highlight"
     )
     local menu = Button(frame, "", 27, function(button)
-        MenuUtil.CreateContextMenu(button, function(_, root)
+        OpenMenuAbove(button, function(_, root)
             root:CreateButton("Activate next window", function()
                 self:AddWindow()
             end)

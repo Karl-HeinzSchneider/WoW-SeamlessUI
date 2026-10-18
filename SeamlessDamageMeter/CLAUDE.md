@@ -112,7 +112,7 @@ to 50 saved segments per character, configurable from 1 to the hard cap of 1,000
 toward the limit. Delete the oldest segment before inserting beyond the limit; lowering the
 limit prunes immediately. Removed segments must not return as live entries or be recaptured.
 Clearing archives does not reset the client meter.
-Specialization and spell textures crop 5% from each edge (`0.05`–`0.95` UVs) to remove baked-in
+Specialization and spell textures crop 10% from each edge (`0.1`–`0.9` UVs) to remove baked-in
 borders. Apply the crop after setting each texture so pooled rows do not accumulate zoom;
 class atlas fallbacks retain their own atlas coordinates.
 Rows use full square icons sized to the row height and an original grayscale shaded fill

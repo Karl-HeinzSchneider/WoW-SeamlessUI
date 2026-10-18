@@ -148,10 +148,10 @@ local function PopulateRow(panel, index, entry, maximum, total, color, counts)
     local class = entry.classFilename or (unit and unit.unitClassFilename)
     if id then
         row.icon:SetTexture(C_Spell.GetSpellTexture(id))
-        row.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+        row.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
     elseif icon and icon ~= 0 then
         row.icon:SetTexture(icon)
-        row.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+        row.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
     elseif archive:IsPublic(class) and class and class ~= "" then
         row.icon:SetAtlas(GetClassAtlas(class))
     else

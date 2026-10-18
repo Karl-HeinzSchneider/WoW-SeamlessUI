@@ -72,7 +72,14 @@ assert(rawequal(session.combatSources[1].threatPercentage, secret))
 service:BeginRefresh()
 hostile = false
 local missing, message = service:GetSession(config, "Threat")
-assert(missing == nil and message:find("hostile NPC"))
+assert(#missing.combatSources == 0 and message == nil)
+assert(missing.targetName == "target")
+service:BeginRefresh()
+function UnitExists()
+    return false
+end
+session, message = service:GetSession(config, "Threat")
+assert(#session.combatSources == 0 and session.targetName == nil and message == nil)
 function app:IsEditingWindows()
     return true
 end

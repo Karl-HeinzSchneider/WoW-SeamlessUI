@@ -9,10 +9,14 @@ function live:GetThreatSession()
     if not UnitDetailedThreatSituation then
         return nil, "This client does not provide the threat API."
     end
-    if not UnitExists("target") or not UnitCanAttack("player", "target") or UnitIsPlayer("target") then
-        return nil, "Select a hostile NPC to view threat."
-    end
     local session = { combatSources = {}, maxAmount = 100 }
+    if not UnitExists("target") then
+        return session
+    end
+    session.targetName = GetUnitName("target", true)
+    if not UnitCanAttack("player", "target") or UnitIsPlayer("target") then
+        return session
+    end
     local units = {}
     if IsInRaid() then
         for index = 1, GetNumGroupMembers() do

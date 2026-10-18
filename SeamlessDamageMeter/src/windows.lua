@@ -874,9 +874,15 @@ function app:RefreshWindow(frame, session, message)
     local collapsed = self:IsWindowCollapsed(config)
     local statistic = self:GetStatistic(config.statistic)
     frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
+    if statistic.key == "Threat" and not frame.favorites:IsShown() and session then
+        local targetName = session.targetName
+        if not IsPublic(targetName) or targetName ~= nil then
+            frame.statistic.text:SetFormattedText("Threat: %s", targetName)
+        end
+    end
     frame.session.text:SetText(
         preview and "Preview"
-            or (statistic.key == "Threat" and "Target")
+            or (statistic.key == "Threat" and "")
             or (config.archiveID and ("S" .. config.archiveID))
             or config.sessionID
             or (
@@ -884,7 +890,7 @@ function app:RefreshWindow(frame, session, message)
                 or DAMAGE_METER_CURRENT_SESSION_SHORT
             )
     )
-    frame.session:SetWidth(preview and 60 or frame.session.normalWidth)
+    frame.session:SetWidth(preview and 60 or (statistic.key == "Threat" and 1 or frame.session.normalWidth))
     local duration = self.combatService:GetDuration(config, session)
     if
         not (issecretvalue and issecretvalue(duration))
@@ -904,7 +910,10 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:ClearAllPoints()
     frame.statistic.text:SetPoint("TOPLEFT", frame.statistic, "TOPLEFT", 25, -9)
     local availableWidth = math.max(0, frame:GetWidth() - 28 - frame.session:GetWidth() - 62)
-    local labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
+    local labelWidth = availableWidth
+    if statistic.key ~= "Threat" then
+        labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
+    end
     frame.statistic.text:SetWidth(labelWidth)
     frame.timer:ClearAllPoints()
     frame.timer:SetPoint("LEFT", frame.statistic.text, "RIGHT", 5, 0)

@@ -1453,11 +1453,13 @@ meter.config.statistic = "Threat"
 app.db.profile.skins.default.settings.classColors = false
 app:RefreshWindow(meter, {
     maxAmount = 100,
+    targetName = secret,
     combatSources = {
         { name = "Tank", classFilename = "MAGE", totalAmount = secret, threatPercentage = secret },
     },
 })
-assert(meter.session.text.text == "Target", "Threat identifies the current target rather than saved history")
+assert(meter.session.text.text == "", "Threat hides the unused fight selector label")
+assert(meter.statistic.text.args[1] == secret, "Threat target names go directly to the header label")
 assert(meter.rows[1].statusValue == secret, "Restricted threat percentages go directly to the bar")
 assert(meter.rows[1].value.args[1] == secret, "Restricted threat totals go directly to the label")
 assert(meter.rows[1].percentageValue.args[1] == secret, "Restricted threat percentages go directly to the label")
@@ -1465,4 +1467,7 @@ assert(not meter.rows[1].secondaryValue:IsShown(), "Threat has no rate column")
 assert(meter.rows[1].color[1] == RAID_CLASS_COLORS.MAGE.r, "Threat always uses class colors")
 meter.rows[1].entry.scripts.OnEnter()
 assert(not app.detailTooltip or not app.detailTooltip:IsShown(), "Threat does not request spell details")
+app:RefreshWindow(meter, { combatSources = {}, maxAmount = 100 })
+assert(meter.statistic.text.text == "Threat", "Threat without a target retains its title")
+assert(meter.message.text == "", "Threat without a target has no hint text")
 print("Damage meter threat window regressions OK")

@@ -386,11 +386,6 @@ clock = 22
 service:Tick(1000)
 assert(#archive.db.fights == 2 and archive.db.fights[1].id ~= firstID, "Reused IDs create new archive identities")
 local secondID = archive.db.fights[1].id
-local comparison = service:Compare(firstID, secondID, "DamageDone")
-assert(comparison[1].delta == 100 and comparison[1].rateDelta == 10)
-assert(service:Compare(firstID, secondID, "DamageDone", "spells")[1].breakdown[1].delta == 100)
-assert(service:Compare(firstID, secondID, "DamageDone", "targets")[1].breakdown[1].delta == 100)
-assert(service:Report({ archiveID = secondID, statistic = "DamageDone" }):find("Mage", 1, true))
 -- Capture public totals even when a detail category remains restricted, then upgrade in place.
 Fight(2, 300)
 available[#available + 1] = { sessionID = 2, name = "Partial", durationSeconds = 10 }
@@ -574,5 +569,5 @@ local boundedReload = Load(boundedSave)
 assert(boundedReload.archive.db.retention == 1000 and #boundedReload.archive.db.fights == 1000)
 assert(not boundedReload.archive:Get(9999), "Restored saves obey the hard cap, including pins")
 print(
-    "PASS: shared queries, secret boundaries, enemy contributors, snapshots, reload reconciliation, offline history, reset generations, retries, recaps, retention, comparisons and reports"
+    "PASS: shared queries, secret boundaries, enemy contributors, snapshots, reload reconciliation, offline history, reset generations, retries, recaps, retention and deletion"
 )

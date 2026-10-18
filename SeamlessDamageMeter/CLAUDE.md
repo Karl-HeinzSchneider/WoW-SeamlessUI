@@ -7,11 +7,11 @@ statistic/session selections. Client collection stays owned by `C_DamageMeter`; 
 
 Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statistics/previews),
 `archive.lua` (schema/storage), `live.lua` (client API provider), `service.lua` (shared queries/cache),
-`breakdowns.lua` (enemy relationships/comparisons/reports), `capture.lua` (bounded capture/retries),
+`breakdowns.lua` (enemy relationships), `capture.lua` (bounded capture/retries),
 `blizzard.lua` (controls native meter visibility without forcing its CVar on),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
 `editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
-`windows.lua` (pooled frames and menus), `analysis.lua` (detail/copy panel),
+`windows.lua` (pooled frames and menus),
 `options.lua` (General, Windows, Skin, History, Profiles).
 `types.lua` contains annotations only and is not shipped.
 
@@ -21,7 +21,7 @@ FontString and StatusBar setters. Do not compare, sort, concatenate or calculate
 them. Preserve the client's source order and do not modify returned data tables.
 Persist only service-owned public snapshots copied through the explicit allowlists in `archive.lua`.
 Validate restored archives before querying them. Never store secret values, frames/functions,
-or references to API tables. Windows, menus, analysis and timers query `app.combatService`;
+or references to API tables. Windows, menus and timers query `app.combatService`;
 only `live.lua` calls combat APIs. Edit Mode samples never read or capture live combat.
 Live readability uses `canaccesstable` and allows secret leaves to reach widgets. Never reuse
 archive table rejection for live rendering: `issecrettable` may flag readable secret-bearing tables.
@@ -106,8 +106,8 @@ data exists; unavailable targets never replace spells or add a restriction warni
 Target availability is determined from the required public enemy/contributor fields, not a blanket
 combat flag. Optional secret GUIDs/spell IDs are ignored and unavailable rates remain blank.
 Enemy hover likewise retains its normal API details until public contributor analysis is available.
-Left-click a public row for spell flags, target analysis, saved metadata and copyable reports.
-Saved session menus expose pin/delete/compare, delete-older and clear actions. History defaults
+Left-clicking combat rows does not open a window; breakdowns remain available on hover.
+Saved session menus expose pin/delete, delete-older and clear actions. History defaults
 to 50 saved segments per character, configurable from 1 to the hard cap of 1,000. Pins count
 toward the limit. Delete the oldest segment before inserting beyond the limit; lowering the
 limit prunes immediately. Removed segments must not return as live entries or be recaptured.

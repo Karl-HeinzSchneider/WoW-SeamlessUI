@@ -683,7 +683,7 @@ local function ShowRowTooltip(row, frame)
                 spellID = 88163
             end
             if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
-                bar.icon:SetTexture(app:GetSpecializationIcon(unitDetails.specIconID))
+                bar.icon:SetTexture(unitDetails.specIconID)
             elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
                 bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
             else
@@ -826,7 +826,7 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     app:StyleWindowLabel(row.value, config)
     row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
     if source.specIconID and source.specIconID ~= 0 then
-        row.icon:SetTexture(app:GetSpecializationIcon(source.specIconID))
+        row.icon:SetTexture(source.specIconID)
     elseif source.classFilename and source.classFilename ~= "" then
         row.icon:SetAtlas(GetClassAtlas(source.classFilename))
     else

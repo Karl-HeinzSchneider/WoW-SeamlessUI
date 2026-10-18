@@ -11,7 +11,6 @@ Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statist
 `blizzard.lua` (controls native meter visibility without forcing its CVar on),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
 `editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
-`icons.lua` (bundled HD specialization replacements),
 `windows.lua` (pooled frames and menus), `analysis.lua` (detail/copy panel),
 `options.lua` (General, Windows, Skin, History, Profiles).
 `types.lua` contains annotations only and is not shipped.
@@ -86,10 +85,6 @@ Widths depend only on public window/font settings, never combat text measurement
 aligned across pooled rows; clear unavailable percentages and hide rate columns for action counts.
 Icons follow the API's specialization/class metadata, falling back to the spell
 texture from `C_Spell`. Deaths show recap event bars scaled against recap max health.
-Specialization file IDs resolve through `GetSpecializationIcon` to the selected user-supplied
-Clean Icons TGA files in `Textures/Icons/`. Original paths are resolved with `GetFileIDFromPath`;
-unknown IDs keep the client texture. Apply the mapping to meter, hover and analysis rows only;
-spell icons, class atlases, combat data and archived file IDs remain unchanged.
 Preserve API ordering and send restricted names/amounts directly to labels and status bars;
 omit percentages when their inputs are secret. Refresh the owned tooltip with its pooled
 row, dismiss it on leave/hide, and never request live details for Edit Mode preview rows.
@@ -184,7 +179,6 @@ Explicit saved fixed-height choices are retained when changing the default to se
 Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
 Run `lua src/tests/damage-meter-blizzard.lua` for native CVar/visibility isolation and Edit Mode hiding.
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.
-Run `lua src/tests/damage-meter-icons.lua` for replacement mappings, TGA assets and fallbacks.
 Run `lua src/tests/damage-meter-windows.lua` from the repository root for the standalone
 window regression harness (template independence, restricted data, collapse persistence,
 scrolling, shared reads, expired history, empty data and deactivating every window).

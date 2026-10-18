@@ -260,9 +260,6 @@ C_CVar = {
     end,
 }
 local app = { db = { profile = { windows = {}, nextID = 1, initialized = false } } }
-function GetFileIDFromPath(path)
-    return path == "Interface\\Icons\\Spell_Holy_MagicalSentry.blp" and 1001 or 0
-end
 NumberFontNormal = {
     GetFont = function()
         return "native-meter-font", 14, "OUTLINE"
@@ -284,18 +281,9 @@ for _, name in ipairs({ "archive", "live", "service", "breakdowns", "capture" })
     assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
 end
 app.combatService:Initialize({})
-assert(loadfile("SeamlessDamageMeter/src/icons.lua"))("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
-local replacementIcon = "Interface\\AddOns\\SeamlessDamageMeter\\Textures\\Icons\\Spell_Holy_MagicalSentry.tga"
-session.combatSources[1].specIconID = 1001
-app:RefreshWindows()
-assert(frame.rows[1].icon.texture == replacementIcon, "Main rows use bundled HD specialization icons")
-session.combatSources[1].specIconID = 777
-app:RefreshWindows()
-assert(frame.rows[1].icon.texture == 777, "Unknown specialization icons retain the client texture")
-session.combatSources[1].specIconID = 0
 assert(frame.message.font[1] == "native-meter-font", "Default text uses the client's damage meter font")
 app.db.profile.skins.default.settings.font = "Custom font"
 app:StyleWindowLabel(frame.message, frame.config)
@@ -442,9 +430,6 @@ assert(app.detailTooltip == tooltip and tooltip.rows[1] == detailBar, "The panel
 details.combatSpells[1].combatSpellDetails = { specIconID = 777, unitClassFilename = "MAGE", unitName = secret }
 app:RefreshWindows()
 assert(detailBar.icon.texture == 777, "API specialization icon takes precedence")
-details.combatSpells[1].combatSpellDetails.specIconID = 1001
-app:RefreshWindows()
-assert(detailBar.icon.texture == replacementIcon, "Hover rows use the same HD specialization replacements")
 assert(detailBar.name.args[2] == secret, "Restricted detail names go directly to labels")
 details.combatSpells[1].combatSpellDetails.specIconID = 0
 app:RefreshWindows()

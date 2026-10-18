@@ -19,22 +19,8 @@ end
 function methods:GetScript(event)
     return self.scripts[event]
 end
-function methods:CreateTexture(_, layer)
-    local texture = object(self)
-    texture.layer = layer
-    return texture
-end
-function methods:CreateMaskTexture()
+function methods:CreateTexture()
     return object(self)
-end
-function methods:AddMaskTexture(mask)
-    self.mask = mask
-end
-function methods:SetAllPoints(target)
-    self.allPoints = target
-end
-function methods:GetTexture()
-    return self.texture or self.atlas
 end
 function methods:CreateFontString()
     return object(self)
@@ -91,11 +77,9 @@ function methods:SetNormalAtlas(atlas)
 end
 function methods:SetAtlas(atlas)
     self.atlas = atlas
-    self.texture = nil
 end
 function methods:SetTexture(texture)
     self.texture = texture
-    self.atlas = nil
 end
 function methods:SetStatusBarTexture(texture)
     self.fill = texture
@@ -299,23 +283,7 @@ end
 app.combatService:Initialize({})
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
-local function AssertIconStyle(row)
-    assert(row.icon.parent == row.iconFrame and row.icon.allPoints == row.iconFrame)
-    assert(row.icon.mask == row.iconMask and row.iconMask.allPoints == row.iconFrame)
-    assert(row.iconMask.atlas == "UI-HUD-ActionBar-IconFrame-Mask")
-    assert(row.iconBorder.atlas == "UI-HUD-ActionBar-IconFrame")
-    assert(row.iconBorder.layer == "OVERLAY" and row.iconBorder.allPoints == row.iconFrame)
-    assert(not row.iconFrame.mouseEnabled, "Icon decoration must not intercept row hover or clicks")
-end
 local frame = app.windows[1]
-AssertIconStyle(frame.rows[1])
-AssertIconStyle(frame.localRow)
-session.combatSources[1].classFilename = ""
-app:RefreshWindows()
-assert(not frame.rows[1].iconBorder:IsShown(), "An empty icon must not leave an orphaned border")
-session.combatSources[1].classFilename = "MAGE"
-app:RefreshWindows()
-assert(frame.rows[1].iconBorder:IsShown(), "Reused rows restore the border when an icon returns")
 assert(frame.message.font[1] == "native-meter-font", "Default text uses the client's damage meter font")
 app.db.profile.skins.default.settings.font = "Custom font"
 app:StyleWindowLabel(frame.message, frame.config)
@@ -364,12 +332,12 @@ end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
 app.db.profile.skins.default.settings.showIcons = false
 app:RebuildWindows()
-assert(not frame.rows[1].iconFrame:IsShown() and frame.rows[1].points.TOPLEFT[2] == 0)
+assert(not frame.rows[1].icon:IsShown() and frame.rows[1].points.TOPLEFT[2] == 0)
 app.db.profile.skins.default.settings.showIcons = true
 app:RebuildWindows()
-assert(frame.rows[1].iconFrame:IsShown() and frame.rows[1].points.TOPLEFT[2] == 24)
+assert(frame.rows[1].icon:IsShown() and frame.rows[1].points.TOPLEFT[2] == 24)
 assert(frame.rows[1]:GetHeight() == 24 and frame.rows[1].entry:GetHeight() == 24)
-assert(frame.rows[1].iconFrame:GetWidth() == 24 and frame.rows[1].iconFrame:GetHeight() == 24)
+assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() == 24)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
 assert(frame.rows[1].name.args[2] == secret)
 assert(frame.rows[1].value.args[1] == secret)
@@ -422,8 +390,7 @@ assert(detailBar.percentageValue.text == "", "Restricted percentage inputs stay 
 assert(detailBar.maximum == secret and detailBar.statusValue == secret, "Restricted bar scales go to widget setters")
 assert(detailBar.fill.texture == frame.rows[1].fill.texture, "Detail and main bars share the exact texture")
 assert(detailBar.icon.texture == 1001, "Spell icons come from C_Spell")
-assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.iconFrame:GetWidth() == 24)
-AssertIconStyle(detailBar)
+assert(detailBar:GetHeight() == frame.rows[1]:GetHeight() and detailBar.icon:GetWidth() == 24)
 assert(detailBar.color[1] == RAID_CLASS_COLORS.MAGE.r)
 assert(
     detailBar.color[2] == RAID_CLASS_COLORS.MAGE.g
@@ -476,7 +443,7 @@ app.db.profile.skins.default.settings.rowHeight, app.db.profile.skins.default.se
 app.db.profile.skins.default.settings.classColors = false
 app:RefreshWindows()
 assert(
-    detailBar:GetHeight() == 30 and detailBar.iconFrame:GetWidth() == 30,
+    detailBar:GetHeight() == 30 and detailBar.icon:GetWidth() == 30,
     "Detail rows inherit owner appearance overrides"
 )
 assert(detailBar.color[1] == app:GetWindowSetting(frame.config, "barColor")[1])
@@ -1477,8 +1444,6 @@ meter.rows[1].entry.scripts.OnEnter()
 assert(app.detailTooltip.targetLabel:IsShown() and app.detailTooltip.rows[3].statusValue == 100)
 meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
 local analysis = app.analysisWindow
-AssertIconStyle(analysis.actors.rows[1].bar)
-AssertIconStyle(analysis.spells.rows[1].bar)
 assert(
     analysis:IsShown()
         and analysis.dashboard:IsShown()

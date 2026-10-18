@@ -7,23 +7,6 @@ local HEADER_HEIGHT = 32
 local SESSION_MENU_MAX_HEIGHT = 240
 local CreateRow
 
-function app:CreateRowIcon(row, size)
-    local frame = CreateFrame("Frame", nil, row)
-    frame:SetSize(size, size)
-    frame:SetPoint("RIGHT", row, "LEFT")
-    frame:EnableMouse(false)
-    row.iconFrame = frame
-    row.icon = frame:CreateTexture(nil, "ARTWORK")
-    row.icon:SetAllPoints(frame)
-    row.iconMask = frame:CreateMaskTexture(nil, "ARTWORK")
-    row.iconMask:SetAtlas("UI-HUD-ActionBar-IconFrame-Mask")
-    row.iconMask:SetAllPoints(frame)
-    row.icon:AddMaskTexture(row.iconMask)
-    row.iconBorder = frame:CreateTexture(nil, "OVERLAY")
-    row.iconBorder:SetAtlas("UI-HUD-ActionBar-IconFrame")
-    row.iconBorder:SetAllPoints(frame)
-end
-
 local function ScrollOffsetKey(frame)
     return frame.favorites and frame.favorites:IsShown() and "favoriteOffset" or "offset"
 end
@@ -256,7 +239,7 @@ function app:UpdateFavorites(frame)
             row.entry:SetParent(frame.favorites)
             row.entry:EnableMouse(false)
             row:EnableMouse(false)
-            row.iconFrame:Hide()
+            row.icon:Hide()
             row.value:Hide()
             row.name:ClearAllPoints()
             row.name:SetPoint("LEFT", 3, 0)
@@ -668,8 +651,8 @@ local function ShowRowTooltip(row, frame)
             bar.entry:SetPoint("RIGHT", 0, 0)
             bar:SetHeight(rowHeight)
             bar:SetPoint("TOPLEFT", app:GetWindowSetting(config, "showIcons") and rowHeight or 0, 0)
-            bar.iconFrame:SetShown(app:GetWindowSetting(config, "showIcons"))
-            bar.iconFrame:SetSize(rowHeight, rowHeight)
+            bar.icon:SetShown(app:GetWindowSetting(config, "showIcons"))
+            bar.icon:SetSize(rowHeight, rowHeight)
             app:StyleWindowLabel(bar.name, config)
             app:StyleWindowLabel(bar.value, config)
             local name = spell.spellName
@@ -706,7 +689,6 @@ local function ShowRowTooltip(row, frame)
             else
                 bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
             end
-            bar.iconBorder:SetShown(bar.icon:GetTexture() ~= nil)
             local amount = spell.totalAmount
             if IsPublic(amount) and amount == nil then
                 amount = spell.amount
@@ -807,7 +789,10 @@ CreateRow = function(frame, index)
     local background = row:CreateTexture(nil, "BACKGROUND")
     background:SetAllPoints(row)
     background:SetColorTexture(0, 0, 0, 0.35)
-    app:CreateRowIcon(row, app:GetWindowSetting(frame.config, "rowHeight"))
+    row.icon = row:CreateTexture(nil, "ARTWORK")
+    row.icon:SetSize(app:GetWindowSetting(frame.config, "rowHeight"), app:GetWindowSetting(frame.config, "rowHeight"))
+    row.icon:SetPoint("RIGHT", row, "LEFT", 0, 0)
+    row.icon:SetTexCoord(0, 1, 0, 1)
     row.name = Label(row, "NumberFontNormal")
     row.name:SetPoint("LEFT", 2, 0)
     row.name:SetJustifyH("LEFT")
@@ -835,8 +820,8 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     row.entry:SetHeight(rowHeight)
     row:SetHeight(rowHeight)
     row:SetPoint("TOPLEFT", app:GetWindowSetting(config, "showIcons") and rowHeight or 0, 0)
-    row.iconFrame:SetShown(app:GetWindowSetting(config, "showIcons"))
-    row.iconFrame:SetSize(rowHeight, rowHeight)
+    row.icon:SetShown(app:GetWindowSetting(config, "showIcons"))
+    row.icon:SetSize(rowHeight, rowHeight)
     app:StyleWindowLabel(row.name, config)
     app:StyleWindowLabel(row.value, config)
     row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
@@ -847,7 +832,6 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     else
         row.icon:SetTexture(nil)
     end
-    row.iconBorder:SetShown(row.icon:GetTexture() ~= nil)
     local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" and statistic.key ~= "Deaths"
     SetRowValues(
         row,

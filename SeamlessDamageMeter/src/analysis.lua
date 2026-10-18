@@ -72,8 +72,9 @@ local function ListRow(panel, index)
     row.bar:SetStatusBarTexture("Interface\\AddOns\\SeamlessDamageMeter\\Textures\\ShadedBar.tga")
     row.bar:SetMinMaxValues(0, 1)
     row.bar:EnableMouse(false)
-    app:CreateRowIcon(row.bar, 26)
-    row.icon = row.bar.icon
+    row.icon = row.bar:CreateTexture(nil, "ARTWORK")
+    row.icon:SetSize(26, 26)
+    row.icon:SetPoint("RIGHT", row.bar, "LEFT")
     row.name = Label(row.bar, "", 6, -7, panel.columns and panel.width - 280 or panel.width - 38)
     row.values = {}
     if panel.columns then
@@ -154,7 +155,6 @@ local function PopulateRow(panel, index, entry, maximum, total, color, counts)
     else
         row.icon:SetTexture(nil)
     end
-    row.bar.iconBorder:SetShown(row.icon:GetTexture() ~= nil)
     row.bar:SetMinMaxValues(0, math.max(1, maximum or 0))
     row.bar:SetValue(amount)
     row.bar:SetStatusBarColor(color.r, color.g, color.b, 0.8)

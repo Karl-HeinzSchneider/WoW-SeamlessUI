@@ -1448,3 +1448,21 @@ app:RefreshWindows()
 assert(meter.message.text == "This saved fight was deleted.")
 C_DamageMeter = realAPI
 print("Damage meter archived windows regressions OK")
+
+meter.config.statistic = "Threat"
+app.db.profile.skins.default.settings.classColors = false
+app:RefreshWindow(meter, {
+    maxAmount = 100,
+    combatSources = {
+        { name = "Tank", classFilename = "MAGE", totalAmount = secret, threatPercentage = secret },
+    },
+})
+assert(meter.session.text.text == "Target", "Threat identifies the current target rather than saved history")
+assert(meter.rows[1].statusValue == secret, "Restricted threat percentages go directly to the bar")
+assert(meter.rows[1].value.args[1] == secret, "Restricted threat totals go directly to the label")
+assert(meter.rows[1].percentageValue.args[1] == secret, "Restricted threat percentages go directly to the label")
+assert(not meter.rows[1].secondaryValue:IsShown(), "Threat has no rate column")
+assert(meter.rows[1].color[1] == RAID_CLASS_COLORS.MAGE.r, "Threat always uses class colors")
+meter.rows[1].entry.scripts.OnEnter()
+assert(not app.detailTooltip or not app.detailTooltip:IsShown(), "Threat does not request spell details")
+print("Damage meter threat window regressions OK")

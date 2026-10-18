@@ -184,12 +184,16 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
             },
             { DAMAGE_METER_CATEGORY_HEALING or "Healing", { "HealingDone", "Hps", "Absorbs" } },
             { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels", "Deaths" } },
+            { "Threat", { "Threat" } },
         }
         for _, category in ipairs(categories) do
             local menu = root:CreateButton(category[1])
             for _, key in ipairs(category[2]) do
                 local statistic = self:GetStatistic(key)
-                if self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                if
+                    (key == "Threat" and UnitDetailedThreatSituation)
+                    or (self:IsAvailable() and Enum.DamageMeterType[key] ~= nil)
+                then
                     menu:CreateRadio(statistic.label, function()
                         if favoriteSlot then
                             return self.db.profile.favorites[favoriteSlot] == key
@@ -256,7 +260,10 @@ function app:UpdateFavorites(frame)
                 local key = self.db.profile.favorites[slot]
                 if mouseButton == "RightButton" or not key then
                     self:ShowStatisticMenu(frame, slot, owner)
-                elseif self:IsAvailable() and Enum.DamageMeterType[key] ~= nil then
+                elseif
+                    (key == "Threat" and UnitDetailedThreatSituation)
+                    or (self:IsAvailable() and Enum.DamageMeterType[key] ~= nil)
+                then
                     frame.config.statistic = key
                     frame.offset = 0
                     frame.favorites:Hide()
@@ -347,6 +354,9 @@ local function AddSessionDuration(description, session)
 end
 
 function app:ShowSessionMenu(frame)
+    if frame.config.statistic == "Threat" then
+        return
+    end
     local menu = MenuUtil.CreateContextMenu(frame.session, function(_, root)
         root:SetScrollMode(SESSION_MENU_MAX_HEIGHT)
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
@@ -494,7 +504,7 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     end
     SetNumericText(row.value, primary, rateFirst)
     SetNumericText(row.secondaryValue, secondary, not rateFirst)
-    if percentage ~= nil then
+    if not IsPublic(percentage) or percentage ~= nil then
         row.percentageValue:SetFormattedText("%d%%", percentage)
     else
         row.percentageValue:SetText("")
@@ -532,7 +542,7 @@ local function CreateDetailTooltip()
 end
 
 local function ShowRowTooltip(row, frame)
-    if not row.source or row.preview or app:IsWindowCollapsed(frame.config) then
+    if not row.source or row.preview or frame.config.statistic == "Threat" or app:IsWindowCollapsed(frame.config) then
         HideRowTooltip(row)
         return
     end
@@ -820,22 +830,34 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     else
         row.icon:SetTexture(nil)
     end
-    local showRate = statistic.key ~= "Interrupts" and statistic.key ~= "Dispels" and statistic.key ~= "Deaths"
+    local threat = statistic.key == "Threat"
+    local showRate = not threat
+        and statistic.key ~= "Interrupts"
+        and statistic.key ~= "Dispels"
+        and statistic.key ~= "Deaths"
+    local percentage = source.threatPercentage
+    if not threat then
+        percentage = Percentage(source.totalAmount, session.totalAmount)
+    end
     SetRowValues(
         row,
         config,
         source.totalAmount,
         source.amountPerSecond,
-        Percentage(source.totalAmount, session.totalAmount),
+        percentage,
         nil,
         showRate,
         statistic.rate,
         false
     )
-    row:SetMinMaxValues(0, session.maxAmount)
-    row:SetValue(source.totalAmount)
+    row:SetMinMaxValues(0, threat and 100 or session.maxAmount)
+    if threat then
+        row:SetValue(source.threatPercentage)
+    else
+        row:SetValue(source.totalAmount)
+    end
     local color = RAID_CLASS_COLORS[source.classFilename]
-    if color and app:GetWindowSetting(config, "classColors") then
+    if color and (threat or app:GetWindowSetting(config, "classColors")) then
         row:SetStatusBarColor(color.r, color.g, color.b, 1)
     else
         row:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
@@ -854,6 +876,7 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
     frame.session.text:SetText(
         preview and "Preview"
+            or (statistic.key == "Threat" and "Target")
             or (config.archiveID and ("S" .. config.archiveID))
             or config.sessionID
             or (

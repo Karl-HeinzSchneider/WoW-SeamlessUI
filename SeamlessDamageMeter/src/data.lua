@@ -14,6 +14,7 @@ app.statistics = {
     { key = "AvoidableDamageTaken", label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken" },
     { key = "EnemyDamageTaken", label = DAMAGE_METER_TYPE_ENEMY_DAMAGE_TAKEN or "Enemy damage taken" },
     { key = "Deaths", label = DAMAGE_METER_TYPE_DEATHS or "Deaths" },
+    { key = "Threat", label = "Threat", liveOnly = true },
 }
 
 function app:IsAvailable()
@@ -66,6 +67,7 @@ function app:GetPreviewSession(config)
                 classFilename = character[2],
                 totalAmount = amount,
                 amountPerSecond = amount / session.durationSeconds,
+                threatPercentage = key == "Threat" and (100 - (index - 1) * 10) or nil,
             }
         end
         session.maxAmount = session.combatSources[1].totalAmount

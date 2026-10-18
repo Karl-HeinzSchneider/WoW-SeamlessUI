@@ -4,6 +4,62 @@ local _, app = ...
 app.live = {}
 local live = app.live
 
+-- Threat is a live target snapshot, independent of damage-meter tracking/history.
+function live:GetThreatSession()
+    if not UnitDetailedThreatSituation then
+        return nil, "This client does not provide the threat API."
+    end
+    if not UnitExists("target") or not UnitCanAttack("player", "target") or UnitIsPlayer("target") then
+        return nil, "Select a hostile NPC to view threat."
+    end
+    local session = { combatSources = {}, maxAmount = 100 }
+    local units = {}
+    if IsInRaid() then
+        for index = 1, GetNumGroupMembers() do
+            units[#units + 1] = "raid" .. index
+        end
+    else
+        units[1] = "player"
+        for index = 1, GetNumSubgroupMembers() do
+            units[#units + 1] = "party" .. index
+        end
+    end
+    local sortable = true
+    for _, unit in ipairs(units) do
+        if UnitExists(unit) then
+            local ok, _, _, percentage, _, amount = pcall(UnitDetailedThreatSituation, unit, "target")
+            if not ok then
+                return nil, "Threat data is temporarily unavailable."
+            end
+            -- Check secrecy before nil: restricted leaves go straight to widgets.
+            if app.archive:IsPublic(amount) and amount == nil then
+                amount = 0
+            end
+            if app.archive:IsPublic(percentage) and percentage == nil then
+                percentage = 0
+            end
+            local _, class = UnitClass(unit)
+            session.combatSources[#session.combatSources + 1] = {
+                name = GetUnitName(unit, true),
+                classFilename = class,
+                totalAmount = amount,
+                threatPercentage = percentage,
+                isLocalPlayer = UnitIsUnit(unit, "player"),
+            }
+            if not app.archive:IsPublic(amount) then
+                sortable = false
+            end
+        end
+    end
+    -- Public threat can be ranked; restricted values retain roster order.
+    if sortable then
+        table.sort(session.combatSources, function(left, right)
+            return left.totalAmount > right.totalAmount
+        end)
+    end
+    return session
+end
+
 -- A readable table may contain secret leaves that widgets can display. The archive's
 -- stricter IsTable check is for serialization, not for live rendering.
 function live:IsReadableTable(value)

@@ -33,6 +33,13 @@ replace snapshots rather than append or add totals twice. Capture runs with ever
 See `docs/damage-meter-history.md` for architecture, limits and in-game acceptance checks.
 
 One shared timer refreshes visible windows; the service shares live reads and archive indexes.
+Threat is a live-only category against the current hostile NPC target, independent of the
+selected fight and damage-meter tracking. `live:GetThreatSession` queries Blizzard's
+`UnitDetailedThreatSituation` for every party/raid player (including zero-threat players).
+Rows always use class colors and show total threat plus scaled aggro percentage (100% at
+aggro), with no rate or spell hover. Public totals sort descending; secret totals preserve
+roster order and pass directly to widgets. Threat snapshots are never archived.
+Run `lua src/tests/damage-meter-threat.lua` for roster, restrictions and shared-cache checks.
 A separate bounded capture timer handles completed fights after restrictions clear.
 Frames and rows are reused. Every profile always contains slots 1�10; only a fresh/reset
 profile activates slot 1 by default. A profile with all slots inactive stays inactive.

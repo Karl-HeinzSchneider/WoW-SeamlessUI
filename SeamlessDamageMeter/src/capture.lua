@@ -258,7 +258,7 @@ function service:CaptureStep(job)
     local config = { sessionID = job.entry.sessionID, statistic = key }
     local category = snapshot.categories[key]
     if not job.sourceIndex then
-        if Enum.DamageMeterType[key] == nil then
+        if statistic.liveOnly or Enum.DamageMeterType[key] == nil then
             job.categoryIndex = job.categoryIndex + 1
             return false
         end

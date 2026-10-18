@@ -84,6 +84,14 @@ function service:GetSession(config, key)
     if app.IsEditingWindows and app:IsEditingWindows() then
         return app:GetPreviewSession(config), nil, "preview"
     end
+    if key == "Threat" then
+        local cacheKey = "l:Threat"
+        if not self.cache[cacheKey] then
+            self.cache[cacheKey] = { app.live:GetThreatSession() }
+        end
+        local result = self.cache[cacheKey]
+        return result[1], result[2], "live"
+    end
     local fight, state = self:Resolve(config)
     if state == "expired" then
         return nil, "This live selection expired. Select a saved fight.", state
@@ -140,6 +148,9 @@ function service:GetDetails(config, source, key)
 end
 
 function service:GetDuration(config, session)
+    if config.statistic == "Threat" then
+        return nil
+    end
     if session and session.isPreview then
         return session.durationSeconds
     end

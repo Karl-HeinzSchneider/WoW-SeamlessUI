@@ -112,7 +112,12 @@ to 50 saved segments per character, configurable from 1 to the hard cap of 1,000
 toward the limit. Delete the oldest segment before inserting beyond the limit; lowering the
 limit prunes immediately. Removed segments must not return as live entries or be recaptured.
 Clearing archives does not reset the client meter.
-Rows use full square icons sized to the row height and an original grayscale shaded fill
+Rows use the game's original icons, sized to the row height in a pooled `iconFrame`.
+`CreateRowIcon` applies the native action-button `UI-HUD-ActionBar-IconFrame-Mask` and an
+`UI-HUD-ActionBar-IconFrame` border on the OVERLAY layer. Meter, pinned, hover and analysis
+icons share this treatment. Hide the whole icon frame when icons are disabled; hide the border
+when there is no texture. The frame never intercepts mouse input. No replacement artwork is bundled.
+Rows use an original grayscale shaded fill
 with a bright top edge and dark bottom edge, tinted by the bar color. The unfilled background
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
 the generator uses only our own formula and reads no reference assets. Amount-based statistics

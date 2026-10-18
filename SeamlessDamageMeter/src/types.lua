@@ -8,6 +8,7 @@
 ---@field analysisWindow table? Pooled detail, comparison and report window.
 ---@field windows table[]
 ---@field windowFrames table<number, table> Frames indexed by persistent window ID.
+---@field CreateRowIcon fun(self: SeamlessDamageMeter, row: table, size: number)
 ---@field statistics table[]
 ---@field MAX_WINDOWS integer
 ---@field skinDefaults table

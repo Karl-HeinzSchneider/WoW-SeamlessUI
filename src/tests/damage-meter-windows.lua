@@ -1,6 +1,7 @@
 -- Run from the repository root: lua src/tests/damage-meter-windows.lua
 unpack = unpack or table.unpack
 local methods = {}
+local expandedScrollChild
 local function object(parent)
     return setmetatable({ parent = parent, scripts = {}, width = 400, height = 200, shown = true }, {
         __index = function(_, key)
@@ -30,6 +31,9 @@ function methods:SetFont(path, size, flags)
 end
 function methods:SetParent(parent)
     self.parent = parent
+end
+function methods:GetParent()
+    return self.parent
 end
 function methods:GetFrameLevel()
     return self.frameLevel or 1
@@ -175,7 +179,10 @@ end
 
 UIParent = object()
 function CreateFrame(_, name, parent, template)
-    assert(template == nil, "Meter frames must not inherit templates")
+    assert(
+        template == nil or (template == "VerticalLayoutFrame" and parent == expandedScrollChild),
+        "Only the Edit Mode category may inherit a layout template"
+    )
     local frame = object(parent)
     if name then
         assert(_G[name] == nil, "Named frames must be reused")
@@ -1097,6 +1104,8 @@ print("Damage meter window regressions OK")
 
 -- Exercise the adapter against the library's exposed database contract and callbacks.
 local registered = 0
+EditModeManagerExpandedFrame = object()
+expandedScrollChild = object(EditModeManagerExpandedFrame)
 local eme = { baseFramesDB = {}, framesDB = {} }
 function methods:HookScript(event, callback)
     local original = self.scripts[event]
@@ -1120,7 +1129,9 @@ function eme:RegisterFrame(frame, name, db)
     assert(name == "Seamless Damage " .. frame.windowID, "Edit Mode labels must use the compact slot name")
     registered = registered + 1
     frame.system = 100 + registered
-    frame.EMECheckButtonFrame = object(frame)
+    local row = object(expandedScrollChild)
+    row.layoutIndex = registered
+    frame.EMECheckButtonFrame = object(row)
     frame.Selection = object(frame)
     self.baseFramesDB[frame.system], self.framesDB[frame.system] = db, db
     frame.EMECheckButtonFrame:SetScript("OnClick", function(button, mouseButton)
@@ -1226,6 +1237,26 @@ app.addon = {
 assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 assert(registered == 10, "Every slot must register once, including inactive slots")
+local category = app.windowFrames[1].EMECheckButtonFrame:GetParent():GetParent()
+assert(#category.rows == 10, "All meter toggles must share one category")
+for _, row in ipairs(category.rows) do
+    assert(not row:IsShown(), "Category must start collapsed")
+end
+local categoryClick = category.header:GetScript("OnClick")
+local enabledBefore = {}
+for id, frame in pairs(app.windowFrames) do
+    enabledBefore[id] = frame.config.enabled
+end
+categoryClick()
+for _, row in ipairs(category.rows) do
+    assert(row:IsShown(), "Expanding must reveal each individual toggle")
+end
+categoryClick()
+for id, frame in pairs(app.windowFrames) do
+    assert(frame.config.enabled == enabledBefore[id], "Collapsing must preserve slot activation")
+end
+app:RebuildWindows()
+assert(#category.rows == 10, "Rebuilds must not duplicate category rows")
 local meter = app.windowFrames[1]
 assert(meter.EMEDontResize)
 assert(meter.resize:GetFrameLevel() > meter.Selection:GetFrameLevel(), "The drag grip must stay above selection")

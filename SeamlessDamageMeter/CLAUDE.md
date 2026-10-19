@@ -180,6 +180,9 @@ profile. The adapter rebinds the library's exposed `baseFramesDB`/`framesDB` tab
 (minor 121) because RegisterFrame cannot replace a pooled frame's database. Meter
 settings seed the current native layout on rebuild; library moves and scale changes
 update meter overrides while preserving independent anchor points and collapse offsets.
+The ten Expanded checkboxes sit inside a collapsed-by-default "Seamless Damage Meter"
+category. Expanding/collapsing only changes the list; individual activation and reset
+handlers remain independent. The adapter reparents the library-owned rows without modifying it.
 Inactive slots default to unchecked in Edit Mode. Left-clicking the Expanded checkbox
 activates/unhides or deactivates the real addon slot; right-click remains the library's
 position reset. Synchronize checkbox state from real slot activation across native layouts.

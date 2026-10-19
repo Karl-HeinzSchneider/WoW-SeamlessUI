@@ -2,6 +2,40 @@
 local _, app = ...
 
 local lib = LibStub("EditModeExpanded-1.0")
+local category
+
+local function AddCategoryRow(frame)
+    local row = frame.EMECheckButtonFrame:GetParent()
+    if not category then
+        local scrollChild = row:GetParent()
+        category = CreateFrame("Frame", nil, scrollChild, "VerticalLayoutFrame")
+        category.layoutIndex = row.layoutIndex
+        category.fixedWidth = 225
+        category.rows = {}
+        local header = CreateFrame("Button", nil, category)
+        category.header = header
+        header.layoutIndex = 1
+        header:SetSize(225, 32)
+        local label = header:CreateFontString(nil, "ARTWORK", "GameFontHighlightMedium")
+        label:SetPoint("LEFT", 4, 0)
+        label:SetText("+ Seamless Damage Meter")
+        header:SetScript("OnClick", function()
+            category.expanded = not category.expanded
+            label:SetText((category.expanded and "- " or "+ ") .. "Seamless Damage Meter")
+            for _, child in ipairs(category.rows) do
+                child:SetShown(category.expanded)
+            end
+            category:Layout()
+            scrollChild:Layout()
+            EditModeManagerExpandedFrame:Layout()
+        end)
+    end
+    row:SetParent(category)
+    row.layoutIndex = frame.windowID + 1
+    row:SetShown(category.expanded == true)
+    table.insert(category.rows, row)
+    category:Layout()
+end
 local SCALE_SETTING = 16 -- EditModeExpanded's FrameSize setting.
 local CHECKBOX_SETTING = 12 -- EditModeExpanded custom checkboxes.
 local SLIDER_SETTING = 18 -- EditModeExpanded's custom sliders.
@@ -174,6 +208,7 @@ function app:SyncWindowEditMode(frame)
     config.editMode = config.editMode or { settings = {} }
     if not lib:IsRegistered(frame) then
         lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
+        AddCategoryRow(frame)
         -- Guard both native selection dragging and EME's independent arrow-key path.
         local canBeMoved = frame.CanBeMoved
         frame.CanBeMoved = function(self)

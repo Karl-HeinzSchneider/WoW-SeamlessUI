@@ -1,0 +1,16 @@
+## Interface: 16001
+## Title: Seamless: UI
+## Group: Seamless
+## Notes: General UI improvements for the Seamless suite.
+## IconTexture: Interface\Icons\INV_Misc_Orb_Blue
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## Dependencies: Seamless
+## SavedVariables: SeamlessUIDB
+## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
+
+src\core\bootstrap.lua
+src\core\db.lua
+src\core\ace.lua
+src\core\options.lua

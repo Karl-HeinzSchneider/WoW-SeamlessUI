@@ -383,6 +383,20 @@ assert(
     "Nested bars pass restricted amounts directly to widgets"
 )
 assert(frame.statistic.text.args[1] == secret, "Nested names go directly to the header")
+app.db.profile.skins.default.settings.hideTypeSelector = true
+app:RefreshWindows()
+assert(
+    not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled,
+    "Nested view respects the hidden type selector setting"
+)
+frame:GetScript("OnMouseUp")(frame, "RightButton")
+assert(
+    not frame.detail and not frame.statistic.arrow:IsShown(),
+    "Right-click returns from nested view while the type selector stays hidden"
+)
+app.db.profile.skins.default.settings.hideTypeSelector = false
+app:RefreshWindows()
+frame.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
 frame.statistic.scripts.OnClick()
 frame.rows[1].entry.scripts.OnEnter()
 

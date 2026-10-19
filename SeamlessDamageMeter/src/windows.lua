@@ -1031,7 +1031,7 @@ function app:RefreshWindow(frame, session, message)
     end
     frame.statistic:ClearAllPoints()
     frame.statistic:SetPoint("TOPLEFT", frame, "TOPLEFT", 3, 0)
-    local hideTypeSelector = not detail and self:GetWindowSetting(config, "hideTypeSelector")
+    local hideTypeSelector = self:GetWindowSetting(config, "hideTypeSelector")
     frame.statistic.arrow:SetShown(not hideTypeSelector)
     UpdateInteraction(frame)
     frame.statistic.text:ClearAllPoints()

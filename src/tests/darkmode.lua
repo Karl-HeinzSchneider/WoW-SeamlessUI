@@ -142,7 +142,7 @@ app.db = {
 
 addon:OnEnable()
 equal(slot.color, { 0.2, 0.3, 0.4, 0.6 }, "action slot tinted with alpha preserved")
-equal(slotArt.color, { 0.2, 0.3, 0.4, 1 }, "empty slot art tinted")
+equal(slotArt.color, { 1, 1, 1, 1 }, "slot backing untouched")
 equal(extraSlot.color, { 0.2, 0.3, 0.4, 1 }, "additional action bar tinted")
 equal(actionIcon.color, { 1, 1, 1, 1 }, "action icon untouched")
 equal(flash.color, { 1, 1, 1, 1 }, "action flash untouched")

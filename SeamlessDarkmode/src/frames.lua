@@ -139,7 +139,6 @@ local function ActionBars(paint)
         local bar = _G[name]
         for _, button in ipairs(bar and bar.actionButtons or {}) do
             paint(button.NormalTexture)
-            paint(button.SlotArt)
         end
     end
 end

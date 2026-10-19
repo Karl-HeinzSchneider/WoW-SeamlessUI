@@ -14,8 +14,9 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
     text, notifications and additive interaction highlights untouched), and `MinimapButtons`
     (the `border` of every LibDBIcon button from `GetButtonList`; core.lua
     refreshes on `LibDBIcon_IconCreated` so later buttons are painted too).
-  - Action bars: `NormalTexture` and `SlotArt` on the main bar, seven multi bars, pet, stance
-    and possess bars. Gryphons: `MainActionBar.EndCaps` left and right `Texture`.
+  - Action bars: `NormalTexture` on the main bar, seven multi bars, pet, stance and possess
+    bars. Leave `SlotArt` and `SlotBackground` unchanged. Gryphons: `MainActionBar.EndCaps`
+    left and right `Texture`.
   - XP and reputation: `StatusTrackingBars` selects the painter for each container's shared
     `BarFrameTexture` from `shownBarIndex`, restoring it for unrelated bars. These groups have
     no individual frame functions because the same texture belongs to different bars over time.

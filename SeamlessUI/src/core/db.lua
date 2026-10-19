@@ -14,6 +14,15 @@ local profile = {
         enabled = true,
         completedQuests = true,
     },
+    blizzardEditMode = {
+        enabled = true,
+        frames = {
+            player = { enabled = true, addPosition = false, addMoreOptions = false },
+            target = { enabled = true, addPosition = false, addMoreOptions = false },
+            pet = { enabled = true, addPosition = false, addMoreOptions = false },
+            focus = { enabled = true, addPosition = false, addMoreOptions = false },
+        },
+    },
 }
 
 -- Data tied to one character.

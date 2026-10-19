@@ -17,6 +17,9 @@ function module:OnInitialize()
             },
             xpBarTooltip = app.xpBarTooltip:Options(),
         },
+        tabs = {
+            blizzardEditMode = app.blizzardEditMode:Options(),
+        },
         db = app.db,
     })
 end

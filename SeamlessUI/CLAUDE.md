@@ -15,7 +15,22 @@ features are ready for public release.
    completed quests and their XP from `core:GetQuestLogSummary()`. Profile `xpBarTooltip`
    (`enabled`, `completedQuests`, both on). `OnInitialize` migrates Core's former
    `tweaks.questXPTooltip = false` into the same-named UI profile and clears it from Core.
-5. `src/core/options.lua`: UI child panel under Seamless, with General and Profiles tabs.
+5. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extension for Player,
+   Target, Pet and Focus. Profile `blizzardEditMode` has a global `enabled` switch and per-frame
+   `enabled`, `addPosition`, `addMoreOptions` switches. The last two only store preferences for
+   future controls. All extension switches default on; both future-control switches default off.
+   Uses removable AceHook post-hooks on the client dialog and an addon-owned UIParent panel
+   below it; never joins native layout containers or accesses LibEditMode internals. The library
+   has no public unregister/hide API for system extensions, so this panel is owned here to make
+   the recovery switches effective immediately. Disabling globally removes hooks/events; disabling
+   a frame hides its panel. Hides on dialog close, Edit Mode exit and combat; profile changes apply
+   immediately. Supports Blizzard_EditMode loading after this addon.
+6. `src/core/options.lua`: UI child panel under Seamless, with General, Blizzard Edit Mode
+   Extensions and Profiles tabs. Extensions uses a global switch followed by one inline group
+   per frame, each with Extend Edit Mode, Add position and Add more options.
+
+Run `lua src/tests/blizzard-editmode.lua` for per-frame/global switches, placeholder preferences,
+profile changes, late native UI loading, unsupported systems, combat and visibility guards.
 
 `src/types.lua` contains annotations only and is not loaded by the TOC. Add a field there
 whenever a runtime file adds a member to the private `app` table.

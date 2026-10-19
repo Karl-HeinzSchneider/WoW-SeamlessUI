@@ -11,6 +11,15 @@ local function object(parent, template)
     frames[#frames + 1] = frame
     return frame
 end
+function methods:GetFrameLevel()
+    return self.frameLevel or (self.parent and self.parent:GetFrameLevel() + 1 or 0)
+end
+function methods:SetFrameLevel(value)
+    self.frameLevel = value
+end
+function methods:SetFontObject(value)
+    self.fontObject = value
+end
 function methods:GetParent()
     return self.parent
 end
@@ -115,7 +124,15 @@ EditModeManagerFrame = setmetatable({}, {
 })
 function CreateFrame(_, name, parent, template)
     assert(name == nil and parent ~= EditModeManagerFrame)
-    return object(parent or UIParent, template)
+    local frame = object(parent or UIParent, template)
+    if template == "DialogBorderTranslucentTemplate" then
+        frame:SetFrameLevel(500)
+    end
+    if template == "UICheckButtonTemplate" then
+        frame.Text = object(frame, "FontString")
+        frame.Text:Hide() -- Regression: refresh must make the actual label visible before a click.
+    end
+    return frame
 end
 function InCombatLockdown()
     return combat
@@ -187,6 +204,9 @@ for _, frame in ipairs(frames) do
     end
 end
 assert(foundTitle and toggle.checked)
+assert(toggle.parent.Label == toggle.Text and toggle.Text:IsShown())
+assert(toggle.Text.text == "Seamless Damage Meter")
+assert(border:GetFrameLevel() < toggle:GetFrameLevel(), "Border must not cover checkbox text")
 toggle:SetChecked(false)
 toggle.scripts.OnClick(toggle)
 assert(not value and not toggle.checked)

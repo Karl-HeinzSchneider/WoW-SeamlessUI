@@ -38,7 +38,7 @@ local function SnapshotSignature(snapshot)
 end
 
 function service:Discover()
-    if not self.pending then
+    if not self.saveSessions or not self.pending then
         return
     end
     local sessions, present = app.live:List(), {}

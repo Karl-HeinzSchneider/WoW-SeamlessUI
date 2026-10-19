@@ -1322,9 +1322,17 @@ function app:CreateWindow(id)
             frame.offset = frame.sourceOffset or 0
             self:RefreshWindows()
         else
-            self:ShowStatisticMenu(frame)
+            local manager = Menu.GetManager()
+            local menu = manager:GetOpenMenu()
+            if menu and menu:GetOwnerRegion() == frame.statistic then
+                manager:CloseMenu(menu)
+            else
+                self:ShowStatisticMenu(frame)
+            end
         end
     end)
+    -- Toggle on mouse down before the menu manager dismisses outside clicks.
+    frame.statistic:RegisterForClicks("LeftButtonDown")
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()
     -- Match the settings button's center; both use the same dropdown atlas family.

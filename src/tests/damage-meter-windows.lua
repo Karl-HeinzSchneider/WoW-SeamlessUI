@@ -770,6 +770,7 @@ local function menuDescription(label)
     end
     return description
 end
+local openTypeMenu
 MenuUtil = {
     CreateRootMenuDescription = function()
         menuRoot = menuDescription()
@@ -778,6 +779,11 @@ MenuUtil = {
     CreateContextMenu = function(owner, generator)
         menuRoot = menuDescription()
         generator(owner, menuRoot)
+        openTypeMenu = {
+            GetOwnerRegion = function()
+                return owner
+            end,
+        }
     end,
 }
 MenuVariants = { GetDefaultContextMenuMixin = function() end }
@@ -792,7 +798,15 @@ Menu = {
     end,
     GetManager = function()
         return {
+            GetOpenMenu = function()
+                return openTypeMenu
+            end,
+            CloseMenu = function(_, menu)
+                assert(menu == openTypeMenu)
+                openTypeMenu = nil
+            end,
             OpenMenu = function(_, owner, root, anchor)
+                openTypeMenu = nil -- Opening another menu replaces the type menu.
                 assert(owner == frame.session and root == menuRoot)
                 assert(anchor[1] == "BOTTOMRIGHT" and anchor[2] == owner and anchor[3] == "TOPRIGHT")
                 assert(anchor[5] > 0, "Session menu must prefer opening above the selector")
@@ -801,6 +815,12 @@ Menu = {
     end,
 }
 frame.statistic.scripts.OnClick()
+assert(openTypeMenu and openTypeMenu:GetOwnerRegion() == frame.statistic)
+local firstTypeRoot = menuRoot
+frame.statistic.scripts.OnClick()
+assert(openTypeMenu == nil and menuRoot == firstTypeRoot, "Second selector click closes without reopening")
+frame.statistic.scripts.OnClick()
+assert(openTypeMenu and menuRoot ~= firstTypeRoot, "Third selector click opens a fresh menu")
 local damage, dps = menuRoot.entries[1].entries[1], menuRoot.entries[1].entries[2]
 assert(damage.selected() and not dps.selected())
 frame.offset = 5

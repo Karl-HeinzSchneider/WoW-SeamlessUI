@@ -14,7 +14,7 @@ Load order: `core.lua` (lifecycle/database), `data.lua` (renderer facade/statist
 `breakdowns.lua` (enemy relationships), `capture.lua` (bounded capture/retries),
 `blizzard.lua` (controls native meter visibility without forcing its CVar on),
 `settings.lua` (shared defaults, override resolution and legacy layout migration),
-`editmode.lua` (EditModeExpanded registration and profile/layout synchronization),
+`editmode.lua` (LibEditMode registration and profile/layout synchronization),
 `windows.lua` (pooled frames and menus),
 `options.lua` (General, Windows, Skin, History, Profiles).
 `types.lua` contains annotations only and is not shipped.
@@ -174,21 +174,15 @@ Empty slots open the type menu to assign a favorite without changing the display
 Assigned slots switch the displayed type immediately; right-click them to replace or clear.
 Only one favorites view is open at a time. Hide, collapse and profile rebuild dismiss it.
 
-All ten slots register with EditModeExpanded-1.0, embedded unchanged from `_libs` in
-Core. Each window's `editMode` table stores native layout settings inside its AceDB
-profile. The adapter rebinds the library's exposed `baseFramesDB`/`framesDB` tables
-(minor 121) because RegisterFrame cannot replace a pooled frame's database. Meter
-settings seed the current native layout on rebuild; library moves and scale changes
-update meter overrides while preserving independent anchor points and collapse offsets.
-One standard "Seamless Damage Meter" checkbox replaces the ten Expanded entries.
-It controls previews of active slots only, including temporarily hidden windows, without
-changing slot activation or normal visibility. Unused slots never preview. Preview visibility
-is transient, defaults to enabled on reload and survives rebuilds/profile switches/native layouts.
-Each window's Edit Mode settings include "Create new window", using the existing next-unused-slot
-activation and ten-window limit, and "Remove window", which clears the selection and
-deactivates that slot while preserving its settings and anchor links. Ignore both callbacks
-outside Edit Mode and in combat.
-The adapter hides the library-owned individual rows without modifying the embedded library.
+All ten slots register once with LibEditMode, embedded unchanged in Core. Dynamic getters and
+setters read each pooled frame's current AceDB profile configuration. Geometry and skin settings
+remain authoritative; legacy `config.editMode` data is retained but no longer read. Layout changes
+reapply the current profile's geometry. Movement callbacks convert screen anchors back to independent
+linked anchors, and position locking blocks dragging and rejects arrow/reset position changes.
+One "Seamless Damage Meter" checkbox controls previews of active slots, including temporarily
+hidden windows, without changing activation or normal visibility. Preview visibility is transient.
+Buttons create the next unused window, remove the selected window, and open its skin settings.
+Callbacks ignore edits outside Edit Mode or in combat. Never patch the vendored library.
 Edit Mode uses only local classic-character sample sessions, even when tracking is off,
 the API is absent or the selected history expired. Never read live combat data or duration
 while editing. Collapsed windows expand visually without changing their saved collapse
@@ -198,12 +192,9 @@ visibility and movability. Verify Edit Mode dragging, arrow keys, scaling, nativ
 changes, collapsed windows, linked anchors, AceDB switch/copy/reset and reload in game.
 Check sample names/classes/amounts for every statistic, grouped preview toggling, creating
 new windows and restored normal visibility after exit. Preview sessions are never saved.
-Width/Height custom sliders (EME setting 18) update existing size overrides immediately.
-Sync slider values from meter settings on rebuild and ignore callbacks outside Edit Mode.
-The resize grip, when enabled, stays visible and above the EME selection overlay while editing, including
-when normal dragging is locked. Synchronize its frame level on every layout refresh and use
-HIGH strata during Edit Mode so the top-level selection cannot cover it after being raised.
-Restore the window's strata on exit. Verify slider/grip resizing and persistence after exit/reload.
+Width/Height sliders update meter size overrides; height is disabled with fixed row height,
+and both are disabled with size lock. The resize grip remains above the selection overlay.
+Verify sliders, grip, scaling, linked anchors, profile changes and reload persistence in game.
 
 `fixedHeight` defaults to true; `visibleLines` defaults to 7 and accepts 1–30 in quarter-line
 steps. Expanded height includes the header, body padding, row heights and spacing. Fixed

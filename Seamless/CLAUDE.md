@@ -5,7 +5,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 ## Ownership and load order
 
 - `embeds.xml` loads all shared vendored libraries from `lib/`, including AceGUI, AceConfig,
-  AceDBOptions, LibSharedMedia, LibEditModeOverride and EditModeExpanded-1.0. Never patch vendored code.
+  AceDBOptions, LibSharedMedia, LibEditModeOverride and LibEditMode. Never patch vendored code.
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.

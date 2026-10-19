@@ -15,7 +15,6 @@
 ---@field newSkinName string?
 ---@field windowDefaults table
 ---@field windowOptions table
----@field editModeHooked boolean?
 ---@field detailTooltip table? Currently active hover panel; never saved.
 ---@field combatSpellTooltip table? Pooled combat spell-only hover panel.
 ---@field postCombatTooltip table? Pooled post-combat hover panel with target analysis.

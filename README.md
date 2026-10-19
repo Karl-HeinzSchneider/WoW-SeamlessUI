@@ -45,8 +45,13 @@ the old repository must be replaced with one pointing to this repo; `dev:link` r
 
 ## Internal development modules
 
-SeamlessChat and SeamlessDamageMeter are unfinished and excluded from public release archives.
+SeamlessChat, SeamlessDamageMeter and SeamlessUI are unfinished and excluded from public release archives.
 Their source remains in this repository for internal development and testing.
+
+- **SeamlessUI** (optional): the foundation for general UI improvements, with independent
+  `SeamlessUIDB` profiles and a UI panel under Seamless. No improvements are implemented yet.
+  Install its folder alongside Core and use `/seamlessui` to open settings or
+  `/seamlessui reset` to reset its current profile.
 
 - **SeamlessChat** (optional): shared chat layouts/colors/channels, input history, timestamps,
   persistent message history, copy and searchable log windows, clickable URLs, short channel labels,

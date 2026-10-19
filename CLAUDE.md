@@ -21,12 +21,14 @@ TOC is an independently selectable addon.
 - `SeamlessDamageMeter/`: optional windows and a shared live/archive combat-data service.
   Saves public per-character fight history independently of appearance profiles. See its `CLAUDE.md`.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
+- `SeamlessUI/`: optional general UI improvements, with independent `SeamlessUIDB` profiles.
+  Currently an internal scaffold. See its `CLAUDE.md`.
 - `.github/`: release workflows using the BigWigs packager.
 
 Every feature addon must declare `## Dependencies: Seamless`; `check:addons` enforces
 this and checks dependency cycles. Addons are discovered automatically by tooling; add each
 release-ready addon to `.pkgmeta` move-folders for releases. Internal addons must stay in its ignore list.
-Only Core, Tooltip and Unitframes currently ship; Chat and DamageMeter are internal. Users enable or disable feature addons
+Only Core, Tooltip and Unitframes currently ship; Chat, DamageMeter and UI are internal. Users enable or disable feature addons
 in the game's AddOns screen and reload. Core works without any feature addon enabled.
 
 ## Working on the code

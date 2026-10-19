@@ -377,6 +377,29 @@ frame.rows[1].entry.scripts.OnEnter()
 assert(sourceReads == 1 and detailGUID == "player-1")
 local tooltip = app.detailTooltip
 local detailBar = tooltip.rows[1]
+frame.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+assert(
+    frame.detail and frame.rows[1].statusValue == secret and frame.rows[1].value.args[1] == secret,
+    "Nested bars pass restricted amounts directly to widgets"
+)
+assert(frame.statistic.text.args[1] == secret, "Nested names go directly to the header")
+app.db.profile.skins.default.settings.hideTypeSelector = true
+app:RefreshWindows()
+assert(
+    not frame.statistic.arrow:IsShown() and not frame.statistic.mouseEnabled,
+    "Nested view respects the hidden type selector setting"
+)
+frame:GetScript("OnMouseUp")(frame, "RightButton")
+assert(
+    not frame.detail and not frame.statistic.arrow:IsShown(),
+    "Right-click returns from nested view while the type selector stays hidden"
+)
+app.db.profile.skins.default.settings.hideTypeSelector = false
+app:RefreshWindows()
+frame.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+frame.statistic.scripts.OnClick()
+frame.rows[1].entry.scripts.OnEnter()
+
 assert(tooltip.owner == frame.rows[1] and tooltip:GetFrameStrata() == "TOOLTIP")
 assert(tooltip.header == nil and tooltip.title == nil, "The detail panel has no header")
 assert(tooltip.points.BOTTOMLEFT[2] == frame.rows[1].entry and tooltip.points.BOTTOMLEFT[3] == "TOPLEFT")
@@ -408,8 +431,9 @@ assert(
     not tooltip.mouseEnabled and not detailBar.entry.mouseEnabled,
     "The hover panel does not steal the owner's mouse"
 )
+local readsBeforeRefresh = sourceReads
 app:RefreshWindows()
-assert(tooltip:IsShown() and sourceReads == 2, "Live refresh preserves and updates the hover")
+assert(tooltip:IsShown() and sourceReads == readsBeforeRefresh + 1, "Live refresh preserves and updates the hover")
 UnitAffectingCombat = hoverCombatState
 frame.rows[1].entry.scripts.OnLeave()
 assert(not tooltip:IsShown() and tooltip.owner == nil)
@@ -484,6 +508,44 @@ assert(tooltip.offset == 3 and tooltip.rows[1].icon.texture == 1004, "Wheel reac
 assert(frame.offset == mainOffset, "Scrolling a long breakdown keeps its source row in place")
 app:RefreshWindows()
 assert(tooltip.offset == 3, "Live refresh preserves detail scrolling")
+frame.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+assert(frame.detail and frame.rows[1].icon.texture == 1001, "Click replaces character rows with spells")
+assert(not tooltip:IsShown(), "Nested view dismisses the hover panel")
+frame:GetScript("OnMouseWheel")(frame, -1)
+assert(frame.offset == 3 and frame.rows[1].icon.texture == 1004, "Nested spells use normal window scrolling")
+app:RefreshWindows()
+assert(frame.detail and frame.offset == 3, "Refresh preserves nested view and scrolling")
+local originalSource = session.combatSources[1]
+local refreshedSource = {}
+for key, value in pairs(originalSource) do
+    refreshedSource[key] = value
+end
+session.combatSources[1], session.combatSources[2] = session.combatSources[2], refreshedSource
+app:RefreshWindows()
+assert(
+    frame.detail.source == refreshedSource and frame.rows[1].icon.texture == 1004,
+    "Nested selection follows public identity across new API tables and rank changes"
+)
+session.combatSources[1], session.combatSources[2] = originalSource, session.combatSources[1]
+app:RefreshWindows()
+local unavailableSource = {}
+for key, value in pairs(originalSource) do
+    unavailableSource[key] = value
+end
+unavailableSource.sourceGUID = secret
+session.combatSources[1] = unavailableSource
+app:RefreshWindows()
+assert(
+    frame.detail and frame.message.text == "This source is no longer available.",
+    "Restricted identities never select a different row by rank or name"
+)
+session.combatSources[1] = originalSource
+app:RefreshWindows()
+
+frame:GetScript("OnMouseUp")(frame, "RightButton")
+assert(not frame.detail and frame.offset == mainOffset, "Back restores category scrolling")
+frame.rows[1].entry.scripts.OnEnter()
+
 details.combatSpells = { firstSpell }
 app:RefreshWindows()
 assert(tooltip.offset == 0 and not tooltip.rows[2]:IsShown(), "Shrinking detail lists hide pooled surplus bars")
@@ -1521,7 +1583,25 @@ assert(meter.rows[1].name.args[2] == "Jaina" and meter.session.text.text == "S" 
 meter.rows[1].entry.scripts.OnEnter()
 assert(app.detailTooltip.targetLabel:IsShown() and app.detailTooltip.rows[3].statusValue == 100)
 meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
-assert(app.analysisWindow == nil, "Left-clicking a meter row does not open a detail window")
+assert(meter.detail and meter.detail.source.name == "Jaina", "Click opens this source inside the meter")
+assert(meter.rows[1].statusValue == 100 and meter.rows[1].source == nil, "Nested view renders spell bars")
+assert(meter.statistic.text.args[1] == "Jaina", "Nested header identifies the selected character")
+assert(not app.detailTooltip:IsShown(), "Opening a source dismisses its hover")
+meter.rows[1].entry.scripts.OnEnter()
+assert(not app.detailTooltip:IsShown(), "Spell rows do not query another source breakdown")
+meter.rows[1].entry.scripts.OnMouseUp(nil, "RightButton")
+assert(not meter.detail and meter.rows[1].source.name == "Jaina", "Right-click returns to sources")
+meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+meter.statistic.scripts.OnClick()
+assert(not meter.detail and meter.rows[1].source.name == "Jaina", "Header returns to sources")
+meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+meter.config.statistic = "HealingDone"
+app:RefreshWindows()
+assert(not meter.detail, "Changing category clears the selected source")
+meter.config.statistic = "DamageDone"
+app:RefreshWindows()
+
+meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
 app.combatService:Delete(archiveID)
 app:RefreshWindows()
 assert(meter.message.text == "This saved fight was deleted.")

@@ -131,7 +131,12 @@ data exists; unavailable targets never replace spells or add a restriction warni
 Target availability is determined from the required public enemy/contributor fields, not a blanket
 combat flag. Optional secret GUIDs/spell IDs are ignored and unavailable rates remain blank.
 Enemy hover likewise retains its normal API details until public contributor analysis is available.
-Left-clicking combat rows does not open a window; breakdowns remain available on hover.
+Left-clicking a combat row opens its spell breakdown (or death recap) inside the same window.
+The header shows the selected source; clicking its selector or right-clicking returns to the
+category and restores its scroll position. Details reuse hover bar styling and numeric columns,
+refresh with the window, and have their own scroll position. Selection is transient and clears
+on category/session/profile changes, service reset or Edit Mode. Threat and preview rows do not
+open details. Restricted identities show the service unavailable message without guessing a source.
 Saved session menus expose pin/delete, delete-older and clear actions. History defaults
 to 50 saved segments per character, configurable from 1 to the hard cap of 1,000. Pins count
 toward the limit. Delete the oldest segment before inserting beyond the limit; lowering the

@@ -322,6 +322,12 @@ function app:UpdateFavorites(frame)
 end
 
 function app:ToggleFavorites(frame)
+    if frame.detail then
+        frame.detail = nil
+        frame.offset = frame.sourceOffset or 0
+        self:RefreshWindows()
+        return
+    end
     if frame.favorites:IsShown() then
         frame.favorites:Hide()
         self:RefreshWindows()
@@ -563,8 +569,107 @@ local function CreateDetailTooltip()
     return tooltip
 end
 
+local function UpdateDetailRow(bar, spell, index, config, details, source, targetDetails, inCombat, showEnemy)
+    local rowHeight = app:GetWindowSetting(config, "rowHeight")
+    local spacing = app:GetWindowSetting(config, "rowSpacing")
+    local statistic = app:GetStatistic(config.statistic)
+    local showRate = not details.deathEvents and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
+    bar.entry:SetHeight(rowHeight)
+    bar.entry:ClearAllPoints()
+    bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
+    bar.entry:SetPoint("RIGHT", 0, 0)
+    bar:SetHeight(rowHeight)
+    bar:SetPoint("TOPLEFT", app:GetWindowSetting(config, "showIcons") and rowHeight or 0, 0)
+    bar.icon:SetShown(app:GetWindowSetting(config, "showIcons"))
+    bar.icon:SetSize(rowHeight, rowHeight)
+    app:StyleWindowLabel(bar.name, config)
+    app:StyleWindowLabel(bar.value, config)
+    local name = spell.spellName
+    if IsPublic(name) and (name == nil or name == "") then
+        local spellID = spell.spellID or spell.spellId
+        name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
+        if details.deathEvents and spell.event == "SWING_DAMAGE" then
+            name = ACTION_SWING or "Melee"
+        elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
+            name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
+        end
+    end
+    local unit = spell.creatureName
+    if IsPublic(unit) and (unit == nil or unit == "") then
+        unit = spell.sourceName
+        if spell.combatSpellDetails then
+            unit = spell.combatSpellDetails.unitName
+        end
+    end
+    if not inCombat and (not IsPublic(unit) or (unit ~= nil and unit ~= "")) then
+        bar.name:SetFormattedText("%s (%s)", name, unit)
+    else
+        bar.name:SetText(name)
+    end
+    local unitDetails = spell.combatSpellDetails or {}
+    local spellID = spell.spellID or spell.spellId
+    if details.deathEvents and spell.event == "SWING_DAMAGE" then
+        spellID = 88163
+    end
+    if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
+        bar.icon:SetTexture(unitDetails.specIconID)
+        bar.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+    elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
+        bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
+    else
+        bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
+        bar.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+    end
+    local amount = spell.totalAmount
+    if IsPublic(amount) and amount == nil then
+        amount = spell.amount
+    end
+    if IsPublic(amount) and amount == nil then
+        amount = 0
+    end
+    local rate = spell.amountPerSecond
+    local total = spell.isTarget and targetDetails.totalAmount or details.totalAmount
+    local percentage = Percentage(amount, total)
+    local enemyPercentage = spell.isTarget and spell.enemyShare and math.floor(spell.enemyShare + 0.5) or nil
+    SetRowValues(
+        bar,
+        config,
+        amount,
+        rate,
+        percentage,
+        enemyPercentage,
+        showRate,
+        statistic.rate,
+        showEnemy and spell.isTarget
+    )
+    -- The API provides the scale; restricted amounts go directly to the widgets.
+    local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
+    if IsPublic(maximum) and maximum == nil then
+        maximum = 1
+    end
+    bar:SetMinMaxValues(0, maximum)
+    bar:SetValue(amount)
+    local classFilename = unitDetails.unitClassFilename
+    if not classFilename or classFilename == "" then
+        classFilename = source.classFilename
+    end
+    local color = RAID_CLASS_COLORS[classFilename]
+    if color and app:GetWindowSetting(config, "classColors") then
+        bar:SetStatusBarColor(color.r, color.g, color.b, 1)
+    else
+        bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
+    end
+    bar:Show()
+end
+
 local function ShowRowTooltip(row, frame)
-    if not row.source or row.preview or frame.config.statistic == "Threat" or app:IsWindowCollapsed(frame.config) then
+    if
+        frame.detail
+        or not row.source
+        or row.preview
+        or frame.config.statistic == "Threat"
+        or app:IsWindowCollapsed(frame.config)
+    then
         HideRowTooltip(row)
         return
     end
@@ -636,7 +741,6 @@ local function ShowRowTooltip(row, frame)
     tooltip:SetPoint("BOTTOMLEFT", row.entry, "TOPLEFT", 0, 0)
     tooltip:SetPoint("BOTTOMRIGHT", row.entry, "TOPRIGHT", 0, 0)
     local statistic = app:GetStatistic(frame.config.statistic)
-    local showRate = not details.deathEvents and statistic.key ~= "Interrupts" and statistic.key ~= "Dispels"
     local showEnemy = targetDetails and #targetDetails.entries > 0 and statistic.key ~= "EnemyDamageTaken"
     tooltip.targetLabel:Hide()
     tooltip.targetMessage:Hide()
@@ -664,92 +768,7 @@ local function ShowRowTooltip(row, frame)
             label:Show()
             bar:Hide()
         else
-            bar.entry:SetHeight(rowHeight)
-            bar.entry:ClearAllPoints()
-            bar.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + spacing))
-            bar.entry:SetPoint("RIGHT", 0, 0)
-            bar:SetHeight(rowHeight)
-            bar:SetPoint("TOPLEFT", app:GetWindowSetting(config, "showIcons") and rowHeight or 0, 0)
-            bar.icon:SetShown(app:GetWindowSetting(config, "showIcons"))
-            bar.icon:SetSize(rowHeight, rowHeight)
-            app:StyleWindowLabel(bar.name, config)
-            app:StyleWindowLabel(bar.value, config)
-            local name = spell.spellName
-            if IsPublic(name) and (name == nil or name == "") then
-                local spellID = spell.spellID or spell.spellId
-                name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
-                if details.deathEvents and spell.event == "SWING_DAMAGE" then
-                    name = ACTION_SWING or "Melee"
-                elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
-                    name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
-                end
-            end
-            local unit = spell.creatureName
-            if IsPublic(unit) and (unit == nil or unit == "") then
-                unit = spell.sourceName
-                if spell.combatSpellDetails then
-                    unit = spell.combatSpellDetails.unitName
-                end
-            end
-            if not inCombat and (not IsPublic(unit) or (unit ~= nil and unit ~= "")) then
-                bar.name:SetFormattedText("%s (%s)", name, unit)
-            else
-                bar.name:SetText(name)
-            end
-            local unitDetails = spell.combatSpellDetails or {}
-            local spellID = spell.spellID or spell.spellId
-            if details.deathEvents and spell.event == "SWING_DAMAGE" then
-                spellID = 88163
-            end
-            if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
-                bar.icon:SetTexture(unitDetails.specIconID)
-                bar.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
-            elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
-                bar.icon:SetAtlas(GetClassAtlas(unitDetails.unitClassFilename))
-            else
-                bar.icon:SetTexture(spellID and C_Spell.GetSpellTexture(spellID) or nil)
-                bar.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
-            end
-            local amount = spell.totalAmount
-            if IsPublic(amount) and amount == nil then
-                amount = spell.amount
-            end
-            if IsPublic(amount) and amount == nil then
-                amount = 0
-            end
-            local rate = spell.amountPerSecond
-            local total = spell.isTarget and targetDetails.totalAmount or details.totalAmount
-            local percentage = Percentage(amount, total)
-            local enemyPercentage = spell.isTarget and spell.enemyShare and math.floor(spell.enemyShare + 0.5) or nil
-            SetRowValues(
-                bar,
-                config,
-                amount,
-                rate,
-                percentage,
-                enemyPercentage,
-                showRate,
-                statistic.rate,
-                showEnemy and spell.isTarget
-            )
-            -- The API provides the scale; restricted amounts go directly to the widgets.
-            local maximum = spell.isTarget and targetDetails.maxAmount or details.maxAmount
-            if IsPublic(maximum) and maximum == nil then
-                maximum = 1
-            end
-            bar:SetMinMaxValues(0, maximum)
-            bar:SetValue(amount)
-            local classFilename = unitDetails.unitClassFilename
-            if not classFilename or classFilename == "" then
-                classFilename = row.source.classFilename
-            end
-            local color = RAID_CLASS_COLORS[classFilename]
-            if color and app:GetWindowSetting(config, "classColors") then
-                bar:SetStatusBarColor(color.r, color.g, color.b, 1)
-            else
-                bar:SetStatusBarColor(unpack(app:GetWindowSetting(config, "barColor")))
-            end
-            bar:Show()
+            UpdateDetailRow(bar, spell, index, config, details, row.source, targetDetails, inCombat, showEnemy)
         end
     end
     for index = math.min(capacity, #entries) + 1, #tooltip.rows do
@@ -792,7 +811,33 @@ CreateRow = function(frame, index)
     end)
     entry:SetScript("OnMouseUp", function(_, button)
         if button == "RightButton" then
-            app:ToggleFavorites(frame)
+            if frame.detail then
+                frame.detail = nil
+                frame.offset = frame.sourceOffset or 0
+                app:RefreshWindows()
+            else
+                app:ToggleFavorites(frame)
+            end
+        elseif
+            button == "LeftButton"
+            and row.source
+            and not row.preview
+            and not frame.detail
+            and frame.config.statistic ~= "Threat"
+        then
+            HideRowTooltip(row)
+            frame.sourceOffset = frame.offset
+            frame.detail = {
+                source = row.source,
+                config = frame.config,
+                statistic = frame.config.statistic,
+                session = frame.config.session,
+                sessionID = frame.config.sessionID,
+                archiveID = frame.config.archiveID,
+                generation = app.combatService.generation,
+            }
+            frame.offset = 0
+            app:RefreshWindows()
         end
     end)
     row:SetScript("OnHide", function()
@@ -901,12 +946,60 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     end
 end
 
+-- Follow a source across fresh API tables only through public identity fields.
+local function FindDetailSource(sources, selected)
+    for _, source in ipairs(sources) do
+        if source == selected then
+            return source
+        end
+        if
+            IsPublic(selected.isLocalPlayer)
+            and selected.isLocalPlayer
+            and IsPublic(source.isLocalPlayer)
+            and source.isLocalPlayer
+        then
+            return source
+        end
+        for _, key in ipairs({ "sourceGUID", "sourceCreatureID" }) do
+            local identity, candidate = selected[key], source[key]
+            if
+                IsPublic(identity)
+                and IsPublic(candidate)
+                and identity ~= nil
+                and identity ~= ""
+                and identity ~= 0
+                and candidate == identity
+            then
+                return source
+            end
+        end
+    end
+end
+
 function app:RefreshWindow(frame, session, message)
     local config = frame.config
     local preview = session and session.isPreview
     local collapsed = self:IsWindowCollapsed(config)
     local statistic = self:GetStatistic(config.statistic)
+    local detail = frame.detail
+    if
+        detail
+        and (
+            preview
+            or detail.config ~= config
+            or detail.statistic ~= config.statistic
+            or detail.session ~= config.session
+            or detail.sessionID ~= config.sessionID
+            or detail.archiveID ~= config.archiveID
+            or detail.generation ~= self.combatService.generation
+        )
+    then
+        frame.detail, detail, frame.offset = nil, nil, 0
+    end
     frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
+    if detail and not frame.favorites:IsShown() then
+        frame.statistic.text:SetFormattedText("Back: %s", detail.source.name)
+    end
     if statistic.key == "Threat" and not frame.favorites:IsShown() and session then
         local targetName = session.targetName
         if not IsPublic(targetName) or targetName ~= nil then
@@ -945,18 +1038,35 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic.text:SetPoint("TOPLEFT", frame.statistic, "TOPLEFT", 25, -9)
     local availableWidth = math.max(0, frame:GetWidth() - 28 - frame.session:GetWidth() - 62)
     local labelWidth = availableWidth
-    if statistic.key ~= "Threat" then
+    if statistic.key ~= "Threat" and not detail then
         labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
     end
     frame.statistic.text:SetWidth(labelWidth)
+    frame.statistic:SetWidth(detail and (labelWidth + 25) or 25)
     frame.timer:ClearAllPoints()
     frame.timer:SetPoint("LEFT", frame.statistic.text, "RIGHT", 5, 0)
     frame.timer:SetWidth(0)
     frame.timer:SetShown(not self:GetWindowSetting(config, "hideCombatTimer"))
     local sources = session and session.combatSources or {}
+    local details
+    if detail then
+        if session then
+            local source = FindDetailSource(sources, detail.source)
+            if source then
+                detail.source = source
+                details, message = self:GetSourceDetails(config, source)
+            else
+                message = "This source is no longer available."
+            end
+        end
+        sources = details and (details.deathEvents or details.combatSpells) or {}
+        if #sources == 0 then
+            message = message or "No details available."
+        end
+    end
     local localIndex
     for index, source in ipairs(sources) do
-        if source.isLocalPlayer then
+        if not detail and source.isLocalPlayer then
             localIndex = index
             break
         end
@@ -1004,7 +1114,22 @@ function app:RefreshWindow(frame, session, message)
         row.entry:ClearAllPoints()
         row.entry:SetPoint("TOPLEFT", 0, -(index - 1) * (rowHeight + rowSpacing))
         row.entry:SetPoint("RIGHT", 0, 0)
-        UpdateRow(row, source, sourceIndex, session, statistic, config)
+        if detail then
+            row.source, row.preview = nil, nil
+            UpdateDetailRow(
+                row,
+                source,
+                index,
+                config,
+                details,
+                detail.source,
+                nil,
+                UnitAffectingCombat("player"),
+                false
+            )
+        else
+            UpdateRow(row, source, sourceIndex, session, statistic, config)
+        end
     end
     local pinned = not collapsed and localIndex and (localIndex <= frame.offset or localIndex > frame.offset + capacity)
     if frame.localRow and not pinned then
@@ -1170,7 +1295,13 @@ function app:CreateWindow(id)
         "common-dropdown-a-button-settings-hover-shadowless"
     )
     frame.statistic = Selector(frame, function()
-        self:ShowStatisticMenu(frame)
+        if frame.detail then
+            frame.detail = nil
+            frame.offset = frame.sourceOffset or 0
+            self:RefreshWindows()
+        else
+            self:ShowStatisticMenu(frame)
+        end
     end)
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()

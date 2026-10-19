@@ -86,9 +86,6 @@ local function Minimap(paint)
     paint(cluster and cluster.ZoneTextButton.StateTexture)
 end
 
--- Calendar and tracking use a single atlas for the whole button, without a separate border.
--- Leave their StateTexture unchanged so their artwork keeps its original color.
-
 ---@param paint SeamlessDarkmode.Paint
 local function AddonCompartmentButton(paint)
     local button = _G.AddonCompartmentFrame

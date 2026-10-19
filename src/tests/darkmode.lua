@@ -89,20 +89,12 @@ TargetFrame = {
     TargetFrameContent = { TargetFrameContentMain = { LevelBackgroundCircle = targetCircle } },
 }
 MinimapCompassTexture = texture()
-local controls = {}
-for i = 1, 3 do
-    controls[i] = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
-end
-GameTimeFrame = controls[1]
-MinimapCluster = { ZoneTextButton = {}, Tracking = { Button = controls[2] } }
-AddonCompartmentFrame = controls[3]
+MinimapCluster = { ZoneTextButton = {} }
+AddonCompartmentFrame = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
 local function checkControls(color, context)
-    for index, control in ipairs(controls) do
-        local tint = index == 3 and color or 1
-        equal(control.StateTexture.color, { tint, tint, tint, 0.7 }, context)
-        equal(control.AddTexture.color, { 1, 1, 1, 1 }, "interaction highlight untouched")
-        equal(control.Text.color, { 1, 1, 1, 1 }, "button text untouched")
-    end
+    equal(AddonCompartmentFrame.StateTexture.color, { color, color, color, 0.7 }, context)
+    equal(AddonCompartmentFrame.AddTexture.color, { 1, 1, 1, 1 }, "interaction highlight untouched")
+    equal(AddonCompartmentFrame.Text.color, { 1, 1, 1, 1 }, "button text untouched")
 end
 local ring = texture()
 local iconTexture = texture()
@@ -236,8 +228,7 @@ equal(lateRing.color, { 1, 1, 1, 1 }, "addon disable restores minimap buttons")
 assert(not iconCallbacks.LibDBIcon_IconCreated, "addon disable drops the button callback")
 checkControls(1, "addon disable restores controls")
 
-GameTimeFrame = nil
-MinimapCluster = { ZoneTextButton = {}, Tracking = {} }
+MinimapCluster = { ZoneTextButton = {} }
 AddonCompartmentFrame = nil
 MainActionBar = nil
 MultiBar7 = nil

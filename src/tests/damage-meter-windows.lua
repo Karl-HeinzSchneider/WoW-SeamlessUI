@@ -706,9 +706,33 @@ local function menuDescription(label)
     return description
 end
 MenuUtil = {
+    CreateRootMenuDescription = function()
+        menuRoot = menuDescription()
+        return menuRoot
+    end,
     CreateContextMenu = function(owner, generator)
         menuRoot = menuDescription()
         generator(owner, menuRoot)
+    end,
+}
+MenuVariants = { GetDefaultContextMenuMixin = function() end }
+AnchorUtil = {
+    CreateAnchor = function(...)
+        return { ... }
+    end,
+}
+Menu = {
+    PopulateDescription = function(generator, owner, root)
+        generator(owner, root)
+    end,
+    GetManager = function()
+        return {
+            OpenMenu = function(_, owner, root, anchor)
+                assert(owner == frame.session and root == menuRoot)
+                assert(anchor[1] == "BOTTOMRIGHT" and anchor[2] == owner and anchor[3] == "TOPRIGHT")
+                assert(anchor[5] > 0, "Session menu must prefer opening above the selector")
+            end,
+        }
     end,
 }
 frame.statistic.scripts.OnClick()

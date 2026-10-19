@@ -7,7 +7,6 @@ app.dbDefaults = {
         minimap = { hide = false, minimapPos = 200, showInCompartment = false },
         tweaks = {
             reloadShortcut = true,
-            showFramerateOnStartup = false,
             questXPTooltip = true,
             enhancedXPTooltip = true,
             restedXPCap = 150,

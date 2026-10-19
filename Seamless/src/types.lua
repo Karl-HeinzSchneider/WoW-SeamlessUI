@@ -22,7 +22,7 @@
 ---@class SeamlessCore.Profile
 ---@field logLevel string
 ---@field minimap table
----@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean, questXPTooltip: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
+---@field tweaks { reloadShortcut: boolean, questXPTooltip: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
 
 ---@class SeamlessCore.EditModeOptions
 ---@field name string? Optional group heading.

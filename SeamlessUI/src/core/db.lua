@@ -7,6 +7,14 @@ local _, app = ...
 -- User settings, switchable per character through the Profiles tab.
 ---@class SeamlessUI.DB.Profile
 local profile = {
+    -- The FPS counter: Edit Mode placement (UIParent offsets) and startup visibility.
+    framerate = {
+        movable = false,
+        showOnStartup = false,
+        point = "BOTTOMRIGHT",
+        x = -2,
+        y = 2,
+    },
     -- Reserved for settings of future UI improvements.
     ---@type table<string, table>
     features = {},

@@ -14,3 +14,4 @@ src\core\bootstrap.lua
 src\core\db.lua
 src\core\ace.lua
 src\core\options.lua
+src\features\framerate.lua

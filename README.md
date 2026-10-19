@@ -22,7 +22,6 @@ WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone
 
 - `/seamless`: open Settings > AddOns > Seamless.
 - `/rl`: reload the UI. Enabled by default; toggle it in Settings > AddOns > Seamless > Tweaks.
-- Core can show the FPS counter on startup (off by default). Enable this in the Tweaks category; Ctrl+R still toggles the counter normally.
 - `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
 - `/seamless reset`: reset the current core profile (shared preferences only).
 - `/seamlessunitframes`: open the Unit Frames options.
@@ -49,7 +48,9 @@ SeamlessChat, SeamlessDamageMeter and SeamlessUI are unfinished and excluded fro
 Their source remains in this repository for internal development and testing.
 
 - **SeamlessUI** (optional): the foundation for general UI improvements, with independent
-  `SeamlessUIDB` profiles and a UI panel under Seamless. No improvements are implemented yet.
+  `SeamlessUIDB` profiles and a UI panel under Seamless. The FPS counter can be moved in Edit
+  Mode and shown on startup (both off by default; Ctrl+R still toggles it). A "show on startup"
+  setting saved by an earlier Core version is carried over automatically.
   Install its folder alongside Core and use `/seamlessui` to open settings or
   `/seamlessui reset` to reset its current profile.
 

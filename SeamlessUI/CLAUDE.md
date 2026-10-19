@@ -1,7 +1,7 @@
 # SeamlessUI
 
 Optional addon for general UI improvements. Requires Seamless and remains internal until
-features are ready for public release. The initial scaffold changes no game UI behavior.
+features are ready for public release.
 
 ## Load order and ownership
 
@@ -9,6 +9,12 @@ features are ready for public release. The initial scaffold changes no game UI b
 2. `src/core/db.lua`: defaults for independent `SeamlessUIDB` profiles.
 3. `src/core/ace.lua`: AceAddon/AceDB lifecycle, profile refresh callbacks and `/seamlessui`.
 4. `src/core/options.lua`: UI child panel under Seamless, with General and Profiles tabs.
+5. `src/features/framerate.lua`: the FPS counter. An optional addon-owned mover registered
+   with Core's LibEditMode makes it movable in Edit Mode (position saved per profile, shown
+   while editing); its dialog and the shared Edit Mode panel toggle "show on startup". On
+   initialize it migrates Core's former `tweaks.showFramerateOnStartup` from every Core profile
+   into the same-named UI profile and clears it there. Turning movement off restores the
+   client's default anchor (WorldFrame BOTTOMRIGHT -2, 2). Run `lua src/tests/ui-framerate.lua`.
 
 `src/types.lua` contains annotations only and is not loaded by the TOC. Add a field there
 whenever a runtime file adds a member to the private `app` table.

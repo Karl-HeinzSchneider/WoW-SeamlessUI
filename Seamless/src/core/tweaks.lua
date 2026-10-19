@@ -24,10 +24,6 @@ end
 function module:OnEnable()
     self.active = true
     self:OnProfileRefresh()
-    -- Apply only at startup so normal framerate keybinds remain in control afterward.
-    if app.db.profile.tweaks.showFramerateOnStartup then
-        FramerateFrame:Show()
-    end
 end
 
 function module:OnDisable()

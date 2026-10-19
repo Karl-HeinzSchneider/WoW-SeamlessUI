@@ -14,8 +14,10 @@ features are ready for public release.
    while editing). "FPS Display" in the shared Edit Mode panel (no group heading) and the UI
    options turns movement on; "Show on startup" exists only in the counter's own dialog. On
    initialize it migrates Core's former `tweaks.showFramerateOnStartup` from every Core profile
-   into the same-named UI profile and clears it there. Turning movement off restores the
-   client's default anchor (WorldFrame BOTTOMRIGHT -2, 2). Run `lua src/tests/ui-framerate.lua`.
+   into the same-named UI profile and clears it there. While movable the counter is reparented
+   to the mover (never anchor the WorldFrame child to a UIParent frame: it stops drawing), and the
+   mover is sized from a font sample because the hidden counter is only 12x12. Turning movement
+   off restores WorldFrame as parent and the default anchor (BOTTOMRIGHT -2, 2). Run `lua src/tests/ui-framerate.lua`.
 
 `src/types.lua` contains annotations only and is not loaded by the TOC. Add a field there
 whenever a runtime file adds a member to the private `app` table.

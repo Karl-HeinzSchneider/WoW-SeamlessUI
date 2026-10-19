@@ -37,6 +37,20 @@ local function newFrame(width, height, scale)
         return self.shown
     end
     function frame:SetClampedToScreen() end
+    function frame:SetParent(parent)
+        self.parent = parent
+    end
+    function frame:CreateFontString()
+        local text = newFrame(90, 14)
+        function text:SetText() end
+        function text:GetStringWidth()
+            return self.width
+        end
+        function text:GetStringHeight()
+            return self.height
+        end
+        return text
+    end
     function frame:HookScript(name, callback)
         self.scripts[name] = callback
     end
@@ -132,12 +146,16 @@ module:Set("movable", true)
 local mover = added.frame
 assert(added.name == "Framerate" and added.default.point == "BOTTOMRIGHT")
 assert(mover.shown and mover.point[1] == "BOTTOMRIGHT" and mover.point[2] == UIParent)
-assert(FramerateFrame.point[2] == mover)
-assert(mover.width == 160 and mover.height == 28, "Mover converts WorldFrame size to UIParent scale")
+assert(FramerateFrame.point[2] == mover and FramerateFrame.parent == mover)
+assert(mover.width == 90 and mover.height == 14, "Hidden counter: size from the font sample")
+FramerateFrame:Show()
+FramerateFrame:SetSize(120, 16)
+FramerateFrame.scripts.OnSizeChanged()
+assert(mover.width == 120 and mover.height == 16, "Grows to a wider shown counter")
 FramerateFrame:SetSize(60, 14)
 FramerateFrame.scripts.OnSizeChanged()
-assert(mover.width == 160, "Mover never shrinks while the text changes")
-assert(not FramerateFrame.shown)
+assert(mover.width == 120, "Mover never shrinks while the text changes")
+FramerateFrame:Hide()
 
 -- Edit Mode previews the counter and restores the player's choice on exit.
 editing = true
@@ -169,6 +187,7 @@ assert(hiddenDialogs == 1)
 assert(not mover.shown)
 local point = FramerateFrame.point
 assert(point[1] == "BOTTOMRIGHT" and point[2] == WorldFrame and point[4] == -2 and point[5] == 2)
+assert(FramerateFrame.parent == WorldFrame)
 assert(not FramerateFrame.shown, "Preview ends once the counter can no longer move")
 
 module:OnDisable()

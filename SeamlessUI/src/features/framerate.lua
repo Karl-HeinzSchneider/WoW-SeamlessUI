@@ -53,13 +53,17 @@ local function MigrateCoreSetting()
     end
 end
 
--- The mover lives in UIParent like other Edit Mode systems; FramerateFrame stays in WorldFrame
--- so it remains visible with the interface hidden. Sizes convert between the two scales.
+-- FramerateFrame starts hidden at 12x12 and only sizes itself to its text while shown, so size
+-- the mover from a measured sample of the counter's own font. Only grow: the text width changes
+-- constantly and must not shift the anchor.
 local function FitMover()
-    local width, height = FramerateFrame:GetSize()
-    local ratio = FramerateFrame:GetEffectiveScale() / mover:GetEffectiveScale()
-    -- Only grow: the counter's text width changes constantly and must not shift the anchor.
-    mover:SetSize(math.max(mover:GetWidth(), width * ratio, 1), math.max(mover:GetHeight(), height * ratio, 1))
+    local width = mover.Probe:GetStringWidth()
+    local height = mover.Probe:GetStringHeight()
+    if FramerateFrame:IsShown() then
+        local frameWidth, frameHeight = FramerateFrame:GetSize()
+        width, height = math.max(width, frameWidth), math.max(height, frameHeight)
+    end
+    mover:SetSize(math.max(mover:GetWidth(), width, 1), math.max(mover:GetHeight(), height, 1))
 end
 
 local function PositionMover()
@@ -75,6 +79,9 @@ local function EnsureMover()
     mover = CreateFrame("Frame", nil, UIParent)
     mover:SetClampedToScreen(true)
     mover:Hide()
+    mover.Probe = mover:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Med1")
+    mover.Probe:SetText((FRAMERATE_LABEL or "Framerate:") .. "999.9")
+    mover.Probe:Hide()
     FitMover()
     FramerateFrame:HookScript("OnSizeChanged", function()
         FitMover()
@@ -105,6 +112,9 @@ function module:Refresh()
         EnsureMover()
         PositionMover()
         mover:Show()
+        -- Reparent so both frames share UIParent's hierarchy and scale; anchoring a WorldFrame
+        -- child to a UIParent child left the counter invisible.
+        FramerateFrame:SetParent(mover)
         FramerateFrame:ClearAllPoints()
         FramerateFrame:SetPoint("BOTTOMRIGHT", mover, "BOTTOMRIGHT")
         anchored = true
@@ -113,6 +123,7 @@ function module:Refresh()
             mover:Hide()
         end
         if anchored then
+            FramerateFrame:SetParent(WorldFrame)
             FramerateFrame:ClearAllPoints()
             FramerateFrame:SetPoint(DEFAULT_POINT, WorldFrame, DEFAULT_POINT, DEFAULT_X, DEFAULT_Y)
             anchored = false

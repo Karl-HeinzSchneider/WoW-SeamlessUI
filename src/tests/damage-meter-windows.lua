@@ -922,7 +922,20 @@ assert(frame.offset == 7 and not frame.localRow:IsShown())
 session.combatSources[8].totalAmount = 12345
 session.combatSources[8].amountPerSecond = 2.8
 app:RefreshWindows()
-assert(frame.rows[1].value.text == "12345" and frame.rows[1].secondaryValue.text == "2.8")
+assert(frame.rows[1].value.text == "12.3k" and frame.rows[1].secondaryValue.text == "3")
+assert(frame.rows[1].value:GetWidth() <= 45 and frame.rows[1].secondaryValue:GetWidth() <= 45)
+for _, sample in ipairs({
+    { 999, "999" },
+    { 1000, "1.0k" },
+    { 1100, "1.1k" },
+    { 1000000, "1.0m" },
+}) do
+    session.combatSources[8].amountPerSecond = sample[1]
+    app:RefreshWindows()
+    assert(frame.rows[1].secondaryValue.text == sample[2], "Rates use compact units from one thousand")
+end
+session.combatSources[8].amountPerSecond = 2.8
+app:RefreshWindows()
 assert(
     frame.rows[1].value:GetWidth() == frame.rows[2].value:GetWidth()
         and frame.rows[1].value.points.RIGHT[4] == frame.rows[2].value.points.RIGHT[4],
@@ -952,13 +965,13 @@ frame.config.statistic = "Dps"
 app:RefreshWindows()
 assert(frame.rows[1]:IsShown())
 assert(
-    frame.rows[1].value.text == "2.8" and frame.rows[1].secondaryValue.text == "12345",
+    frame.rows[1].value.text == "3" and frame.rows[1].secondaryValue.text == "12.3k",
     "Rate display must swap primary and secondary values"
 )
 frame.config.statistic = "Interrupts"
 Enum.DamageMeterType.Interrupts = 2
 app:RefreshWindows()
-assert(frame.rows[1].value.text == "12345", "Action counts must not show a rate")
+assert(frame.rows[1].value.text == "12.3k", "Action counts must not show a rate")
 assert(not frame.rows[1].secondaryValue:IsShown(), "Switching to action counts hides the pooled rate column")
 frame.config.statistic = "DamageDone"
 app:AddWindow()

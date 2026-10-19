@@ -12,7 +12,7 @@ local frames = {
     { key = "pet", name = "Pet frame", index = "Pet" },
     { key = "focus", name = "Focus frame", index = "Focus" },
 }
-local panel, title
+local panel, title, description, positionView
 
 local function settings()
     return app.db.profile.blizzardEditMode
@@ -43,15 +43,14 @@ local function ensurePanel()
     title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     title:SetPoint("TOPLEFT", 24, -20)
     title:SetPoint("TOPRIGHT", -24, -20)
-    local text = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    text:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
-    text:SetPoint("TOPRIGHT", title, "BOTTOMRIGHT", 0, -10)
-    text:SetWordWrap(true)
-    text:SetText("Edit Mode extension enabled. Additional controls will be added here.")
+    description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
+    description:SetPoint("TOPRIGHT", title, "BOTTOMRIGHT", 0, -10)
+    description:SetWordWrap(true)
+    description:SetText("Enable Add position for this frame in UI > Blizzard Edit Mode Extensions to edit its anchors.")
 end
 
-function module:RefreshPanel()
-    hidePanel()
+function module:GetSelectedFrame()
     local dialog = EditModeSystemSettingsDialog
     local manager = EditModeManagerFrame
     if
@@ -72,13 +71,34 @@ function module:RefreshPanel()
     for _, spec in ipairs(frames) do
         local index = Enum.EditModeUnitFrameSystemIndices[spec.index]
         if index and system.systemIndex == index and settings().frames[spec.key].enabled then
-            ensurePanel()
-            title:SetText("SeamlessUI - " .. spec.name)
-            panel:SetFrameLevel(dialog:GetFrameLevel() + 10)
-            panel:Show()
-            return
+            return system, spec
         end
     end
+end
+
+function module:RefreshPanel()
+    local system, spec = self:GetSelectedFrame()
+    if not system then
+        hidePanel()
+        return
+    end
+    ensurePanel()
+    title:SetText("SeamlessUI - " .. spec.name)
+    panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
+    if settings().frames[spec.key].addPosition then
+        positionView = positionView or app.blizzardPosition:Create(panel)
+        description:Hide()
+        panel:SetHeight(286)
+        positionView:Refresh(system)
+        positionView:Show()
+    else
+        if positionView then
+            positionView:Hide()
+        end
+        description:Show()
+        panel:SetHeight(100)
+    end
+    panel:Show()
 end
 
 function module:InstallHooks()
@@ -164,7 +184,7 @@ function module:Options()
                     type = "toggle",
                     order = 2,
                     name = "Add position",
-                    desc = "Reserved for future position controls. This setting has no effect yet.",
+                    desc = "Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to this frame's Edit Mode extension.",
                     disabled = function()
                         return not settings().enabled or not settings().frames[key].enabled
                     end,

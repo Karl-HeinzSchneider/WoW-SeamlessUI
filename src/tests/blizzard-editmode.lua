@@ -53,6 +53,15 @@ function IsLoggedIn()
     return true
 end
 local app = { addon = {}, db = { profile = {} } }
+app.blizzardPosition = {
+    Create = function()
+        local view = frame()
+        function view:Refresh(system)
+            self.system = system
+        end
+        return view
+    end,
+}
 assert(loadfile("SeamlessUI/src/core/db.lua"))("SeamlessUI", app)
 app.db.profile = app.dbDefaults.profile
 function app.addon:NewModule()

@@ -9,6 +9,7 @@
 ---@field options SeamlessUI.Options
 ---@field xpBarTooltip SeamlessUI.XPBarTooltip
 ---@field blizzardEditMode SeamlessUI.BlizzardEditMode
+---@field blizzardPosition SeamlessUI.BlizzardPosition
 
 ---@class SeamlessUI.DB : AceDBObject-3.0
 ---@field profile SeamlessUI.DB.Profile

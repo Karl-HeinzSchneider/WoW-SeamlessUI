@@ -119,6 +119,60 @@ local function MinimapButtons(paint)
     end
 end
 
+-- Action bars --------------------------------------------------------------------------------
+
+---@param paint SeamlessDarkmode.Paint
+local function ActionBars(paint)
+    for _, name in ipairs({
+        "MainActionBar",
+        "MultiBarBottomLeft",
+        "MultiBarBottomRight",
+        "MultiBarRight",
+        "MultiBarLeft",
+        "MultiBar5",
+        "MultiBar6",
+        "MultiBar7",
+        "PetActionBar",
+        "StanceBar",
+        "PossessActionBar",
+    }) do
+        local bar = _G[name]
+        for _, button in ipairs(bar and bar.actionButtons or {}) do
+            paint(button.NormalTexture)
+            paint(button.SlotArt)
+        end
+    end
+end
+
+---@param paint SeamlessDarkmode.Paint
+local function EndCaps(paint)
+    local bar = _G.MainActionBar
+    local caps = bar and bar.EndCaps
+    paint(caps and caps.LeftEndCap and caps.LeftEndCap.Texture)
+    paint(caps and caps.RightEndCap and caps.RightEndCap.Texture)
+end
+
+-- XP and reputation share each container's border. Select its painter from the bar currently
+-- displayed, and restore it when the container switches to an unrelated bar.
+---@param experience SeamlessDarkmode.Paint
+---@param reputation SeamlessDarkmode.Paint
+---@param restore SeamlessDarkmode.Paint
+function app.StatusTrackingBars(experience, reputation, restore)
+    local info = _G.StatusTrackingBarInfo
+    for _, name in ipairs({ "MainStatusTrackingBarContainer", "SecondaryStatusTrackingBarContainer" }) do
+        local container = _G[name]
+        if container then
+            local paint = restore
+            if info and container.shownBarIndex == info.BarsEnum.Experience then
+                paint = experience
+            elseif info and container.shownBarIndex == info.BarsEnum.Reputation then
+                paint = reputation
+            end
+            paint(container.BarFrameTexture)
+        end
+    end
+end
+
 -- Every option group with the frame functions it switches. Order is the options order.
 ---@type SeamlessDarkmode.Group[]
 app.groups = {
@@ -132,4 +186,8 @@ app.groups = {
         name = "Minimap",
         frames = { Minimap, CalendarButton, TrackingButton, AddonCompartmentButton, MinimapButtons },
     },
+    { key = "actionbars", name = "Action bar slot borders", frames = { ActionBars } },
+    { key = "endcaps", name = "Action bar gryphons", frames = { EndCaps } },
+    { key = "experience", name = "XP bar border", frames = {} },
+    { key = "reputation", name = "Reputation bar border", frames = {} },
 }

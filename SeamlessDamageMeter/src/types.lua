@@ -1,4 +1,5 @@
 ---@class SeamlessDamageMeter
+---@field ApplyEditModeLayout fun(self: SeamlessDamageMeter) Restore the current native layout in the active profile.
 ---@field RefreshThreatWindows fun(self: SeamlessDamageMeter) Refresh visible threat windows immediately from client events.
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0
@@ -15,7 +16,6 @@
 ---@field newSkinName string?
 ---@field windowDefaults table
 ---@field windowOptions table
----@field editModeHooked boolean?
 ---@field detailTooltip table? Currently active hover panel; never saved.
 ---@field combatSpellTooltip table? Pooled combat spell-only hover panel.
 ---@field postCombatTooltip table? Pooled post-combat hover panel with target analysis.

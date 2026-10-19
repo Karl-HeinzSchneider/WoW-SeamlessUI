@@ -5,10 +5,15 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 ## Ownership and load order
 
 - `embeds.xml` loads all shared vendored libraries from `lib/`, including AceGUI, AceConfig,
-  AceDBOptions, LibSharedMedia, LibEditModeOverride and EditModeExpanded-1.0. Never patch vendored code.
+  AceDBOptions, LibSharedMedia, LibEditModeOverride and LibEditMode. LibEditMode loads
+  `namespaced.lua` before `embed.xml` into Core's private table; never register it with LibStub.
+  Feature addons obtain that instance through `core:GetEditModeLibrary()`. Never patch vendored code.
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
+- `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
+  dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes
+  to visible groups/rows. It owns its UIParent frame; never modify native layout containers.
 - `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
 - `questlog.lua`: displays completed quest count and XP in the quest log/world map header,
   left of its minimize button; refreshes when shown and when quest data or player level changes.
@@ -30,6 +35,62 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   Only the minimap button shows a hover tooltip; the compartment entry does not.
 - `src/types.lua`: annotations only, not loaded by the TOC.
 
+## Shared Edit Mode panel
+
+Core owns the extension window and all built-in controls. Feature addons register once with
+`core:RegisterEditModeOptions(id, spec)`, then call `core:RefreshEditModeOptions()` when their
+profile, enabled state, or other external values change. Core refreshes on Edit Mode enter,
+exit, layout changes and combat transitions. The panel hides outside Edit Mode or when it has
+no visible rows. Registration IDs must be unique; row keys must be unique within a group.
+
+```lua
+core:RegisterEditModeOptions("MyAddon", {
+    order = 100,
+    name = "My frames", -- optional group heading
+    enabled = function() return addon:IsEnabled() end,
+    options = {
+        {
+            key = "preview",
+            type = "toggle",
+            name = "Show my frames",
+            get = function() return showFrames end,
+            set = function(value)
+                showFrames = value
+                RefreshMyFrames()
+            end,
+        },
+        {
+            key = "reset",
+            type = "button",
+            name = "Reset my frames",
+            click = ResetMyFrames,
+        },
+    },
+})
+```
+
+Groups sort by `order` (default 100), then registration ID. Rows sort by `order`, defaulting
+to array position. `hidden` and `disabled` accept booleans or zero-argument functions. Built-in
+controls refresh after clicks and guard combat, disabled/hidden features and stale callbacks
+outside Edit Mode. Getters always read current state; Core does not persist feature settings.
+Labels wrap automatically, hidden rows reserve no space, and refreshes reuse existing frames.
+First show and size changes queue a coalesced one-frame refresh on the addon-owned panel;
+never discard layout invalidations during measurement or depend on a second Edit Mode entry.
+Unresolved panel width uses the native window width until anchors settle.
+
+For another widget or a compound group of frames, register a `type = "custom"` row with
+`create(parent)` returning an addon-owned frame directly parented to the supplied panel.
+Set its height; Core lays it out at full content width. An optional
+`layout(frame, width, disabled)` callback can update contents/child anchors and return its
+measured height (or leave the row's height in place). It must honor `disabled` for its own
+controls. Later row height changes automatically resize the panel. Do not reposition the row
+itself, reparent it, register it with Blizzard layout containers, or access library internals.
+Use the namespaced LibEditMode instance for movable systems and their individual dialogs;
+this registration API supplies the shared suite controls beside those systems.
+
+Run `lua src/tests/editmode-panel.lua` for grouping, dimensions, wrapped labels, custom rows,
+control callbacks, frame reuse, native-state isolation and visibility/combat guards.
+
 ## Options: one panel per addon, tabs inside
 
 Every addon has one AceConfig panel in Settings > AddOns, rendered by AceConfigDialog into the
@@ -44,6 +105,7 @@ child. A panel is a tab group, always in this order:
 Declare `## Dependencies: Seamless` in every feature TOC. At file load, obtain the
 core through `LibStub("AceAddon-3.0"):GetAddon("Seamless")`; no new global is needed.
 
+- `core:GetEditModeLibrary()`: the suite-owned namespaced LibEditMode instance.
 - `core.logger`: shared logger; its threshold follows the core profile.
 - `core:GetQuestLogSummary()`: a fresh table with `totalQuests`, `completedQuests` (ready to
   turn in), and `completedQuestXP` (the sum of client-reported XP rewards for those completed

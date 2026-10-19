@@ -639,7 +639,7 @@ function app:RegisterOptions()
                     teelo = {
                         type = "description",
                         order = 10,
-                        name = "Thanks to Teelo for creating Edit Mode Expanded and its EditModeExpanded-1.0 library, which powers Edit Mode integration for all ten meter windows.",
+                        name = "Thanks to p3lim for creating LibEditMode, which powers Edit Mode integration for all ten meter windows.",
                     },
                     github = {
                         type = "input",
@@ -647,7 +647,7 @@ function app:RegisterOptions()
                         width = "full",
                         name = "GitHub (select and copy)",
                         get = function()
-                            return "https://github.com/teelolws/EditModeExpanded"
+                            return "https://github.com/p3lim-wow/LibEditMode"
                         end,
                         set = function() end,
                     },

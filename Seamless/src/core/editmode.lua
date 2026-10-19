@@ -5,6 +5,7 @@ local addon = app.addon
 local lib = app.LibEditMode
 local registrations = {}
 local panel
+local framesTitle
 local refreshing = false
 local PADDING, HEADER, BOTTOM, GAP = 24, 44, 16, 6
 
@@ -48,6 +49,11 @@ local function EnsurePanel()
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
     title:SetPoint("TOP", 0, -15)
     title:SetText("SeamlessUI")
+    framesTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    framesTitle:SetJustifyH("LEFT")
+    framesTitle:SetWordWrap(true)
+    framesTitle:SetText(HUD_EDIT_MODE_SETTINGS_CATEGORY_TITLE_FRAMES or "Frames")
+    framesTitle:Hide()
     panel:SetScript("OnShow", QueueRefresh)
     panel:SetScript("OnSizeChanged", QueueRefresh)
 end
@@ -130,6 +136,11 @@ function addon:RefreshEditModeOptions()
         groups[#groups + 1] = { id = id, registration = registration }
     end
     table.sort(groups, function(a, b)
+        local leftSection = a.registration.spec.section == "frames" and 2 or 1
+        local rightSection = b.registration.spec.section == "frames" and 2 or 1
+        if leftSection ~= rightSection then
+            return leftSection < rightSection
+        end
         local left, right = a.registration.spec.order or 100, b.registration.spec.order or 100
         if left == right then
             return a.id < b.id
@@ -145,6 +156,10 @@ function addon:RefreshEditModeOptions()
     end
     local width = math.max(1, panelWidth - PADDING * 2)
     local y, count = HEADER, 0
+    local framesStarted = false
+    if framesTitle then
+        framesTitle:Hide()
+    end
     for _, group in ipairs(groups) do
         local registration = group.registration
         local spec = registration.spec
@@ -165,6 +180,17 @@ function addon:RefreshEditModeOptions()
         end
         if registration.title then
             registration.title:Hide()
+        end
+        if hasRows and spec.section == "frames" and not framesStarted then
+            framesStarted = true
+            if count > 0 then
+                y = y + GAP
+            end
+            framesTitle:ClearAllPoints()
+            framesTitle:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING + 5, -y)
+            framesTitle:SetWidth(math.max(1, width - 5))
+            framesTitle:Show()
+            y = y + math.max(32, framesTitle:GetStringHeight() + GAP)
         end
         if hasRows and spec.name then
             if not registration.title then
@@ -233,6 +259,7 @@ end
 function addon:RegisterEditModeOptions(id, spec)
     assert(type(id) == "string" and id ~= "" and not registrations[id], "Edit Mode option id must be unique")
     assert(type(spec) == "table" and type(spec.options) == "table", "Edit Mode options are required")
+    assert(spec.section == nil or spec.section == "options" or spec.section == "frames", "Unknown Edit Mode section")
     local keys = {}
     for _, option in ipairs(spec.options) do
         assert(type(option.key) == "string" and not keys[option.key], "Edit Mode row keys must be unique")

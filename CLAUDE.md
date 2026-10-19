@@ -83,6 +83,13 @@ must be added to its `ignore` list**, or it ships inside the addon's folder. Upl
 repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the project ids in the TOC
 (`## X-Curse-Project-ID`, `## X-Wago-ID`, `## X-WoWI-ID`); a site without both is skipped.
 
+## Shared Edit Mode controls
+
+Register custom frame preview/movability checkboxes in Core's shared Edit Mode panel with
+`core:RegisterEditModeOptions(id, { section = "frames", options = { ... } })`.
+They belong under the shared **Frames** heading. Register custom options above it with
+`section = "options"` (the default). See `Seamless/CLAUDE.md` for row types and callbacks.
+
 ## WoW addon constraints
 
 - Lua 5.1 with Blizzard's restricted API. No `require`, `io`, `os`, or `loadstring` of external

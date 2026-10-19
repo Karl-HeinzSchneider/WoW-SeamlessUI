@@ -171,6 +171,7 @@ local app = {
 assert(loadfile("Seamless/src/core/editmode.lua"))("Seamless", app)
 local enabled, hidden, value, clicked = true, false, true, 0
 core:RegisterEditModeOptions("meter", {
+    section = "frames",
     order = 20,
     enabled = function()
         return enabled
@@ -190,7 +191,10 @@ core:RegisterEditModeOptions("meter", {
     },
 })
 assert(not pcall(function()
-    core:RegisterEditModeOptions("meter", { options = {} })
+    core:RegisterEditModeOptions("meter", {
+        section = "frames",
+        options = {},
+    })
 end))
 editing = true
 callbacks.enter()
@@ -213,7 +217,7 @@ assert(toggle.parent.Label:GetWidth() == 430, "Unresolved panel anchors must use
 anchorsReady = true
 local pending = panel.scripts.OnUpdate
 pending(panel)
-assert(panel:GetWidth() == 510 and panel:GetHeight() == 92 and panel:IsShown())
+assert(panel:GetWidth() == 510 and panel:GetHeight() == 124 and panel:IsShown())
 assert(panel.scripts.OnUpdate == nil, "Settled layout must stop updating")
 assert(panel.points.TOPLEFT[3] == 0 and panel.points.TOPLEFT[4] == -8)
 local foundTitle = false
@@ -234,8 +238,8 @@ core:RegisterEditModeOptions("other", {
     enabled = function()
         return otherEnabled
     end,
-    order = 10,
-    name = "Other frames",
+    order = 100,
+    name = "Custom options",
     options = {
         {
             key = "custom",
@@ -269,6 +273,15 @@ for _, frame in ipairs(frames) do
     end
 end
 assert(custom.points.TOPLEFT[4] < 0 and custom.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
+local heading
+for _, frame in ipairs(frames) do
+    if frame.text == "Frames" then
+        heading = frame
+    end
+end
+assert(heading and heading:IsShown())
+assert(custom.points.TOPLEFT[4] > heading.points.TOPLEFT[4], "Options must precede Frames regardless of order")
+assert(heading.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
 local expanded = panel:GetHeight()
 custom:SetHeight(80)
 assert(panel:GetHeight() == expanded + 30, "Custom height changes must resize the panel")
@@ -297,6 +310,8 @@ combat = false
 enabled = false
 core:RefreshEditModeOptions()
 assert(not toggle.parent:IsShown())
+assert(not heading:IsShown(), "Empty Frames section must hide its heading")
+assert(panel:IsShown(), "Custom options must work without frame controls")
 otherEnabled = false
 core:RefreshEditModeOptions()
 assert(not panel:IsShown(), "Empty companion panel must hide")

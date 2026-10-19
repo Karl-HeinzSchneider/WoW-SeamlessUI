@@ -44,6 +44,7 @@ no visible rows. Registration IDs must be unique; row keys must be unique within
 
 ```lua
 core:RegisterEditModeOptions("MyAddon", {
+    section = "frames",
     order = 100,
     name = "My frames", -- optional group heading
     enabled = function() return addon:IsEnabled() end,
@@ -68,7 +69,20 @@ core:RegisterEditModeOptions("MyAddon", {
 })
 ```
 
-Groups sort by `order` (default 100), then registration ID. Rows sort by `order`, defaulting
+Register frame preview/movability checkboxes with `section = "frames"`. This is the
+correct place for every custom frame's Edit Mode checkbox, including Damage Meter and
+future frames. Core adds one shared gold **Frames** heading, hidden when no frame rows
+are visible. The checkbox controls the feature's preview/selection state; register the actual
+movable frame through `core:GetEditModeLibrary()` as before.
+
+Custom options belong above Frames, inside the same window. Use the same simple API,
+`core:RegisterEditModeOptions(id, { section = "options", options = { ... } })`;
+`section` defaults to `"options"`. Toggle, button and custom rows all work there with the
+callbacks shown here. Use separate registration IDs when an addon contributes to both areas.
+The options area takes only the space its visible controls need.
+
+Sections always place options before frames, regardless of group order.
+Within each section, groups sort by `order` (default 100), then registration ID. Rows sort by `order`, defaulting
 to array position. `hidden` and `disabled` accept booleans or zero-argument functions. Built-in
 controls refresh after clicks and guard combat, disabled/hidden features and stale callbacks
 outside Edit Mode. Getters always read current state; Core does not persist feature settings.

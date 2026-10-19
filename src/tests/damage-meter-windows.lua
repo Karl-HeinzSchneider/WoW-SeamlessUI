@@ -1117,6 +1117,12 @@ function eme:RegisterFrame(frame, name, db)
         end
     end)
     frame.SetScaleOverride = frame.SetScale
+    frame.CanBeMoved = function(self)
+        return self.isSelected
+    end
+    frame.MoveWithArrowKey = function(self)
+        self.arrowMoves = (self.arrowMoves or 0) + 1
+    end
 end
 function eme:RegisterResizable(frame, minimum, maximum, step)
     assert(minimum == 50 and maximum == 200 and step == 5)
@@ -1355,6 +1361,23 @@ meter.resize:GetScript("OnMouseDown")(meter.resize, "LeftButton")
 assert(meter:GetWidth() == lockedWidth and not meter.editing)
 meter.editModeChecks.lockSize.unchecked(false)
 assert(meter.resize:IsShown() and meter.resize.mouseEnabled)
+meter.isSelected = true
+meter.editModeChecks.lockPosition.unchecked(true)
+assert(not app:GetWindowSetting(meter.config, "lockPosition"))
+assert(meter:CanBeMoved())
+meter:MoveWithArrowKey("RIGHT")
+assert(meter.arrowMoves == 1)
+meter.editModeChecks.lockPosition.checked()
+assert(eme.framesDB[meter.system].settings[12].lockPosition == 1)
+assert(not meter:CanBeMoved())
+meter:MoveWithArrowKey("RIGHT")
+meter.title:GetScript("OnDragStart")()
+assert(meter.arrowMoves == 1 and not meter.editing)
+assert(meter.resize:IsShown() and meter.resize.mouseEnabled, "Position lock must preserve resizing")
+meter.editModeChecks.lockPosition.unchecked(false)
+assert(meter:CanBeMoved() and eme.framesDB[meter.system].settings[12].lockPosition == 0)
+meter:MoveWithArrowKey("RIGHT")
+assert(meter.arrowMoves == 2)
 meter.editModeChecks.fixedHeight.unchecked(false)
 assert(not app:GetWindowSetting(meter.config, "fixedHeight"))
 assert(eme.framesDB[meter.system].settings[12].fixedHeight == 0)
@@ -1728,17 +1751,38 @@ local oldRefresh = app.RefreshWindows
 app.RefreshWindows = function() end
 meter.config.noninteractive = nil
 meter.settings:GetScript("OnClick")(meter.settings)
-local expected =
-    { "Settings", "Editmode", false, "Make Noninteractive", "Reset Data", "Delete Window", false, "Create New Window" }
+local expected = {
+    "Settings",
+    "Editmode",
+    false,
+    "Lock Position",
+    "Make Noninteractive",
+    "Reset Data",
+    "Delete Window",
+    false,
+    "Create New Window",
+}
 assert(#menuRoot.entries == #expected)
 for index, label in ipairs(expected) do
     assert(label and menuRoot.entries[index].label == label or not label and menuRoot.entries[index].spacer)
 end
 menuRoot.entries[4].choose()
+assert(app:GetWindowSetting(meter.config, "lockPosition"))
+meter.settings:GetScript("OnClick")(meter.settings)
+assert(menuRoot.entries[4].label == "Unlock Position")
+menuRoot.entries[4].choose()
+assert(not app:GetWindowSetting(meter.config, "lockPosition"))
+menuRoot.entries[5].choose()
 assert(meter.config.noninteractive)
 meter.settings:GetScript("OnClick")(meter.settings)
-assert(menuRoot.entries[4].label == "Make Interactive")
+assert(menuRoot.entries[5].label == "Make Interactive")
 menuRoot.entries[4].choose()
+assert(app:GetWindowSetting(meter.config, "lockPosition"))
+meter.settings:GetScript("OnClick")(meter.settings)
+assert(menuRoot.entries[4].label == "Unlock Position")
+menuRoot.entries[4].choose()
+assert(not app:GetWindowSetting(meter.config, "lockPosition"))
+menuRoot.entries[5].choose()
 assert(not meter.config.noninteractive)
 local resetCalls = 0
 C_DamageMeter = {
@@ -1746,7 +1790,7 @@ C_DamageMeter = {
         resetCalls = resetCalls + 1
     end,
 }
-menuRoot.entries[5].choose()
+menuRoot.entries[6].choose()
 assert(resetCalls == 1)
 local opened
 app.core = {

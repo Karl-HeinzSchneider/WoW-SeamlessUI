@@ -9,6 +9,7 @@ app.windowDefaults = {
     visibleLines = 7,
     showResizeHandle = true,
     lockSize = false,
+    lockPosition = false,
     scale = 1,
     point = "CENTER",
     relativePoint = "CENTER",

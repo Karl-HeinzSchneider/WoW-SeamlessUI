@@ -6,6 +6,11 @@ local SCALE_SETTING = 16 -- EditModeExpanded's FrameSize setting.
 local CHECKBOX_SETTING = 12 -- EditModeExpanded custom checkboxes.
 local SLIDER_SETTING = 18 -- EditModeExpanded's custom sliders.
 
+-- Only slider values are quantized; stored geometry can retain intentional fractions.
+local function SliderValue(value, step)
+    return math.floor(value / step + 0.5) * step
+end
+
 local function ResizeWindow(frame, key, value)
     if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
         return
@@ -18,6 +23,7 @@ local function ResizeWindow(frame, key, value)
         app:SyncWindowEditMode(frame)
         return
     end
+    value = SliderValue(value, 1)
     if value == app:GetWindowSetting(frame.config, key) then
         return
     end
@@ -72,7 +78,7 @@ local function RegisterAppearanceControls(frame)
     for _, definition in ipairs(appearanceSliders) do
         local key, divisor = definition[2], definition[6] or 1
         lib:RegisterSlider(frame, definition[1], key, function(value)
-            SetSkinOption(frame, key, value / divisor)
+            SetSkinOption(frame, key, SliderValue(value, definition[5]) / divisor)
         end, definition[3], definition[4], definition[5])
     end
     for _, definition in ipairs(appearanceChecks) do
@@ -183,7 +189,7 @@ function app:SyncWindowEditMode(frame)
             end
         end, "fixedHeight")
         lib:RegisterSlider(frame, "Row count", "visibleLines", function(value)
-            SetWindowOption(frame, "visibleLines", math.floor(value + 0.5))
+            SetWindowOption(frame, "visibleLines", SliderValue(value, 1))
         end, 1, 30, 1)
         lib:RegisterCustomCheckbox(frame, "Lock size", function()
             SetWindowOption(frame, "lockSize", true)
@@ -212,11 +218,16 @@ function app:SyncWindowEditMode(frame)
                 app.core:RefreshOptions("SeamlessDamageMeter")
             end
         end)
-        hooksecurefunc(frame, "SetScaleOverride", function()
+        hooksecurefunc(frame, "SetScaleOverride", function(_, newScale)
             if frame.config and not InCombatLockdown() and not frame.syncingEditMode then
-                if frame:GetScale() ~= app:GetWindowSetting(frame.config, "scale") then
-                    frame.config.overrides.scale = frame:GetScale()
+                local configured = app:GetWindowSetting(frame.config, "scale")
+                local scale = configured
+                if math.abs(newScale - configured) > 0.000001 then
+                    scale = app:IsEditingWindows() and SliderValue(newScale * 100, 5) / 100 or newScale
+                    frame.config.overrides.scale = scale
                 end
+                local db = lib.framesDB[frame.system]
+                db.settings[SCALE_SETTING] = SliderValue(scale * 100, 5)
                 app:SaveWindowPosition(frame, true)
                 app.core:RefreshOptions("SeamlessDamageMeter")
             end
@@ -254,11 +265,11 @@ function app:SyncWindowEditMode(frame)
     db.x, db.y = frame:GetRect()
     db.defaultX, db.defaultY = db.x, db.y
     db.defaultScale = frame:GetScale()
-    db.settings[SCALE_SETTING] = frame:GetScale() * 100
+    db.settings[SCALE_SETTING] = SliderValue(self:GetWindowSetting(config, "scale") * 100, 5)
     db.settings[SLIDER_SETTING] = db.settings[SLIDER_SETTING] or {}
-    db.settings[SLIDER_SETTING].width = self:GetWindowSetting(config, "width")
-    db.settings[SLIDER_SETTING].height = self:GetWindowSetting(config, "height")
-    db.settings[SLIDER_SETTING].visibleLines = math.floor(self:GetWindowSetting(config, "visibleLines") + 0.5)
+    db.settings[SLIDER_SETTING].width = SliderValue(self:GetWindowSetting(config, "width"), 1)
+    db.settings[SLIDER_SETTING].height = SliderValue(self:GetWindowSetting(config, "height"), 1)
+    db.settings[SLIDER_SETTING].visibleLines = SliderValue(self:GetWindowSetting(config, "visibleLines"), 1)
     db.settings[CHECKBOX_SETTING] = db.settings[CHECKBOX_SETTING] or {}
     db.settings[CHECKBOX_SETTING].fixedHeight = self:GetWindowSetting(config, "fixedHeight") and 1 or 0
     db.settings[CHECKBOX_SETTING].lockSize = self:GetWindowSetting(config, "lockSize") and 1 or 0
@@ -268,7 +279,7 @@ function app:SyncWindowEditMode(frame)
         if key == "backgroundColor" then
             value = value[4]
         end
-        db.settings[SLIDER_SETTING][key] = value * multiplier
+        db.settings[SLIDER_SETTING][key] = SliderValue(value * multiplier, definition[5])
     end
     for _, definition in ipairs(appearanceChecks) do
         local key = definition[2]

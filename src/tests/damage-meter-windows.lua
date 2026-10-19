@@ -1153,6 +1153,19 @@ assert(meter:IsShown() and meter.config.enabled, "Activation survives ordinary r
 meter:SetScaleOverride(1.25)
 assert(meter.config.overrides.scale == 1.25)
 assert(eme.framesDB[meter.system].settings[16] ~= nil)
+meter:SetScaleOverride(0.8999997615814)
+assert(meter.config.overrides.scale == 0.9, "Snap Edit Mode scale input before saving")
+assert(eme.framesDB[meter.system].settings[16] == 90)
+meter.config.overrides.scale = 0.923456
+meter:SetScaleOverride(0.923456)
+assert(meter.config.overrides.scale == 0.923456, "Unchanged fractional scale must survive library callbacks")
+meter.config.overrides.width = 401.2345
+app:SyncWindowEditMode(meter)
+assert(eme.framesDB[meter.system].settings[16] == 90)
+assert(eme.framesDB[meter.system].settings[18].width == 401)
+assert(meter.config.overrides.scale == 0.923456 and meter.config.overrides.width == 401.2345)
+meter.editModeSliders.width(449.999976)
+assert(meter.config.overrides.width == 450)
 local originalDatabase = meter.config.editMode
 app.db.profile = { windows = {}, initialized = false, windowDefaults = app.windowDefaults }
 app:RebuildWindows()
@@ -1213,6 +1226,13 @@ assert(dialogRefreshes == 1, "Avoid rebuilding pooled EME sliders during a drag"
 draggingSettings = false
 EditModeExpandedSystemSettingsDialog = nil
 local skin = app.db.profile.skins[meter.config.skin].settings
+meter.editModeSliders.rowHeight(29.999976)
+meter.editModeSliders.windowAlpha(74.999976)
+meter.editModeSliders.fontSize(119.999976)
+assert(skin.rowHeight == 30 and skin.windowAlpha == 0.75 and skin.fontSize == 18)
+skin.fontSize = 17
+app:SyncWindowEditMode(meter)
+assert(eme.framesDB[meter.system].settings[18].fontSize == 110 and skin.fontSize == 17)
 meter.editModeSliders.rowHeight(30)
 meter.editModeSliders.rowSpacing(6)
 meter.editModeSliders.windowAlpha(75)

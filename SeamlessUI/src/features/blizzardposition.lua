@@ -12,6 +12,25 @@ for _, point in ipairs(anchors) do
 end
 local keys = { "point", "relativePoint", "relativeTo", "offsetX", "offsetY" }
 local labels = { "Anchor", "AnchorParent", "AnchorFrame", "X", "Y" }
+-- These objects are created by the default client even when their unit is absent.
+-- UIParent stays first; the remaining display names are alphabetical.
+local anchorFrames = {
+    { value = "UIParent", text = "UIParent" },
+    { value = "FocusFrame", text = "Focus frame" },
+    { value = "Minimap", text = "Minimap" },
+    { value = "PlayerFrame", text = "Player frame" },
+    { value = "TargetFrame", text = "Target frame" },
+}
+
+local function anchorFrameLabel(name)
+    for _, entry in ipairs(anchorFrames) do
+        if entry.value == name then
+            return entry.text
+        end
+    end
+    -- Reflect existing layouts without adding arbitrary frames to the selector.
+    return name or "Unknown"
+end
 
 local function finite(value)
     return value and value == value and value > -math.huge and value < math.huge
@@ -145,46 +164,100 @@ function position:Create(parent)
     end
 
     for index, key in ipairs(keys) do
-        local label = view:CreateFontString(nil, "ARTWORK", "GameFontHighlight")
-        label:SetPoint("TOPLEFT", 0, -(index - 1) * 35 - 8)
-        label:SetText(labels[index])
-        local control
-        if index <= 2 then
-            control = CreateFrame("DropdownButton", nil, view, "WowStyle1DropdownTemplate")
-            control:SetHeight(30)
-            control:SetupMenu(function(_, root)
-                for _, anchor in ipairs(anchors) do
-                    root:CreateRadio(anchor, function()
-                        return view.values[key] == anchor
-                    end, function()
-                        view:Commit(key, anchor, control.system)
-                    end)
+        local row
+        if index <= 3 then
+            -- Same label font, dimensions and dropdown template as LibEditMode.
+            row = CreateFrame("Frame", nil, view)
+            row.Label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightMedium")
+            row.Label:SetPoint("LEFT")
+            row.Label:SetWidth(100)
+            row.Label:SetJustifyH("LEFT")
+            row.Dropdown = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
+            row.Dropdown:SetPoint("LEFT", row.Label, "RIGHT", 5, 0)
+            row.Dropdown:SetSize(200, 30)
+            row.Dropdown:SetupMenu(function(_, root)
+                local system = row.system
+                if index == 3 then
+                    for _, entry in ipairs(anchorFrames) do
+                        local item = root:CreateRadio(entry.text, function()
+                            return view.values[key] == entry.value
+                        end, function()
+                            view:Commit(key, entry.value, system)
+                        end)
+                        local target = _G[entry.value]
+                        item:SetEnabled(target ~= nil and not dependsOn(target, system, {}))
+                    end
+                else
+                    for _, anchor in ipairs(anchors) do
+                        root:CreateRadio(anchor, function()
+                            return view.values[key] == anchor
+                        end, function()
+                            view:Commit(key, anchor, system)
+                        end)
+                    end
                 end
             end)
         else
-            control = CreateFrame("EditBox", nil, view, "InputBoxTemplate")
-            control:SetHeight(26)
-            control:SetAutoFocus(false)
-            control:SetMaxLetters(index == 3 and 128 or 24)
-            control:SetScript("OnEnterPressed", function(self)
+            -- Use the very same slider template as LibEditMode, including its
+            -- steppers/right-hand value. Replace callbacks only on our own row.
+            row = CreateFrame("Frame", nil, view, "EditModeSettingSliderTemplate")
+            row.cbrHandles:Unregister()
+            row.cbrHandles:RegisterCallback(
+                row.Slider,
+                MinimalSliderWithSteppersMixin.Event.OnValueChanged,
+                function(_, value)
+                    if not row.syncing then
+                        view:Commit(key, value, row.system)
+                    end
+                end,
+                row
+            )
+            row.Slider:SetWidth(200)
+            row.Slider.MinText:Hide()
+            row.Slider.MaxText:Hide()
+            row.Label:SetPoint("LEFT")
+            local edit = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+            row.EditBox = edit
+            edit:SetAutoFocus(false)
+            edit:SetJustifyH("CENTER")
+            edit:SetMaxLetters(24)
+            local function resetInput(self)
+                row.Slider:Show()
+                self:SetText("")
+                self:ClearAllPoints()
+                self:SetPoint("RIGHT", row.Slider.RightText, 5, 0)
+                self:SetPoint("TOPLEFT", row.Slider.RightText)
+                self:SetPoint("BOTTOMLEFT", row.Slider.RightText)
+            end
+            resetInput(edit)
+            edit:SetScript("OnEditFocusGained", function(self)
+                row.Slider:Hide()
+                self:ClearAllPoints()
+                self:SetPoint("RIGHT", row.Slider.RightText, 5, 0)
+                self:SetPoint("TOPLEFT", row.Slider)
+                self:SetPoint("BOTTOMLEFT", row.Slider)
+                self:SetText(tostring(view.values[key] or 0))
+                self:SetCursorPosition(0)
+            end)
+            edit:SetScript("OnEnterPressed", function(self)
+                view:Commit(key, self:GetText(), row.system)
+                self:ClearFocus()
+                view:Refresh(view.system)
+            end)
+            edit:SetScript("OnEscapePressed", function(self)
                 self:ClearFocus()
             end)
-            control:SetScript("OnEscapePressed", function(self)
-                self:SetText(tostring(view.values[key] or ""))
-                self:ClearFocus()
-            end)
-            control:SetScript("OnEditFocusLost", function(self)
-                view:Commit(key, self:GetText():match("^%s*(.-)%s*$"), self.system)
-            end)
-            control:SetScript("OnTabPressed", function(self)
-                self:ClearFocus()
-                local nextControl = view.controls[keys[index == 5 and 3 or index + 1]]
-                nextControl:SetFocus()
+            edit:SetScript("OnEditFocusLost", function(self)
+                resetInput(self)
+                view:Refresh(view.system)
             end)
         end
-        control:SetPoint("TOPLEFT", 110, -(index - 1) * 35)
-        control:SetPoint("TOPRIGHT", 0, -(index - 1) * 35)
-        view.controls[key] = control
+        row.Label:SetText(labels[index])
+        row:SetHeight(32)
+        row:SetPoint("TOPLEFT", 0, -(index - 1) * 35)
+        row:SetPoint("TOPRIGHT", 0, -(index - 1) * 35)
+        row:Show()
+        view.controls[key] = row
     end
 
     function view:Refresh(system)
@@ -194,20 +267,43 @@ function position:Create(parent)
         self.values = values
         local editable = position:CanEdit(system)
         for index, key in ipairs(keys) do
-            local control = self.controls[key]
-            if changedSystem and index > 2 then
-                control:ClearFocus()
+            local row = self.controls[key]
+            if changedSystem and row.EditBox then
+                row.EditBox:ClearFocus()
             end
-            control.system = system
-            control:SetEnabled(editable and values.point ~= nil)
-            if index <= 2 then
-                if changedSystem or control.value ~= values[key] then
-                    control.value = values[key]
-                    control:SetDefaultText(values[key] or "Unknown")
-                    control:GenerateMenu()
+            row.system = system
+            local enabled = editable and values.point ~= nil
+            row.Label:SetTextColor((enabled and WHITE_FONT_COLOR or DISABLED_FONT_COLOR):GetRGB())
+            if index <= 3 then
+                row.Dropdown:SetEnabled(enabled)
+                if changedSystem or row.value ~= values[key] then
+                    row.value = values[key]
+                    row.Dropdown:SetDefaultText(
+                        index == 3 and anchorFrameLabel(values[key]) or values[key] or "Unknown"
+                    )
+                    row.Dropdown:GenerateMenu()
                 end
-            elseif not control:HasFocus() then
-                control:SetText(tostring(values[key] or ""))
+            else
+                row.Slider:SetEnabled(enabled)
+                row.EditBox:SetShown(enabled)
+                if not row.EditBox:HasFocus() and (changedSystem or row.value ~= values[key]) then
+                    row.value = values[key]
+                    -- Screen-sized ranges, expanded for an existing offset so
+                    -- large layouts are never clamped merely by opening the UI.
+                    local extent = index == 4 and UIParent:GetWidth() or UIParent:GetHeight()
+                    extent = math.max(1, math.ceil(extent), math.ceil(math.abs(tonumber(values[key]) or 0)))
+                    local formatters = {
+                        [MinimalSliderWithSteppersMixin.Label.Right] = CreateMinimalSliderFormatter(
+                            MinimalSliderWithSteppersMixin.Label.Right,
+                            function(value)
+                                return tostring(value)
+                            end
+                        ),
+                    }
+                    row.syncing = true
+                    row.Slider:Init(tonumber(values[key]) or 0, -extent, extent, extent * 2, formatters)
+                    row.syncing = false
+                end
             end
         end
         if changedSystem then
@@ -216,7 +312,8 @@ function position:Create(parent)
         message:SetText(
             self.error
                 or (
-                    editable and "Press Enter or leave a field to apply. Use Edit Mode Save or Revert to finish."
+                    editable
+                        and "Click a value to type; Enter applies, Escape cancels. Use Edit Mode Save or Revert to finish."
                     or "Select a custom Edit Mode layout to edit position."
                 )
         )

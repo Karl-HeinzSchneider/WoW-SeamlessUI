@@ -17,15 +17,23 @@ features are ready for public release.
    `tweaks.questXPTooltip = false` into the same-named UI profile and clears it from Core.
 5. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
    unit frame. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft;
-   Anchor/AnchorParent dropdowns expose nine anchor points, AnchorFrame accepts a named frame,
-   and X/Y accept signed decimal offsets in Edit Mode's scale-independent units. Validates
+   Anchor/AnchorParent dropdowns expose nine anchor points. AnchorFrame offers only UIParent
+   first, then Focus frame (`FocusFrame`), Minimap (`Minimap`), Player frame (`PlayerFrame`),
+   Target frame (`TargetFrame`) in display-name order; invalid/cyclic targets are disabled.
+   Existing anchors outside that list are displayed but never added as selector entries.
+   Dropdown label fonts, widths and templates match LibEditMode. X/Y use the library's same
+   `EditModeSettingSliderTemplate` with steppers and editable right-hand value. Clear only our
+   own row's native setting callbacks before wiring position callbacks; never use library pools.
+   Sliders span one screen each way (expanded for existing/typed offsets), with unit steps;
+   numeric input accepts signed decimals in Edit Mode's scale-independent units. Validates
    names, finite numbers and anchor/parent cycles, then calls LibEditModeOverride's public
    `LoadLayouts`/`ReanchorFrame`. Mirrors that anchor into the live draft and calls the client
    frame's `ApplySystemAnchor`, preserving its saved baseline and other pending settings.
    Never calls `SaveOnly` or `ApplyChanges` while editing: those save the library's separate
    layout copy, and the latter closes Edit Mode. Native Save/Revert owns persistence. Preset
    and override layouts are read-only. Fields refresh while visible after dragging/nudging,
-   but never replace focused input. Enter/focus loss commits; Escape discards typed input.
+   but never replace focused input. As in LibEditMode, click the value to type, Enter commits,
+   and Escape/focus loss discards typed input.
 6. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extension for Player,
    Target, Pet and Focus. Profile `blizzardEditMode` has a global `enabled` switch and per-frame
    `enabled`, `addPosition`, `addMoreOptions` switches. Add position displays the position

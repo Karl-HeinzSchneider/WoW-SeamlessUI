@@ -58,6 +58,9 @@ local function frame(name, parent)
     end
     function f:SetFocus()
         self.focus = true
+        if self.scripts.OnEditFocusGained then
+            self.scripts.OnEditFocusGained(self)
+        end
     end
     function f:ClearFocus()
         local focused = self.focus
@@ -69,16 +72,79 @@ local function frame(name, parent)
     function f:CreateFontString()
         return frame()
     end
-    for _, key in ipairs({ "SetHeight", "SetWordWrap", "SetJustifyH", "SetAutoFocus", "SetMaxLetters" }) do
+    function f:Show()
+        self.shown = true
+    end
+    function f:Hide()
+        self.shown = false
+    end
+    function f:SetShown(value)
+        self.shown = value
+    end
+    function f:GetWidth()
+        return 1920
+    end
+    function f:GetHeight()
+        return 1080
+    end
+    for _, key in ipairs({
+        "SetHeight",
+        "SetWidth",
+        "SetSize",
+        "SetWordWrap",
+        "SetJustifyH",
+        "SetAutoFocus",
+        "SetMaxLetters",
+        "SetCursorPosition",
+        "SetTextColor",
+    }) do
         f[key] = function() end
     end
     return f
 end
-function CreateFrame(_, name, parent)
-    return frame(name, parent)
+function CreateFrame(_, name, parent, template)
+    local f = frame(name, parent)
+    f.template = template
+    if template == "EditModeSettingSliderTemplate" then
+        f.Label = frame()
+        f.Slider = frame()
+        f.Slider.MinText, f.Slider.MaxText, f.Slider.RightText = frame(), frame(), frame()
+        function f.Slider:Init(value, min, max, steps)
+            self.min, self.max, self.steps = min, max, steps
+            self:SetValue(value)
+        end
+        function f.Slider:SetValue(value)
+            self.value = value
+            if self.callback then
+                self.callback(self.owner, value)
+            end
+        end
+        f.cbrHandles = {
+            Unregister = function(self)
+                self.cleared = true
+            end,
+        }
+        function f.cbrHandles:RegisterCallback(slider, _, callback, owner)
+            assert(self.cleared, "Native settings callbacks must be removed")
+            slider.callback, slider.owner = callback, owner
+        end
+    end
+    return f
+end
+WHITE_FONT_COLOR = {
+    GetRGB = function()
+        return 1, 1, 1
+    end,
+}
+DISABLED_FONT_COLOR = WHITE_FONT_COLOR
+MinimalSliderWithSteppersMixin = { Event = { OnValueChanged = "OnValueChanged" }, Label = { Right = 1 } }
+function CreateMinimalSliderFormatter(_, formatter)
+    return formatter
 end
 UIParent = frame("UIParent")
 AnchorTarget = frame("AnchorTarget", UIParent)
+FocusFrame, TargetFrame, Minimap =
+    frame("FocusFrame", UIParent), frame("TargetFrame", UIParent), frame("Minimap", UIParent)
 local library
 LibStub = setmetatable({
     NewLibrary = function()
@@ -231,46 +297,84 @@ reject({ offsetX = 99 })
 app.db.profile.blizzardEditMode.frames.player.addPosition = true
 local view = position:Create(frame())
 view:Refresh(player)
-assert(view.controls.offsetX:GetText() == "-42.5")
+local x, y = view.controls.offsetX, view.controls.offsetY
+assert(x.template == "EditModeSettingSliderTemplate" and y.template == "EditModeSettingSliderTemplate")
+assert(x.Slider.value == -42.5 and x.Slider.min == -1920 and x.Slider.max == 1920)
+assert(x.Slider.steps == 3840)
 local menu = { entries = {} }
 function menu:CreateRadio(text, get, set)
-    self.entries[text] = { get = get, set = set }
+    local entry = { get = get, set = set }
+    function entry:SetEnabled(value)
+        self.enabled = value
+    end
+    self.entries[text] = entry
+    self.order = self.order or {}
+    table.insert(self.order, text)
+    return entry
 end
-view.controls.point.menu(nil, menu)
+view.controls.point.Dropdown.menu(nil, menu)
 assert(menu.entries.BOTTOM.get())
 menu.entries.TOPRIGHT.set()
 assert(position:Read(player).point == "TOPRIGHT")
 local parentMenu = { entries = {}, CreateRadio = menu.CreateRadio }
-view.controls.relativePoint.menu(nil, parentMenu)
+view.controls.relativePoint.Dropdown.menu(nil, parentMenu)
 parentMenu.entries.BOTTOMLEFT.set()
 assert(position:Read(player).relativePoint == "BOTTOMLEFT" and position:Read(player).point == "TOPRIGHT")
+local frameMenu = { entries = {}, CreateRadio = menu.CreateRadio }
+view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
+assert(table.concat(frameMenu.order, ",") == "UIParent,Focus frame,Minimap,Player frame,Target frame")
+assert(not frameMenu.entries["Player frame"].enabled and frameMenu.entries.Minimap.enabled)
+assert(frameMenu.entries.AnchorTarget == nil)
+frameMenu.entries["Focus frame"].set()
+assert(position:Read(player).relativeTo == "FocusFrame")
+assert(view.controls.relativeTo.Dropdown.text == "Focus frame")
+Minimap:SetPoint("CENTER", player, "CENTER", 0, 0)
+view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
+assert(not frameMenu.entries.Minimap.enabled)
+Minimap:ClearAllPoints()
+TargetFrame = nil
+view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
+assert(not frameMenu.entries["Target frame"].enabled)
+TargetFrame = frame("TargetFrame", UIParent)
+-- Steppers and slider dragging use the same override path as typed values.
+x.Slider:SetValue(-41.5)
+assert(position:Read(player).offsetX == -41.5)
 -- Simulate dragging elsewhere in Edit Mode while typing: refresh other fields,
 -- but preserve typed text and use the latest untouched anchor fields on commit.
-view.controls.offsetX:SetFocus()
-view.controls.offsetX:SetText("-17.125")
+x.EditBox:SetFocus()
+x.EditBox:SetText("-17.125")
 draft.systems[1].anchorInfo.offsetY = 150
 view:Refresh(player)
-assert(view.controls.offsetX:GetText() == "-17.125" and view.controls.offsetY:GetText() == "150")
-view.controls.offsetX:ClearFocus()
+assert(x.EditBox:GetText() == "-17.125" and y.Slider.value == 150)
+x.EditBox.scripts.OnEnterPressed(x.EditBox)
 assert(position:Read(player).offsetX == -17.125 and position:Read(player).offsetY == 150 and saves == 0)
-view.controls.offsetX:SetFocus()
-view.controls.offsetX:SetText("junk")
-view.controls.offsetX.scripts.OnEscapePressed(view.controls.offsetX)
+x.EditBox:SetFocus()
+x.EditBox:SetText("junk")
+x.EditBox.scripts.OnEscapePressed(x.EditBox)
 assert(not view.error and position:Read(player).offsetX == -17.125)
+-- Numeric input can exceed the screen-sized slider range without being clamped.
+x.EditBox:SetFocus()
+x.EditBox:SetText("-5000.25")
+x.EditBox.scripts.OnEnterPressed(x.EditBox)
+assert(position:Read(player).offsetX == -5000.25 and x.Slider.min == -5001)
+x.EditBox:SetFocus()
+x.EditBox:SetText("-17.125")
+x.EditBox.scripts.OnEnterPressed(x.EditBox)
 -- An old field callback cannot apply to the newly selected frame.
-view.controls.offsetX:SetFocus()
-view.controls.offsetX:SetText("500")
+x.EditBox:SetFocus()
+x.EditBox:SetText("500")
 selected = frame("OtherFrame")
-view.controls.offsetX:ClearFocus()
+x.EditBox.scripts.OnEnterPressed(x.EditBox)
+frameMenu.entries["Focus frame"].set()
 assert(position:Read(player).offsetX == -17.125)
 selected = player
 preset = true
 view:Refresh(player)
-assert(not view.controls.offsetX.enabled)
+assert(not x.Slider.enabled and not x.EditBox.shown)
 preset = false
 -- The live draft can be reverted without the override cache having saved anything.
 draft = copy(saved.layouts[1])
 player.systemInfo = draft.systems[1]
 view:Refresh(player)
-assert(view.controls.offsetX:GetText() == "120" and saves == 0)
+assert(x.Slider.value == 120 and saves == 0)
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")

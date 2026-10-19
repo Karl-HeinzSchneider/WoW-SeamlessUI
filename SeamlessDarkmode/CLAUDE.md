@@ -14,9 +14,11 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
     interaction highlights untouched), and `MinimapButtons`
     (the `border` of every LibDBIcon button from `GetButtonList`; core.lua
     refreshes on `LibDBIcon_IconCreated` so later buttons are painted too).
-    Tracking: tint the separate `MinimapCluster.Tracking.Background` on the parent frame.
-    Calendar and tracking button artwork (`StateTexture`) keeps its original color.
-    Calendar has no separate border layer in its client template.
+    Calendar and tracking: `MinimapButtonBorders` renders nine disjoint sections of each
+    existing `StateTexture` atlas, tinting only the three-pixel perimeter of the 23x23 artwork.
+    The center keeps its original vertex color. Sections draw below additive interaction
+    artwork and notifications. The original texture's alpha is restored and sections hidden
+    when disabled. The tracking parent's background is covered by the button and is not tinted.
   - Action bars: `NormalTexture` on the main bar, seven multi bars, pet, stance and possess
     bars. Leave `SlotArt` and `SlotBackground` unchanged. Gryphons: `MainActionBar.EndCaps`
     left and right `Texture`.
@@ -35,6 +37,8 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
   supported only when it has a function here that names its textures.
 - Each frame function takes `paint` and calls it on every texture it owns. The same function
   applies darkmode (`tint`) and removes it (`restore`), so a texture listed once is undone too.
+  `MinimapButtonBorders` additionally receives the active state to restore the original
+  combined artwork when disabled; it reuses existing artwork and never tints its center.
 - Only decoration: never pass portraits, icons, bar fills, text or flash/status/highlight
   textures.
 - Take texture keys from the client's export (`Blizzard_UnitFrame`, `Blizzard_Minimap`; Camelot
@@ -47,3 +51,5 @@ Manual validation: toggle each group and the master switch, change the color, sw
 rotate the minimap, and check the frames in a vehicle, in a party and in boss fights. Check
 occupied and empty action slots, pet/stance bars, gryphons, and XP/reputation swapping between
 the main and secondary containers (including a switch to honor with its original border).
+Check calendar/tracking borders with their icons unchanged, hover/press states and calendar
+notifications, and confirm the original button artwork returns when minimap darkmode is off.

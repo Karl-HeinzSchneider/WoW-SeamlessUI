@@ -5,6 +5,7 @@
 ---@field db AceDBObject-3.0
 ---@field groups SeamlessDarkmode.Group[]
 ---@field StatusTrackingBars fun(experience: SeamlessDarkmode.Paint, reputation: SeamlessDarkmode.Paint, restore: SeamlessDarkmode.Paint)
+---@field MinimapButtonBorders fun(paint: SeamlessDarkmode.Paint, active: boolean)
 
 ---@class SeamlessDarkmode.Group
 ---@field key string

@@ -59,12 +59,48 @@ function LibStub(major)
     }
 end
 local function texture(alpha)
-    local t = { color = { 1, 1, 1, alpha or 1 } }
+    local t = { color = { 1, 1, 1, alpha or 1 }, alpha = 0.8, shown = true }
     function t:GetVertexColor()
         return unpack(self.color)
     end
     function t:SetVertexColor(r, g, b, a)
         self.color = { r, g, b, a or 1 }
+    end
+    function t:GetTexture()
+        return 8026705
+    end
+    function t:GetDrawLayer()
+        return "ARTWORK", 0
+    end
+    function t:GetAlpha()
+        return self.alpha
+    end
+    function t:SetAlpha(value)
+        self.alpha = value
+    end
+    function t:GetSize()
+        return 23, 23
+    end
+    function t:GetTexCoord()
+        return 0.25, 0.5, 0.25, 0.75, 0.5, 0.5, 0.5, 0.75
+    end
+    function t:SetTexture(value)
+        self.file = value
+    end
+    function t:SetTexCoord(...)
+        self.coords = { ... }
+    end
+    function t:ClearAllPoints()
+        self.points = {}
+    end
+    function t:SetPoint(...)
+        self.points[#self.points + 1] = { ... }
+    end
+    function t:Show()
+        self.shown = true
+    end
+    function t:Hide()
+        self.shown = false
     end
     return t
 end
@@ -91,17 +127,34 @@ TargetFrame = {
 MinimapCompassTexture = texture()
 local controls = {}
 for i = 1, 3 do
-    controls[i] = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
+    controls[i] = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture(), sections = {} }
+    controls[i].CreateTexture = function(self, _, layer, _, sublevel)
+        assert(layer == "ARTWORK" and sublevel == -1, "sections stay below interaction artwork")
+        local section = texture()
+        self.sections[#self.sections + 1] = section
+        return section
+    end
 end
 GameTimeFrame = controls[1]
 local trackingBorder = texture(0.6)
 MinimapCluster = { ZoneTextButton = {}, Tracking = { Button = controls[2], Background = trackingBorder } }
 AddonCompartmentFrame = controls[3]
 local function checkControls(color, context)
-    equal(trackingBorder.color, { color, color, color, 0.6 }, "tracking parent border: " .. context)
+    equal(trackingBorder.color, { 1, 1, 1, 0.6 }, "unused tracking parent background untouched")
     for index, control in ipairs(controls) do
         local tint = index == 3 and color or 1
         equal(control.StateTexture.color, { tint, tint, tint, 0.7 }, context)
+        if index ~= 3 then
+            assert(#control.sections == 9, "nine sections reused per button")
+            for sectionIndex, section in ipairs(control.sections) do
+                local sectionTint = sectionIndex == 5 and 1 or color
+                equal(section.color, { sectionTint, sectionTint, sectionTint, 0.7 }, "only border sections tinted")
+                assert(section.file == 8026705, "reuse original texture file")
+                assert(section.coords[1] >= 0.25 and section.coords[2] <= 0.5, "crop within atlas region horizontally")
+                assert(section.coords[3] >= 0.5 and section.coords[4] <= 0.75, "crop within atlas region vertically")
+                assert(section.alpha == 0.8, "section alpha preserved")
+            end
+        end
         equal(control.AddTexture.color, { 1, 1, 1, 1 }, "interaction highlight untouched")
         equal(control.Text.color, { 1, 1, 1, 1 }, "button text untouched")
     end
@@ -144,6 +197,17 @@ app.db = {
 }
 
 addon:OnEnable()
+for i = 1, 2 do
+    local control = controls[i]
+    assert(control.StateTexture.alpha == 0, "combined artwork hidden while sections render")
+    equal(control.sections[5].color, { 1, 1, 1, 0.7 }, "icon center retains original color")
+    equal(control.sections[1].color, { 0.2, 0.3, 0.4, 0.7 }, "actual visible border tinted")
+    equal(
+        control.sections[5].coords,
+        { 0.25 + 0.25 * 3 / 23, 0.25 + 0.25 * 20 / 23, 0.5 + 0.25 * 3 / 23, 0.5 + 0.25 * 20 / 23 },
+        "center UV crop"
+    )
+end
 equal(slot.color, { 0.2, 0.3, 0.4, 0.6 }, "action slot tinted with alpha preserved")
 equal(slotArt.color, { 1, 1, 1, 1 }, "slot backing untouched")
 equal(extraSlot.color, { 0.2, 0.3, 0.4, 1 }, "additional action bar tinted")
@@ -202,6 +266,12 @@ equal(frame.color, { 0.1, 0.1, 0.1, 0.5 }, "color change")
 checkControls(0.1, "built-in minimap controls tinted")
 app.db.profile.groups.minimap = false
 addon:Refresh()
+for i = 1, 2 do
+    assert(controls[i].StateTexture.alpha == 0.8, "toggle off restores original artwork alpha")
+    for _, section in ipairs(controls[i].sections) do
+        assert(not section.shown, "toggle off hides sections")
+    end
+end
 checkControls(1, "minimap group off restores controls")
 app.db.profile.groups.minimap = true
 addon:Refresh()

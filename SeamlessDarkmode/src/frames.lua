@@ -86,15 +86,81 @@ local function Minimap(paint)
     paint(cluster and cluster.ZoneTextButton.StateTexture)
 end
 
--- Tracking has a separate decoration on its parent frame. Its button artwork stays unchanged.
+-- These 23x23 button atlases combine the border and icon. Render disjoint sections of the
+-- existing artwork so only the three-pixel perimeter is tinted. No replacement art is shipped.
+local buttonSections = {}
+
+---@param button Button?
 ---@param paint SeamlessDarkmode.Paint
-local function TrackingBorder(paint)
-    local cluster = _G.MinimapCluster
-    local tracking = cluster and cluster.Tracking
-    paint(tracking and tracking.Background)
+---@param active boolean
+local function SquareButtonBorder(button, paint, active)
+    local source = button and button.StateTexture
+    if not source then
+        return
+    end
+    local sections = buttonSections[source]
+    if not active then
+        if sections then
+            source:SetAlpha(sections.alpha)
+            for _, section in ipairs(sections) do
+                paint(section.texture)
+                section.texture:Hide()
+            end
+        end
+        return
+    end
+    if not sections then
+        local file = source:GetTexture()
+        if not file then
+            return
+        end
+        local layer, sublevel = source:GetDrawLayer()
+        sections = { alpha = source:GetAlpha() }
+        local r, g, b, a = source:GetVertexColor()
+        local cuts = { 0, 3 / 23, 20 / 23, 1 }
+        local left, top, _, bottom, right = source:GetTexCoord()
+        for row = 1, 3 do
+            for column = 1, 3 do
+                local x1, x2 = cuts[column], cuts[column + 1]
+                local y1, y2 = cuts[row], cuts[row + 1]
+                -- Below AddTexture's additive hover/pressed artwork and calendar notifications.
+                local section = button:CreateTexture(nil, layer, nil, (sublevel or 0) - 1)
+                section:SetTexture(file)
+                section:SetTexCoord(
+                    left + (right - left) * x1,
+                    left + (right - left) * x2,
+                    top + (bottom - top) * y1,
+                    top + (bottom - top) * y2
+                )
+                section:SetVertexColor(r, g, b, a)
+                section:SetAlpha(sections.alpha)
+                sections[#sections + 1] =
+                    { texture = section, border = row ~= 2 or column ~= 2, x1 = x1, x2 = x2, y1 = y1, y2 = y2 }
+            end
+        end
+        buttonSections[source] = sections
+    end
+    local width, height = source:GetSize()
+    for _, section in ipairs(sections) do
+        section.texture:ClearAllPoints()
+        section.texture:SetPoint("TOPLEFT", source, "TOPLEFT", width * section.x1, -height * section.y1)
+        section.texture:SetPoint("BOTTOMRIGHT", source, "TOPLEFT", width * section.x2, -height * section.y2)
+        if section.border then
+            paint(section.texture)
+        end
+        section.texture:Show()
+    end
+    source:SetAlpha(0)
 end
 
--- Calendar has no separate border layer in the client template; keep its artwork unchanged.
+---@param paint SeamlessDarkmode.Paint
+---@param active boolean
+function app.MinimapButtonBorders(paint, active)
+    SquareButtonBorder(_G.GameTimeFrame, paint, active)
+    local cluster = _G.MinimapCluster
+    local tracking = cluster and cluster.Tracking
+    SquareButtonBorder(tracking and tracking.Button, paint, active)
+end
 
 ---@param paint SeamlessDarkmode.Paint
 local function AddonCompartmentButton(paint)
@@ -179,7 +245,7 @@ app.groups = {
     {
         key = "minimap",
         name = "Minimap",
-        frames = { Minimap, TrackingBorder, AddonCompartmentButton, MinimapButtons },
+        frames = { Minimap, AddonCompartmentButton, MinimapButtons },
     },
     { key = "actionbars", name = "Action bar slot borders", frames = { ActionBars } },
     { key = "endcaps", name = "Action bar gryphons", frames = { EndCaps } },

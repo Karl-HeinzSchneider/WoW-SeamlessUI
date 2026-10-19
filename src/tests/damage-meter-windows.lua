@@ -2,6 +2,7 @@
 unpack = unpack or table.unpack
 local methods = {}
 local expandedScrollChild
+local meterGroupRow
 local function object(parent)
     return setmetatable({ parent = parent, scripts = {}, width = 400, height = 200, shown = true }, {
         __index = function(_, key)
@@ -180,10 +181,15 @@ end
 UIParent = object()
 function CreateFrame(_, name, parent, template)
     assert(
-        template == nil or (template == "VerticalLayoutFrame" and parent == expandedScrollChild),
-        "Only the Edit Mode category may inherit a layout template"
+        template == nil or (template == "ResizeCheckButtonTemplate" and parent == expandedScrollChild),
+        "Only the Edit Mode group checkbox may inherit a template"
     )
     local frame = object(parent)
+    if template == "ResizeCheckButtonTemplate" then
+        assert(not meterGroupRow, "Only one group checkbox may be created")
+        meterGroupRow = frame
+        frame.Button, frame.Label = object(frame), object(frame)
+    end
     if name then
         assert(_G[name] == nil, "Named frames must be reused")
         _G[name] = frame
@@ -1183,8 +1189,10 @@ function eme:RegisterDropdown(frame, factory, key)
     return factory:Create_UIDropDownMenu(nil, object(frame))
 end
 function eme:RegisterCustomButton(frame, name, callback, key)
-    assert(key == "editSkin" and name == "Edit selected skin")
-    frame.editSkin = callback
+    assert(
+        (key == "editSkin" and name == "Edit selected skin") or (key == "createWindow" and name == "Create new window")
+    )
+    frame[key] = callback
 end
 function eme:SetDontResize(frame)
     frame.EMEDontResize = true
@@ -1237,26 +1245,11 @@ app.addon = {
 assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 assert(registered == 10, "Every slot must register once, including inactive slots")
-local category = app.windowFrames[1].EMECheckButtonFrame:GetParent():GetParent()
-assert(#category.rows == 10, "All meter toggles must share one category")
-for _, row in ipairs(category.rows) do
-    assert(not row:IsShown(), "Category must start collapsed")
+assert(meterGroupRow.Label.text == "Seamless Damage Meter")
+assert(meterGroupRow.Button:GetChecked(), "Used window previews must default to enabled")
+for _, frame in pairs(app.windowFrames) do
+    assert(not frame.EMECheckButtonFrame:GetParent():IsShown(), "Individual entries must be hidden")
 end
-local categoryClick = category.header:GetScript("OnClick")
-local enabledBefore = {}
-for id, frame in pairs(app.windowFrames) do
-    enabledBefore[id] = frame.config.enabled
-end
-categoryClick()
-for _, row in ipairs(category.rows) do
-    assert(row:IsShown(), "Expanding must reveal each individual toggle")
-end
-categoryClick()
-for id, frame in pairs(app.windowFrames) do
-    assert(frame.config.enabled == enabledBefore[id], "Collapsing must preserve slot activation")
-end
-app:RebuildWindows()
-assert(#category.rows == 10, "Rebuilds must not duplicate category rows")
 local meter = app.windowFrames[1]
 assert(meter.EMEDontResize)
 assert(meter.resize:GetFrameLevel() > meter.Selection:GetFrameLevel(), "The drag grip must stay above selection")
@@ -1268,22 +1261,33 @@ EditModeManagerFrame.editModeActive = true
 app:RebuildWindows()
 assert(not meter:IsShown(), "Deactivated slots must default to hidden in Edit Mode")
 assert(not eme.framesDB[meter.system].enabled)
-local function ClickWindow(frame, enabled, mouseButton)
-    local button = frame.EMECheckButtonFrame
+local function ClickGroup(enabled)
+    local button = meterGroupRow.Button
     button:SetChecked(enabled)
-    button:GetScript("OnClick")(button, mouseButton or "LeftButton")
+    button:GetScript("OnClick")(button)
 end
-ClickWindow(meter, true)
-assert(meter:IsShown(), "Checking a slot must show its preview")
-assert(meter.config.enabled and not meter.config.hidden, "Checking must activate and unhide the real slot")
+ClickGroup(false)
+ClickGroup(true)
+assert(not meter:IsShown() and not meter.config.enabled, "Group checkbox must not activate unused slots")
+assert(meter.config.hidden, "Group checkbox must preserve temporary hiding")
 meter.config.enabled = true
 app:RebuildWindows()
+assert(meter:IsShown(), "Used windows must preview even when temporarily hidden")
+ClickGroup(false)
+assert(not meter:IsShown() and meter.config.enabled, "Unchecking must hide previews without deactivating slots")
+app:RebuildWindows()
+assert(not meter:IsShown(), "Rebuilding must retain group preview visibility")
+combat = true
+ClickGroup(true)
+assert(not meterGroupRow.Button:GetChecked() and not meter:IsShown(), "Combat must block preview changes")
+combat = false
+ClickGroup(true)
 meter.config.editMode.profiles["1-Other"] = { enabled = true, settings = {} }
 meter.config.enabled = false
 app:RebuildWindows()
 assert(not meter:IsShown(), "Deactivating a slot must reset its Edit Mode preview")
 assert(not meter.config.editMode.profiles["1-Other"].enabled, "Deactivation must update other native layouts")
-ClickWindow(meter, true)
+app:SetWindowEnabled(meter.config, true)
 app:RebuildWindows()
 assert(meter:IsShown() and meter.config.enabled, "Activation survives ordinary rebuilds")
 meter:SetScaleOverride(1.25)
@@ -1303,8 +1307,12 @@ assert(meter.config.overrides.scale == 0.923456 and meter.config.overrides.width
 meter.editModeSliders.width(449.999976)
 assert(meter.config.overrides.width == 450)
 local originalDatabase = meter.config.editMode
+ClickGroup(false)
 app.db.profile = { windows = {}, initialized = false, windowDefaults = app.windowDefaults }
 app:RebuildWindows()
+assert(not meter:IsShown() and meter.config.enabled, "Profile switches must retain preview visibility only")
+assert(not meterGroupRow.Button:GetChecked(), "Profile switches must preserve the group checkbox")
+ClickGroup(true)
 assert(registered == 10, "Profile changes must reuse library registrations")
 assert(meter.config.editMode ~= originalDatabase)
 assert(eme.baseFramesDB[meter.system] == meter.config.editMode, "Rebind the active AceDB profile")
@@ -1318,15 +1326,24 @@ assert(
     meter.config.overrides.x == nil and meter.config.overrides.y == nil,
     "An unchanged library position stays inherited"
 )
-ClickWindow(meter, false)
-assert(not meter:IsShown() and not meter.config.enabled, "Unchecking must deactivate the real slot")
-ClickWindow(meter, true)
-ClickWindow(meter, false, "RightButton")
-assert(meter.config.enabled, "The library's right-click reset must not deactivate a slot")
+meter.createWindow()
+assert(app.windowFrames[2].config.enabled and app.windowFrames[2]:IsShown(), "New slots must preview immediately")
+assert(not app.windowFrames[3].config.enabled, "Creating a window must activate only one slot")
+combat = true
+meter.createWindow()
+assert(not app.windowFrames[3].config.enabled, "Creating in combat must be ignored")
+combat = false
+ClickGroup(false)
 EditModeManagerFrame:ExitEditMode()
-assert(meter:IsShown() and meter.config.enabled, "A checked slot must remain usable after Edit Mode")
+assert(meter:IsShown() and meter.config.enabled, "Hidden previews must return to normal visibility on exit")
+meter.createWindow()
+assert(not app.windowFrames[3].config.enabled, "Creating outside Edit Mode must be ignored")
 
 EditModeManagerFrame:EnterEditMode()
+assert(not meter:IsShown() and not app.windowFrames[2]:IsShown(), "Re-entering must retain the group preview toggle")
+ClickGroup(true)
+assert(meter:IsShown() and app.windowFrames[2]:IsShown(), "Checking must show every used window")
+assert(not app.windowFrames[3]:IsShown(), "Checking must leave unused slots hidden")
 local draggingSettings, dialogRefreshes = false, 0
 EditModeExpandedSystemSettingsDialog = {
     attachedToSystem = meter,

@@ -473,6 +473,17 @@ end
 local function SetNumericText(label, value, rate)
     if not IsPublic(value) then
         label:SetFormattedText(rate and "%.1f" or "%.0f", value)
+    elseif type(value) == "number" then
+        local magnitude = math.abs(value)
+        if magnitude >= 1000000000 then
+            label:SetText(string.format("%.1fb", value / 1000000000))
+        elseif magnitude >= 1000000 then
+            label:SetText(string.format("%.1fm", value / 1000000))
+        elseif magnitude >= 1000 then
+            label:SetText(string.format("%.1fk", value / 1000))
+        else
+            label:SetText(string.format("%.0f", value))
+        end
     else
         label:SetText(value ~= nil and AbbreviateLargeNumbers(value) or "")
     end
@@ -491,7 +502,7 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     end
     app:StyleWindowLabel(percentageMeasure, config)
     local percentageWidth = math.ceil(percentageMeasure:GetStringWidth()) + 4
-    local widths = { percentageWidth, fontSize * 4.5, fontSize * 4, percentageWidth }
+    local widths = { percentageWidth, fontSize * 3, fontSize * 3, percentageWidth }
     local shown = { showEnemy, true, showRate, true }
     local total, count, reserved = 0, 0, 0
     for index = 1, 4 do

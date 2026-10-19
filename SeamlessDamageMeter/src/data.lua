@@ -100,10 +100,11 @@ local previewSessions = {}
 function app:GetPreviewSession(config)
     local key = config.statistic
     if not previewSessions[key] then
-        local session = { combatSources = {}, durationSeconds = 60, isPreview = true }
+        local session = { combatSources = {}, durationSeconds = 60, totalAmount = 0, isPreview = true }
         local counts = key == "Interrupts" or key == "Dispels"
         for index, character in ipairs(previewCharacters) do
             local amount = counts and (30 - index * 3) or character[3]
+            session.totalAmount = session.totalAmount + amount
             session.combatSources[index] = {
                 name = character[1],
                 classFilename = character[2],

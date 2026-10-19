@@ -1286,6 +1286,21 @@ meter.config.collapsed = true
 app:RebuildWindows()
 assert(meter.body:IsShown() and meter.config.collapsed)
 assert(meter.session.text.text == "Preview")
+local previewStatistic = meter.config.statistic
+for _, statistic in ipairs({ "DamageDone", "HealingDone", "Dps", "Hps", "Interrupts", "Dispels" }) do
+    meter.config.statistic = statistic
+    local preview = app:GetPreviewSession(meter.config)
+    local total = 0
+    for _, source in ipairs(preview.combatSources) do
+        total = total + source.totalAmount
+    end
+    assert(preview.totalAmount == total and total > 0, "Preview shares use the sum of sample amounts")
+    app:RefreshWindows()
+    assert(meter.rows[1].percentageValue:IsShown())
+    assert(meter.rows[1].percentageValue.args[1] > 0, "Complete previews display a percentage")
+end
+meter.config.statistic = previewStatistic
+app:RefreshWindows()
 assert(editModeOptions.enabled())
 local group = editModeOptions.options[1]
 group.set(false)

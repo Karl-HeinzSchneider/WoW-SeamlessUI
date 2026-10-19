@@ -56,7 +56,7 @@ function options:OnInitialize()
             description = {
                 type = "description",
                 order = 3,
-                name = "Unit frames: the borders and level circles of the player, target, focus, pet, party and boss frames. Minimap: the ring around the map and the zone header. Action bars: the button rings and the main bar's frame and end caps. Icons, portraits, text and bars keep their colors.",
+                name = "Unit frames: the borders and level circles of the player, target, focus, pet, party and boss frames. Minimap: the ring around the map, the zone header and the borders of addon minimap buttons. Icons, portraits, text and bars keep their colors.",
             },
             groups = {
                 type = "group",

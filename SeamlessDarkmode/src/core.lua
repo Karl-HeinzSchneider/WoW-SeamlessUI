@@ -46,10 +46,18 @@ function app.addon:OnInitialize()
 end
 
 function app.addon:OnEnable()
+    local icons = LibStub("LibDBIcon-1.0", true)
+    if icons then
+        icons.RegisterCallback(self, "LibDBIcon_IconCreated", "Refresh")
+    end
     self:Refresh()
 end
 
 function app.addon:OnDisable()
+    local icons = LibStub("LibDBIcon-1.0", true)
+    if icons then
+        icons.UnregisterCallback(self, "LibDBIcon_IconCreated")
+    end
     for _, group in ipairs(app.groups) do
         for _, frame in ipairs(group.frames) do
             frame(restore)

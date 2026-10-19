@@ -86,58 +86,17 @@ local function Minimap(paint)
     paint(cluster and cluster.ZoneTextButton.StateTexture)
 end
 
--- Action bars ----------------------------------------------------------------------------------
-
--- The ring (NormalTexture) and empty-slot art of every button an action bar created through
--- the client's ActionBarMixin (`bar.actionButtons`). Border is the equipped/proc indicator.
+-- The round border of every LibDBIcon minimap button. Buttons created later are painted from
+-- the library's LibDBIcon_IconCreated callback (core.lua).
 ---@param paint SeamlessDarkmode.Paint
----@param bar Frame?
-local function ActionBarButtons(paint, bar)
-    if not bar or not bar.actionButtons then
+local function MinimapButtons(paint)
+    local icons = LibStub("LibDBIcon-1.0", true)
+    if not icons then
         return
     end
-    for _, button in ipairs(bar.actionButtons) do
-        paint(button.NormalTexture)
-        paint(button.SlotArt)
+    for _, name in ipairs(icons:GetButtonList()) do
+        paint(icons:GetMinimapButton(name).border)
     end
-end
-
----@param paint SeamlessDarkmode.Paint
-local function MainActionBar(paint)
-    local bar = _G.MainActionBar
-    if not bar then
-        return
-    end
-    paint(bar.BorderArt)
-    paint(bar.EndCaps.LeftEndCap.Texture)
-    paint(bar.EndCaps.RightEndCap.Texture)
-    ActionBarButtons(paint, bar)
-end
-
----@param paint SeamlessDarkmode.Paint
-local function MultiBars(paint)
-    ActionBarButtons(paint, _G.MultiBarBottomLeft)
-    ActionBarButtons(paint, _G.MultiBarBottomRight)
-    ActionBarButtons(paint, _G.MultiBarRight)
-    ActionBarButtons(paint, _G.MultiBarLeft)
-    ActionBarButtons(paint, _G.MultiBar5)
-    ActionBarButtons(paint, _G.MultiBar6)
-    ActionBarButtons(paint, _G.MultiBar7)
-end
-
----@param paint SeamlessDarkmode.Paint
-local function PetActionBar(paint)
-    ActionBarButtons(paint, _G.PetActionBar)
-end
-
----@param paint SeamlessDarkmode.Paint
-local function StanceBar(paint)
-    ActionBarButtons(paint, _G.StanceBar)
-end
-
----@param paint SeamlessDarkmode.Paint
-local function PossessActionBar(paint)
-    ActionBarButtons(paint, _G.PossessActionBar)
 end
 
 -- Every option group with the frame functions it switches. Order is the options order.
@@ -148,10 +107,5 @@ app.groups = {
         name = "Unit frames",
         frames = { PlayerFrame, TargetFrame, FocusFrame, PetFrame, PartyFrame, BossFrames },
     },
-    { key = "minimap", name = "Minimap", frames = { Minimap } },
-    {
-        key = "actionbars",
-        name = "Action bars",
-        frames = { MainActionBar, MultiBars, PetActionBar, StanceBar, PossessActionBar },
-    },
+    { key = "minimap", name = "Minimap", frames = { Minimap, MinimapButtons } },
 }

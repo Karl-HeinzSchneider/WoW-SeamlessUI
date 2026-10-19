@@ -7,7 +7,33 @@ local addon = {}
 function addon:IsEnabled()
     return enabled
 end
-function LibStub()
+local iconCallbacks = {}
+-- LibDBIcon buttons by name.
+local buttons = {}
+local icons = {
+    GetButtonList = function()
+        local names = {}
+        for name in pairs(buttons) do
+            names[#names + 1] = name
+        end
+        return names
+    end,
+    GetMinimapButton = function(_, name)
+        return buttons[name]
+    end,
+    RegisterCallback = function(owner, event, method)
+        iconCallbacks[event] = function()
+            owner[method](owner)
+        end
+    end,
+    UnregisterCallback = function(_, event)
+        iconCallbacks[event] = nil
+    end,
+}
+function LibStub(major)
+    if major == "LibDBIcon-1.0" then
+        return icons
+    end
     return {
         GetAddon = function()
             return {}
@@ -49,13 +75,8 @@ TargetFrame = {
 }
 MinimapCompassTexture = texture()
 local ring = texture()
-local slot = texture()
-local procBorder = texture()
-MainActionBar = {
-    BorderArt = texture(),
-    EndCaps = { LeftEndCap = { Texture = texture() }, RightEndCap = { Texture = texture() } },
-    actionButtons = { { NormalTexture = ring, SlotArt = slot, Border = procBorder } },
-}
+local iconTexture = texture()
+buttons.Seamless = { border = ring, icon = iconTexture }
 
 assert(loadfile(root .. "frames.lua"))("SeamlessDarkmode", app)
 assert(loadfile(root .. "core.lua"))("SeamlessDarkmode", app)
@@ -63,21 +84,23 @@ app.db = {
     profile = {
         enabled = true,
         color = { r = 0.2, g = 0.3, b = 0.4 },
-        groups = { unitframes = true, minimap = true, actionbars = true },
+        groups = { unitframes = true, minimap = true },
     },
 }
 
-addon:Refresh()
+addon:OnEnable()
 equal(frame.color, { 0.2, 0.3, 0.4, 0.5 }, "frame tinted, alpha kept")
 equal(circle.color, { 0.2, 0.3, 0.4, 1 }, "player level circle tinted")
 equal(portrait.color, { 1, 1, 1, 1 }, "portrait untouched")
 equal(targetFrame.color, { 0.2, 0.3, 0.4, 1 }, "target frame tinted")
 equal(targetCircle.color, { 0.2, 0.3, 0.4, 1 }, "target level circle tinted")
 equal(MinimapCompassTexture.color, { 0.2, 0.3, 0.4, 1 }, "minimap ring tinted")
-equal(ring.color, { 0.2, 0.3, 0.4, 1 }, "action button ring tinted")
-equal(slot.color, { 0.2, 0.3, 0.4, 1 }, "action button slot tinted")
-equal(MainActionBar.EndCaps.LeftEndCap.Texture.color, { 0.2, 0.3, 0.4, 1 }, "end cap tinted")
-equal(procBorder.color, { 1, 1, 1, 1 }, "proc border untouched")
+equal(ring.color, { 0.2, 0.3, 0.4, 1 }, "minimap button border tinted")
+equal(iconTexture.color, { 1, 1, 1, 1 }, "minimap button icon untouched")
+local lateRing = texture()
+buttons.Late = { border = lateRing, icon = texture() }
+iconCallbacks.LibDBIcon_IconCreated()
+equal(lateRing.color, { 0.2, 0.3, 0.4, 1 }, "later minimap button tinted")
 
 app.db.profile.color = { r = 0.1, g = 0.1, b = 0.1 }
 addon:Refresh()
@@ -102,6 +125,7 @@ enabled = false
 addon:Refresh()
 equal(frame.color, { 1, 1, 1, 0.5 }, "addon disable restores")
 equal(circle.color, { 1, 1, 1, 1 }, "addon disable restores level circle")
-equal(ring.color, { 1, 1, 1, 1 }, "addon disable restores action buttons")
+equal(lateRing.color, { 1, 1, 1, 1 }, "addon disable restores minimap buttons")
+assert(not iconCallbacks.LibDBIcon_IconCreated, "addon disable drops the button callback")
 
-print("PASS: unit frames, minimap, action buttons, untouched indicators, group/master toggles, disable")
+print("PASS: unit frames, minimap, minimap buttons (later ones too), group/master toggles, disable")

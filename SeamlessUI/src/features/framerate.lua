@@ -3,9 +3,11 @@ local appName, app = ...
 
 local lib = app.core:GetEditModeLibrary()
 
+-- NewModule returns a new object (a passed table would only be its prototype); define methods
+-- on the module itself so file-level callbacks can use AceModule methods such as IsEnabled.
 ---@class SeamlessUI.Framerate : AceModule
-local module = {}
-app.framerate = app.addon:NewModule("Framerate", module) --[[@as SeamlessUI.Framerate]]
+local module = app.addon:NewModule("Framerate") --[[@as SeamlessUI.Framerate]]
+app.framerate = module
 
 -- The client anchors FramerateFrame here (parented to WorldFrame) and never moves it again.
 local DEFAULT_POINT, DEFAULT_X, DEFAULT_Y = "BOTTOMRIGHT", -2, 2

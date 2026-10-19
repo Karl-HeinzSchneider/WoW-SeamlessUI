@@ -101,12 +101,13 @@ local app = {
     core = core,
     db = { profile = profile, profiles = { Default = profile } },
     addon = {
-        NewModule = function(_, _, object)
-            module = object
-            function object:IsEnabled()
+        -- Like AceAddon: a new object; a table argument would only become its prototype.
+        NewModule = function(_, _, prototype)
+            module = setmetatable({}, { __index = prototype })
+            function module:IsEnabled()
                 return true
             end
-            return object
+            return module
         end,
     },
 }
@@ -154,6 +155,7 @@ assert(mover.point[1] == "TOPLEFT" and mover.point[4] == 10)
 assert(settings[1].get() == true)
 settings[1].set("Modern", false)
 assert(profile.framerate.showOnStartup == false)
+assert(registration.enabled())
 registration.options[2].set(true)
 assert(registration.options[2].get() == true)
 

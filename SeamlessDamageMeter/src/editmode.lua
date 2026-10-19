@@ -5,19 +5,22 @@ local lib = LibStub("LibEditMode")
 local showUsedWindows = true
 local registered = {}
 local groupCheckbox
+local groupRow
 
 local function RegisterGroupCheckbox()
     if groupCheckbox then
         return
     end
-    local parent = EditModeManagerFrame.AccountSettings.SettingsContainer.ScrollChild.AdvancedOptionsContainer
-    local row = CreateFrame("Frame", nil, parent, "ResizeCheckButtonTemplate")
-    row.layoutIndex = 1000
-    row.fixedWidth, row.fixedHeight = 225, 32
+    -- Keep addon controls outside native LayoutFrames: MarkDirty propagates to
+    -- ancestors and replaces their OnUpdate scripts in addon execution taint.
+    local row = CreateFrame("Frame", nil, UIParent, "ResizeCheckButtonTemplate")
+    groupRow = row
+    row:SetPoint("TOPLEFT", EditModeManagerFrame, "BOTTOMLEFT", 8, -4)
+    row:SetFrameStrata("DIALOG")
+    row:SetShown(app:IsEditingWindows() and app.addon:IsEnabled())
     row:SetSize(225, 32)
     row.Label:SetText("Seamless Damage Meter")
     row.Label:SetFontObject(GameFontHighlightMedium)
-    parent:MarkDirty()
     groupCheckbox = row.Button
     groupCheckbox:SetChecked(showUsedWindows)
     groupCheckbox:SetScript("OnClick", function(button)
@@ -288,6 +291,9 @@ function app:WindowShouldBeShown(frame)
 end
 
 local function RefreshEditMode()
+    if groupRow then
+        groupRow:SetShown(app:IsEditingWindows() and app.addon:IsEnabled())
+    end
     if app.db and not InCombatLockdown() then
         app:RebuildWindows()
     end

@@ -1,7 +1,6 @@
 -- Run from the repository root: lua src/tests/damage-meter-windows.lua
 unpack = unpack or table.unpack
 local methods = {}
-local expandedScrollChild
 local meterGroupRow
 local function object(parent)
     return setmetatable({ parent = parent, scripts = {}, width = 400, height = 200, shown = true }, {
@@ -181,7 +180,7 @@ end
 UIParent = object()
 function CreateFrame(_, name, parent, template)
     assert(
-        template == nil or (template == "ResizeCheckButtonTemplate" and parent == expandedScrollChild),
+        template == nil or (template == "ResizeCheckButtonTemplate" and parent == UIParent),
         "Only the Edit Mode group checkbox may inherit a template"
     )
     local frame = object(parent)
@@ -1173,7 +1172,12 @@ LibStub = function(name)
 end
 EventRegistry = { TriggerEvent = function() end }
 EditModeManagerFrame = {
-    AccountSettings = { SettingsContainer = { ScrollChild = { AdvancedOptionsContainer = object() } } },
+    -- Accessing native layout containers would risk tainting Blizzard's Edit Mode setup.
+    AccountSettings = setmetatable({}, {
+        __index = function()
+            error("Do not access native layout containers")
+        end,
+    }),
     EnterEditMode = function()
         editing = true
         callbacks.enter()
@@ -1183,11 +1187,13 @@ EditModeManagerFrame = {
         callbacks.exit()
     end,
 }
-expandedScrollChild = EditModeManagerFrame.AccountSettings.SettingsContainer.ScrollChild.AdvancedOptionsContainer
 assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
 combat = false
 app:RebuildWindows()
 assert(registered == 10)
+assert(meterGroupRow:GetParent() == UIParent and meterGroupRow.layoutIndex == nil)
+assert(not meterGroupRow:IsShown(), "Preview checkbox must start hidden outside Edit Mode")
+assert(meterGroupRow.point[2] == EditModeManagerFrame, "Anchor our control without joining native layout")
 local meter = app.windowFrames[1]
 local function setting(name)
     for _, entry in ipairs(controls[meter]) do
@@ -1198,7 +1204,7 @@ local function setting(name)
     error("Missing control: " .. name)
 end
 EditModeManagerFrame:EnterEditMode()
-assert(meter.Selection:IsShown() and meter:IsShown())
+assert(meter.Selection:IsShown() and meter:IsShown() and meterGroupRow:IsShown())
 setting("Frame width").set(nil, 615)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock size").set(nil, true)
@@ -1255,7 +1261,7 @@ setting("Frame width").set(nil, 780)
 assert(setting("Frame width").get() == 615)
 combat = false
 EditModeManagerFrame:ExitEditMode()
-assert(not meter.Selection:IsShown())
+assert(not meter.Selection:IsShown() and not meterGroupRow:IsShown())
 setting("Frame width").set(nil, 780)
 assert(app:GetWindowSetting(meter.config, "width") == 615, "Ignore callbacks outside Edit Mode")
 print("Damage meter LibEditMode regressions OK")

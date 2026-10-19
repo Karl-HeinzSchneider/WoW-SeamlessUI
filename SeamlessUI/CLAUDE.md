@@ -16,8 +16,11 @@ features are ready for public release.
    (`enabled`, `completedQuests`, both on). `OnInitialize` migrates Core's former
    `tweaks.questXPTooltip = false` into the same-named UI profile and clears it from Core.
 5. `src/features/fpsdisplay.lua`: custom FPS anchor registered with shared Edit Mode. The
-   Frames checkbox "FPS display" controls anchor selection; Ctrl+R still controls the native
-   counter. Positions are stored per native layout in the current UI profile, including layout
+   Frames checkbox "FPS display" controls anchor selection and the temporary counter preview.
+   Hiding the preview restores normal counter visibility. The frame's own settings contain
+   "Show FPS on startup" (Core's existing preference, default off); changing it also updates
+   visibility when the preview is hidden or Edit Mode exits. Ctrl+R still controls the native
+   counter outside Edit Mode. Positions are stored per native layout in the current UI profile, including layout
    copy/rename/delete handling. Disabling restores the counter's original anchors.
 6. `src/core/options.lua`: UI child panel under Seamless, with General and Profiles tabs.
 

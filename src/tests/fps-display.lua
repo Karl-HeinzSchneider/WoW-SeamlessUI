@@ -1,6 +1,7 @@
 -- Run from the repository root: lua src/tests/fps-display.lua
 unpack = unpack or table.unpack
 local callbacks, move, spec, frame
+local frameSettings
 callbacks = {}
 local layout = "Modern"
 local editing = false
@@ -10,6 +11,10 @@ local module = {
     end,
 }
 local lib = {
+    SettingType = { Checkbox = 1 },
+    AddFrameSettings = function(_, _, settings)
+        frameSettings = settings
+    end,
     GetActiveLayoutName = function()
         return layout
     end,
@@ -36,6 +41,9 @@ local function newFrame()
         end,
         SetShown = function(self, shown)
             self.shown = shown
+        end,
+        IsShown = function(self)
+            return not not self.shown
         end,
         Hide = function(self)
             self.shown = false
@@ -68,6 +76,7 @@ local app = {
     },
     db = { profile = profile, profiles = { Default = profile } },
     core = {
+        db = { profile = { tweaks = { showFramerateOnStartup = false } } },
         GetEditModeLibrary = function()
             return lib
         end,
@@ -84,11 +93,28 @@ assert(not frame.shown, "anchor must hide outside Edit Mode")
 editing = true
 callbacks.enter()
 assert(frame.shown and spec.options[1].name == "FPS display")
+assert(FramerateFrame.shown, "showing Edit Mode frame must show FPS")
+assert(frameSettings[1].default == false and not frameSettings[1].get())
 move(frame, layout, "CENTER", 100, 200)
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "CENTER" and frame.points[1][4] == 100)
 spec.options[1].set(false)
 assert(not frame.shown and FramerateFrame.points[1][2] == frame)
+assert(not FramerateFrame.shown, "hiding preview must hide normally hidden FPS")
+frameSettings[1].set(nil, true)
+assert(FramerateFrame.shown, "hiding preview must preserve preferred visible FPS")
+frameSettings[1].set(nil, false)
+assert(not FramerateFrame.shown)
+spec.options[1].set(true)
+assert(FramerateFrame.shown, "showing preview must show FPS again")
+editing = false
+callbacks.exit()
+assert(not FramerateFrame.shown, "exit must restore preferred visibility")
+FramerateFrame:SetShown(true)
+editing = true
+callbacks.enter()
+spec.options[1].set(false)
+assert(FramerateFrame.shown, "normal visible state must survive hiding the preview")
 spec.options[1].set(true)
 callbacks.create("Copy", nil, "Modern")
 assert(profile.fpsDisplay.layouts.Copy.x == 100)

@@ -9,6 +9,7 @@ local lib = app.core:GetEditModeLibrary()
 local anchor
 local originalPoints
 local showAnchor = true
+local visibilityBeforeEditMode
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
 
 function module:Refresh()
@@ -20,6 +21,15 @@ function module:Refresh()
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, UIParent, position.point, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
+    if lib:IsInEditMode() then
+        if visibilityBeforeEditMode == nil then
+            visibilityBeforeEditMode = FramerateFrame:IsShown()
+        end
+        FramerateFrame:SetShown(showAnchor or visibilityBeforeEditMode)
+    elseif visibilityBeforeEditMode ~= nil then
+        FramerateFrame:SetShown(visibilityBeforeEditMode)
+        visibilityBeforeEditMode = nil
+    end
     app.core:RefreshEditModeOptions()
 end
 
@@ -40,6 +50,21 @@ function module:OnEnable()
                 app.db.profile.fpsDisplay.layouts[layoutName] = { point = point, x = x, y = y }
             end
         end, defaults, "FPS display")
+        lib:AddFrameSettings(anchor, {
+            {
+                name = "Show FPS on startup",
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.core.db.profile.tweaks.showFramerateOnStartup
+                end,
+                set = function(_, value)
+                    app.core.db.profile.tweaks.showFramerateOnStartup = value
+                    visibilityBeforeEditMode = value
+                    module:Refresh()
+                end,
+            },
+        })
     end
     FramerateFrame:ClearAllPoints()
     FramerateFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
@@ -47,6 +72,10 @@ function module:OnEnable()
 end
 
 function module:OnDisable()
+    if visibilityBeforeEditMode ~= nil then
+        FramerateFrame:SetShown(visibilityBeforeEditMode)
+        visibilityBeforeEditMode = nil
+    end
     if anchor then
         anchor:Hide()
     end

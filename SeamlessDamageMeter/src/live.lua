@@ -4,6 +4,12 @@ local _, app = ...
 app.live = {}
 local live = app.live
 
+function live:ResetData()
+    if C_DamageMeter and C_DamageMeter.ResetAllCombatSessions then
+        C_DamageMeter.ResetAllCombatSessions()
+    end
+end
+
 -- Threat is a live target snapshot, independent of damage-meter tracking/history.
 function live:GetThreatSession()
     if not UnitDetailedThreatSituation then

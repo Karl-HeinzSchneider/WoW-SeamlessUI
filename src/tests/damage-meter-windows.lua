@@ -1619,3 +1619,85 @@ assert(threatReads == 1, "Hidden threat windows do not query live data")
 app.GetSession, app.RefreshWindow = originalGetSession, originalRefreshWindow
 app.windows, app.IsEditingWindows = originalWindows, originalEditing
 print("Damage meter threat event window regressions OK")
+
+-- Settings menu ordering, actions and reversible noninteractive state.
+local oldManager = Menu.GetManager
+Menu.GetManager = function()
+    return { OpenMenu = function() end }
+end
+local oldDescription = MenuUtil.CreateRootMenuDescription
+MenuUtil.CreateRootMenuDescription = function()
+    local root = oldDescription()
+    local function extend(description)
+        local create = description.CreateButton
+        function description:CreateButton(...)
+            local child = create(self, ...)
+            function child:SetEnabled(enabled)
+                self.enabled = enabled
+            end
+            return child
+        end
+        function description:CreateSpacer()
+            table.insert(self.entries, { spacer = true })
+        end
+    end
+    extend(root)
+    return root
+end
+local oldRefresh = app.RefreshWindows
+app.RefreshWindows = function() end
+meter.config.noninteractive = nil
+meter.settings:GetScript("OnClick")(meter.settings)
+local expected =
+    { "Settings", "Editmode", false, "Make Noninteractive", "Reset Data", "Delete Window", false, "Create New Window" }
+assert(#menuRoot.entries == #expected)
+for index, label in ipairs(expected) do
+    assert(label and menuRoot.entries[index].label == label or not label and menuRoot.entries[index].spacer)
+end
+menuRoot.entries[4].choose()
+assert(meter.config.noninteractive)
+meter.settings:GetScript("OnClick")(meter.settings)
+assert(menuRoot.entries[4].label == "Make Interactive")
+menuRoot.entries[4].choose()
+assert(not meter.config.noninteractive)
+local resetCalls = 0
+C_DamageMeter = {
+    ResetAllCombatSessions = function()
+        resetCalls = resetCalls + 1
+    end,
+}
+menuRoot.entries[5].choose()
+assert(resetCalls == 1)
+local opened
+app.core = {
+    OpenOptions = function(_, addon, tab)
+        opened = addon .. ":" .. tab
+    end,
+}
+menuRoot.entries[1].choose()
+assert(opened == "SeamlessDamageMeter:windows")
+SettingsPanel = {
+    Close = function(_, skip)
+        assert(skip)
+    end,
+}
+EditModeManagerFrame = {}
+ShowUIPanel = function(panel)
+    assert(panel == EditModeManagerFrame)
+    opened = "editmode"
+end
+menuRoot.entries[2].choose()
+assert(opened == "editmode")
+app.RefreshWindows = oldRefresh
+Menu.GetManager = oldManager
+MenuUtil.CreateRootMenuDescription = oldDescription
+print("Damage meter settings menu regressions OK")
+meter.config.noninteractive = true
+app:RefreshWindow(meter, { combatSources = {}, maxAmount = 1 })
+assert(meter.mouseEnabled == false and meter.title.mouseEnabled == false)
+assert(meter.statistic.mouseEnabled == false and meter.session.mouseEnabled == false)
+assert(meter.resize.mouseEnabled == false and meter.scrollbar.mouseEnabled == false)
+meter.config.noninteractive = false
+app:RefreshWindow(meter, { combatSources = {}, maxAmount = 1 })
+assert(meter.mouseEnabled and meter.title.mouseEnabled and meter.session.mouseEnabled)
+print("Damage meter noninteractive regressions OK")

@@ -7,6 +7,16 @@ local HEADER_HEIGHT = 32
 local SESSION_MENU_MAX_HEIGHT = 240
 local CreateRow
 
+local function UpdateInteraction(frame)
+    local enabled = not frame.config.noninteractive or (app.IsEditingWindows and app:IsEditingWindows()) or false
+    for _, region in ipairs({ frame, frame.body, frame.title, frame.session, frame.resize, frame.scrollbar }) do
+        region:EnableMouse(enabled)
+        region:EnableMouseWheel(enabled)
+    end
+    frame.statistic:EnableMouse(enabled and not app:GetWindowSetting(frame.config, "hideTypeSelector"))
+    frame.resize:EnableMouse(enabled and not app:GetWindowSetting(frame.config, "lockSize"))
+end
+
 local function OpenMenuAbove(owner, generator)
     local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
     Menu.PopulateDescription(generator, owner, root)
@@ -824,6 +834,9 @@ CreateRow = function(frame, index)
 end
 
 local function UpdateRow(row, source, sourceIndex, session, statistic, config)
+    local interactive = not config.noninteractive or (app.IsEditingWindows and app:IsEditingWindows()) or false
+    row.entry:EnableMouse(interactive)
+    row.entry:EnableMouseWheel(interactive)
     row.source, row.preview = source, session.isPreview
     local rowHeight = app:GetWindowSetting(config, "rowHeight")
     row.entry:SetHeight(rowHeight)
@@ -927,7 +940,7 @@ function app:RefreshWindow(frame, session, message)
     frame.statistic:SetPoint("TOPLEFT", frame, "TOPLEFT", 3, 0)
     local hideTypeSelector = self:GetWindowSetting(config, "hideTypeSelector")
     frame.statistic.arrow:SetShown(not hideTypeSelector)
-    frame.statistic:EnableMouse(not hideTypeSelector)
+    UpdateInteraction(frame)
     frame.statistic.text:ClearAllPoints()
     frame.statistic.text:SetPoint("TOPLEFT", frame.statistic, "TOPLEFT", 25, -9)
     local availableWidth = math.max(0, frame:GetWidth() - 28 - frame.session:GetWidth() - 62)
@@ -1074,6 +1087,7 @@ function app:CreateWindow(id)
     frame.body:SetClipsChildren(true)
 
     local title = CreateFrame("Frame", nil, frame)
+    frame.title = title
     title:SetPoint("TOPLEFT")
     title:SetPoint("TOPRIGHT", -52, 0)
     title:SetHeight(HEADER_HEIGHT)
@@ -1106,23 +1120,47 @@ function app:CreateWindow(id)
         "ui-questtrackerbutton-red-highlight"
     )
     local menu = Button(frame, "", 27, function(button)
-        OpenMenuAbove(button, function(_, root)
-            root:CreateButton("Activate next window", function()
-                self:AddWindow()
-            end)
-            root:CreateButton("Damage Meter settings", function()
+        local dropdown = OpenMenuAbove(button, function(_, root)
+            root:CreateButton("Settings", function()
                 self.core:OpenOptions("SeamlessDamageMeter", "windows")
             end)
-            root:CreateButton("Deactivate this window", function()
+            local editmode = root:CreateButton("Editmode", function()
+                if not InCombatLockdown() then
+                    SettingsPanel:Close(true)
+                    ShowUIPanel(EditModeManagerFrame)
+                end
+            end)
+            editmode:SetEnabled(not InCombatLockdown())
+            root:CreateSpacer()
+            root:CreateButton(frame.config.noninteractive and "Make Interactive" or "Make Noninteractive", function()
+                frame.config.noninteractive = not frame.config.noninteractive
+                frame.favorites:Hide()
+                if self.detailTooltip then
+                    self.detailTooltip:Hide()
+                end
+                self:RefreshWindows()
+            end)
+            local reset = root:CreateButton("Reset Data", function()
+                self.live:ResetData()
+            end)
+            reset:SetEnabled(C_DamageMeter and C_DamageMeter.ResetAllCombatSessions ~= nil)
+            root:CreateButton("Delete Window", function()
                 self:SetWindowEnabled(frame.config, false)
             end)
-            root:CreateButton("Hide this window", function()
-                frame.config.hidden = true
-                frame:Hide()
-                self:UpdateWindowOptions()
+            root:CreateSpacer()
+            local create = root:CreateButton("Create New Window", function()
+                self:AddWindow()
             end)
+            create:SetEnabled(self:GetUnusedWindowSlot() ~= nil)
         end)
+        if dropdown then
+            button:SetNormalAtlas("common-dropdown-a-button-settings-open-shadowless")
+            dropdown:HookScript("OnHide", function()
+                button:SetNormalAtlas("common-dropdown-a-button-settings-shadowless")
+            end)
+        end
     end)
+    frame.settings = menu
     menu:SetSize(27, 27)
     menu:SetPoint("RIGHT", close, "LEFT", -2, -2)
     AtlasButton(
@@ -1273,7 +1311,7 @@ function app:CreateWindow(id)
     for _, region in ipairs({ frame, frame.body, title, frame.statistic, frame.session, close, menu, scrollbar, resize }) do
         local mouseUp = region:GetScript("OnMouseUp")
         region:SetScript("OnMouseUp", function(owner, button)
-            if button == "RightButton" then
+            if button == "RightButton" and not frame.config.noninteractive then
                 self:ToggleFavorites(frame)
             elseif mouseUp then
                 mouseUp(owner, button)

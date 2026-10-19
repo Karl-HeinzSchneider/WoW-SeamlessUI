@@ -280,7 +280,7 @@ local function RegisterControls(frame)
         name = "Modify global style",
         kind = lib.SettingType.Checkbox,
         default = true,
-        desc = "Edit the selected shared skin. Turn off to override appearance only for this window. Turning on uses the shared skin again; local overrides are retained.",
+        desc = "On: Edit the shared skin.\nOff: Edit only this window.\nLocal overrides are kept when switching.",
         get = function()
             return frame.config.modifyGlobalStyle ~= false
         end,

@@ -1,27 +1,29 @@
 # SeamlessDarkmode
 
-Optional UI decoration tinting addon requiring Seamless. Internal until verified in game.
-Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmode.
+Optional addon requiring Seamless that tints the borders and frame art of specific Blizzard
+frames with one shared color. Internal until verified in game. Enable its folder beside Core and
+open `/seamlessdarkmode` or Seamless > Darkmode.
 
-- `src/core.lua`: AceAddon/AceDB lifecycle, category/root registry, batched lifecycle events and independent
-  `SeamlessDarkmodeDB` profiles. All categories default on with a shared dark gray tint.
-- `src/theme.lua`: bounded traversal of client frames, selective decorative texture and backdrop
-  border tinting, reversible color hooks, and neutral aura borders using existing client art.
-- `src/options.lua`: shared color picker, master switch, five category toggles (unit frames, action bars, minimap, buffs/debuffs and bags/bank) and Profiles.
+- `src/frames.lua`: one function per frame (`PlayerFrame`, `TargetFrame`, `MainActionBar`,
+  `Minimap`, `ContainerFrames`, …) naming the exact textures of that frame and its subframes,
+  and `app.groups`, the option groups listing those functions.
+- `src/core.lua`: AceAddon/AceDB lifecycle, independent `SeamlessDarkmodeDB` profiles and the
+  `tint`/`restore` painters passed to the frame functions.
+- `src/options.lua`: master switch, shared color and one toggle per group, plus Profiles.
 - `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
-Read profile settings at use time. Color hooks retain the latest client-requested color and
-alpha; disable restores them. Permanent secure hooks are inert while disabled. Do not tint
-portraits, icon contents, bar fills, text or status/quality indicators. Aura surrounds are
-separate from debuff/dispel borders. Never replace game functions or protected frame scripts.
-No repeating timer or OnUpdate scan is used. Initial enable/settings/profile changes discover
-supported roots; addon loading, world entry, group changes, bag/bank events and root OnShow
-queue only affected categories in one coalesced 50ms callback. Preallocated aura buttons need
-no UNIT_AURA discovery. Existing texture hooks retain tint without rescanning or redundant
-color writes. Combat defers discovery and settings refresh until PLAYER_REGEN_ENABLED. Chat, tooltips and general windows/menus
-are outside this addon's scope. Arbitrary custom artwork is not automatically skinned.
+## Rules
 
-Manual validation: toggle every category and the master switch; change/reset/copy/switch
-profiles; open late-loaded bags/bank; gain/lose buffs and weapon enchants; open separate and
-combined bags; inspect target/party/raid borders and action states; change settings in combat
-and verify application after combat. Check restoration and taint.
+- No scanning: never walk `GetRegions`/`GetChildren` or match texture names. A frame is
+  supported only when it has a function here that names its textures.
+- Each frame function takes `paint` and calls it on every texture it owns. The same function
+  applies darkmode (`tint`) and removes it (`restore`), so a texture listed once is undone too.
+- Only decoration: never pass portraits, icons, bar fills, text, flash/glow/status textures or
+  quality/proc borders (an action button's `Border`).
+- Look up frames through `_G` and guard nil, since a frame may not exist in this client.
+- To support a frame: add a function to `frames.lua` and put it in a group in `app.groups`.
+
+`lua src/tests/darkmode.lua` from the repository root checks tint, alpha, restore and toggles.
+
+Manual validation: toggle every group and the master switch, change the color, switch profiles,
+and check the frames in vehicle, party, boss fights and with the bank open.

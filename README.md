@@ -48,11 +48,9 @@ the old repository must be replaced with one pointing to this repo; `dev:link` r
 SeamlessChat, SeamlessDamageMeter, SeamlessUI and SeamlessDarkmode are unfinished and excluded from public release archives.
 Their source remains in this repository for internal development and testing.
 
-- **SeamlessDarkmode** (optional): a shared darkmode color picker with independent switches for
-  unit frames, action bars, minimap, buffs/debuffs and bags/bank.
-  Install beside Core and use `/seamlessdarkmode`. Changes apply after combat when necessary.
-  Icons, text, bar fills and status indicators retain their colors. Includes independent
-  `SeamlessDarkmodeDB` profiles. Custom third-party artwork may need additional support.
+- **SeamlessDarkmode** (optional): tints the borders and frame art of unit frames, action bars,
+  the minimap and bags/bank with one shared color, with a switch per group. Install beside Core
+  and use `/seamlessdarkmode`. Includes independent `SeamlessDarkmodeDB` profiles.
 
 - **SeamlessUI** (optional): the foundation for general UI improvements, with independent
   `SeamlessUIDB` profiles and a UI panel under Seamless. No improvements are implemented yet.

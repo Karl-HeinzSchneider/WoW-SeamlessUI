@@ -23,12 +23,14 @@ TOC is an independently selectable addon.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `SeamlessUI/`: optional general UI improvements, with independent `SeamlessUIDB` profiles.
   Currently an internal scaffold. See its `CLAUDE.md`.
+- `SeamlessDarkmode/`: optional shared UI decoration tint with category toggles and independent profiles.
+  Internal pending in-game validation. See its `CLAUDE.md`.
 - `.github/`: release workflows using the BigWigs packager.
 
 Every feature addon must declare `## Dependencies: Seamless`; `check:addons` enforces
 this and checks dependency cycles. Addons are discovered automatically by tooling; add each
 release-ready addon to `.pkgmeta` move-folders for releases. Internal addons must stay in its ignore list.
-Only Core, Tooltip and Unitframes currently ship; Chat, DamageMeter and UI are internal. Users enable or disable feature addons
+Only Core, Tooltip and Unitframes currently ship; Chat, DamageMeter, UI and Darkmode are internal. Users enable or disable feature addons
 in the game's AddOns screen and reload. Core works without any feature addon enabled.
 
 ## Working on the code

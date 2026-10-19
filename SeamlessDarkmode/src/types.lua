@@ -1,0 +1,12 @@
+-- Annotations only; not loaded by the TOC.
+---@class SeamlessDarkmode
+---@field core SeamlessCore.Addon
+---@field addon SeamlessDarkmode.Addon
+---@field db AceDBObject-3.0
+---@field categories table[]
+---@field running boolean?
+---@field Restore fun(self: SeamlessDarkmode)
+
+---@class SeamlessDarkmode.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceTimer-3.0
+---@field Refresh fun(self: SeamlessDarkmode.Addon)
+---@field timer any

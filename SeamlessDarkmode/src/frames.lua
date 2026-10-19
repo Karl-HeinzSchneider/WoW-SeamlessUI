@@ -86,8 +86,15 @@ local function Minimap(paint)
     paint(cluster and cluster.ZoneTextButton.StateTexture)
 end
 
--- Calendar and tracking use a single atlas for the whole button, without a separate border.
--- Leave their StateTexture unchanged so their artwork keeps its original color.
+-- Tracking has a separate decoration on its parent frame. Its button artwork stays unchanged.
+---@param paint SeamlessDarkmode.Paint
+local function TrackingBorder(paint)
+    local cluster = _G.MinimapCluster
+    local tracking = cluster and cluster.Tracking
+    paint(tracking and tracking.Background)
+end
+
+-- Calendar has no separate border layer in the client template; keep its artwork unchanged.
 
 ---@param paint SeamlessDarkmode.Paint
 local function AddonCompartmentButton(paint)
@@ -172,7 +179,7 @@ app.groups = {
     {
         key = "minimap",
         name = "Minimap",
-        frames = { Minimap, AddonCompartmentButton, MinimapButtons },
+        frames = { Minimap, TrackingBorder, AddonCompartmentButton, MinimapButtons },
     },
     { key = "actionbars", name = "Action bar slot borders", frames = { ActionBars } },
     { key = "endcaps", name = "Action bar gryphons", frames = { EndCaps } },

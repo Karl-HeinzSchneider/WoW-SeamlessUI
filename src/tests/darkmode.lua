@@ -94,9 +94,11 @@ for i = 1, 3 do
     controls[i] = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
 end
 GameTimeFrame = controls[1]
-MinimapCluster = { ZoneTextButton = {}, Tracking = { Button = controls[2] } }
+local trackingBorder = texture(0.6)
+MinimapCluster = { ZoneTextButton = {}, Tracking = { Button = controls[2], Background = trackingBorder } }
 AddonCompartmentFrame = controls[3]
 local function checkControls(color, context)
+    equal(trackingBorder.color, { color, color, color, 0.6 }, "tracking parent border: " .. context)
     for index, control in ipairs(controls) do
         local tint = index == 3 and color or 1
         equal(control.StateTexture.color, { tint, tint, tint, 0.7 }, context)

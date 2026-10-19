@@ -14,8 +14,9 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
     interaction highlights untouched), and `MinimapButtons`
     (the `border` of every LibDBIcon button from `GetButtonList`; core.lua
     refreshes on `LibDBIcon_IconCreated` so later buttons are painted too).
-    Calendar and tracking buttons keep their original colors: their `StateTexture` contains
-    the whole button artwork rather than a separate border.
+    Tracking: tint the separate `MinimapCluster.Tracking.Background` on the parent frame.
+    Calendar and tracking button artwork (`StateTexture`) keeps its original color.
+    Calendar has no separate border layer in its client template.
   - Action bars: `NormalTexture` on the main bar, seven multi bars, pet, stance and possess
     bars. Leave `SlotArt` and `SlotBackground` unchanged. Gryphons: `MainActionBar.EndCaps`
     left and right `Texture`.

@@ -79,7 +79,6 @@ function app.addon:OnDisable()
         end
     end
     app.StatusTrackingBars(restore, restore, restore)
-    app.MinimapButtonBorders(restore, false)
 end
 
 -- Runs every frame function of every group, tinting or restoring by the current profile.
@@ -88,8 +87,6 @@ function app.addon:Refresh()
         return
     end
     local profile = app.db.profile
-    local minimapEnabled = profile.enabled and profile.groups.minimap
-    app.MinimapButtonBorders(minimapEnabled and tint or restore, minimapEnabled)
     app.StatusTrackingBars(
         (profile.enabled and profile.groups.experience) and tint or restore,
         (profile.enabled and profile.groups.reputation) and tint or restore,

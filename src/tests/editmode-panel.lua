@@ -1,0 +1,267 @@
+-- Run from the repository root: lua src/tests/editmode-panel.lua
+local frames, callbacks = {}, {}
+local editing, combat = false, false
+local nativeWidth = 510
+local methods = {}
+local function object(parent, template)
+    local frame = setmetatable(
+        { parent = parent, template = template, scripts = {}, points = {}, shown = true, height = 32 },
+        { __index = methods }
+    )
+    frames[#frames + 1] = frame
+    return frame
+end
+function methods:GetParent()
+    return self.parent
+end
+function methods:SetScript(event, callback)
+    self.scripts[event] = callback
+end
+function methods:HookScript(event, callback)
+    local original = self.scripts[event]
+    self.scripts[event] = function(...)
+        if original then
+            original(...)
+        end
+        callback(...)
+    end
+end
+function methods:RegisterEvent() end
+function methods:SetFrameStrata(value)
+    self.strata = value
+end
+function methods:EnableMouse() end
+function methods:SetPoint(point, ...)
+    self.points[point] = { ... }
+end
+function methods:ClearAllPoints()
+    self.points = {}
+end
+function methods:SetAllPoints()
+    self.allPoints = true
+end
+function methods:SetWidth(value)
+    if self.width == value then
+        return
+    end
+    self.width = value
+    if self.scripts.OnSizeChanged then
+        self.scripts.OnSizeChanged(self)
+    end
+end
+function methods:GetWidth()
+    if self.points.TOPRIGHT and self.points.TOPRIGHT[1] == EditModeManagerFrame then
+        return nativeWidth
+    end
+    return self.width or 1
+end
+function methods:SetHeight(value)
+    if self.height == value then
+        return
+    end
+    self.height = value
+    if self.scripts.OnSizeChanged then
+        self.scripts.OnSizeChanged(self)
+    end
+end
+function methods:GetHeight()
+    return self.height
+end
+function methods:SetSize(width, height)
+    self:SetWidth(width)
+    self:SetHeight(height)
+end
+function methods:SetShown(value)
+    self.shown = value
+end
+function methods:Show()
+    self.shown = true
+end
+function methods:Hide()
+    self.shown = false
+end
+function methods:IsShown()
+    return self.shown
+end
+function methods:CreateFontString()
+    return object(self, "FontString")
+end
+function methods:SetText(value)
+    self.text = value
+end
+function methods:SetTextColor() end
+function methods:SetJustifyH() end
+function methods:SetWordWrap() end
+function methods:GetStringHeight()
+    return math.max(1, math.ceil(#(self.text or "") * 7 / self:GetWidth())) * 16
+end
+function methods:SetChecked(value)
+    self.checked = value
+end
+function methods:GetChecked()
+    return self.checked
+end
+function methods:SetEnabled(value)
+    self.enabled = value
+end
+UIParent = object()
+EditModeManagerFrame = setmetatable({}, {
+    __index = function()
+        error("Do not read native layout internals")
+    end,
+    __newindex = function()
+        error("Do not mutate native Edit Mode")
+    end,
+})
+function CreateFrame(_, name, parent, template)
+    assert(name == nil and parent ~= EditModeManagerFrame)
+    return object(parent or UIParent, template)
+end
+function InCombatLockdown()
+    return combat
+end
+WHITE_FONT_COLOR = {
+    GetRGB = function()
+        return 1, 1, 1
+    end,
+}
+DISABLED_FONT_COLOR = WHITE_FONT_COLOR
+local core = {}
+local app = {
+    addon = core,
+    LibEditMode = {
+        IsInEditMode = function()
+            return editing
+        end,
+        RegisterCallback = function(_, event, callback)
+            callbacks[event] = callback
+        end,
+    },
+}
+assert(loadfile("Seamless/src/core/editmode.lua"))("Seamless", app)
+local enabled, hidden, value, clicked = true, false, true, 0
+core:RegisterEditModeOptions("meter", {
+    order = 20,
+    enabled = function()
+        return enabled
+    end,
+    options = {
+        {
+            key = "preview",
+            type = "toggle",
+            name = "Seamless Damage Meter",
+            get = function()
+                return value
+            end,
+            set = function(v)
+                value = v
+            end,
+        },
+    },
+})
+assert(not pcall(function()
+    core:RegisterEditModeOptions("meter", { options = {} })
+end))
+editing = true
+callbacks.enter()
+local panel, toggle, border
+for _, frame in ipairs(frames) do
+    if frame.points.TOPRIGHT and frame.points.TOPRIGHT[1] == EditModeManagerFrame then
+        panel = frame
+    end
+    if frame.template == "UICheckButtonTemplate" then
+        toggle = frame
+    end
+    if frame.template == "DialogBorderTranslucentTemplate" then
+        border = frame
+    end
+end
+assert(panel and panel.parent == UIParent and panel.strata == "DIALOG")
+assert(border and border.parent == panel and border.allPoints)
+assert(panel:GetWidth() == 510 and panel:GetHeight() == 92 and panel:IsShown())
+assert(panel.points.TOPLEFT[3] == 0 and panel.points.TOPLEFT[4] == -8)
+local foundTitle = false
+for _, frame in ipairs(frames) do
+    if frame.parent == panel and frame.text == "SeamlessUI" then
+        foundTitle = true
+    end
+end
+assert(foundTitle and toggle.checked)
+toggle:SetChecked(false)
+toggle.scripts.OnClick(toggle)
+assert(not value and not toggle.checked)
+local otherEnabled = true
+core:RegisterEditModeOptions("other", {
+    enabled = function()
+        return otherEnabled
+    end,
+    order = 10,
+    name = "Other frames",
+    options = {
+        {
+            key = "custom",
+            type = "custom",
+            create = function(parent)
+                local row = CreateFrame("Frame", nil, parent)
+                row:SetHeight(50)
+                return row
+            end,
+        },
+        {
+            key = "button",
+            type = "button",
+            name = "Do something",
+            hidden = function()
+                return hidden
+            end,
+            click = function()
+                clicked = clicked + 1
+            end,
+        },
+    },
+})
+local custom, button
+for _, frame in ipairs(frames) do
+    if frame.option and frame.option.key == "custom" then
+        custom = frame
+    end
+    if frame.template == "UIPanelButtonTemplate" then
+        button = frame
+    end
+end
+assert(custom.points.TOPLEFT[4] < 0 and custom.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
+local expanded = panel:GetHeight()
+custom:SetHeight(80)
+assert(panel:GetHeight() == expanded + 30, "Custom height changes must resize the panel")
+button.scripts.OnClick(button)
+assert(clicked == 1)
+hidden = true
+core:RefreshEditModeOptions()
+assert(panel:GetHeight() == expanded + 30 - 38, "Hidden rows must not reserve space")
+local allocated = #frames
+for _ = 1, 5 do
+    core:RefreshEditModeOptions()
+end
+assert(#frames == allocated, "Refresh must reuse frames")
+nativeWidth = 180
+panel.scripts.OnSizeChanged(panel)
+assert(panel:GetHeight() > expanded, "Narrow panels must expand for wrapped labels")
+combat = true
+core:RefreshEditModeOptions()
+assert(not toggle.enabled)
+toggle:SetChecked(true)
+toggle.scripts.OnClick(toggle)
+assert(not value)
+combat = false
+enabled = false
+core:RefreshEditModeOptions()
+assert(not toggle.parent:IsShown())
+otherEnabled = false
+core:RefreshEditModeOptions()
+assert(not panel:IsShown(), "Empty companion panel must hide")
+editing = false
+callbacks.exit()
+assert(not panel:IsShown())
+button.scripts.OnClick(button)
+assert(clicked == 1, "Stale callbacks must not run outside Edit Mode")
+print("PASS: shared Edit Mode border, anchoring, groups, callbacks, dynamic height/wrapping, reuse and combat guards")

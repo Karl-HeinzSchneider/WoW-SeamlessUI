@@ -1,7 +1,6 @@
 -- Run from the repository root: lua src/tests/damage-meter-windows.lua
 unpack = unpack or table.unpack
 local methods = {}
-local meterGroupRow
 local function object(parent)
     return setmetatable({ parent = parent, scripts = {}, width = 400, height = 200, shown = true }, {
         __index = function(_, key)
@@ -179,16 +178,8 @@ end
 
 UIParent = object()
 function CreateFrame(_, name, parent, template)
-    assert(
-        template == nil or (template == "ResizeCheckButtonTemplate" and parent == UIParent),
-        "Only the Edit Mode group checkbox may inherit a template"
-    )
+    assert(template == nil, "Meter windows must not inherit templates or create Core panel controls")
     local frame = object(parent)
-    if template == "ResizeCheckButtonTemplate" then
-        assert(not meterGroupRow, "Only one group checkbox may be created")
-        meterGroupRow = frame
-        frame.Button, frame.Label = object(frame), object(frame)
-    end
     if name then
         assert(_G[name] == nil, "Named frames must be reused")
         _G[name] = frame
@@ -1167,6 +1158,11 @@ function lem:RefreshFrameSettings() end
 function lem:IsInEditMode()
     return editing
 end
+local editModeOptions
+app.core.RegisterEditModeOptions = function(_, id, spec)
+    assert(id == "SeamlessDamageMeter" and not editModeOptions)
+    editModeOptions = spec
+end
 app.core.GetEditModeLibrary = function()
     return lem
 end
@@ -1193,9 +1189,6 @@ combat = false
 app:RebuildWindows()
 assert(registered == 10)
 callbacks.layout("Modern")
-assert(meterGroupRow:GetParent() == UIParent and meterGroupRow.layoutIndex == nil)
-assert(not meterGroupRow:IsShown(), "Preview checkbox must start hidden outside Edit Mode")
-assert(meterGroupRow.point[2] == EditModeManagerFrame, "Anchor our control without joining native layout")
 local meter = app.windowFrames[1]
 local function setting(name)
     for _, entry in ipairs(controls[meter]) do
@@ -1206,7 +1199,7 @@ local function setting(name)
     error("Missing control: " .. name)
 end
 EditModeManagerFrame:EnterEditMode()
-assert(meter:IsShown() and meterGroupRow:IsShown())
+assert(meter:IsShown())
 setting("Frame width").set(nil, 615)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock size").set(nil, true)
@@ -1275,12 +1268,11 @@ meter.config.collapsed = true
 app:RebuildWindows()
 assert(meter.body:IsShown() and meter.config.collapsed)
 assert(meter.session.text.text == "Preview")
-local group = meterGroupRow.Button
-group:SetChecked(false)
-group:GetScript("OnClick")(group)
+assert(editModeOptions.enabled())
+local group = editModeOptions.options[1]
+group.set(false)
 assert(not meter:IsShown() and meter.config.enabled)
-group:SetChecked(true)
-group:GetScript("OnClick")(group)
+group.set(true)
 assert(meter:IsShown())
 C_DamageMeter = liveAPIForPreview
 combat = true
@@ -1288,7 +1280,6 @@ setting("Frame width").set(nil, 780)
 assert(setting("Frame width").get() == 615)
 combat = false
 EditModeManagerFrame:ExitEditMode()
-assert(not meterGroupRow:IsShown())
 setting("Frame width").set(nil, 780)
 assert(app:GetWindowSetting(meter.config, "width") == 615, "Ignore callbacks outside Edit Mode")
 print("Damage meter LibEditMode regressions OK")

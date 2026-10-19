@@ -66,7 +66,7 @@ Install its folder alongside Core. `/sdm` opens settings, `/sdm new` adds a wind
 The gear menu adds or removes windows; the collapse button hides a window.
 Drag the header or bottom-right corner to move or resize; mouse-wheel over
 the window to scroll players. Enable Blizzard combat tracking in its settings if needed.
-Edit Mode has one "Seamless Damage Meter" checkbox controlling previews of active windows,
+The "SeamlessUI" panel below Edit Mode has a "Seamless Damage Meter" checkbox controlling previews of active windows,
 including temporarily hidden slots. It does not change normal window visibility or activation.
 Edit Mode displays sample bars with classic WoW
 characters, class colors and example amounts instead of reading live combat data.

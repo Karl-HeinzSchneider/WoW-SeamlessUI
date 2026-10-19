@@ -15,6 +15,7 @@ embeds.xml
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
+src\core\editmode.lua
 src\core\quests.lua
 src\core\questlog.lua
 src\core\xptooltip.lua

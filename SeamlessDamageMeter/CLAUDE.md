@@ -189,9 +189,10 @@ linked anchors convert the resulting screen position. Control defaults use facto
 not registration-time values; reset bypasses size locks and selects Default skin first.
 One "Seamless Damage Meter" checkbox controls previews of active slots, including temporarily
 hidden windows, without changing activation or normal visibility. Preview visibility is transient.
-The checkbox is an addon-owned UIParent child anchored below the Edit Mode window, shown only
-while editing. Never add it to native layout containers or call their MarkDirty/Layout methods:
-MarkDirty propagates and installs tainted OnUpdate scripts on Blizzard ancestors.
+The meter only registers its toggle through `core:RegisterEditModeOptions`; Core owns the
+shared bordered SeamlessUI panel, widgets, sizing and visibility. Refresh Core's options on
+profile/enabled-state changes. Never create feature-owned companion controls or modify native
+layout containers; MarkDirty propagates tainted update scripts into Blizzard ancestors.
 Buttons create the next unused window, remove the selected window, and open its skin settings.
 Callbacks ignore edits outside Edit Mode or in combat. Never patch the vendored library.
 Edit Mode uses only local classic-character sample sessions, even when tracking is off,

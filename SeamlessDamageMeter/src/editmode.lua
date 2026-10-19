@@ -6,8 +6,6 @@ local activeLayout
 local layoutKeys = { "point", "relativePoint", "x", "y", "width", "height", "scale" }
 local showUsedWindows = true
 local registered = {}
-local groupCheckbox
-local groupRow
 
 -- Layout records belong to the active AceDB profile. Copy only public geometry;
 -- appearance, visibility, activation and locks remain profile settings.
@@ -46,32 +44,27 @@ function app:ApplyEditModeLayout()
     end
 end
 
-local function RegisterGroupCheckbox()
-    if groupCheckbox then
-        return
-    end
-    -- Keep addon controls outside native LayoutFrames: MarkDirty propagates to
-    -- ancestors and replaces their OnUpdate scripts in addon execution taint.
-    local row = CreateFrame("Frame", nil, UIParent, "ResizeCheckButtonTemplate")
-    groupRow = row
-    row:SetPoint("TOPLEFT", EditModeManagerFrame, "BOTTOMLEFT", 8, -4)
-    row:SetFrameStrata("DIALOG")
-    row:SetShown(app:IsEditingWindows() and app.addon:IsEnabled())
-    row:SetSize(225, 32)
-    row.Label:SetText("Seamless Damage Meter")
-    row.Label:SetFontObject(GameFontHighlightMedium)
-    groupCheckbox = row.Button
-    groupCheckbox:SetChecked(showUsedWindows)
-    groupCheckbox:SetScript("OnClick", function(button)
-        if app:IsEditingWindows() and not InCombatLockdown() then
-            showUsedWindows = button:GetChecked()
-            EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
-            app:RebuildWindows()
-        else
-            button:SetChecked(showUsedWindows)
-        end
-    end)
-end
+app.core:RegisterEditModeOptions("SeamlessDamageMeter", {
+    order = 100,
+    enabled = function()
+        return app.db and app.addon:IsEnabled()
+    end,
+    options = {
+        {
+            key = "windows",
+            type = "toggle",
+            name = "Seamless Damage Meter",
+            get = function()
+                return showUsedWindows
+            end,
+            set = function(value)
+                showUsedWindows = value
+                EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
+                app:RebuildWindows()
+            end,
+        },
+    },
+})
 
 -- Only slider values are quantized; stored geometry can retain intentional fractions.
 local function SliderValue(value, step)
@@ -315,7 +308,6 @@ function app:SyncWindowEditMode(frame)
             "Seamless Damage " .. frame.windowID
         )
         RegisterControls(frame)
-        RegisterGroupCheckbox()
     end
     frame:SetScale(self:GetWindowSetting(frame.config, "scale"))
     self:PositionWindow(frame)
@@ -343,9 +335,6 @@ function app:WindowShouldBeShown(frame)
 end
 
 local function RefreshEditMode()
-    if groupRow then
-        groupRow:SetShown(app:IsEditingWindows() and app.addon:IsEnabled())
-    end
     if app.db and not InCombatLockdown() then
         app:RebuildWindows()
     end

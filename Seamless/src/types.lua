@@ -26,6 +26,7 @@
 ---@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
 
 ---@class SeamlessCore.EditModeOptions
+---@field section "options"|"frames"|nil Defaults to options, above the shared Frames heading.
 ---@field name string? Optional group heading.
 ---@field order number? Group order; ties use the registration id.
 ---@field enabled boolean|fun(): boolean|nil Whether this feature contributes rows.

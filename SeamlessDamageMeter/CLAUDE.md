@@ -189,7 +189,8 @@ linked anchors convert the resulting screen position. Control defaults use facto
 not registration-time values; reset bypasses size locks and selects Default skin first.
 One "Seamless Damage Meter" checkbox controls previews of active slots, including temporarily
 hidden windows, without changing activation or normal visibility. Preview visibility is transient.
-The meter only registers its toggle through `core:RegisterEditModeOptions`; Core owns the
+The meter registers its toggle through `core:RegisterEditModeOptions` with `section = "frames"`,
+under the shared Frames heading; Core owns the
 shared bordered SeamlessUI panel, widgets, sizing and visibility. Refresh Core's options on
 profile/enabled-state changes. Never create feature-owned companion controls or modify native
 layout containers; MarkDirty propagates tainted update scripts into Blizzard ancestors.

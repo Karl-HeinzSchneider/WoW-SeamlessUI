@@ -45,6 +45,7 @@ function app:ApplyEditModeLayout()
 end
 
 app.core:RegisterEditModeOptions("SeamlessDamageMeter", {
+    section = "frames",
     order = 100,
     enabled = function()
         return app.db and app.addon:IsEnabled()

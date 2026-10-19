@@ -2,7 +2,7 @@
 local appName, app = ...
 
 app.core = LibStub("AceAddon-3.0"):GetAddon("Seamless")
-app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0")
+app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
 
 -- A texture's color before it was first tinted, restored when its group is switched off.
 ---@type table<Texture, number[]>
@@ -46,14 +46,29 @@ function app.addon:OnInitialize()
 end
 
 function app.addon:OnEnable()
+    self:RegisterEvent("ADDON_LOADED", "InstallHooks")
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", "InstallHooks")
     local icons = LibStub("LibDBIcon-1.0", true)
     if icons then
         icons.RegisterCallback(self, "LibDBIcon_IconCreated", "Refresh")
+    end
+    self:InstallHooks()
+end
+
+-- Containers can change from XP to reputation (or another bar) after login and during fades.
+function app.addon:InstallHooks()
+    for _, name in ipairs({ "MainStatusTrackingBarContainer", "SecondaryStatusTrackingBarContainer" }) do
+        local container = _G[name]
+        if container and not self:IsHooked(container, "ApplyPendingBarToShow") then
+            self:SecureHook(container, "ApplyPendingBarToShow", "Refresh")
+        end
     end
     self:Refresh()
 end
 
 function app.addon:OnDisable()
+    self:UnregisterAllEvents()
+    self:UnhookAll()
     local icons = LibStub("LibDBIcon-1.0", true)
     if icons then
         icons.UnregisterCallback(self, "LibDBIcon_IconCreated")
@@ -63,6 +78,7 @@ function app.addon:OnDisable()
             frame(restore)
         end
     end
+    app.StatusTrackingBars(restore, restore, restore)
 end
 
 -- Runs every frame function of every group, tinting or restoring by the current profile.
@@ -71,6 +87,11 @@ function app.addon:Refresh()
         return
     end
     local profile = app.db.profile
+    app.StatusTrackingBars(
+        (profile.enabled and profile.groups.experience) and tint or restore,
+        (profile.enabled and profile.groups.reputation) and tint or restore,
+        restore
+    )
     for _, group in ipairs(app.groups) do
         local paint = (profile.enabled and profile.groups[group.key]) and tint or restore
         for _, frame in ipairs(group.frames) do

@@ -4,6 +4,21 @@ local root = "SeamlessDarkmode/src/"
 local app = {}
 local enabled = true
 local addon = {}
+local hooks = {}
+function addon:RegisterEvent() end
+function addon:UnregisterAllEvents() end
+function addon:IsHooked(object, method)
+    return hooks[object] and hooks[object][method]
+end
+function addon:SecureHook(object, method, callback)
+    hooks[object] = hooks[object] or {}
+    hooks[object][method] = function()
+        self[callback](self)
+    end
+end
+function addon:UnhookAll()
+    hooks = {}
+end
 function addon:IsEnabled()
     return enabled
 end
@@ -74,23 +89,32 @@ TargetFrame = {
     TargetFrameContent = { TargetFrameContentMain = { LevelBackgroundCircle = targetCircle } },
 }
 MinimapCompassTexture = texture()
-local controls = {}
-for i = 1, 3 do
-    controls[i] = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
-end
-GameTimeFrame = controls[1]
-MinimapCluster = { ZoneTextButton = {}, Tracking = { Button = controls[2] } }
-AddonCompartmentFrame = controls[3]
+MinimapCluster = { ZoneTextButton = {} }
+AddonCompartmentFrame = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
 local function checkControls(color, context)
-    for _, control in ipairs(controls) do
-        equal(control.StateTexture.color, { color, color, color, 0.7 }, context)
-        equal(control.AddTexture.color, { 1, 1, 1, 1 }, "interaction highlight untouched")
-        equal(control.Text.color, { 1, 1, 1, 1 }, "button text untouched")
-    end
+    equal(AddonCompartmentFrame.StateTexture.color, { color, color, color, 0.7 }, context)
+    equal(AddonCompartmentFrame.AddTexture.color, { 1, 1, 1, 1 }, "interaction highlight untouched")
+    equal(AddonCompartmentFrame.Text.color, { 1, 1, 1, 1 }, "button text untouched")
 end
 local ring = texture()
 local iconTexture = texture()
 buttons.Seamless = { border = ring, icon = iconTexture }
+
+local slot = texture(0.6)
+local slotArt = texture()
+local actionIcon = texture()
+local flash = texture()
+local leftGryphon = texture()
+local rightGryphon = texture()
+MainActionBar = {
+    actionButtons = { { NormalTexture = slot, SlotArt = slotArt, icon = actionIcon, Flash = flash } },
+    EndCaps = { LeftEndCap = { Texture = leftGryphon }, RightEndCap = { Texture = rightGryphon } },
+}
+local extraSlot = texture()
+MultiBar7 = { actionButtons = { { NormalTexture = extraSlot } } }
+StatusTrackingBarInfo = { BarsEnum = { Experience = 1, Reputation = 2, Honor = 3 } }
+MainStatusTrackingBarContainer = { shownBarIndex = 1, BarFrameTexture = texture(0.8) }
+SecondaryStatusTrackingBarContainer = { shownBarIndex = 2, BarFrameTexture = texture() }
 
 assert(loadfile(root .. "frames.lua"))("SeamlessDarkmode", app)
 assert(loadfile(root .. "core.lua"))("SeamlessDarkmode", app)
@@ -98,11 +122,57 @@ app.db = {
     profile = {
         enabled = true,
         color = { r = 0.2, g = 0.3, b = 0.4 },
-        groups = { unitframes = true, minimap = true },
+        groups = {
+            unitframes = true,
+            minimap = true,
+            actionbars = true,
+            endcaps = true,
+            experience = true,
+            reputation = true,
+        },
     },
 }
 
 addon:OnEnable()
+equal(slot.color, { 0.2, 0.3, 0.4, 0.6 }, "action slot tinted with alpha preserved")
+equal(slotArt.color, { 1, 1, 1, 1 }, "slot backing untouched")
+equal(extraSlot.color, { 0.2, 0.3, 0.4, 1 }, "additional action bar tinted")
+equal(actionIcon.color, { 1, 1, 1, 1 }, "action icon untouched")
+equal(flash.color, { 1, 1, 1, 1 }, "action flash untouched")
+equal(leftGryphon.color, { 0.2, 0.3, 0.4, 1 }, "left gryphon tinted")
+equal(rightGryphon.color, { 0.2, 0.3, 0.4, 1 }, "right gryphon tinted")
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 0.2, 0.3, 0.4, 0.8 }, "XP border tinted")
+equal(SecondaryStatusTrackingBarContainer.BarFrameTexture.color, { 0.2, 0.3, 0.4, 1 }, "reputation border tinted")
+app.db.profile.groups.experience = false
+app.db.profile.groups.actionbars = false
+addon:Refresh()
+equal(slot.color, { 1, 1, 1, 0.6 }, "slot option restores border")
+equal(leftGryphon.color, { 0.2, 0.3, 0.4, 1 }, "gryphon option independent of slots")
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "XP option restores border")
+equal(
+    SecondaryStatusTrackingBarContainer.BarFrameTexture.color,
+    { 0.2, 0.3, 0.4, 1 },
+    "reputation option independent of XP"
+)
+MainStatusTrackingBarContainer.shownBarIndex = 2
+hooks[MainStatusTrackingBarContainer].ApplyPendingBarToShow()
+equal(
+    MainStatusTrackingBarContainer.BarFrameTexture.color,
+    { 0.2, 0.3, 0.4, 0.8 },
+    "shared container switches to reputation"
+)
+SecondaryStatusTrackingBarContainer.shownBarIndex = 3
+hooks[SecondaryStatusTrackingBarContainer].ApplyPendingBarToShow()
+equal(SecondaryStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 1 }, "unrelated bar restores shared border")
+app.db.profile.groups.endcaps = false
+app.db.profile.groups.reputation = false
+addon:Refresh()
+equal(rightGryphon.color, { 1, 1, 1, 1 }, "gryphon option restores")
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "reputation option restores")
+for _, key in ipairs({ "experience", "reputation", "actionbars", "endcaps" }) do
+    app.db.profile.groups[key] = true
+end
+addon:Refresh()
 equal(frame.color, { 0.2, 0.3, 0.4, 0.5 }, "frame tinted, alpha kept")
 equal(circle.color, { 0.2, 0.3, 0.4, 1 }, "player level circle tinted")
 equal(portrait.color, { 1, 1, 1, 1 }, "portrait untouched")
@@ -135,6 +205,9 @@ app.db.profile.groups.unitframes = true
 
 app.db.profile.enabled = false
 addon:Refresh()
+equal(slot.color, { 1, 1, 1, 0.6 }, "master switch restores slots")
+equal(rightGryphon.color, { 1, 1, 1, 1 }, "master switch restores gryphons")
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "master switch restores reputation")
 equal(frame.color, { 1, 1, 1, 0.5 }, "master switch restores")
 equal(MinimapCompassTexture.color, { 1, 1, 1, 1 }, "master switch restores minimap")
 equal(targetCircle.color, { 1, 1, 1, 1 }, "master switch restores target")
@@ -143,6 +216,10 @@ checkControls(1, "master switch restores controls")
 app.db.profile.enabled = true
 addon:Refresh()
 addon:OnDisable()
+equal(slot.color, { 1, 1, 1, 0.6 }, "disable restores slots")
+equal(leftGryphon.color, { 1, 1, 1, 1 }, "disable restores gryphons")
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "disable restores status border")
+assert(not next(hooks), "disable removes status hooks")
 enabled = false
 addon:Refresh()
 equal(frame.color, { 1, 1, 1, 0.5 }, "addon disable restores")
@@ -151,10 +228,13 @@ equal(lateRing.color, { 1, 1, 1, 1 }, "addon disable restores minimap buttons")
 assert(not iconCallbacks.LibDBIcon_IconCreated, "addon disable drops the button callback")
 checkControls(1, "addon disable restores controls")
 
-GameTimeFrame = nil
-MinimapCluster = { ZoneTextButton = {}, Tracking = {} }
+MinimapCluster = { ZoneTextButton = {} }
 AddonCompartmentFrame = nil
+MainActionBar = nil
+MultiBar7 = nil
+MainStatusTrackingBarContainer = nil
+SecondaryStatusTrackingBarContainer = nil
 enabled = true
 addon:Refresh()
 
-print("PASS: unit frames, minimap, minimap buttons (later ones too), group/master toggles, disable")
+print("PASS: unit frames, minimap, action slots, gryphons, XP/reputation border swaps, group/master toggles, disable")

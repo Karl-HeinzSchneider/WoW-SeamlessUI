@@ -194,13 +194,13 @@ local function RegisterControls(frame)
             end,
         }
     end
+    add("Lock size", "lockSize", lib.SettingType.Checkbox)
+    add("Lock position", "lockPosition", lib.SettingType.Checkbox)
     add("Frame scale", "scale", lib.SettingType.Slider, 50, 200, 5, 100)
     add("Frame width", "width", lib.SettingType.Slider, 200, 800, 1)
     add("Frame height", "height", lib.SettingType.Slider, 120, 900, 1)
     add("Fixed height by row count", "fixedHeight", lib.SettingType.Checkbox)
     add("Row count", "visibleLines", lib.SettingType.Slider, 1, 30, 1)
-    add("Lock size", "lockSize", lib.SettingType.Checkbox)
-    add("Lock position", "lockPosition", lib.SettingType.Checkbox)
     settings[#settings + 1] = {
         name = "Numbers",
         kind = lib.SettingType.Dropdown,

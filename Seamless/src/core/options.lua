@@ -271,14 +271,6 @@ function module:OnInitialize()
                         desc = "Type /rl in chat to reload the user interface, just like /reload.",
                         descStyle = "inline",
                     },
-                    showFramerateOnStartup = {
-                        type = "toggle",
-                        order = 20,
-                        width = "full",
-                        name = "Show the framerate on startup",
-                        desc = "Shows the FPS counter at login and after a reload. Takes effect at the next login or reload; Ctrl+R still toggles it.",
-                        descStyle = "inline",
-                    },
                     enhancedXPTooltip = {
                         type = "toggle",
                         order = 40,

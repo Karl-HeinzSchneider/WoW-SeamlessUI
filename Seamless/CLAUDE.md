@@ -24,7 +24,9 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   using configurable `restedXPCap` (150%) and `restedXPRate` (5% per eight hours); adjust these
   assumptions for perks because the client does not expose the actual cap or accrual rate.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
-  Can show the framerate once on startup (off by default); its toggle applies on next login/reload and leaves Ctrl+R in control afterward.
+  Can show the framerate once on startup (off by default); its toggle lives in the FPS display settings in
+  the shared Edit Mode menu, applies on next login/reload and leaves Ctrl+R in control afterward.
+  SeamlessUI owns the temporary FPS preview in Edit Mode.
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,
   "Seamless": General (minimap button, log level, a button per enabled feature addon), Profiles.
   Core tweaks have their own "Tweaks" child category (General, Profiles), using the Core database.

@@ -241,19 +241,6 @@ function app.addon:Refresh()
             for i = 1, 13 do
                 scan(_G["ContainerFrame" .. i], category.key, seen, 0)
             end
-        elseif category.key == "chat" then
-            for i = 1, NUM_CHAT_WINDOWS or 10 do
-                local name = "ChatFrame" .. i
-                for _, suffix in ipairs(CHAT_FRAME_TEXTURES or {}) do
-                    track(_G[name .. suffix], category.key)
-                end
-                scan(_G[name], category.key, seen, 0)
-                scan(_G["ChatFrame" .. i .. "Tab"], category.key, seen, 0)
-            end
-        elseif category.key == "windows" then
-            for name in pairs(UIPanelWindows or {}) do
-                scan(_G[name], category.key, seen, 0)
-            end
         end
     end
     for texture, state in pairs(tracked) do

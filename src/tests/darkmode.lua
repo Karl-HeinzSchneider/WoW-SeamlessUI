@@ -11,14 +11,14 @@ local app = {
             categories = {
                 unitframes = true,
                 auras = true,
-                tooltips = true,
+                bags = true,
             },
         },
     },
     categories = {
         { key = "unitframes", roots = { "PlayerFrame" } },
         { key = "auras", roots = { "BuffFrame" } },
-        { key = "tooltips", roots = { "GameTooltip" } },
+        { key = "bags", roots = { "BankFrame" } },
     },
 }
 local combat = false
@@ -107,15 +107,15 @@ local aura = frame()
 aura.Icon = texture()
 aura.DebuffBorder = texture("debuff-border")
 BuffFrame.children = { aura }
-GameTooltip = frame()
-GameTooltip.border = { 0.9, 0.8, 0.7, 0.6 }
-function GameTooltip:GetBackdrop()
+BankFrame = frame()
+BankFrame.border = { 0.9, 0.8, 0.7, 0.6 }
+function BankFrame:GetBackdrop()
     return {}
 end
-function GameTooltip:GetBackdropBorderColor()
+function BankFrame:GetBackdropBorderColor()
     return unpack(self.border)
 end
-function GameTooltip:SetBackdropBorderColor(...)
+function BankFrame:SetBackdropBorderColor(...)
     self.border = { ... }
 end
 assert(loadfile(root .. "/SeamlessDarkmode/src/theme.lua"))("SeamlessDarkmode", app)
@@ -136,7 +136,7 @@ equal(border.color, { 0.2, 0.3, 0.4, 0.5 }, "tint and alpha")
 equal(icon.color, { 0.8, 0.7, 0.6, 0.5 }, "icon unchanged")
 equal(glow.color, { 0.8, 0.7, 0.6, 0.5 }, "glow unchanged")
 equal(absorb.color, { 0.8, 0.7, 0.6, 0.5 }, "absorb indicator unchanged")
-equal(GameTooltip.border, { 0.2, 0.3, 0.4, 0.6 }, "backdrop tint")
+equal(BankFrame.border, { 0.2, 0.3, 0.4, 0.6 }, "backdrop tint")
 assert(aura.regions[1].shown, "aura border created")
 border:SetVertexColor(0.1, 0.8, 0.3, 0.4)
 equal(border.color, { 0.2, 0.3, 0.4, 0.4 }, "client repaint retained alpha")
@@ -146,14 +146,14 @@ equal(border.color, { 0.1, 0.8, 0.3, 0.4 }, "category restoration")
 app.db.profile.enabled = false
 app.addon:Refresh()
 assert(not aura.regions[1].shown, "aura border removed")
-equal(GameTooltip.border, { 0.9, 0.8, 0.7, 0.6 }, "backdrop restoration")
+equal(BankFrame.border, { 0.9, 0.8, 0.7, 0.6 }, "backdrop restoration")
 app.db.profile = {
     enabled = true,
     color = { r = 0.1, g = 0.1, b = 0.1 },
     categories = {
         unitframes = true,
         auras = true,
-        tooltips = true,
+        bags = true,
     },
 }
 combat = true
@@ -184,7 +184,7 @@ local function deny(object, methods)
     end
 end
 deny(pooled.FrameTexture, { "IsObjectType", "GetVertexColor", "SetVertexColor" })
-deny(GameTooltip, { "GetRegions", "GetBackdrop", "SetBackdropBorderColor" })
+deny(BankFrame, { "GetRegions", "GetBackdrop", "SetBackdropBorderColor" })
 deny(aura.regions[1], { "IsObjectType", "SetShown", "Hide", "SetVertexColor" })
 app.addon:Refresh()
 app.running = false

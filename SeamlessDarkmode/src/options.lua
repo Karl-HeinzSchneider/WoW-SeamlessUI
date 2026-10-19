@@ -56,7 +56,7 @@ function options:OnInitialize()
             description = {
                 type = "description",
                 order = 3,
-                name = "Tints decorative UI art while preserving icons, text, health/power bars and status indicators. Disabling a category restores its colors. New windows and pooled buttons are discovered automatically; changes in combat wait until combat ends.",
+                name = "Tints decorative UI art while preserving icons, text, health/power bars and status indicators. Disabling a category restores its colors. New frames in supported categories and pooled buttons are discovered automatically; changes in combat wait until combat ends.",
             },
             categories = {
                 type = "group",

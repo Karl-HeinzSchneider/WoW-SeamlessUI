@@ -74,6 +74,20 @@ TargetFrame = {
     TargetFrameContent = { TargetFrameContentMain = { LevelBackgroundCircle = targetCircle } },
 }
 MinimapCompassTexture = texture()
+local controls = {}
+for i = 1, 3 do
+    controls[i] = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
+end
+GameTimeFrame = controls[1]
+MinimapCluster = { ZoneTextButton = {}, Tracking = { Button = controls[2] } }
+AddonCompartmentFrame = controls[3]
+local function checkControls(color, context)
+    for _, control in ipairs(controls) do
+        equal(control.StateTexture.color, { color, color, color, 0.7 }, context)
+        equal(control.AddTexture.color, { 1, 1, 1, 1 }, "interaction highlight untouched")
+        equal(control.Text.color, { 1, 1, 1, 1 }, "button text untouched")
+    end
+end
 local ring = texture()
 local iconTexture = texture()
 buttons.Seamless = { border = ring, icon = iconTexture }
@@ -105,6 +119,13 @@ equal(lateRing.color, { 0.2, 0.3, 0.4, 1 }, "later minimap button tinted")
 app.db.profile.color = { r = 0.1, g = 0.1, b = 0.1 }
 addon:Refresh()
 equal(frame.color, { 0.1, 0.1, 0.1, 0.5 }, "color change")
+checkControls(0.1, "built-in minimap controls tinted")
+app.db.profile.groups.minimap = false
+addon:Refresh()
+checkControls(1, "minimap group off restores controls")
+app.db.profile.groups.minimap = true
+addon:Refresh()
+checkControls(0.1, "minimap group on tints controls again")
 
 app.db.profile.groups.unitframes = false
 addon:Refresh()
@@ -117,6 +138,7 @@ addon:Refresh()
 equal(frame.color, { 1, 1, 1, 0.5 }, "master switch restores")
 equal(MinimapCompassTexture.color, { 1, 1, 1, 1 }, "master switch restores minimap")
 equal(targetCircle.color, { 1, 1, 1, 1 }, "master switch restores target")
+checkControls(1, "master switch restores controls")
 
 app.db.profile.enabled = true
 addon:Refresh()
@@ -127,5 +149,12 @@ equal(frame.color, { 1, 1, 1, 0.5 }, "addon disable restores")
 equal(circle.color, { 1, 1, 1, 1 }, "addon disable restores level circle")
 equal(lateRing.color, { 1, 1, 1, 1 }, "addon disable restores minimap buttons")
 assert(not iconCallbacks.LibDBIcon_IconCreated, "addon disable drops the button callback")
+checkControls(1, "addon disable restores controls")
+
+GameTimeFrame = nil
+MinimapCluster = { ZoneTextButton = {}, Tracking = {} }
+AddonCompartmentFrame = nil
+enabled = true
+addon:Refresh()
 
 print("PASS: unit frames, minimap, minimap buttons (later ones too), group/master toggles, disable")

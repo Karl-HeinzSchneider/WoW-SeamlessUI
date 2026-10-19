@@ -9,7 +9,9 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
   - Unit frames: `PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, `PartyFrame`,
     `BossFrames` (frame texture, level background circle).
   - Minimap: `Minimap` (`MinimapCompassTexture`, its rotating underlay, the zone header) and
-    `MinimapButtons` (the `border` of every LibDBIcon button from `GetButtonList`; core.lua
+    `CalendarButton`, `TrackingButton`, `AddonCompartmentButton` (their `StateTexture`, leaving
+    text, notifications and additive interaction highlights untouched), and `MinimapButtons`
+    (the `border` of every LibDBIcon button from `GetButtonList`; core.lua
     refreshes on `LibDBIcon_IconCreated` so later buttons are painted too).
 - `src/core.lua`: AceAddon/AceDB lifecycle, independent `SeamlessDarkmodeDB` profiles and the
   `tint`/`restore` painters passed to the frame functions.

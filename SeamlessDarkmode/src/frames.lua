@@ -86,6 +86,26 @@ local function Minimap(paint)
     paint(cluster and cluster.ZoneTextButton.StateTexture)
 end
 
+---@param paint SeamlessDarkmode.Paint
+local function CalendarButton(paint)
+    local button = _G.GameTimeFrame
+    paint(button and button.StateTexture)
+end
+
+---@param paint SeamlessDarkmode.Paint
+local function TrackingButton(paint)
+    local cluster = _G.MinimapCluster
+    local tracking = cluster and cluster.Tracking
+    local button = tracking and tracking.Button
+    paint(button and button.StateTexture)
+end
+
+---@param paint SeamlessDarkmode.Paint
+local function AddonCompartmentButton(paint)
+    local button = _G.AddonCompartmentFrame
+    paint(button and button.StateTexture)
+end
+
 -- The round border of every LibDBIcon minimap button. Buttons created later are painted from
 -- the library's LibDBIcon_IconCreated callback (core.lua).
 ---@param paint SeamlessDarkmode.Paint
@@ -107,5 +127,9 @@ app.groups = {
         name = "Unit frames",
         frames = { PlayerFrame, TargetFrame, FocusFrame, PetFrame, PartyFrame, BossFrames },
     },
-    { key = "minimap", name = "Minimap", frames = { Minimap, MinimapButtons } },
+    {
+        key = "minimap",
+        name = "Minimap",
+        frames = { Minimap, CalendarButton, TrackingButton, AddonCompartmentButton, MinimapButtons },
+    },
 }

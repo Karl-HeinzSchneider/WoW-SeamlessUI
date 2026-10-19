@@ -13,4 +13,5 @@
 src\core\bootstrap.lua
 src\core\db.lua
 src\core\ace.lua
+src\features\xpbartooltip.lua
 src\core\options.lua

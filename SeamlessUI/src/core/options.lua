@@ -12,9 +12,10 @@ function module:OnInitialize()
             description = {
                 type = "description",
                 order = 10,
-                name = "General UI improvements for the Seamless suite. No improvements are available yet.",
+                name = "General UI improvements for the Seamless suite.",
                 fontSize = "medium",
             },
+            xpBarTooltip = app.xpBarTooltip:Options(),
         },
         db = app.db,
     })

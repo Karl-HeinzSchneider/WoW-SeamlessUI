@@ -64,7 +64,7 @@ end
 
 function module:AddTooltipDetails()
     local settings = app.db.profile.tweaks
-    if not settings.questXPTooltip and not settings.enhancedXPTooltip then
+    if not settings.enhancedXPTooltip then
         return
     end
 
@@ -73,15 +73,7 @@ function module:AddTooltipDetails()
         return
     end
 
-    if settings.enhancedXPTooltip then
-        self:AddXPDetails(tooltip)
-    end
-    if settings.questXPTooltip then
-        local summary = app.addon:GetQuestLogSummary()
-        tooltip:AddLine(" ")
-        tooltip:AddDoubleLine("Completed quests", tostring(summary.completedQuests), 1, 0.82, 0, 1, 1, 1)
-        tooltip:AddDoubleLine("Quest XP", BreakUpLargeNumbers(summary.completedQuestXP), 1, 0.82, 0, 1, 1, 1)
-    end
+    self:AddXPDetails(tooltip)
     tooltip:Show()
 end
 

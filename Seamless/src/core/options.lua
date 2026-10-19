@@ -279,14 +279,6 @@ function module:OnInitialize()
                         desc = "Shows the FPS counter at login and after a reload. Takes effect at the next login or reload; Ctrl+R still toggles it.",
                         descStyle = "inline",
                     },
-                    questXPTooltip = {
-                        type = "toggle",
-                        order = 30,
-                        width = "full",
-                        name = "Show completed quests in the XP tooltip",
-                        desc = "Adds the number of completed quests and their total XP reward to the player XP bar tooltip. Takes effect on the next hover.",
-                        descStyle = "inline",
-                    },
                     enhancedXPTooltip = {
                         type = "toggle",
                         order = 40,

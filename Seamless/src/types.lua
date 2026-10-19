@@ -14,6 +14,7 @@
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)
 ---@field logger SeamlessCore.Logger
+---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
 
 ---@class SeamlessCore.DB : AceDBObject-3.0
@@ -22,7 +23,7 @@
 ---@class SeamlessCore.Profile
 ---@field logLevel string
 ---@field minimap table
----@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean, questXPTooltip: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
+---@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
 
 ---@class SeamlessCore.EditModeOptions
 ---@field name string? Optional group heading.

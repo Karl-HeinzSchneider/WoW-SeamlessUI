@@ -75,6 +75,11 @@ anchor target preserves the attachment and its geometry. Defaults are profile sc
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
 mixins. Reuse client art and fonts.
+The gear menu lists Settings, Editmode, a spacer, Make Noninteractive, Reset Data,
+Delete Window, a spacer, and Create New Window. Noninteractive mode is saved per window;
+keep gear/collapse available and offer Make Interactive to restore input. Edit Mode permits
+interaction regardless of this flag. Reset Data resets client sessions through `live.lua`;
+saved fight history remains intact. Delete Window deactivates the slot, retaining its settings.
 The default bar font resolves from `NumberFontNormal`, matching the native meter's locale-specific
 typeface; skin font size and outline settings still apply. Class bar RGB comes directly from
 `RAID_CLASS_COLORS` at full opacity, with no brightness adjustment; the grayscale fill shades it.

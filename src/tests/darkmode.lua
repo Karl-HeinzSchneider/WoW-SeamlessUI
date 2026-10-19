@@ -21,6 +21,7 @@ local app = {
         { key = "bags", roots = { "BankFrame" } },
     },
 }
+local writes, traversals = 0, 0
 local combat = false
 -- Every API except access checks fails on this mock, just as the reported IsObjectType call did.
 local function restricted(explicit)
@@ -58,6 +59,7 @@ local function texture(atlas)
         return unpack(self.color)
     end
     function t:SetVertexColor(r, g, b, a)
+        writes = writes + 1
         self.color = { r, g, b, a or 1 }
     end
     function t:GetAtlas()
@@ -73,6 +75,9 @@ local function texture(atlas)
     function t:SetShown(show)
         self.shown = show
     end
+    function t:IsShown()
+        return self.shown == true
+    end
     function t:Hide()
         self.shown = false
     end
@@ -81,6 +86,7 @@ end
 local function frame(regions)
     local f = { regions = regions or {}, children = {} }
     function f:GetRegions()
+        traversals = traversals + 1
         return unpack(self.regions)
     end
     function f:GetChildren()
@@ -116,6 +122,7 @@ function BankFrame:GetBackdropBorderColor()
     return unpack(self.border)
 end
 function BankFrame:SetBackdropBorderColor(...)
+    writes = writes + 1
     self.border = { ... }
 end
 assert(loadfile(root .. "/SeamlessDarkmode/src/theme.lua"))("SeamlessDarkmode", app)
@@ -138,6 +145,14 @@ equal(glow.color, { 0.8, 0.7, 0.6, 0.5 }, "glow unchanged")
 equal(absorb.color, { 0.8, 0.7, 0.6, 0.5 }, "absorb indicator unchanged")
 equal(BankFrame.border, { 0.2, 0.3, 0.4, 0.6 }, "backdrop tint")
 assert(aura.regions[1].shown, "aura border created")
+local previousWrites = writes
+border.color[1] = border.color[1] + 0.00000001 -- simulate float storage in the engine
+app.addon:Refresh()
+assert(writes == previousWrites, "unchanged refresh must not issue color writes")
+local previousTraversals = traversals
+app:DiscoverCategory("bags")
+assert(traversals == previousTraversals + 1, "bag discovery must not traverse other categories")
+assert(writes == previousWrites, "discovery must not repaint tracked textures")
 border:SetVertexColor(0.1, 0.8, 0.3, 0.4)
 equal(border.color, { 0.2, 0.3, 0.4, 0.4 }, "client repaint retained alpha")
 app.db.profile.categories.unitframes = false

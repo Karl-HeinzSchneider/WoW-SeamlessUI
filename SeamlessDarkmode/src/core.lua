@@ -61,19 +61,72 @@ function app.addon:OnInitialize()
     end)
 end
 
+-- These events can create/reparent supported frames; aura buttons are preallocated
+-- by AuraFrame_OnLoad, so UNIT_AURA and per-frame updates need no discovery work.
+local discoveryEvents = {
+    ADDON_LOADED = false,
+    PLAYER_ENTERING_WORLD = false,
+    GROUP_ROSTER_UPDATE = "unitframes",
+    BAG_UPDATE_DELAYED = "bags",
+    BANKFRAME_OPENED = "bags",
+    UPDATE_SHAPESHIFT_FORMS = "actionbars",
+}
+
+function app.addon:QueueDiscovery(category)
+    if not app.running then
+        return
+    end
+    self.pendingCategories = self.pendingCategories or {}
+    if category then
+        self.pendingCategories[category] = true
+    else
+        for _, entry in ipairs(app.categories) do
+            self.pendingCategories[entry.key] = true
+        end
+    end
+    if not self.discoveryTimer and not InCombatLockdown() then
+        self.discoveryTimer = self:ScheduleTimer("FlushDiscovery", 0.05)
+    end
+end
+
+function app.addon:OnDiscoveryEvent(event)
+    self:QueueDiscovery(discoveryEvents[event] or nil)
+end
+
+function app.addon:FlushDiscovery()
+    self.discoveryTimer = nil
+    if not app.running or InCombatLockdown() then
+        return
+    end
+    local pending = self.pendingCategories or {}
+    self.pendingCategories = nil
+    for category in pairs(pending) do
+        app:DiscoverCategory(category)
+    end
+end
+
+function app.addon:OnCombatEnded()
+    if self.refreshPending then
+        self:Refresh()
+    end
+    self:FlushDiscovery()
+end
+
 function app.addon:OnEnable()
     app.running = true
-    self:RegisterEvent("ADDON_LOADED", "Refresh")
-    self:RegisterEvent("PLAYER_ENTERING_WORLD", "Refresh")
-    self:RegisterEvent("PLAYER_REGEN_ENABLED", "Refresh")
-    -- Pooled aura, bag and unit buttons may appear without an addon-load event.
-    self.timer = self:ScheduleRepeatingTimer("Refresh", 1)
+    for event in pairs(discoveryEvents) do
+        self:RegisterEvent(event, "OnDiscoveryEvent")
+    end
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", "OnCombatEnded")
     self:Refresh()
 end
 
 function app.addon:OnDisable()
     app.running = false
     self:CancelAllTimers()
+    self.discoveryTimer = nil
+    self.pendingCategories = nil
+    self.refreshPending = nil
     self:UnregisterAllEvents()
     app:Restore()
 end

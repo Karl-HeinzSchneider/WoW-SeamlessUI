@@ -3,7 +3,7 @@
 Optional UI decoration tinting addon requiring Seamless. Internal until verified in game.
 Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmode.
 
-- `src/core.lua`: AceAddon/AceDB lifecycle, category/root registry, timer/events and independent
+- `src/core.lua`: AceAddon/AceDB lifecycle, category/root registry, batched lifecycle events and independent
   `SeamlessDarkmodeDB` profiles. All categories default on with a shared dark gray tint.
 - `src/theme.lua`: bounded traversal of client frames, selective decorative texture and backdrop
   border tinting, reversible color hooks, and neutral aura borders using existing client art.
@@ -14,8 +14,11 @@ Read profile settings at use time. Color hooks retain the latest client-requeste
 alpha; disable restores them. Permanent secure hooks are inert while disabled. Do not tint
 portraits, icon contents, bar fills, text or status/quality indicators. Aura surrounds are
 separate from debuff/dispel borders. Never replace game functions or protected frame scripts.
-Scans run once per second and on addon loading/world entry; combat defers traversal, creation
-and options refresh until PLAYER_REGEN_ENABLED. Chat, tooltips and general windows/menus
+No repeating timer or OnUpdate scan is used. Initial enable/settings/profile changes discover
+supported roots; addon loading, world entry, group changes, bag/bank events and root OnShow
+queue only affected categories in one coalesced 50ms callback. Preallocated aura buttons need
+no UNIT_AURA discovery. Existing texture hooks retain tint without rescanning or redundant
+color writes. Combat defers discovery and settings refresh until PLAYER_REGEN_ENABLED. Chat, tooltips and general windows/menus
 are outside this addon's scope. Arbitrary custom artwork is not automatically skinned.
 
 Manual validation: toggle every category and the master switch; change/reset/copy/switch

@@ -6,6 +6,7 @@ local tracked = setmetatable({}, { __mode = "k" })
 local backdrops = setmetatable({}, { __mode = "k" })
 local auraBorders = setmetatable({}, { __mode = "k" })
 local writing = false
+local watchedRoots = setmetatable({}, { __mode = "k" })
 
 local decorationKeys = {
     "FrameTexture",
@@ -46,17 +47,27 @@ local function active(category)
     return app.running and app.db.profile.enabled and app.db.profile.categories[category]
 end
 
+local function sameColor(r, g, b, a, currentR, currentG, currentB, currentA)
+    -- The engine stores floats; avoid rewriting a tint due to round-trip precision.
+    return math.abs(currentR - r) < 0.000001
+        and math.abs(currentG - g) < 0.000001
+        and math.abs(currentB - b) < 0.000001
+        and math.abs(currentA - a) < 0.000001
+end
+
 local function paint(texture, state)
     if not accessible(texture) then
         return
     end
-    writing = true
-    if active(state.category) then
-        local color = app.db.profile.color
-        texture:SetVertexColor(color.r, color.g, color.b, state.original[4])
-    else
-        texture:SetVertexColor(unpack(state.original))
+    local color = active(state.category) and app.db.profile.color or state.original
+    local r, g, b = color.r or color[1], color.g or color[2], color.b or color[3]
+    local a = state.original[4]
+    local currentR, currentG, currentB, currentA = texture:GetVertexColor()
+    if sameColor(r, g, b, a, currentR, currentG, currentB, currentA) then
+        return
     end
+    writing = true
+    texture:SetVertexColor(r, g, b, a)
     writing = false
 end
 
@@ -68,6 +79,9 @@ local function track(texture, category)
         return
     end
     local state = tracked[texture]
+    if state then
+        return
+    end
     if not state then
         state = { category = category, original = { texture:GetVertexColor() } }
         tracked[texture] = state
@@ -75,7 +89,7 @@ local function track(texture, category)
             if writing or not accessible(region) then
                 return
             end
-            state.original = { r, g, b, a or 1 }
+            state.original[1], state.original[2], state.original[3], state.original[4] = r, g, b, a or 1
             if active(state.category) then
                 paint(region, state)
             end
@@ -123,13 +137,15 @@ local function paintBackdrop(frame, state)
     if not accessible(frame) then
         return
     end
-    writing = true
-    if active(state.category) then
-        local color = app.db.profile.color
-        frame:SetBackdropBorderColor(color.r, color.g, color.b, state.original[4])
-    else
-        frame:SetBackdropBorderColor(unpack(state.original))
+    local color = active(state.category) and app.db.profile.color or state.original
+    local r, g, b = color.r or color[1], color.g or color[2], color.b or color[3]
+    local a = state.original[4]
+    local currentR, currentG, currentB, currentA = frame:GetBackdropBorderColor()
+    if sameColor(r, g, b, a, currentR, currentG, currentB, currentA) then
+        return
     end
+    writing = true
+    frame:SetBackdropBorderColor(r, g, b, a)
     writing = false
 end
 
@@ -145,7 +161,7 @@ local function scan(frame, category, seen, depth)
             backdrops[frame] = state
             hooksecurefunc(frame, "SetBackdropBorderColor", function(owner, r, g, b, a)
                 if not writing and accessible(owner) then
-                    state.original = { r, g, b, a or 1 }
+                    state.original[1], state.original[2], state.original[3], state.original[4] = r, g, b, a or 1
                     if active(state.category) then
                         paintBackdrop(owner, state)
                     end
@@ -198,7 +214,10 @@ local function scan(frame, category, seen, depth)
             auraBorders[frame] = border
         end
         if accessible(border) then
-            border:SetShown(active(category) and true or false)
+            local show = active(category) and true or false
+            if border:IsShown() ~= show then
+                border:SetShown(show)
+            end
             track(border, category)
         end
     end
@@ -224,26 +243,67 @@ function app:Restore()
     end
 end
 
+-- Discovery only runs for a category affected by a lifecycle event. Existing textures
+-- are already hooked; scanning never repaints the global tracked set.
+function app:DiscoverCategory(key)
+    if not app.running or InCombatLockdown() then
+        return
+    end
+    local seen = {}
+    local function root(frame, category)
+        if not accessible(frame) then
+            return
+        end
+        if frame.HookScript and not watchedRoots[frame] then
+            watchedRoots[frame] = true
+            frame:HookScript("OnShow", function()
+                app.addon:QueueDiscovery(category)
+            end)
+        end
+        if active(category) then
+            scan(frame, category, seen, 0)
+        end
+    end
+    for _, category in ipairs(app.categories) do
+        if category.key == key then
+            for _, name in ipairs(category.roots) do
+                root(_G[name], key)
+            end
+            if key == "bags" then
+                for i = 1, 13 do
+                    root(_G["ContainerFrame" .. i], key)
+                end
+            end
+            return
+        end
+    end
+end
+
+-- Full refresh is reserved for enable, profile changes and explicit options edits.
 function app.addon:Refresh()
     if not app.running or not app.db then
         return
     end
-    -- Avoid creating or traversing protected UI while combat updates it.
     if InCombatLockdown() then
+        self.refreshPending = true
         return
     end
-    local seen = {}
+    self.refreshPending = nil
     for _, category in ipairs(app.categories) do
-        for _, name in ipairs(category.roots) do
-            scan(_G[name], category.key, seen, 0)
-        end
-        if category.key == "bags" then
-            for i = 1, 13 do
-                scan(_G["ContainerFrame" .. i], category.key, seen, 0)
-            end
-        end
+        app:DiscoverCategory(category.key)
     end
     for texture, state in pairs(tracked) do
         paint(texture, state)
+    end
+    for frame, state in pairs(backdrops) do
+        paintBackdrop(frame, state)
+    end
+    for _, border in pairs(auraBorders) do
+        if accessible(border) then
+            local show = active("auras") and true or false
+            if border:IsShown() ~= show then
+                border:SetShown(show)
+            end
+        end
     end
 end

@@ -3,18 +3,18 @@ local appName, app = ...
 
 local options = app.addon:NewModule("Options")
 function options:OnInitialize()
-    local categories = {}
-    for index, category in ipairs(app.categories) do
-        local key = category.key
-        categories[key] = {
+    local groups = {}
+    for index, group in ipairs(app.groups) do
+        local key = group.key
+        groups[key] = {
             type = "toggle",
             order = index,
-            name = category.name,
+            name = group.name,
             get = function()
-                return app.db.profile.categories[key]
+                return app.db.profile.groups[key]
             end,
             set = function(_, value)
-                app.db.profile.categories[key] = value
+                app.db.profile.groups[key] = value
                 app.addon:Refresh()
             end,
         }
@@ -40,7 +40,7 @@ function options:OnInitialize()
                 order = 2,
                 name = "Darkmode color",
                 hasAlpha = false,
-                desc = "Shared tint for supported UI borders and decoration. Changes made in combat apply after combat.",
+                desc = "Tint for the frame borders of every group switched on below.",
                 disabled = function()
                     return not app.db.profile.enabled
                 end,
@@ -56,17 +56,17 @@ function options:OnInitialize()
             description = {
                 type = "description",
                 order = 3,
-                name = "Tints decorative UI art while preserving icons, text, health/power bars and status indicators. Disabling a category restores its colors. New frames in supported categories and pooled buttons are discovered automatically; changes in combat wait until combat ends.",
+                name = "Unit frames: the borders and level circles of the player, target, focus, pet, party and boss frames. Minimap: the ring around the map, the zone header and the borders of addon minimap buttons. Icons, portraits, text and bars keep their colors.",
             },
-            categories = {
+            groups = {
                 type = "group",
                 inline = true,
                 order = 10,
-                name = "Categories",
+                name = "Frames",
                 disabled = function()
                     return not app.db.profile.enabled
                 end,
-                args = categories,
+                args = groups,
             },
         },
         db = app.db,

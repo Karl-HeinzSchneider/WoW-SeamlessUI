@@ -3,17 +3,12 @@
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessDarkmode.Addon
 ---@field db AceDBObject-3.0
----@field categories table[]
----@field running boolean?
----@field Restore fun(self: SeamlessDarkmode)
----@field DiscoverCategory fun(self: SeamlessDarkmode, category: string)
+---@field groups SeamlessDarkmode.Group[]
 
----@class SeamlessDarkmode.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceTimer-3.0
+---@class SeamlessDarkmode.Group
+---@field key string
+---@field name string
+---@field frames fun(paint: SeamlessDarkmode.Paint)[]
+
+---@class SeamlessDarkmode.Addon : AceAddon, AceConsole-3.0
 ---@field Refresh fun(self: SeamlessDarkmode.Addon)
----@field discoveryTimer any
----@field pendingCategories table<string, boolean>?
----@field refreshPending boolean?
----@field QueueDiscovery fun(self: SeamlessDarkmode.Addon, category?: string)
----@field FlushDiscovery fun(self: SeamlessDarkmode.Addon)
----@field OnDiscoveryEvent fun(self: SeamlessDarkmode.Addon, event: string)
----@field OnCombatEnded fun(self: SeamlessDarkmode.Addon)

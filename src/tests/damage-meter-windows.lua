@@ -971,6 +971,19 @@ assert(
     frame.rows[1].value.text == "3" and frame.rows[1].secondaryValue.text == "12.3k",
     "Rate display must swap primary and secondary values"
 )
+frame.config.overrides.numbers = "minimal"
+app:RefreshWindows()
+assert(frame.rows[1].value:IsShown() and not frame.rows[1].secondaryValue:IsShown())
+assert(not frame.rows[1].percentageValue:IsShown(), "Minimal hides the share column")
+frame.config.overrides.numbers = "compact"
+frame.config.statistic = "Dps"
+app:RefreshWindows()
+assert(frame.rows[1].value.text == "3" and frame.rows[1].secondaryValue:IsShown())
+assert(not frame.rows[1].percentageValue:IsShown(), "Compact shows rate and total without share")
+frame.config.overrides.numbers = "complete"
+app:RefreshWindows()
+assert(frame.rows[1].secondaryValue:IsShown() and frame.rows[1].percentageValue:IsShown())
+frame.config.overrides.numbers = nil
 frame.config.statistic = "Interrupts"
 Enum.DamageMeterType.Interrupts = 2
 app:RefreshWindows()
@@ -1200,6 +1213,11 @@ local function setting(name)
 end
 EditModeManagerFrame:EnterEditMode()
 assert(meter:IsShown())
+assert(setting("Numbers").default == "complete" and setting("Numbers").get() == "complete")
+setting("Numbers").set(nil, "minimal")
+assert(setting("Numbers").get() == "minimal")
+assert(app:GetWindowSetting(app.windowFrames[2].config, "numbers") == "complete")
+setting("Numbers").set(nil, "complete")
 setting("Frame width").set(nil, 615)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock size").set(nil, true)

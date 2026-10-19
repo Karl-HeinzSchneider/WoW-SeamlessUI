@@ -197,6 +197,22 @@ local function RegisterControls(frame)
     add("Row count", "visibleLines", lib.SettingType.Slider, 1, 30, 1)
     add("Lock size", "lockSize", lib.SettingType.Checkbox)
     add("Lock position", "lockPosition", lib.SettingType.Checkbox)
+    settings[#settings + 1] = {
+        name = "Numbers",
+        kind = lib.SettingType.Dropdown,
+        default = "complete",
+        get = function()
+            return app:GetWindowSetting(frame.config, "numbers")
+        end,
+        set = function(_, value)
+            SetWindowOption(frame, "numbers", value)
+        end,
+        values = {
+            { text = "Minimal", value = "minimal" },
+            { text = "Compact", value = "compact" },
+            { text = "Complete", value = "complete" },
+        },
+    }
     for _, definition in ipairs(appearanceSliders) do
         add(
             definition[1],

@@ -503,7 +503,11 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     app:StyleWindowLabel(percentageMeasure, config)
     local percentageWidth = math.ceil(percentageMeasure:GetStringWidth()) + 4
     local widths = { percentageWidth, fontSize * 3, fontSize * 3, percentageWidth }
-    local shown = { showEnemy, true, showRate, true }
+    local numbers = app:GetWindowSetting(config, "numbers")
+    local complete = numbers ~= "minimal" and numbers ~= "compact"
+    local showPercentage = complete or (numbers == "compact" and not showRate)
+    showEnemy = showEnemy and complete
+    local shown = { showEnemy, true, showRate and numbers ~= "minimal", showPercentage }
     local total, count, reserved = 0, 0, 0
     for index = 1, 4 do
         -- Reserve the target share even when hidden so shared numeric columns stay aligned.

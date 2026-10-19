@@ -10,6 +10,7 @@ app.windowDefaults = {
     showResizeHandle = true,
     lockSize = false,
     lockPosition = false,
+    numbers = "complete",
     scale = 1,
     point = "CENTER",
     relativePoint = "CENTER",

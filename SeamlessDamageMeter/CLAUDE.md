@@ -150,6 +150,9 @@ with a bright top edge and dark bottom edge, tinted by the bar color. The unfill
 is flat and dark. Regenerate `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`;
 the generator uses only our own formula and reads no reference assets. Amount-based statistics
 show total and rate in separate columns; DPS/HPS swap their order, and action counts omit rates.
+Each window's Edit Mode Numbers dropdown selects Minimal (first value), Compact (first
+two available values), or Complete (all values, the default). This window setting also
+applies to its detail and hover rows, independently of the shared skin.
 
 Windows intentionally expose globals for other addons: `SeamlessDamageMeterWindow<ID>`
 (for example `SeamlessDamageMeterWindow1`). The suffix is the fixed slot number, not its

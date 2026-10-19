@@ -42,6 +42,10 @@ function app:GetWindowSetting(config, key)
         return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
     end
     if self.skinDefaults[key] ~= nil then
+        local override = config.styleOverrides and config.styleOverrides[key]
+        if config.modifyGlobalStyle == false and override ~= nil then
+            return override
+        end
         local skins = self.db.profile.skins
         local skin = skins and (skins[config.skin or "default"] or skins.default)
         local value = skin and skin.settings[key]

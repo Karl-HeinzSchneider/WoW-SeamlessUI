@@ -68,8 +68,12 @@ and remapping anchors; valid existing slot IDs stay unchanged. Excess windows fr
 old profiles are retained in `profile.legacyWindows`.
 `profile.skins` holds named appearance settings; every window selects `config.skin`, defaulting to
 `default` (Default). The Skin tab uses a tree list like Windows and can add copies of Default.
-Fonts, colors, header controls, row height/spacing and icon visibility resolve exclusively from
-the selected skin. Legacy appearance defaults migrate to Default; explicit window appearance
+Fonts, colors, header controls, row height/spacing and icon visibility resolve from
+the selected skin, with `config.styleOverrides` taking precedence while `config.modifyGlobalStyle`
+is false. Missing local values inherit the skin; false is a valid override. Global style mode
+defaults to true, ignores but retains local overrides, and edits the shared skin directly.
+Edit Mode resets and Clear all overrides remove local style overrides.
+Legacy appearance defaults migrate to Default; explicit window appearance
 overrides migrate to separate named skins to preserve their look. Migration is idempotent.
 `profile.windowDefaults` supplies geometry; `config.overrides` stores only
 explicit overrides (nil inherits; false is a valid toggle override). Old width/height/x/y
@@ -95,7 +99,7 @@ Header order is type arrow, category label, then combat timer. The 25-pixel sele
 at the left edge (X 3), with its arrow centered vertically opposite the settings button.
 The category starts at X 28, Y -9 within the header and never moves when the timer changes.
 Hiding the selector preserves the category label's position and reserved arrow space.
-Edit Mode's Show type selector checkbox controls the selected skin's `hideTypeSelector` setting.
+Edit Mode's Show type selector checkbox controls `hideTypeSelector` in the active style scope.
 The timer follows the category label on the same line, left aligned with natural text width.
 `hideCombatTimer` defaults to false and is configured per skin,
 including Edit Mode previews. Toggling it preserves the category position.
@@ -252,9 +256,12 @@ Verify default changes propagate only to inherited settings, including fonts and
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.
 
-Edit Mode also exposes bar height, padding (row spacing), transparency, background,
-text size, spec icons and class colors. Appearance edits update the selected shared skin;
-all windows using it refresh immediately. Transparency is window opacity (50�100%),
+Edit Mode lists window settings first, then a Style divider, Skin, Modify global style,
+and the appearance controls. It exposes bar height, padding (row spacing), transparency,
+background, text size, spec icons, class colors and type selector visibility. Appearance edits
+update the selected shared skin when Modify global style is enabled (the default), refreshing
+all windows using it; otherwise they update only the selected window's local style overrides.
+Transparency is window opacity (50�100%),
 background is the existing background color alpha (0�100%), and text size is a percentage
 of the default 15-pixel font (50�150%). Pixel bar/spacing ranges retain the addon skin ranges.
 The same opacity is editable in the Skin tab. Existing skins default to full window opacity.

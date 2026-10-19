@@ -1163,7 +1163,7 @@ end
 function methods:GetChecked()
     return self.checked
 end
-local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3 } }
+local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider" } }
 function lem:AddFrame(frame, callback, defaults, name)
     assert(name == "Seamless Damage " .. frame.windowID)
     assert(defaults.point == "CENTER")
@@ -1233,6 +1233,36 @@ local function setting(name)
 end
 EditModeManagerFrame:EnterEditMode()
 assert(meter:IsShown())
+local order = {}
+for index, entry in ipairs(controls[meter]) do
+    order[entry.name] = index
+end
+assert(order.Numbers < order.Style and order.Style < order.Skin)
+assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
+assert(setting("Style").kind == lem.SettingType.Divider)
+assert(setting("Modify global style").default and setting("Modify global style").get())
+local sharedStyle = app.db.profile.skins[meter.config.skin].settings
+local sharedHeight, sharedAlpha, sharedClasses =
+    sharedStyle.rowHeight, sharedStyle.backgroundColor[4], sharedStyle.classColors
+setting("Modify global style").set(nil, false)
+setting("Bar height").set(nil, 31)
+setting("Background").set(nil, 25)
+setting("Show class color").set(nil, false)
+assert(app:GetWindowSetting(meter.config, "rowHeight") == 31)
+assert(app:GetWindowSetting(meter.config, "backgroundColor")[4] == 0.25)
+assert(app:GetWindowSetting(meter.config, "classColors") == false)
+assert(sharedStyle.rowHeight == sharedHeight and sharedStyle.backgroundColor[4] == sharedAlpha)
+assert(sharedStyle.classColors == sharedClasses)
+assert(app:GetWindowSetting(app.windowFrames[2].config, "rowHeight") == sharedHeight)
+app:PrepareWindowSettings()
+app:RebuildWindows()
+assert(setting("Bar height").get() == 31, "Rebuilding preserves local appearance overrides")
+setting("Modify global style").set(nil, true)
+assert(setting("Bar height").get() == sharedHeight, "Global mode uses the shared style")
+setting("Modify global style").set(nil, false)
+assert(setting("Bar height").get() == 31, "Local mode restores saved overrides")
+setting("Modify global style").set(nil, true, true)
+assert(meter.config.styleOverrides == nil, "Reset clears local appearance overrides")
 assert(setting("Numbers").default == "complete" and setting("Numbers").get() == "complete")
 assert(setting("Show type selector").default and setting("Show type selector").get())
 setting("Show type selector").set(nil, false)

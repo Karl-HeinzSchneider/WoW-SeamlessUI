@@ -8,8 +8,9 @@ features are ready for public release.
 1. `src/core/bootstrap.lua`: obtains Core and its shared logger.
 2. `src/core/db.lua`: defaults for independent `SeamlessUIDB` profiles.
 3. `src/core/ace.lua`: AceAddon/AceDB lifecycle, profile refresh callbacks and `/seamlessui`.
-4. `src/features/xpbartooltip.lua`: replaces the player XP bar tooltip (bar and rested tick) by
-   raw-hooking each `ExhaustionTick:ExhaustionToolTipText`: rest state, XP, XP left, rested XP and
+4. `src/features/xpbartooltip.lua`: replaces the player XP bar tooltip (bar and rested tick): a
+   secure post-hook on each `ExhaustionTick:ExhaustionToolTipText` re-anchors (clearing the
+   default lines) and rebuilds it, never replacing the secure method: rest state, XP, XP left, rested XP and
    time to max rested (cap and rate from Core's `tweaks.restedXPCap`/`restedXPRate`), then
    completed quests and their XP from `core:GetQuestLogSummary()`. Profile `xpBarTooltip`
    (`enabled`, `completedQuests`, both on). `OnInitialize` migrates Core's former

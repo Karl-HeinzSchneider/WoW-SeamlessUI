@@ -69,8 +69,10 @@ local function addQuestLines(tooltip)
     addValue(tooltip, "Completed quests XP:", BreakUpLargeNumbers(summary.completedQuestXP) .. " XP")
 end
 
--- Stands in for ExhaustionTickMixin:ExhaustionToolTipText, which both the bar's and the tick's
--- OnEnter call; the default builder (and anything hooked into it) is not run.
+-- Runs after ExhaustionTickMixin:ExhaustionToolTipText, which both the bar's and the tick's
+-- OnEnter call. Re-anchoring clears the default lines (and those of hooks that ran before this
+-- one, such as Core's enhanced XP lines), so the tooltip is rebuilt from scratch without
+-- replacing the secure method.
 function module:ShowTooltip()
     local tooltip = GetAppropriateTooltip()
     GameTooltip_SetDefaultAnchor(tooltip, UIParent)
@@ -104,12 +106,12 @@ function module:InstallHooks()
         local bar = container.bars and container.bars[info.BarsEnum.Experience]
         local tick = bar and bar.ExhaustionTick
         if tick and not self:IsHooked(tick, "ExhaustionToolTipText") then
-            self:RawHook(tick, "ExhaustionToolTipText", "ShowTooltip")
+            self:SecureHook(tick, "ExhaustionToolTipText", "ShowTooltip")
         end
     end
 end
 
--- AceHook removes the hooks on disable, which restores the default tooltip.
+-- AceHook deactivates the hooks on disable, which leaves the default tooltip.
 function module:OnEnable()
     self:RegisterEvent("ADDON_LOADED", "InstallHooks")
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "InstallHooks")

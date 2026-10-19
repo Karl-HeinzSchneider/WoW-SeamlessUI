@@ -2,6 +2,7 @@
 ## Title: Seamless: Damage Meter
 ## Group: Seamless
 ## Notes: Multiple independent windows for the client's combat statistics.
+## IconTexture: Interface\Icons\INV_Misc_Orb_Blue
 ## Author: Karl-HeinzSchneider
 ## Version: |cff8080ff@project-version@|r
 ## Dependencies: Seamless

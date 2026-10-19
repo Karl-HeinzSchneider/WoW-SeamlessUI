@@ -151,13 +151,15 @@ assert(not FramerateFrame.shown)
 module:Refresh()
 assert(mover.point[1] == "TOPLEFT" and mover.point[4] == 10)
 
--- The dialog checkbox and the shared panel toggles write the same profile values.
+-- "Show on startup" lives only in the counter's own dialog; the shared panel has one toggle.
 assert(settings[1].get() == true)
 settings[1].set("Modern", false)
 assert(profile.framerate.showOnStartup == false)
 assert(registration.enabled())
-registration.options[2].set(true)
-assert(registration.options[2].get() == true)
+assert(registration.name == nil and #registration.options == 1)
+assert(registration.options[1].name == "FPS Display")
+settings[1].set("Modern", true)
+assert(profile.framerate.showOnStartup == true)
 
 -- Turning movement off hides the mover and restores the client's default anchor.
 editing = true

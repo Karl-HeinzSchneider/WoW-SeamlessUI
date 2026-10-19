@@ -13,7 +13,7 @@ function module:OnInitialize()
                 type = "group",
                 inline = true,
                 order = 10,
-                name = "Framerate",
+                name = "Edit Mode",
                 get = function(info)
                     return app.db.profile.framerate[info[#info]]
                 end,
@@ -25,16 +25,8 @@ function module:OnInitialize()
                         type = "toggle",
                         order = 10,
                         width = "full",
-                        name = "Move the framerate display in Edit Mode",
+                        name = "FPS Display",
                         desc = "Select the FPS counter in Edit Mode to drag it anywhere. Turning this off returns it to the bottom-right corner.",
-                        descStyle = "inline",
-                    },
-                    showOnStartup = {
-                        type = "toggle",
-                        order = 20,
-                        width = "full",
-                        name = "Show the framerate on startup",
-                        desc = "Shows the FPS counter at login and after a reload. Takes effect at the next login or reload; Ctrl+R still toggles it.",
                         descStyle = "inline",
                     },
                 },

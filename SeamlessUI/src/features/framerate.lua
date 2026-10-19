@@ -165,7 +165,6 @@ end
 
 app.core:RegisterEditModeOptions(appName, {
     order = 50,
-    name = "Framerate",
     enabled = function()
         return app.db and module:IsEnabled()
     end,
@@ -173,23 +172,12 @@ app.core:RegisterEditModeOptions(appName, {
         {
             key = "movable",
             type = "toggle",
-            name = "Move the framerate display",
+            name = "FPS Display",
             get = function()
                 return Settings().movable
             end,
             set = function(value)
                 module:Set("movable", value)
-            end,
-        },
-        {
-            key = "showOnStartup",
-            type = "toggle",
-            name = "Show the framerate on startup",
-            get = function()
-                return Settings().showOnStartup
-            end,
-            set = function(value)
-                module:Set("showOnStartup", value)
             end,
         },
     },

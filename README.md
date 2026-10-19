@@ -48,8 +48,9 @@ SeamlessChat, SeamlessDamageMeter and SeamlessUI are unfinished and excluded fro
 Their source remains in this repository for internal development and testing.
 
 - **SeamlessUI** (optional): the foundation for general UI improvements, with independent
-  `SeamlessUIDB` profiles and a UI panel under Seamless. The FPS counter can be moved in Edit
-  Mode and shown on startup (both off by default; Ctrl+R still toggles it). A "show on startup"
+  `SeamlessUIDB` profiles and a UI panel under Seamless. Turn on "FPS Display" in the panel below Edit
+  Mode to move the FPS counter; select it to toggle "Show on startup" (both off by default;
+  Ctrl+R still toggles the counter). A "show on startup"
   setting saved by an earlier Core version is carried over automatically.
   Install its folder alongside Core and use `/seamlessui` to open settings or
   `/seamlessui reset` to reset its current profile.

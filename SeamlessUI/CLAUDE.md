@@ -11,7 +11,8 @@ features are ready for public release.
 4. `src/core/options.lua`: UI child panel under Seamless, with General and Profiles tabs.
 5. `src/features/framerate.lua`: the FPS counter. An optional addon-owned mover registered
    with Core's LibEditMode makes it movable in Edit Mode (position saved per profile, shown
-   while editing); its dialog and the shared Edit Mode panel toggle "show on startup". On
+   while editing). "FPS Display" in the shared Edit Mode panel (no group heading) and the UI
+   options turns movement on; "Show on startup" exists only in the counter's own dialog. On
    initialize it migrates Core's former `tweaks.showFramerateOnStartup` from every Core profile
    into the same-named UI profile and clears it there. Turning movement off restores the
    client's default anchor (WorldFrame BOTTOMRIGHT -2, 2). Run `lua src/tests/ui-framerate.lua`.

@@ -228,6 +228,17 @@ local function RegisterControls(frame)
     for _, definition in ipairs(appearanceChecks) do
         add(definition[1], definition[2], lib.SettingType.Checkbox, nil, nil, nil, nil, true)
     end
+    settings[#settings + 1] = {
+        name = "Show type selector",
+        kind = lib.SettingType.Checkbox,
+        default = not app.skinDefaults.hideTypeSelector,
+        get = function()
+            return not app:GetWindowSetting(frame.config, "hideTypeSelector")
+        end,
+        set = function(_, value)
+            SetSkinOption(frame, "hideTypeSelector", not value)
+        end,
+    }
     local skinSetting = {
         name = "Skin",
         kind = lib.SettingType.Dropdown,

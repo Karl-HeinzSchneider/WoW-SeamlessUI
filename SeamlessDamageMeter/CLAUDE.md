@@ -92,9 +92,10 @@ The session selector shows a compact current/overall label or history
 ID; its full selection remains in the menu. Collapse keeps the header visible, separately
 from hiding a window. `hideTypeSelector` defaults to false and is configured per skin; hiding it removes the category arrow and its clicks while retaining the label.
 Header order is type arrow, category label, then combat timer. The 25-pixel selector stays
-at the left edge (X 3), with its arrow centered vertically opposite the red collapse button.
+at the left edge (X 3), with its arrow centered vertically opposite the settings button.
 The category starts at X 28, Y -9 within the header and never moves when the timer changes.
 Hiding the selector preserves the category label's position and reserved arrow space.
+Edit Mode's Show type selector checkbox controls the selected skin's `hideTypeSelector` setting.
 The timer follows the category label on the same line, left aligned with natural text width.
 `hideCombatTimer` defaults to false and is configured per skin,
 including Edit Mode previews. Toggling it preserves the category position.

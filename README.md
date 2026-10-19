@@ -45,8 +45,11 @@ the old repository must be replaced with one pointing to this repo; `dev:link` r
 
 ## Internal development modules
 
-SeamlessChat, SeamlessDamageMeter and SeamlessUI are unfinished and excluded from public release archives.
+SeamlessChat, SeamlessDamageMeter, SeamlessUI and SeamlessDarkmode are unfinished and excluded from public release archives.
 Their source remains in this repository for internal development and testing.
+
+- **SeamlessDarkmode** (optional): tints the borders of the unit frames, the minimap and its
+  addon buttons with one shared color, with a switch per group. Install beside Core and use `/seamlessdarkmode`. Includes independent `SeamlessDarkmodeDB` profiles.
 
 - **SeamlessUI** (optional): the foundation for general UI improvements, with independent
   `SeamlessUIDB` profiles and a UI panel under Seamless. No improvements are implemented yet.

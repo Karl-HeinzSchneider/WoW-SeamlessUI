@@ -1,0 +1,15 @@
+## Interface: 16001
+## Title: Seamless: Darkmode
+## Group: Seamless
+## Notes: Configurable dark borders and UI decoration.
+## IconTexture: Interface\Icons\INV_Misc_Orb_Blue
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## Dependencies: Seamless
+## SavedVariables: SeamlessDarkmodeDB
+## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
+
+src\frames.lua
+src\core.lua
+src\options.lua

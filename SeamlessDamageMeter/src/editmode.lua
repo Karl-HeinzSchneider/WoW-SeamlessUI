@@ -108,7 +108,7 @@ local function SetWindowOption(frame, key, value)
     app:RebuildWindows()
 end
 
--- Appearance edits intentionally update the selected shared skin.
+-- Appearance edits target either the selected skin or this window's style overrides.
 local appearanceSliders = {
     { "Bar height", "rowHeight", 16, 40, 1 },
     { "Padding", "rowSpacing", 0, 12, 1 },
@@ -126,6 +126,10 @@ local function SetSkinOption(frame, key, value)
         return
     end
     local settings = app.db.profile.skins[frame.config.skin].settings
+    if frame.config.modifyGlobalStyle == false then
+        frame.config.styleOverrides = frame.config.styleOverrides or {}
+        settings = frame.config.styleOverrides
+    end
     if key == "backgroundColor" then
         local color = app:GetWindowSetting(frame.config, key)
         settings[key] = { color[1], color[2], color[3], value }
@@ -190,13 +194,31 @@ local function RegisterControls(frame)
             end,
         }
     end
+    add("Lock size", "lockSize", lib.SettingType.Checkbox)
+    add("Lock position", "lockPosition", lib.SettingType.Checkbox)
     add("Frame scale", "scale", lib.SettingType.Slider, 50, 200, 5, 100)
     add("Frame width", "width", lib.SettingType.Slider, 200, 800, 1)
     add("Frame height", "height", lib.SettingType.Slider, 120, 900, 1)
     add("Fixed height by row count", "fixedHeight", lib.SettingType.Checkbox)
     add("Row count", "visibleLines", lib.SettingType.Slider, 1, 30, 1)
-    add("Lock size", "lockSize", lib.SettingType.Checkbox)
-    add("Lock position", "lockPosition", lib.SettingType.Checkbox)
+    settings[#settings + 1] = {
+        name = "Numbers",
+        kind = lib.SettingType.Dropdown,
+        default = "complete",
+        get = function()
+            return app:GetWindowSetting(frame.config, "numbers")
+        end,
+        set = function(_, value)
+            SetWindowOption(frame, "numbers", value)
+        end,
+        values = {
+            { text = "Minimal", value = "minimal" },
+            { text = "Compact", value = "compact" },
+            { text = "Complete", value = "complete" },
+        },
+    }
+    local styleStart = #settings + 1
+    settings[#settings + 1] = { name = "Style", kind = lib.SettingType.Divider }
     for _, definition in ipairs(appearanceSliders) do
         add(
             definition[1],
@@ -212,6 +234,17 @@ local function RegisterControls(frame)
     for _, definition in ipairs(appearanceChecks) do
         add(definition[1], definition[2], lib.SettingType.Checkbox, nil, nil, nil, nil, true)
     end
+    settings[#settings + 1] = {
+        name = "Show type selector",
+        kind = lib.SettingType.Checkbox,
+        default = not app.skinDefaults.hideTypeSelector,
+        get = function()
+            return not app:GetWindowSetting(frame.config, "hideTypeSelector")
+        end,
+        set = function(_, value)
+            SetSkinOption(frame, "hideTypeSelector", not value)
+        end,
+    }
     local skinSetting = {
         name = "Skin",
         kind = lib.SettingType.Dropdown,
@@ -220,7 +253,7 @@ local function RegisterControls(frame)
             return frame.config.skin
         end,
         set = function(_, value)
-            if app:IsEditingWindows() and not InCombatLockdown() then
+            if not frame.syncingEditMode and app:IsEditingWindows() and not InCombatLockdown() then
                 frame.config.skin = value
                 app:RebuildWindows()
                 lib:RefreshFrameSettings(frame)
@@ -241,7 +274,27 @@ local function RegisterControls(frame)
             return values
         end,
     }
-    table.insert(settings, 1, skinSetting) -- Reset selects Default before resetting its appearance.
+    -- Reset selects Default and shared editing before resetting appearance controls.
+    table.insert(settings, styleStart + 1, skinSetting)
+    table.insert(settings, styleStart + 2, {
+        name = "Modify global style",
+        kind = lib.SettingType.Checkbox,
+        default = true,
+        desc = "On: Edit the shared skin.\nOff: Edit only this window.\nLocal overrides are kept when switching.",
+        get = function()
+            return frame.config.modifyGlobalStyle ~= false
+        end,
+        set = function(_, value, fromReset)
+            if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
+                return
+            end
+            frame.config.modifyGlobalStyle = value
+            if fromReset then
+                frame.config.styleOverrides = nil
+            end
+            app:RebuildWindows()
+        end,
+    })
     lib:AddFrameSettings(frame, settings)
     lib:AddFrameSettingsButtons(frame, {
         {

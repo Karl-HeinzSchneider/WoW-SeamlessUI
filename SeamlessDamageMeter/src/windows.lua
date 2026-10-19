@@ -503,7 +503,11 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     app:StyleWindowLabel(percentageMeasure, config)
     local percentageWidth = math.ceil(percentageMeasure:GetStringWidth()) + 4
     local widths = { percentageWidth, fontSize * 3, fontSize * 3, percentageWidth }
-    local shown = { showEnemy, true, showRate, true }
+    local numbers = app:GetWindowSetting(config, "numbers")
+    local complete = numbers ~= "minimal" and numbers ~= "compact"
+    local showPercentage = complete or (numbers == "compact" and not showRate)
+    showEnemy = showEnemy and complete
+    local shown = { showEnemy, true, showRate and numbers ~= "minimal", showPercentage }
     local total, count, reserved = 0, 0, 0
     for index = 1, 4 do
         -- Reserve the target share even when hidden so shared numeric columns stay aligned.
@@ -1318,12 +1322,21 @@ function app:CreateWindow(id)
             frame.offset = frame.sourceOffset or 0
             self:RefreshWindows()
         else
-            self:ShowStatisticMenu(frame)
+            local manager = Menu.GetManager()
+            local menu = manager:GetOpenMenu()
+            if menu and menu:GetOwnerRegion() == frame.statistic then
+                manager:CloseMenu(menu)
+            else
+                self:ShowStatisticMenu(frame)
+            end
         end
     end)
+    -- Toggle on mouse down before the menu manager dismisses outside clicks.
+    frame.statistic:RegisterForClicks("LeftButtonDown")
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()
-    frame.statistic.arrow:SetPoint("CENTER", frame.statistic, "CENTER", 0, -2)
+    -- Match the settings button's center; both use the same dropdown atlas family.
+    frame.statistic.arrow:SetPoint("CENTER", frame.statistic, "CENTER", 0, -4)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end, true)

@@ -770,6 +770,7 @@ local function menuDescription(label)
     end
     return description
 end
+local openTypeMenu
 MenuUtil = {
     CreateRootMenuDescription = function()
         menuRoot = menuDescription()
@@ -778,6 +779,11 @@ MenuUtil = {
     CreateContextMenu = function(owner, generator)
         menuRoot = menuDescription()
         generator(owner, menuRoot)
+        openTypeMenu = {
+            GetOwnerRegion = function()
+                return owner
+            end,
+        }
     end,
 }
 MenuVariants = { GetDefaultContextMenuMixin = function() end }
@@ -792,7 +798,15 @@ Menu = {
     end,
     GetManager = function()
         return {
+            GetOpenMenu = function()
+                return openTypeMenu
+            end,
+            CloseMenu = function(_, menu)
+                assert(menu == openTypeMenu)
+                openTypeMenu = nil
+            end,
             OpenMenu = function(_, owner, root, anchor)
+                openTypeMenu = nil -- Opening another menu replaces the type menu.
                 assert(owner == frame.session and root == menuRoot)
                 assert(anchor[1] == "BOTTOMRIGHT" and anchor[2] == owner and anchor[3] == "TOPRIGHT")
                 assert(anchor[5] > 0, "Session menu must prefer opening above the selector")
@@ -801,6 +815,12 @@ Menu = {
     end,
 }
 frame.statistic.scripts.OnClick()
+assert(openTypeMenu and openTypeMenu:GetOwnerRegion() == frame.statistic)
+local firstTypeRoot = menuRoot
+frame.statistic.scripts.OnClick()
+assert(openTypeMenu == nil and menuRoot == firstTypeRoot, "Second selector click closes without reopening")
+frame.statistic.scripts.OnClick()
+assert(openTypeMenu and menuRoot ~= firstTypeRoot, "Third selector click opens a fresh menu")
 local damage, dps = menuRoot.entries[1].entries[1], menuRoot.entries[1].entries[2]
 assert(damage.selected() and not dps.selected())
 frame.offset = 5
@@ -971,6 +991,19 @@ assert(
     frame.rows[1].value.text == "3" and frame.rows[1].secondaryValue.text == "12.3k",
     "Rate display must swap primary and secondary values"
 )
+frame.config.overrides.numbers = "minimal"
+app:RefreshWindows()
+assert(frame.rows[1].value:IsShown() and not frame.rows[1].secondaryValue:IsShown())
+assert(not frame.rows[1].percentageValue:IsShown(), "Minimal hides the share column")
+frame.config.overrides.numbers = "compact"
+frame.config.statistic = "Dps"
+app:RefreshWindows()
+assert(frame.rows[1].value.text == "3" and frame.rows[1].secondaryValue:IsShown())
+assert(not frame.rows[1].percentageValue:IsShown(), "Compact shows rate and total without share")
+frame.config.overrides.numbers = "complete"
+app:RefreshWindows()
+assert(frame.rows[1].secondaryValue:IsShown() and frame.rows[1].percentageValue:IsShown())
+frame.config.overrides.numbers = nil
 frame.config.statistic = "Interrupts"
 Enum.DamageMeterType.Interrupts = 2
 app:RefreshWindows()
@@ -1130,7 +1163,7 @@ end
 function methods:GetChecked()
     return self.checked
 end
-local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3 } }
+local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider" } }
 function lem:AddFrame(frame, callback, defaults, name)
     assert(name == "Seamless Damage " .. frame.windowID)
     assert(defaults.point == "CENTER")
@@ -1200,6 +1233,47 @@ local function setting(name)
 end
 EditModeManagerFrame:EnterEditMode()
 assert(meter:IsShown())
+local order = {}
+for index, entry in ipairs(controls[meter]) do
+    order[entry.name] = index
+end
+assert(order.Numbers < order.Style and order.Style < order.Skin)
+assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
+assert(setting("Style").kind == lem.SettingType.Divider)
+assert(setting("Modify global style").default and setting("Modify global style").get())
+local sharedStyle = app.db.profile.skins[meter.config.skin].settings
+local sharedHeight, sharedAlpha, sharedClasses =
+    sharedStyle.rowHeight, sharedStyle.backgroundColor[4], sharedStyle.classColors
+setting("Modify global style").set(nil, false)
+setting("Bar height").set(nil, 31)
+setting("Background").set(nil, 25)
+setting("Show class color").set(nil, false)
+assert(app:GetWindowSetting(meter.config, "rowHeight") == 31)
+assert(app:GetWindowSetting(meter.config, "backgroundColor")[4] == 0.25)
+assert(app:GetWindowSetting(meter.config, "classColors") == false)
+assert(sharedStyle.rowHeight == sharedHeight and sharedStyle.backgroundColor[4] == sharedAlpha)
+assert(sharedStyle.classColors == sharedClasses)
+assert(app:GetWindowSetting(app.windowFrames[2].config, "rowHeight") == sharedHeight)
+app:PrepareWindowSettings()
+app:RebuildWindows()
+assert(setting("Bar height").get() == 31, "Rebuilding preserves local appearance overrides")
+setting("Modify global style").set(nil, true)
+assert(setting("Bar height").get() == sharedHeight, "Global mode uses the shared style")
+setting("Modify global style").set(nil, false)
+assert(setting("Bar height").get() == 31, "Local mode restores saved overrides")
+setting("Modify global style").set(nil, true, true)
+assert(meter.config.styleOverrides == nil, "Reset clears local appearance overrides")
+assert(setting("Numbers").default == "complete" and setting("Numbers").get() == "complete")
+assert(setting("Show type selector").default and setting("Show type selector").get())
+setting("Show type selector").set(nil, false)
+assert(not meter.statistic.arrow:IsShown() and not meter.statistic.mouseEnabled)
+assert(not setting("Show type selector").get())
+setting("Show type selector").set(nil, true)
+assert(meter.statistic.arrow:IsShown() and meter.statistic.mouseEnabled)
+setting("Numbers").set(nil, "minimal")
+assert(setting("Numbers").get() == "minimal")
+assert(app:GetWindowSetting(app.windowFrames[2].config, "numbers") == "complete")
+setting("Numbers").set(nil, "complete")
 setting("Frame width").set(nil, 615)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock size").set(nil, true)
@@ -1268,6 +1342,21 @@ meter.config.collapsed = true
 app:RebuildWindows()
 assert(meter.body:IsShown() and meter.config.collapsed)
 assert(meter.session.text.text == "Preview")
+local previewStatistic = meter.config.statistic
+for _, statistic in ipairs({ "DamageDone", "HealingDone", "Dps", "Hps", "Interrupts", "Dispels" }) do
+    meter.config.statistic = statistic
+    local preview = app:GetPreviewSession(meter.config)
+    local total = 0
+    for _, source in ipairs(preview.combatSources) do
+        total = total + source.totalAmount
+    end
+    assert(preview.totalAmount == total and total > 0, "Preview shares use the sum of sample amounts")
+    app:RefreshWindows()
+    assert(meter.rows[1].percentageValue:IsShown())
+    assert(meter.rows[1].percentageValue.args[1] > 0, "Complete previews display a percentage")
+end
+meter.config.statistic = previewStatistic
+app:RefreshWindows()
 assert(editModeOptions.enabled())
 local group = editModeOptions.options[1]
 group.set(false)

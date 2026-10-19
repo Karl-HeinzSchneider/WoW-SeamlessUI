@@ -263,6 +263,8 @@ function app:BuildWindowOptions()
                     confirm = true,
                     func = function()
                         config.overrides = {}
+                        config.styleOverrides = nil
+                        config.modifyGlobalStyle = nil
                         config.anchorTo = nil
                         self:RebuildWindows()
                     end,

@@ -2,6 +2,31 @@
 local _, app = ...
 
 local lib = LibStub("EditModeExpanded-1.0")
+local groupCheckbox
+local showUsedWindows = true
+
+local function RegisterGroupCheckbox(frame)
+    local row = frame.EMECheckButtonFrame:GetParent()
+    if not groupCheckbox then
+        local scrollChild = row:GetParent()
+        local groupRow = CreateFrame("Frame", nil, scrollChild, "ResizeCheckButtonTemplate")
+        groupRow.layoutIndex = row.layoutIndex
+        groupRow.fixedWidth, groupRow.fixedHeight = 225, 32
+        groupRow.Label:SetText("Seamless Damage Meter")
+        groupRow.Label:SetFontObject(GameFontHighlightMedium)
+        groupCheckbox = groupRow.Button
+        groupCheckbox:SetChecked(showUsedWindows)
+        groupCheckbox:SetScript("OnClick", function(button)
+            if app:IsEditingWindows() and not InCombatLockdown() then
+                showUsedWindows = button:GetChecked()
+                app:RebuildWindows()
+            else
+                button:SetChecked(showUsedWindows)
+            end
+        end)
+    end
+    row:Hide()
+end
 local SCALE_SETTING = 16 -- EditModeExpanded's FrameSize setting.
 local CHECKBOX_SETTING = 12 -- EditModeExpanded custom checkboxes.
 local SLIDER_SETTING = 18 -- EditModeExpanded's custom sliders.
@@ -174,6 +199,7 @@ function app:SyncWindowEditMode(frame)
     config.editMode = config.editMode or { settings = {} }
     if not lib:IsRegistered(frame) then
         lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
+        RegisterGroupCheckbox(frame)
         -- Guard both native selection dragging and EME's independent arrow-key path.
         local canBeMoved = frame.CanBeMoved
         frame.CanBeMoved = function(self)
@@ -218,12 +244,18 @@ function app:SyncWindowEditMode(frame)
         end, "lockPosition")
         RegisterAppearanceControls(frame)
         RegisterSkinControls(frame)
-        lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
-        frame.EMECheckButtonFrame:HookScript("OnClick", function(button, mouseButton)
-            if mouseButton == "LeftButton" and app:IsEditingWindows() and not InCombatLockdown() then
-                app:SetWindowEnabled(frame.config, button:GetChecked())
+        lib:RegisterCustomButton(frame, "Create new window", function()
+            if app:IsEditingWindows() and not InCombatLockdown() then
+                app:AddWindow()
             end
-        end)
+        end, "createWindow")
+        lib:RegisterCustomButton(frame, "Remove window", function()
+            if app:IsEditingWindows() and not InCombatLockdown() then
+                EditModeManagerExpandedFrame:ClearSelectedSystem()
+                app:SetWindowEnabled(frame.config, false)
+            end
+        end, "removeWindow")
+        lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
         hooksecurefunc(frame, "SetPoint", function()
             if
                 frame.config
@@ -271,14 +303,15 @@ function app:SyncWindowEditMode(frame)
     self:PositionWindow(frame)
     local db = CurrentLayout(config.editMode)
     lib.framesDB[frame.system] = db
-    -- The Expanded checkbox represents real slot activation, across native layouts.
+    -- Preview visibility is separate from real slot activation and temporary hiding.
+    local previewEnabled = config.enabled and showUsedWindows
     for _, layout in pairs(config.editMode.profiles or {}) do
-        layout.enabled = config.enabled
+        layout.enabled = previewEnabled
     end
-    db.enabled = config.enabled
+    db.enabled = previewEnabled
     config.editMode.windowEnabled = nil
-    config.editMode.enabled = config.enabled
-    frame.EMEdisabledByDefault = not config.enabled
+    config.editMode.enabled = previewEnabled
+    frame.EMEdisabledByDefault = not previewEnabled
     db.settings = db.settings or {}
     db.x, db.y = frame:GetRect()
     db.defaultX, db.defaultY = db.x, db.y
@@ -346,7 +379,7 @@ end
 
 function app:WindowShouldBeShown(frame)
     if self:IsEditingWindows() and lib:IsRegistered(frame) then
-        return lib:IsFrameEnabled(frame)
+        return showUsedWindows and frame.config.enabled and lib:IsFrameEnabled(frame)
     end
     return self.addon:IsEnabled() and frame.config.enabled and not frame.config.hidden
 end

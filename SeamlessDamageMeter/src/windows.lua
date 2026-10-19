@@ -1042,6 +1042,7 @@ function app:RefreshWindow(frame, session, message)
         labelWidth = math.min(frame.statistic.text:GetStringWidth(), availableWidth)
     end
     frame.statistic.text:SetWidth(labelWidth)
+    frame.statistic:SetWidth(detail and (labelWidth + 25) or 25)
     frame.timer:ClearAllPoints()
     frame.timer:SetPoint("LEFT", frame.statistic.text, "RIGHT", 5, 0)
     frame.timer:SetWidth(0)

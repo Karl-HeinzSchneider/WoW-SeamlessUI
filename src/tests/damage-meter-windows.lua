@@ -514,6 +514,19 @@ assert(
 )
 session.combatSources[1], session.combatSources[2] = originalSource, session.combatSources[1]
 app:RefreshWindows()
+local unavailableSource = {}
+for key, value in pairs(originalSource) do
+    unavailableSource[key] = value
+end
+unavailableSource.sourceGUID = secret
+session.combatSources[1] = unavailableSource
+app:RefreshWindows()
+assert(
+    frame.detail and frame.message.text == "This source is no longer available.",
+    "Restricted identities never select a different row by rank or name"
+)
+session.combatSources[1] = originalSource
+app:RefreshWindows()
 
 frame:GetScript("OnMouseUp")(frame, "RightButton")
 assert(not frame.detail and frame.offset == mainOffset, "Back restores category scrolling")
@@ -1567,6 +1580,13 @@ assert(not meter.detail and meter.rows[1].source.name == "Jaina", "Right-click r
 meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
 meter.statistic.scripts.OnClick()
 assert(not meter.detail and meter.rows[1].source.name == "Jaina", "Header returns to sources")
+meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
+meter.config.statistic = "HealingDone"
+app:RefreshWindows()
+assert(not meter.detail, "Changing category clears the selected source")
+meter.config.statistic = "DamageDone"
+app:RefreshWindows()
+
 meter.rows[1].entry.scripts.OnMouseUp(nil, "LeftButton")
 app.combatService:Delete(archiveID)
 app:RefreshWindows()

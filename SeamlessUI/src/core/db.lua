@@ -10,6 +10,10 @@ local profile = {
     -- Reserved for settings of future UI improvements.
     ---@type table<string, table>
     features = {},
+    xpBarTooltip = {
+        enabled = true,
+        completedQuests = true,
+    },
 }
 
 -- Data tied to one character.

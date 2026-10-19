@@ -8,7 +8,6 @@ app.dbDefaults = {
         tweaks = {
             reloadShortcut = true,
             showFramerateOnStartup = false,
-            questXPTooltip = true,
             enhancedXPTooltip = true,
             restedXPCap = 150,
             restedXPRate = 5,

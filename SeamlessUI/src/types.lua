@@ -7,6 +7,7 @@
 ---@field dbDefaults SeamlessUI.DBDefaults
 ---@field db SeamlessUI.DB
 ---@field options SeamlessUI.Options
+---@field xpBarTooltip SeamlessUI.XPBarTooltip
 
 ---@class SeamlessUI.DB : AceDBObject-3.0
 ---@field profile SeamlessUI.DB.Profile

@@ -17,11 +17,10 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
 - `questlog.lua`: displays completed quest count and XP in the quest log/world map header,
   left of its minimize button; refreshes when shown and when quest data or player level changes.
-- `xptooltip.lua`: appends completed quest count and XP to the player XP bar/rested tick
-  tooltip. Controlled by the profile's `tweaks.questXPTooltip` toggle (on by default) under Tweaks;
-  reads the current profile and quest summary on each hover.
-  Its independent `tweaks.enhancedXPTooltip` toggle (on by default) adds XP remaining and rested
-  XP as a percentage of a level. Time to cap is an inn/city estimate without spending rested XP,
+- `xptooltip.lua`: the `tweaks.enhancedXPTooltip` toggle (on by default) appends XP remaining and
+  rested XP as a percentage of a level to the default player XP bar/rested tick tooltip; reads the
+  current profile on each hover. SeamlessUI's XP bar tooltip replaces that builder while enabled
+  (its completed-quests lines were Core's former `tweaks.questXPTooltip`). Time to cap is an inn/city estimate without spending rested XP,
   using configurable `restedXPCap` (150%) and `restedXPRate` (5% per eight hours); adjust these
   assumptions for perks because the client does not expose the actual cap or accrual rate.
 - `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).

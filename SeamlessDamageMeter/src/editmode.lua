@@ -249,6 +249,12 @@ function app:SyncWindowEditMode(frame)
                 app:AddWindow()
             end
         end, "createWindow")
+        lib:RegisterCustomButton(frame, "Remove window", function()
+            if app:IsEditingWindows() and not InCombatLockdown() then
+                EditModeManagerExpandedFrame:ClearSelectedSystem()
+                app:SetWindowEnabled(frame.config, false)
+            end
+        end, "removeWindow")
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
         hooksecurefunc(frame, "SetPoint", function()
             if

@@ -1190,7 +1190,9 @@ function eme:RegisterDropdown(frame, factory, key)
 end
 function eme:RegisterCustomButton(frame, name, callback, key)
     assert(
-        (key == "editSkin" and name == "Edit selected skin") or (key == "createWindow" and name == "Create new window")
+        (key == "editSkin" and name == "Edit selected skin")
+            or (key == "createWindow" and name == "Create new window")
+            or (key == "removeWindow" and name == "Remove window")
     )
     frame[key] = callback
 end
@@ -1329,14 +1331,34 @@ assert(
 meter.createWindow()
 assert(app.windowFrames[2].config.enabled and app.windowFrames[2]:IsShown(), "New slots must preview immediately")
 assert(not app.windowFrames[3].config.enabled, "Creating a window must activate only one slot")
+local removable = app.windowFrames[2]
+local removedConfig, removedOverrides = removable.config, removable.config.overrides
+local clearedSelection = 0
+EditModeManagerExpandedFrame.ClearSelectedSystem = function()
+    clearedSelection = clearedSelection + 1
+end
+removable.removeWindow()
+assert(not removable:IsShown() and not removable.config.enabled, "Removing must deactivate the selected window")
+assert(clearedSelection == 1, "Removing must dismiss the selected window's Edit Mode controls")
+assert(meter:IsShown() and meter.config.enabled, "Removing must preserve other active windows")
+assert(
+    removable.config == removedConfig and removable.config.overrides == removedOverrides,
+    "Removal must retain settings"
+)
+meter.createWindow()
+assert(removable.config.enabled and removable:IsShown(), "Creation must reuse the removed slot")
 combat = true
 meter.createWindow()
+removable.removeWindow()
+assert(removable.config.enabled and clearedSelection == 1, "Combat must block removal")
 assert(not app.windowFrames[3].config.enabled, "Creating in combat must be ignored")
 combat = false
 ClickGroup(false)
 EditModeManagerFrame:ExitEditMode()
 assert(meter:IsShown() and meter.config.enabled, "Hidden previews must return to normal visibility on exit")
 meter.createWindow()
+removable.removeWindow()
+assert(removable.config.enabled and clearedSelection == 1, "Removal outside Edit Mode must be ignored")
 assert(not app.windowFrames[3].config.enabled, "Creating outside Edit Mode must be ignored")
 
 EditModeManagerFrame:EnterEditMode()

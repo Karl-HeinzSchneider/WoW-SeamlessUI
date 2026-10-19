@@ -185,7 +185,9 @@ It controls previews of active slots only, including temporarily hidden windows,
 changing slot activation or normal visibility. Unused slots never preview. Preview visibility
 is transient, defaults to enabled on reload and survives rebuilds/profile switches/native layouts.
 Each window's Edit Mode settings include "Create new window", using the existing next-unused-slot
-activation and ten-window limit. Ignore its callback outside Edit Mode and in combat.
+activation and ten-window limit, and "Remove window", which clears the selection and
+deactivates that slot while preserving its settings and anchor links. Ignore both callbacks
+outside Edit Mode and in combat.
 The adapter hides the library-owned individual rows without modifying the embedded library.
 Edit Mode uses only local classic-character sample sessions, even when tracking is off,
 the API is absent or the selected history expired. Never read live combat data or duration

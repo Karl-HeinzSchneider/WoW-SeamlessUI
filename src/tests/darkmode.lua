@@ -36,49 +36,44 @@ end
 -- Only the frames a function names exist; everything else must be skipped as nil.
 local frame = texture(0.5)
 local portrait = texture()
-PlayerFrame = { PlayerFrameContainer = { FrameTexture = frame, Portrait = portrait } }
-local ring = texture()
-ActionButton1 = { NormalTexture = ring, Border = texture() }
-local edge = texture()
-ContainerFrame1 = { NineSlice = { TopEdge = edge, Center = texture() } }
+local circle = texture()
+PlayerFrame = {
+    PlayerFrameContainer = { FrameTexture = frame, Portrait = portrait },
+    PlayerFrameContent = { PlayerFrameContentMain = { LevelBackgroundCircle = circle } },
+}
+local targetFrame = texture()
+local targetCircle = texture()
+TargetFrame = {
+    TargetFrameContainer = { FrameTexture = targetFrame },
+    TargetFrameContent = { TargetFrameContentMain = { LevelBackgroundCircle = targetCircle } },
+}
 
 assert(loadfile(root .. "frames.lua"))("SeamlessDarkmode", app)
 assert(loadfile(root .. "core.lua"))("SeamlessDarkmode", app)
-app.db = {
-    profile = {
-        enabled = true,
-        color = { r = 0.2, g = 0.3, b = 0.4 },
-        groups = { unitframes = true, actionbars = true, minimap = true, bags = true },
-    },
-}
+app.db = { profile = { enabled = true, color = { r = 0.2, g = 0.3, b = 0.4 } } }
 
 addon:Refresh()
 equal(frame.color, { 0.2, 0.3, 0.4, 0.5 }, "frame tinted, alpha kept")
+equal(circle.color, { 0.2, 0.3, 0.4, 1 }, "player level circle tinted")
 equal(portrait.color, { 1, 1, 1, 1 }, "portrait untouched")
-equal(ring.color, { 0.2, 0.3, 0.4, 1 }, "action button ring tinted")
-equal(ActionButton1.Border.color, { 1, 1, 1, 1 }, "proc border untouched")
-equal(edge.color, { 0.2, 0.3, 0.4, 1 }, "bag border tinted")
-equal(ContainerFrame1.NineSlice.Center.color, { 1, 1, 1, 1 }, "bag background untouched")
+equal(targetFrame.color, { 0.2, 0.3, 0.4, 1 }, "target frame tinted")
+equal(targetCircle.color, { 0.2, 0.3, 0.4, 1 }, "target level circle tinted")
 
 app.db.profile.color = { r = 0.1, g = 0.1, b = 0.1 }
 addon:Refresh()
 equal(frame.color, { 0.1, 0.1, 0.1, 0.5 }, "color change")
 
-app.db.profile.groups.unitframes = false
-addon:Refresh()
-equal(frame.color, { 1, 1, 1, 0.5 }, "group off restores")
-equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "other groups stay tinted")
-
 app.db.profile.enabled = false
 addon:Refresh()
-equal(ring.color, { 1, 1, 1, 1 }, "master switch restores")
+equal(frame.color, { 1, 1, 1, 0.5 }, "master switch restores")
+equal(targetCircle.color, { 1, 1, 1, 1 }, "master switch restores target")
 
-app.db.profile.enabled, app.db.profile.groups.unitframes = true, true
+app.db.profile.enabled = true
 addon:Refresh()
 addon:OnDisable()
 enabled = false
 addon:Refresh()
 equal(frame.color, { 1, 1, 1, 0.5 }, "addon disable restores")
-equal(edge.color, { 1, 1, 1, 1 }, "addon disable restores bags")
+equal(circle.color, { 1, 1, 1, 1 }, "addon disable restores level circle")
 
-print("PASS: tint, alpha, untouched indicators, color change, group/master toggles, disable")
+print("PASS: tint, alpha, level circles, untouched portrait, color change, master switch, disable")

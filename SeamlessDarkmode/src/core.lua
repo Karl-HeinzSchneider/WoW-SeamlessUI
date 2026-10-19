@@ -4,7 +4,7 @@ local appName, app = ...
 app.core = LibStub("AceAddon-3.0"):GetAddon("Seamless")
 app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0")
 
--- A texture's color before it was first tinted, restored when its group is switched off.
+-- A texture's color before it was first tinted, restored when darkmode is switched off.
 ---@type table<Texture, number[]>
 local originals = setmetatable({}, { __mode = "k" })
 
@@ -32,10 +32,7 @@ local function restore(texture)
 end
 
 function app.addon:OnInitialize()
-    local defaults = { enabled = true, color = { r = 0.22, g = 0.22, b = 0.22 }, groups = {} }
-    for _, group in ipairs(app.groups) do
-        defaults.groups[group.key] = true
-    end
+    local defaults = { enabled = true, color = { r = 0.22, g = 0.22, b = 0.22 } }
     app.db = LibStub("AceDB-3.0"):New("SeamlessDarkmodeDB", { profile = defaults }, true)
     app.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
     app.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
@@ -50,23 +47,18 @@ function app.addon:OnEnable()
 end
 
 function app.addon:OnDisable()
-    for _, group in ipairs(app.groups) do
-        for _, frame in ipairs(group.frames) do
-            frame(restore)
-        end
+    for _, frame in ipairs(app.frames) do
+        frame(restore)
     end
 end
 
--- Runs every frame function of every group, tinting or restoring by the current profile.
+-- Runs every frame function, tinting or restoring by the current profile.
 function app.addon:Refresh()
     if not self:IsEnabled() then
         return
     end
-    local profile = app.db.profile
-    for _, group in ipairs(app.groups) do
-        local paint = (profile.enabled and profile.groups[group.key]) and tint or restore
-        for _, frame in ipairs(group.frames) do
-            frame(paint)
-        end
+    local paint = app.db.profile.enabled and tint or restore
+    for _, frame in ipairs(app.frames) do
+        frame(paint)
     end
 end

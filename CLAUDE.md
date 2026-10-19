@@ -23,7 +23,7 @@ TOC is an independently selectable addon.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `SeamlessUI/`: optional general UI improvements, with independent `SeamlessUIDB` profiles.
   Currently an internal scaffold. See its `CLAUDE.md`.
-- `SeamlessDarkmode/`: optional shared tint for specific frames' borders, with group toggles and independent profiles.
+- `SeamlessDarkmode/`: optional shared tint for the unit frame borders, with independent profiles.
   Internal pending in-game validation. See its `CLAUDE.md`.
 - `.github/`: release workflows using the BigWigs packager.
 

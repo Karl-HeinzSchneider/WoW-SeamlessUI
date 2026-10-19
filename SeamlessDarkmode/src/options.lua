@@ -3,22 +3,6 @@ local appName, app = ...
 
 local options = app.addon:NewModule("Options")
 function options:OnInitialize()
-    local groups = {}
-    for index, group in ipairs(app.groups) do
-        local key = group.key
-        groups[key] = {
-            type = "toggle",
-            order = index,
-            name = group.name,
-            get = function()
-                return app.db.profile.groups[key]
-            end,
-            set = function(_, value)
-                app.db.profile.groups[key] = value
-                app.addon:Refresh()
-            end,
-        }
-    end
     app.core:RegisterOptions(appName, {
         title = "Darkmode",
         general = {
@@ -40,7 +24,7 @@ function options:OnInitialize()
                 order = 2,
                 name = "Darkmode color",
                 hasAlpha = false,
-                desc = "Shared tint for supported UI borders and decoration.",
+                desc = "Tint for the unit frame borders.",
                 disabled = function()
                     return not app.db.profile.enabled
                 end,
@@ -56,17 +40,7 @@ function options:OnInitialize()
             description = {
                 type = "description",
                 order = 3,
-                name = "Tints the borders and frame art of the frames below. Icons, portraits, text, bars and status indicators keep their colors. Switching a group off restores its colors.",
-            },
-            groups = {
-                type = "group",
-                inline = true,
-                order = 10,
-                name = "Frames",
-                disabled = function()
-                    return not app.db.profile.enabled
-                end,
-                args = groups,
+                name = "Tints the frame borders and level circles of the player, target, focus, pet, party and boss frames. Portraits, text and bars keep their colors.",
             },
         },
         db = app.db,

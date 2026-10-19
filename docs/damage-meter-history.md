@@ -62,6 +62,10 @@ combined without mutating API tables. Indexes are shared for player → enemy an
 queries. Non-reconciling contributions are labelled incomplete. Available creature identities are
 retained; units already combined by the client and same-name contributors cannot be reliably split.
 
+Session saving is temporarily disabled (`combatService.saveSessions = false`). Only Blizzard
+sessions are displayed. Existing saved history is preserved but not loaded, capture is skipped,
+and History options are hidden. The architecture below remains available for re-enabling saving.
+
 ## Limits
 
 - Successfully captured public completed fights survive normal reload/relog. Immediate reloads,

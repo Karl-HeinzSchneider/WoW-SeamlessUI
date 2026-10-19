@@ -399,6 +399,7 @@ function app:HistoryOptions()
     end
     return {
         name = "History",
+        hidden = not self.combatService.saveSessions,
         order = 20,
         args = {
             info = {
@@ -527,7 +528,7 @@ function app:RegisterOptions()
                     info = {
                         type = "description",
                         order = 0,
-                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Completed public fights are saved through reload/relog; manage them in History. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n",
+                        name = "Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Sessions, Current and Overall come from Blizzard's damage meter; addon session saving is temporarily disabled. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n",
                     },
                     add = {
                         type = "execute",

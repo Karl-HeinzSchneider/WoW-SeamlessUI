@@ -1,11 +1,12 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
-app.combatService = { cache = {}, listeners = {}, runtime = {}, revision = 0 }
+app.combatService = { cache = {}, listeners = {}, runtime = {}, revision = 0, saveSessions = false }
 local service = app.combatService
 
 function service:Initialize(character)
-    app.archive:Initialize(character)
+    -- Keep existing saved history untouched while using only client sessions.
+    app.archive:Initialize(self.saveSessions and character or {})
     self.generation = app.archive.db.generation
     self.reconcileGeneration = self.generation - 1
     self.cache, self.runtime, self.pending = {}, {}, {}
@@ -13,12 +14,18 @@ function service:Initialize(character)
     -- Unscoped legacy client IDs cannot safely survive a client restart.
     for _, profile in pairs(app.db.sv and app.db.sv.profiles or {}) do
         for _, config in ipairs(profile.windows or {}) do
+            if not self.saveSessions then
+                config.archiveID, config.sessionID, config.sessionGeneration, config.sessionName = nil, nil, nil, nil
+            end
             if config.sessionID and not config.sessionGeneration then
                 config.sessionGeneration = 0
             end
         end
     end
     for _, config in ipairs(app.db.profile.windows or {}) do
+        if not self.saveSessions then
+            config.archiveID, config.sessionID, config.sessionGeneration, config.sessionName = nil, nil, nil, nil
+        end
         if config.sessionID and not config.sessionGeneration then
             config.sessionGeneration = 0
         end

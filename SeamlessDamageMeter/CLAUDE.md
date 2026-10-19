@@ -1,6 +1,10 @@
 # SeamlessDamageMeter
 
 Optional feature addon for WoW Forever (`16001`), requiring Seamless.
+Session saving is temporarily disabled by `combatService.saveSessions = false`. The service
+uses an empty in-memory archive, leaves existing saved history untouched, resets old fight
+selections on initialization and skips capture. Only client sessions are shown; History is hidden.
+The archive/capture documentation below describes the retained implementation when enabled.
 `SeamlessDamageMeterDB` stores independent AceDB profiles containing window layouts and
 statistic/session selections. Client collection stays owned by `C_DamageMeter`; character-scoped
 `db.char.combatHistory` stores validated public completed fights independently of profiles.

@@ -188,14 +188,31 @@ C_DamageMeter = {
         return kind == 10 and details[1][creature] or details[1].player
     end,
 }
-local function Load(character)
+local function Load(character, apiOnly)
     local app = { db = { char = character or {}, profile = { windows = {} } } }
     for _, name in ipairs({ "data", "archive", "live", "service", "breakdowns", "capture" }) do
         assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
     end
+    if not apiOnly then
+        app.combatService.saveSessions = true
+    else
+        app.db.profile.windows = { { session = "Current", archiveID = 123, sessionID = 1, sessionGeneration = 1 } }
+    end
     app.combatService:Initialize(app.db.char)
     return app
 end
+local saved = { combatHistory = { preserved = true } }
+available = { { sessionID = 42, name = "Client fight" } }
+local apiOnly = Load(saved, true)
+apiOnly.combatService:OnWorld()
+apiOnly.combatService:OnCombatEnd()
+apiOnly.combatService:OnLogout()
+assert(saved.combatHistory.preserved and saved.combatHistory.fights == nil, "Existing history must stay untouched")
+assert(#apiOnly.archive.db.fights == 0 and next(apiOnly.combatService.pending) == nil, "API-only mode must not capture")
+assert(#apiOnly.combatService:ListSessions() == #available, "Only client sessions must be listed")
+assert(apiOnly.combatService:ListSessions()[1].sessionID == 42, "Client session identity must be preserved")
+assert(apiOnly.db.profile.windows[1].archiveID == nil and apiOnly.db.profile.windows[1].sessionID == nil)
+available = {}
 local app = Load()
 local service, archive = app.combatService, app.archive
 local changed = 0

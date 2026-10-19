@@ -28,6 +28,14 @@ local function addValue(tooltip, label, value)
     tooltip:AddDoubleLine(label, value, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, 1, 1, 1)
 end
 
+-- Separates a section from the lines above it, if any.
+---@param tooltip GameTooltip
+local function addSpacer(tooltip)
+    if tooltip:NumLines() > 0 then
+        tooltip:AddLine(" ")
+    end
+end
+
 ---@param value number
 ---@param of number
 local function amountText(value, of)
@@ -47,7 +55,7 @@ local function addXPLines(tooltip)
     local restedMax = maxXP * tweaks.restedXPCap / 100
     local rested = math.max(0, GetXPExhaustion() or 0)
 
-    tooltip:AddLine(" ")
+    addSpacer(tooltip)
     addValue(
         tooltip,
         "XP:",
@@ -64,7 +72,7 @@ end
 ---@param tooltip GameTooltip
 local function addQuestLines(tooltip)
     local summary = app.core:GetQuestLogSummary()
-    tooltip:AddLine(" ")
+    addSpacer(tooltip)
     addValue(tooltip, "Completed quests:", string.format("%d / %d", summary.completedQuests, summary.totalQuests))
     addValue(tooltip, "Completed quests XP:", BreakUpLargeNumbers(summary.completedQuestXP) .. " XP")
 end
@@ -76,11 +84,8 @@ end
 function module:ShowTooltip()
     local tooltip = GetAppropriateTooltip()
     GameTooltip_SetDefaultAnchor(tooltip, UIParent)
-    GameTooltip_SetTitle(tooltip, XPBAR_LABEL or "Experience", HIGHLIGHT_FONT_COLOR)
-
     local stateID, stateName, multiplier = GetRestState()
     if stateID then
-        tooltip:AddLine(" ")
         GameTooltip_AddHighlightLine(tooltip, EXHAUST_TOOLTIP1:format(stateName, multiplier * 100))
         if not IsResting() and (stateID == 4 or stateID == 5) then
             GameTooltip_AddHighlightLine(tooltip, EXHAUST_TOOLTIP2)

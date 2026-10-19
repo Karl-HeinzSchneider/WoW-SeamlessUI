@@ -1,5 +1,6 @@
 -- Annotations only; not loaded by the client.
 ---@class SeamlessCore
+---@field LibEditMode table Namespaced Edit Mode library instance.
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema
@@ -9,6 +10,7 @@
 ---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
+---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
 ---@field logger SeamlessCore.Logger
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
 

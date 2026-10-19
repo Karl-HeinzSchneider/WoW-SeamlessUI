@@ -5,7 +5,9 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 ## Ownership and load order
 
 - `embeds.xml` loads all shared vendored libraries from `lib/`, including AceGUI, AceConfig,
-  AceDBOptions, LibSharedMedia, LibEditModeOverride and LibEditMode. Never patch vendored code.
+  AceDBOptions, LibSharedMedia, LibEditModeOverride and LibEditMode. LibEditMode loads
+  `namespaced.lua` before `embed.xml` into Core's private table; never register it with LibStub.
+  Feature addons obtain that instance through `core:GetEditModeLibrary()`. Never patch vendored code.
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
@@ -44,6 +46,7 @@ child. A panel is a tab group, always in this order:
 Declare `## Dependencies: Seamless` in every feature TOC. At file load, obtain the
 core through `LibStub("AceAddon-3.0"):GetAddon("Seamless")`; no new global is needed.
 
+- `core:GetEditModeLibrary()`: the suite-owned namespaced LibEditMode instance.
 - `core.logger`: shared logger; its threshold follows the core profile.
 - `core:GetQuestLogSummary()`: a fresh table with `totalQuests`, `completedQuests` (ready to
   turn in), and `completedQuestXP` (the sum of client-reported XP rewards for those completed

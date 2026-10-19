@@ -1,11 +1,50 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
-local lib = LibStub("LibEditMode")
+local lib = app.core:GetEditModeLibrary()
+local activeLayout
+local layoutKeys = { "point", "relativePoint", "x", "y", "width", "height", "scale" }
 local showUsedWindows = true
 local registered = {}
 local groupCheckbox
 local groupRow
+
+-- Layout records belong to the active AceDB profile. Copy only public geometry;
+-- appearance, visibility, activation and locks remain profile settings.
+local function SaveLayout(config, name)
+    if not name then
+        return
+    end
+    local record = { anchorTo = config.anchorTo }
+    for _, key in ipairs(layoutKeys) do
+        record[key] = config.overrides[key]
+    end
+    config.editModeLayouts = config.editModeLayouts or {}
+    config.editModeLayouts[name] = record
+end
+
+function app:ApplyEditModeLayout()
+    if not activeLayout or not self.db or InCombatLockdown() then
+        return
+    end
+    self:PrepareWindowSettings()
+    for _, config in ipairs(self.db.profile.windows) do
+        local record = config.editModeLayouts and config.editModeLayouts[activeLayout]
+        if record then
+            for _, key in ipairs(layoutKeys) do
+                config.overrides[key] = record[key]
+            end
+            config.anchorTo = record.anchorTo
+        else
+            SaveLayout(config, activeLayout)
+        end
+    end
+    for _, config in ipairs(self.db.profile.windows) do
+        if config.anchorTo and not self:CanAnchorTo(config, config.anchorTo) then
+            config.anchorTo = nil
+        end
+    end
+end
 
 local function RegisterGroupCheckbox()
     if groupCheckbox then
@@ -39,15 +78,15 @@ local function SliderValue(value, step)
     return math.floor(value / step + 0.5) * step
 end
 
-local function ResizeWindow(frame, key, value)
+local function ResizeWindow(frame, key, value, fromReset)
     if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
         return
     end
-    if app:GetWindowSetting(frame.config, "lockSize") then
+    if not fromReset and app:GetWindowSetting(frame.config, "lockSize") then
         app:SyncWindowEditMode(frame)
         return
     end
-    if key == "height" and app:GetWindowSetting(frame.config, "fixedHeight") then
+    if not fromReset and key == "height" and app:GetWindowSetting(frame.config, "fixedHeight") then
         app:SyncWindowEditMode(frame)
         return
     end
@@ -113,16 +152,23 @@ local function RegisterControls(frame)
             end
             return kind == lib.SettingType.Slider and SliderValue(value * multiplier, step) or value
         end
+        local default = (skin and app.skinDefaults or app.windowDefaults)[key]
+        if key == "backgroundColor" then
+            default = default[4]
+        end
+        if kind == lib.SettingType.Slider then
+            default = SliderValue(default * multiplier, step)
+        end
         settings[#settings + 1] = {
             name = name,
             kind = kind,
-            default = get(),
+            default = default,
             get = get,
             minValue = minimum,
             maxValue = maximum,
             valueStep = step,
             formatter = function(value)
-                return tostring(value)
+                return value
             end,
             disabled = function()
                 return (key == "width" or key == "height")
@@ -131,7 +177,7 @@ local function RegisterControls(frame)
                         or (key == "height" and app:GetWindowSetting(frame.config, "fixedHeight"))
                     )
             end,
-            set = function(_, value)
+            set = function(_, value, fromReset)
                 if skin then
                     SetSkinOption(
                         frame,
@@ -139,7 +185,7 @@ local function RegisterControls(frame)
                         kind == lib.SettingType.Slider and SliderValue(value, step) / multiplier or value
                     )
                 elseif key == "width" or key == "height" then
-                    ResizeWindow(frame, key, value)
+                    ResizeWindow(frame, key, value, fromReset)
                 else
                     SetWindowOption(
                         frame,
@@ -172,7 +218,7 @@ local function RegisterControls(frame)
     for _, definition in ipairs(appearanceChecks) do
         add(definition[1], definition[2], lib.SettingType.Checkbox, nil, nil, nil, nil, true)
     end
-    settings[#settings + 1] = {
+    local skinSetting = {
         name = "Skin",
         kind = lib.SettingType.Dropdown,
         default = "default",
@@ -183,6 +229,7 @@ local function RegisterControls(frame)
             if app:IsEditingWindows() and not InCombatLockdown() then
                 frame.config.skin = value
                 app:RebuildWindows()
+                lib:RefreshFrameSettings(frame)
             end
         end,
         values = function()
@@ -200,6 +247,7 @@ local function RegisterControls(frame)
             return values
         end,
     }
+    table.insert(settings, 1, skinSetting) -- Reset selects Default before resetting its appearance.
     lib:AddFrameSettings(frame, settings)
     lib:AddFrameSettingsButtons(frame, {
         {
@@ -243,33 +291,36 @@ function app:SyncWindowEditMode(frame)
     local rebound = type(registered[frame]) == "table" and registered[frame] ~= frame.config
     if not registered[frame] then
         registered[frame] = true
-        lib:AddFrame(frame, function()
-            if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
-                return
-            end
-            if not app:GetWindowSetting(frame.config, "lockPosition") then
-                app:SaveWindowPosition(frame, true)
-            end
-            -- Convert the library's screen anchor back to our independent linked anchors.
-            app:PositionWindow(frame)
-            app.core:RefreshOptions("SeamlessDamageMeter")
-        end, { point = "CENTER", x = 0, y = 0 }, "Seamless Damage " .. frame.windowID)
+        lib:AddFrame(
+            frame,
+            function(movedFrame, layoutName, point, x, y)
+                if movedFrame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
+                    return
+                end
+                if not app:GetWindowSetting(movedFrame.config, "lockPosition") then
+                    if movedFrame.config.anchorTo then
+                        -- Linked anchors use independent points: convert the resulting screen position.
+                        app:SaveWindowPosition(movedFrame, true)
+                    else
+                        local overrides = movedFrame.config.overrides
+                        overrides.point, overrides.relativePoint = point, point
+                        overrides.x, overrides.y = x, y
+                    end
+                    SaveLayout(movedFrame.config, layoutName)
+                end
+                app:PositionWindow(movedFrame)
+                app.core:RefreshOptions("SeamlessDamageMeter")
+            end,
+            { point = app.windowDefaults.point, x = app.windowDefaults.x, y = app.windowDefaults.y },
+            "Seamless Damage " .. frame.windowID
+        )
         RegisterControls(frame)
-        local selection = frame.Selection
-        local dragStart = selection:GetScript("OnDragStart")
-        selection:SetScript("OnDragStart", function(self, ...)
-            if not app:GetWindowSetting(frame.config, "lockPosition") then
-                dragStart(self, ...)
-            end
-        end)
         RegisterGroupCheckbox()
     end
     frame:SetScale(self:GetWindowSetting(frame.config, "scale"))
     self:PositionWindow(frame)
     local editing = self:IsEditingWindows()
-    frame.Selection:SetShown(editing and showUsedWindows and frame.config.enabled)
     frame.resize:SetFrameStrata(editing and "HIGH" or frame:GetFrameStrata())
-    frame.resize:SetFrameLevel(frame.Selection:GetFrameLevel() + 1)
     frame.resize:EnableMouse(not self:GetWindowSetting(frame.config, "lockSize"))
     if editing then
         frame.resize:SetAlpha(1)
@@ -278,6 +329,7 @@ function app:SyncWindowEditMode(frame)
     end
     frame.syncingEditMode = nil
     registered[frame] = frame.config
+    SaveLayout(frame.config, activeLayout)
     if rebound then
         lib:RefreshFrameSettings(frame)
     end
@@ -300,4 +352,46 @@ local function RefreshEditMode()
 end
 lib:RegisterCallback("enter", RefreshEditMode)
 lib:RegisterCallback("exit", RefreshEditMode)
-lib:RegisterCallback("layout", RefreshEditMode)
+lib:RegisterCallback("layout", function(layoutName)
+    activeLayout = layoutName
+    app:ApplyEditModeLayout()
+    RefreshEditMode()
+end)
+
+local function LayoutRecords(callback)
+    if not app.db then
+        return
+    end
+    -- Native layout names are shared across AceDB profiles, including inactive profiles.
+    for _, profile in pairs(app.db.profiles) do
+        for _, config in ipairs(profile.windows or {}) do
+            if config.editModeLayouts then
+                callback(config.editModeLayouts)
+            end
+        end
+    end
+end
+lib:RegisterCallback("create", function(name, _, sourceName)
+    LayoutRecords(function(records)
+        if sourceName and records[sourceName] then
+            local copy = {}
+            for key, value in pairs(records[sourceName]) do
+                copy[key] = value
+            end
+            records[name] = copy
+        end
+    end)
+end)
+lib:RegisterCallback("rename", function(oldName, newName)
+    LayoutRecords(function(records)
+        records[newName], records[oldName] = records[oldName], nil
+    end)
+    if activeLayout == oldName then
+        activeLayout = newName
+    end
+end)
+lib:RegisterCallback("delete", function(name)
+    LayoutRecords(function(records)
+        records[name] = nil
+    end)
+end)

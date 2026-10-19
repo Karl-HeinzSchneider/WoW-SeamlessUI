@@ -75,6 +75,8 @@ or adjust its scale. Use the Width/Height sliders in its Edit Mode dialog or dra
 visible bottom-right grip to resize it. Leaving Edit Mode restores live data and the saved collapse state.
 Edit Mode changes update
 the window's position and scale overrides in the current Damage Meter profile.
+Position, size, scale and anchor links are remembered separately for each Edit Mode layout;
+new layouts start with the current geometry.
 The built-in meter's visibility remains controlled by the game's own settings; keep tracking
 enabled for data. Fight history belongs to Blizzard and may expire or reset independently
 of saved layouts. This first version intentionally focuses on the base windows, without

@@ -34,6 +34,7 @@ function addon:OnInitialize()
 end
 
 function addon:RefreshProfile()
+    app:ApplyEditModeLayout()
     app:RebuildWindows()
     app:UpdateBlizzardMeter()
     app.core:RefreshOptions(appName)

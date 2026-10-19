@@ -1144,10 +1144,14 @@ function lem:AddFrame(frame, callback, defaults, name)
     assert(name == "Seamless Damage " .. frame.windowID)
     assert(defaults.point == "CENTER")
     registered = registered + 1
-    frame.Selection = object(frame)
-    frame.Selection:SetScript("OnDragStart", function()
-        frame.dragStarted = true
-    end)
+    frame.Selection = setmetatable({}, {
+        __index = function()
+            error("Selection is owned by LibEditMode")
+        end,
+        __newindex = function()
+            error("Selection is owned by LibEditMode")
+        end,
+    })
     moves[frame] = callback
 end
 function lem:AddFrameSettings(frame, settings)
@@ -1163,13 +1167,10 @@ function lem:RefreshFrameSettings() end
 function lem:IsInEditMode()
     return editing
 end
-local originalLibStub = LibStub
-LibStub = function(name)
-    if name == "LibEditMode" then
-        return lem
-    end
-    return originalLibStub(name)
+app.core.GetEditModeLibrary = function()
+    return lem
 end
+app.db.profiles = { Original = app.db.profile }
 EventRegistry = { TriggerEvent = function() end }
 EditModeManagerFrame = {
     -- Accessing native layout containers would risk tainting Blizzard's Edit Mode setup.
@@ -1191,6 +1192,7 @@ assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", 
 combat = false
 app:RebuildWindows()
 assert(registered == 10)
+callbacks.layout("Modern")
 assert(meterGroupRow:GetParent() == UIParent and meterGroupRow.layoutIndex == nil)
 assert(not meterGroupRow:IsShown(), "Preview checkbox must start hidden outside Edit Mode")
 assert(meterGroupRow.point[2] == EditModeManagerFrame, "Anchor our control without joining native layout")
@@ -1204,7 +1206,7 @@ local function setting(name)
     error("Missing control: " .. name)
 end
 EditModeManagerFrame:EnterEditMode()
-assert(meter.Selection:IsShown() and meter:IsShown() and meterGroupRow:IsShown())
+assert(meter:IsShown() and meterGroupRow:IsShown())
 setting("Frame width").set(nil, 615)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock size").set(nil, true)
@@ -1212,29 +1214,54 @@ assert(setting("Frame width").disabled())
 setting("Frame width").set(nil, 700)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock position").set(nil, true)
-meter.Selection:GetScript("OnDragStart")(meter.Selection)
-assert(not meter.dragStarted)
 local savedX = meter.config.overrides.x
 meter:SetPoint("CENTER", UIParent, "CENTER", 250, 150)
-moves[meter]()
+moves[meter](meter, "Modern", "CENTER", 250, 150)
 assert(meter.config.overrides.x == savedX, "Locked arrow/reset moves must not persist")
 setting("Lock position").set(nil, false)
-meter.Selection:GetScript("OnDragStart")(meter.Selection)
-assert(meter.dragStarted)
 setting("Bar height").set(nil, 29)
 assert(app:GetWindowSetting(meter.config, "rowHeight") == 29)
 local firstConfig = meter.config
 local otherProfile = { windows = {}, windowDefaults = app.windowDefaults, skins = {} }
 local originalProfile = app.db.profile
 app.db.profile = otherProfile
+app.db.profiles.Other = otherProfile
+app:ApplyEditModeLayout()
 app:RebuildWindows()
 assert(meter.config ~= firstConfig)
 setting("Frame width").set(nil, 530)
 assert(app:GetWindowSetting(meter.config, "width") == 530)
 app.db.profile = originalProfile
+app:ApplyEditModeLayout()
 app:RebuildWindows()
 assert(setting("Frame width").get() == 615 and registered == 10)
-callbacks.layout()
+callbacks.layout("Modern")
+assert(setting("Frame width").default == app.windowDefaults.width)
+assert(setting("Bar height").default == 24, "Defaults must not capture customized skin values")
+meter.config.anchorTo = nil
+moves[meter](meter, "Modern", "TOPLEFT", 80, -90)
+assert(meter.config.overrides.point == "TOPLEFT" and meter.config.overrides.x == 80)
+assert(meter.config.editModeLayouts.Modern.x == 80)
+callbacks.create("Copied", 4, "Modern")
+assert(meter.config.editModeLayouts.Copied.x == 80)
+callbacks.layout("Copied")
+setting("Lock size").set("Copied", false)
+setting("Frame width").set("Copied", 540)
+callbacks.layout("Modern")
+assert(setting("Frame width").get() == 615, "Switching layouts restores geometry")
+callbacks.rename("Copied", "Renamed")
+callbacks.layout("Renamed")
+assert(setting("Frame width").get() == 540)
+assert(meter.config.editModeLayouts.Copied == nil)
+callbacks.layout("Modern")
+callbacks.delete("Renamed")
+assert(meter.config.editModeLayouts.Renamed == nil)
+setting("Lock size").set("Modern", true)
+setting("Frame width").set("Modern", setting("Frame width").default, true)
+assert(setting("Frame width").get() == app.windowDefaults.width, "Reset must bypass size lock")
+setting("Lock size").set("Modern", false)
+setting("Frame width").set("Modern", 615)
+setting("Lock size").set("Modern", true)
 assert(registered == 10, "Layouts and profiles must reuse registered frames")
 local liveAPIForPreview = C_DamageMeter
 C_DamageMeter = setmetatable({}, {
@@ -1261,7 +1288,7 @@ setting("Frame width").set(nil, 780)
 assert(setting("Frame width").get() == 615)
 combat = false
 EditModeManagerFrame:ExitEditMode()
-assert(not meter.Selection:IsShown() and not meterGroupRow:IsShown())
+assert(not meterGroupRow:IsShown())
 setting("Frame width").set(nil, 780)
 assert(app:GetWindowSetting(meter.config, "width") == 615, "Ignore callbacks outside Edit Mode")
 print("Damage meter LibEditMode regressions OK")

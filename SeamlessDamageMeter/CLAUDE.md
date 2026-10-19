@@ -174,11 +174,19 @@ Empty slots open the type menu to assign a favorite without changing the display
 Assigned slots switch the displayed type immediately; right-click them to replace or clear.
 Only one favorites view is open at a time. Hide, collapse and profile rebuild dismiss it.
 
-All ten slots register once with LibEditMode, embedded unchanged in Core. Dynamic getters and
+All ten slots register once with Core's namespaced LibEditMode via `core:GetEditModeLibrary()`.
+Use only documented library methods/callbacks; never read or alter Selection, internal pools,
+frameSelections or other library-owned state. The library owns selection visibility and dragging;
+we show/hide our parent windows. Position locking rejects movement in the position callback
+(the dragged preview can move temporarily until dropped). Dynamic getters and
 setters read each pooled frame's current AceDB profile configuration. Geometry and skin settings
-remain authoritative; legacy `config.editMode` data is retained but no longer read. Layout changes
-reapply the current profile's geometry. Movement callbacks convert screen anchors back to independent
-linked anchors, and position locking blocks dragging and rejects arrow/reset position changes.
+remain authoritative; legacy `config.editMode` data is retained but no longer read. Each window's
+`editModeLayouts[layoutName]` snapshots position, dimensions, scale and linked anchor overrides
+inside its AceDB profile. Missing layouts seed from current geometry. Layout switch and profile
+switch/copy/reset restore the corresponding record; create/copy/rename/delete callbacks maintain
+records across all AceDB profiles. Movement uses the callback's point/X/Y directly for UIParent;
+linked anchors convert the resulting screen position. Control defaults use factory defaults,
+not registration-time values; reset bypasses size locks and selects Default skin first.
 One "Seamless Damage Meter" checkbox controls previews of active slots, including temporarily
 hidden windows, without changing activation or normal visibility. Preview visibility is transient.
 The checkbox is an addon-owned UIParent child anchored below the Edit Mode window, shown only
@@ -212,10 +220,11 @@ Meter configuration remains authoritative; synchronize checkbox/slider values an
 skin labels on rebuild/profile changes. Ignore initialization/outside-Edit-Mode callbacks.
 Explicit saved fixed-height choices are retained when changing the default to seven fixed rows.
 `lockPosition` defaults to false, supports shared defaults and per-window overrides, and
-blocks header dragging plus Edit Mode selection dragging and arrow keys independently of size.
+blocks header dragging and rejects committed Edit Mode drag/arrow/reset movement independently of size.
 It is available in addon options, Edit Mode and the window gear menu. Explicit coordinate
 settings and anchor updates remain available while locked.
 
+Run `lua src/tests/editmode-loading.lua` for namespaced embedding, isolated instances and Core access.
 Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
 Run `lua src/tests/damage-meter-blizzard.lua` for native CVar/visibility isolation and Edit Mode hiding.
 Run `lua src/tests/damage-meter-settings.lua` for inheritance and AceConfig schema checks.

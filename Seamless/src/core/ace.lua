@@ -9,6 +9,12 @@ local addon = {}
 LibStub("AceAddon-3.0"):NewAddon(addon, appName, "AceConsole-3.0", "AceEvent-3.0")
 app.addon = addon
 
+---The suite's private LibEditMode instance, shared without registering it with LibStub.
+---@return table
+function addon:GetEditModeLibrary()
+    return app.LibEditMode
+end
+
 -- Called once, after ADDON_LOADED for this addon: SavedVariables are available now.
 function addon:OnInitialize()
     local db = LibStub("AceDB-3.0"):New("SeamlessDB", app.dbDefaults, true) --[[@as SeamlessCore.DB]]

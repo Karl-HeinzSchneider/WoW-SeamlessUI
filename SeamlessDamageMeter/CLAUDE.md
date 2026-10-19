@@ -218,3 +218,10 @@ Expired unsaved selections and deleted archives must show an unavailable state. 
 Verify default changes propagate only to inherited settings, including fonts and colors;
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.
+
+Edit Mode also exposes bar height, padding (row spacing), transparency, background,
+text size, spec icons and class colors. Appearance edits update the selected shared skin;
+all windows using it refresh immediately. Transparency is window opacity (50�100%),
+background is the existing background color alpha (0�100%), and text size is a percentage
+of the default 15-pixel font (50�150%). Pixel bar/spacing ranges retain the addon skin ranges.
+The same opacity is editable in the Skin tab. Existing skins default to full window opacity.

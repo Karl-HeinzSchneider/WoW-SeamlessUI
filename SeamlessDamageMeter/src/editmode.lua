@@ -41,6 +41,52 @@ local function SetWindowOption(frame, key, value)
     app:RebuildWindows()
 end
 
+-- Appearance edits intentionally update the selected shared skin.
+local appearanceSliders = {
+    { "Bar height", "rowHeight", 16, 40, 1 },
+    { "Padding", "rowSpacing", 0, 12, 1 },
+    { "Transparency", "windowAlpha", 50, 100, 1, 100 },
+    { "Background", "backgroundColor", 0, 100, 1, 100 },
+    { "Text size", "fontSize", 50, 150, 10, 100 / 15 },
+}
+local appearanceChecks = {
+    { "Show spec icon", "showIcons" },
+    { "Show class color", "classColors" },
+}
+
+local function SetSkinOption(frame, key, value)
+    if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
+        return
+    end
+    local settings = app.db.profile.skins[frame.config.skin].settings
+    if key == "backgroundColor" then
+        local color = app:GetWindowSetting(frame.config, key)
+        settings[key] = { color[1], color[2], color[3], value }
+    else
+        settings[key] = value
+    end
+    app:RebuildWindows()
+end
+
+local function RegisterAppearanceControls(frame)
+    for _, definition in ipairs(appearanceSliders) do
+        local key, divisor = definition[2], definition[6] or 1
+        lib:RegisterSlider(frame, definition[1], key, function(value)
+            SetSkinOption(frame, key, value / divisor)
+        end, definition[3], definition[4], definition[5])
+    end
+    for _, definition in ipairs(appearanceChecks) do
+        local key = definition[2]
+        lib:RegisterCustomCheckbox(frame, definition[1], function()
+            SetSkinOption(frame, key, true)
+        end, function(initializing)
+            if not initializing then
+                SetSkinOption(frame, key, false)
+            end
+        end, key)
+    end
+end
+
 -- EME's dropdown slot accepts a factory; use our own menu button rather than
 -- introducing a second dropdown library solely for this selector.
 local dropdownFactory = {}
@@ -123,10 +169,10 @@ function app:SyncWindowEditMode(frame)
     if not lib:IsRegistered(frame) then
         lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
         lib:RegisterResizable(frame, 50, 200, 5)
-        lib:RegisterSlider(frame, "Width", "width", function(value)
+        lib:RegisterSlider(frame, "Frame width", "width", function(value)
             ResizeWindow(frame, "width", value)
         end, 200, 800, 1)
-        lib:RegisterSlider(frame, "Height", "height", function(value)
+        lib:RegisterSlider(frame, "Frame height", "height", function(value)
             ResizeWindow(frame, "height", value)
         end, 120, 900, 1)
         lib:RegisterCustomCheckbox(frame, "Fixed height by row count", function()
@@ -146,6 +192,7 @@ function app:SyncWindowEditMode(frame)
                 SetWindowOption(frame, "lockSize", false)
             end
         end, "lockSize")
+        RegisterAppearanceControls(frame)
         RegisterSkinControls(frame)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
         frame.EMECheckButtonFrame:HookScript("OnClick", function(button, mouseButton)
@@ -215,6 +262,18 @@ function app:SyncWindowEditMode(frame)
     db.settings[CHECKBOX_SETTING] = db.settings[CHECKBOX_SETTING] or {}
     db.settings[CHECKBOX_SETTING].fixedHeight = self:GetWindowSetting(config, "fixedHeight") and 1 or 0
     db.settings[CHECKBOX_SETTING].lockSize = self:GetWindowSetting(config, "lockSize") and 1 or 0
+    for _, definition in ipairs(appearanceSliders) do
+        local key, multiplier = definition[2], definition[6] or 1
+        local value = self:GetWindowSetting(config, key)
+        if key == "backgroundColor" then
+            value = value[4]
+        end
+        db.settings[SLIDER_SETTING][key] = value * multiplier
+    end
+    for _, definition in ipairs(appearanceChecks) do
+        local key = definition[2]
+        db.settings[CHECKBOX_SETTING][key] = self:GetWindowSetting(config, key) and 1 or 0
+    end
     frame.skinDropdown:SetText("Skin: " .. self.db.profile.skins[config.skin].name)
     if db.enabled == nil then
         db.enabled = config.enabled

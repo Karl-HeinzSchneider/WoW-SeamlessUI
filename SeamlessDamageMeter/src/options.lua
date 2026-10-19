@@ -57,6 +57,7 @@ local settings = {
             return values
         end,
     },
+    { key = "windowAlpha", name = "Window opacity", type = "range", min = 0.5, max = 1, step = 0.01 },
     { key = "showIcons", name = "Show icons", type = "toggle" },
     { key = "fontSize", name = "Font size", type = "range", min = 8, max = 24, step = 1 },
     {

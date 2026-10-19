@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Seamless: Tooltip
 ## Group: Seamless
-## Notes: Enhances the default tooltip; every enhancement can be switched on or off. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/Seamless/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
+## Notes: Enhances the default tooltip. |n|cffbbbbbbBy Karl-Heinz Schneider|r|n|n|TInterface/Addons/Seamless/assets/core/coffee:12:12|t |cff82c5ffbuymeacoffee.com/karlheinzschneider|r
 ## IconTexture: Interface\Icons\INV_Misc_Orb_Blue
 ## Author: Karl-HeinzSchneider
 ## Version: |cff8080ff@project-version@|r

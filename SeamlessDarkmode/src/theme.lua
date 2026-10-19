@@ -29,11 +29,27 @@ local decorationKeys = {
     "Center",
     "BorderTexture",
 }
+-- Forbidden/restricted objects can occur in ordinary frame fields and child lists.
+-- Check access before even querying their type; restrictions can change after discovery.
+local function accessible(object)
+    local kind = type(object)
+    if kind ~= "table" and kind ~= "userdata" then
+        return false
+    end
+    if object.CanBeAccessedInContext and not object:CanBeAccessedInContext() then
+        return false
+    end
+    return not object.IsForbidden or not object:IsForbidden()
+end
+
 local function active(category)
     return app.running and app.db.profile.enabled and app.db.profile.categories[category]
 end
 
 local function paint(texture, state)
+    if not accessible(texture) then
+        return
+    end
     writing = true
     if active(state.category) then
         local color = app.db.profile.color
@@ -45,7 +61,7 @@ local function paint(texture, state)
 end
 
 local function track(texture, category)
-    if not texture or not texture.IsObjectType or not texture:IsObjectType("Texture") then
+    if not accessible(texture) or not texture.IsObjectType or not texture:IsObjectType("Texture") then
         return
     end
     if not active(category) and not tracked[texture] then
@@ -56,7 +72,7 @@ local function track(texture, category)
         state = { category = category, original = { texture:GetVertexColor() } }
         tracked[texture] = state
         hooksecurefunc(texture, "SetVertexColor", function(region, r, g, b, a)
-            if writing then
+            if writing or not accessible(region) then
                 return
             end
             state.original = { r, g, b, a or 1 }
@@ -70,6 +86,9 @@ end
 
 -- Match decorative art only. Status highlights, portraits, icons and bar fills stay readable.
 local function decorative(texture)
+    if not accessible(texture) then
+        return false
+    end
     local atlas = texture.GetAtlas and texture:GetAtlas()
     local path = texture:GetTexture()
     local name = (atlas or (type(path) == "string" and path) or ""):lower()
@@ -101,6 +120,9 @@ local function decorative(texture)
 end
 
 local function paintBackdrop(frame, state)
+    if not accessible(frame) then
+        return
+    end
     writing = true
     if active(state.category) then
         local color = app.db.profile.color
@@ -112,7 +134,7 @@ local function paintBackdrop(frame, state)
 end
 
 local function scan(frame, category, seen, depth)
-    if not frame or seen[frame] or depth > 16 or not frame.GetRegions then
+    if not accessible(frame) or seen[frame] or depth > 16 or not frame.GetRegions then
         return
     end
     seen[frame] = true
@@ -122,7 +144,7 @@ local function scan(frame, category, seen, depth)
             state = { category = category, original = { frame:GetBackdropBorderColor() } }
             backdrops[frame] = state
             hooksecurefunc(frame, "SetBackdropBorderColor", function(owner, r, g, b, a)
-                if not writing then
+                if not writing and accessible(owner) then
                     state.original = { r, g, b, a or 1 }
                     if active(state.category) then
                         paintBackdrop(owner, state)
@@ -135,7 +157,7 @@ local function scan(frame, category, seen, depth)
     for _, key in ipairs(decorationKeys) do
         local region = frame[key]
         -- Generic Texture/Background/Center fields can also contain portraits or bar fills.
-        if region and region.IsObjectType and region:IsObjectType("Texture") then
+        if accessible(region) and region.IsObjectType and region:IsObjectType("Texture") then
             if key ~= "Texture" and key ~= "Background" and key ~= "Center" or decorative(region) then
                 track(region, category)
             end
@@ -149,7 +171,8 @@ local function scan(frame, category, seen, depth)
     end
     for _, region in ipairs({ frame:GetRegions() }) do
         if
-            region:IsObjectType("Texture")
+            accessible(region)
+            and region:IsObjectType("Texture")
             and (not isBar or region ~= frame:GetStatusBarTexture())
             and decorative(region)
         then
@@ -166,7 +189,7 @@ local function scan(frame, category, seen, depth)
         end
     end
     -- Aura buttons have no neutral surround in the client. Reuse existing action-button art.
-    if category == "auras" and frame.Icon and frame.DebuffBorder and frame.CreateTexture then
+    if category == "auras" and accessible(frame.Icon) and frame.DebuffBorder and frame.CreateTexture then
         local border = auraBorders[frame]
         if not border and active(category) then
             border = frame:CreateTexture(nil, "OVERLAY", nil, -1)
@@ -174,7 +197,7 @@ local function scan(frame, category, seen, depth)
             border:SetAtlas("UI-HUD-ActionBar-IconFrame-Border")
             auraBorders[frame] = border
         end
-        if border then
+        if accessible(border) then
             border:SetShown(active(category) and true or false)
             track(border, category)
         end
@@ -195,7 +218,9 @@ function app:Restore()
         paintBackdrop(frame, state)
     end
     for _, border in pairs(auraBorders) do
-        border:Hide()
+        if accessible(border) then
+            border:Hide()
+        end
     end
 end
 

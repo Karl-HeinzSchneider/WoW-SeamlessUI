@@ -22,6 +22,23 @@ local app = {
     },
 }
 local combat = false
+-- Every API except access checks fails on this mock, just as the reported IsObjectType call did.
+local function restricted(explicit)
+    return setmetatable({
+        CanBeAccessedInContext = function()
+            return explicit
+        end,
+        IsForbidden = function()
+            return explicit
+        end,
+    }, {
+        __index = function(_, key)
+            return function()
+                error("Touched restricted object: " .. key)
+            end
+        end,
+    })
+end
 function InCombatLockdown()
     return combat
 end
@@ -107,6 +124,13 @@ local function equal(actual, expected, context)
         assert(actual[i] == v, context .. " component " .. i .. ": " .. tostring(actual[i]))
     end
 end
+local forbidden = restricted(true)
+local inaccessible = restricted(false)
+PlayerFrame.Bg = forbidden
+PlayerFrame.TitleBg = inaccessible
+PlayerFrame.children = { forbidden, inaccessible }
+PlayerFrame.regions[#PlayerFrame.regions + 1] = forbidden
+PlayerFrame.regions[#PlayerFrame.regions + 1] = inaccessible
 app.addon:Refresh()
 equal(border.color, { 0.2, 0.3, 0.4, 0.5 }, "tint and alpha")
 equal(icon.color, { 0.8, 0.7, 0.6, 0.5 }, "icon unchanged")
@@ -145,8 +169,28 @@ app.addon:Refresh()
 equal(pooled.FrameTexture.color, { 0.1, 0.1, 0.1, 0.5 }, "new pooled frame")
 app.running = false
 app:Restore()
+assert(not aura.regions[1].shown, "addon disable hides accessible aura border")
+app.running = true
+app.addon:Refresh()
+-- Already tracked objects can become restricted before the next timer/disable.
+local function deny(object, methods)
+    object.CanBeAccessedInContext = function()
+        return false
+    end
+    for _, method in ipairs(methods) do
+        object[method] = function()
+            error("Touched newly restricted object: " .. method)
+        end
+    end
+end
+deny(pooled.FrameTexture, { "IsObjectType", "GetVertexColor", "SetVertexColor" })
+deny(GameTooltip, { "GetRegions", "GetBackdrop", "SetBackdropBorderColor" })
+deny(aura.regions[1], { "IsObjectType", "SetShown", "Hide", "SetVertexColor" })
+app.addon:Refresh()
+app.running = false
+app:Restore()
 equal(border.color, { 0.1, 0.8, 0.3, 0.4 }, "addon disable restores")
-assert(not aura.regions[1].shown, "addon disable hides aura border")
+-- The newly restricted aura border is deliberately left untouched on disable.
 print(
-    "PASS: tint, alpha, status exclusions, client repaint, category/master toggles, backdrop restoration, profile change, combat deferral, pooled frames, addon disable"
+    "PASS: tint, alpha, status exclusions, client repaint, category/master toggles, backdrop restoration, profile change, combat deferral, pooled frames, addon disable, forbidden/restricted objects"
 )

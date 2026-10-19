@@ -86,19 +86,8 @@ local function Minimap(paint)
     paint(cluster and cluster.ZoneTextButton.StateTexture)
 end
 
----@param paint SeamlessDarkmode.Paint
-local function CalendarButton(paint)
-    local button = _G.GameTimeFrame
-    paint(button and button.StateTexture)
-end
-
----@param paint SeamlessDarkmode.Paint
-local function TrackingButton(paint)
-    local cluster = _G.MinimapCluster
-    local tracking = cluster and cluster.Tracking
-    local button = tracking and tracking.Button
-    paint(button and button.StateTexture)
-end
+-- Calendar and tracking use a single atlas for the whole button, without a separate border.
+-- Leave their StateTexture unchanged so their artwork keeps its original color.
 
 ---@param paint SeamlessDarkmode.Paint
 local function AddonCompartmentButton(paint)
@@ -183,7 +172,7 @@ app.groups = {
     {
         key = "minimap",
         name = "Minimap",
-        frames = { Minimap, CalendarButton, TrackingButton, AddonCompartmentButton, MinimapButtons },
+        frames = { Minimap, AddonCompartmentButton, MinimapButtons },
     },
     { key = "actionbars", name = "Action bar slot borders", frames = { ActionBars } },
     { key = "endcaps", name = "Action bar gryphons", frames = { EndCaps } },

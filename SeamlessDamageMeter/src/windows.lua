@@ -1220,7 +1220,7 @@ function app:CreateWindow(id)
     title:EnableMouse(true)
     title:RegisterForDrag("LeftButton")
     title:SetScript("OnDragStart", function()
-        if not app.db.profile.locked then
+        if not app.db.profile.locked and not app:GetWindowSetting(frame.config, "lockPosition") then
             frame.editing = true
             frame:StartMoving()
         end
@@ -1257,6 +1257,13 @@ function app:CreateWindow(id)
             end)
             editmode:SetEnabled(not InCombatLockdown())
             root:CreateSpacer()
+            root:CreateButton(
+                self:GetWindowSetting(frame.config, "lockPosition") and "Unlock Position" or "Lock Position",
+                function()
+                    frame.config.overrides.lockPosition = not self:GetWindowSetting(frame.config, "lockPosition")
+                    self:RebuildWindows()
+                end
+            )
             root:CreateButton(frame.config.noninteractive and "Make Interactive" or "Make Noninteractive", function()
                 frame.config.noninteractive = not frame.config.noninteractive
                 frame.favorites:Hide()

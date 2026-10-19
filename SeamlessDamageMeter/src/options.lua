@@ -44,6 +44,12 @@ local settings = {
         type = "toggle",
         desc = "Prevent grip and Edit Mode width/height resizing.",
     },
+    {
+        key = "lockPosition",
+        name = "Lock position",
+        type = "toggle",
+        desc = "Prevent dragging and Edit Mode arrow-key movement without locking size.",
+    },
     { key = "scale", name = "Scale", type = "range", min = 0.5, max = 2, step = 0.01 },
     {
         key = "font",

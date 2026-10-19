@@ -174,6 +174,17 @@ function app:SyncWindowEditMode(frame)
     config.editMode = config.editMode or { settings = {} }
     if not lib:IsRegistered(frame) then
         lib:RegisterFrame(frame, "Seamless Damage " .. frame.windowID, config.editMode)
+        -- Guard both native selection dragging and EME's independent arrow-key path.
+        local canBeMoved = frame.CanBeMoved
+        frame.CanBeMoved = function(self)
+            return not app:GetWindowSetting(self.config, "lockPosition") and canBeMoved(self)
+        end
+        local moveWithArrowKey = frame.MoveWithArrowKey
+        frame.MoveWithArrowKey = function(self, key)
+            if not app:GetWindowSetting(self.config, "lockPosition") then
+                moveWithArrowKey(self, key)
+            end
+        end
         lib:RegisterResizable(frame, 50, 200, 5)
         lib:RegisterSlider(frame, "Frame width", "width", function(value)
             ResizeWindow(frame, "width", value)
@@ -198,6 +209,13 @@ function app:SyncWindowEditMode(frame)
                 SetWindowOption(frame, "lockSize", false)
             end
         end, "lockSize")
+        lib:RegisterCustomCheckbox(frame, "Lock position", function()
+            SetWindowOption(frame, "lockPosition", true)
+        end, function(initializing)
+            if not initializing then
+                SetWindowOption(frame, "lockPosition", false)
+            end
+        end, "lockPosition")
         RegisterAppearanceControls(frame)
         RegisterSkinControls(frame)
         lib:SetDontResize(frame) -- Keep collapsed headers at their actual height.
@@ -273,6 +291,7 @@ function app:SyncWindowEditMode(frame)
     db.settings[CHECKBOX_SETTING] = db.settings[CHECKBOX_SETTING] or {}
     db.settings[CHECKBOX_SETTING].fixedHeight = self:GetWindowSetting(config, "fixedHeight") and 1 or 0
     db.settings[CHECKBOX_SETTING].lockSize = self:GetWindowSetting(config, "lockSize") and 1 or 0
+    db.settings[CHECKBOX_SETTING].lockPosition = self:GetWindowSetting(config, "lockPosition") and 1 or 0
     for _, definition in ipairs(appearanceSliders) do
         local key, multiplier = definition[2], definition[6] or 1
         local value = self:GetWindowSetting(config, key)

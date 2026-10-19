@@ -79,7 +79,7 @@ anchor target preserves the attachment and its geometry. Defaults are profile sc
 
 Window rendering uses plain Lua-created frames without inherited frame templates or meter
 mixins. Reuse client art and fonts.
-The gear menu lists Settings, Editmode, a spacer, Make Noninteractive, Reset Data,
+The gear menu lists Settings, Editmode, a spacer, Lock/Unlock Position, Make Noninteractive, Reset Data,
 Delete Window, a spacer, and Create New Window. Noninteractive mode is saved per window;
 keep gear/collapse available and offer Make Interactive to restore input. Edit Mode permits
 interaction regardless of this flag. Reset Data resets client sessions through `live.lua`;
@@ -211,6 +211,10 @@ size lock, a skin dropdown and an Edit selected skin button opening that skin's 
 Meter configuration remains authoritative; synchronize checkbox/slider values and selected
 skin labels on rebuild/profile changes. Ignore initialization/outside-Edit-Mode callbacks.
 Explicit saved fixed-height choices are retained when changing the default to seven fixed rows.
+`lockPosition` defaults to false, supports shared defaults and per-window overrides, and
+blocks header dragging plus Edit Mode selection dragging and arrow keys independently of size.
+It is available in addon options, Edit Mode and the window gear menu. Explicit coordinate
+settings and anchor updates remain available while locked.
 
 Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
 Run `lua src/tests/damage-meter-blizzard.lua` for native CVar/visibility isolation and Edit Mode hiding.

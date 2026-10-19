@@ -5,11 +5,15 @@ local app = {
     running = true,
     addon = {},
     db = {
-        profile = { enabled = true, color = { r = 0.2, g = 0.3, b = 0.4 }, categories = {
-            unitframes = true,
-            auras = true,
-            tooltips = true,
-        } },
+        profile = {
+            enabled = true,
+            color = { r = 0.2, g = 0.3, b = 0.4 },
+            categories = {
+                unitframes = true,
+                auras = true,
+                tooltips = true,
+            },
+        },
     },
     categories = {
         { key = "unitframes", roots = { "PlayerFrame" } },
@@ -119,11 +123,15 @@ app.db.profile.enabled = false
 app.addon:Refresh()
 assert(not aura.regions[1].shown, "aura border removed")
 equal(GameTooltip.border, { 0.9, 0.8, 0.7, 0.6 }, "backdrop restoration")
-app.db.profile = { enabled = true, color = { r = 0.1, g = 0.1, b = 0.1 }, categories = {
-    unitframes = true,
-    auras = true,
-    tooltips = true,
-} }
+app.db.profile = {
+    enabled = true,
+    color = { r = 0.1, g = 0.1, b = 0.1 },
+    categories = {
+        unitframes = true,
+        auras = true,
+        tooltips = true,
+    },
+}
 combat = true
 app.addon:Refresh()
 equal(border.color, { 0.1, 0.8, 0.3, 0.4 }, "combat deferred")

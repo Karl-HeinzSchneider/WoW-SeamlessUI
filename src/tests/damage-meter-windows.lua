@@ -1062,10 +1062,21 @@ end
 function eme:RegisterSlider(frame, name, key, callback, minimum, maximum, step)
     if key == "visibleLines" then
         assert(name == "Row count" and minimum == 1 and maximum == 30 and step == 1)
-    else
-        assert(name == (key == "width" and "Width" or "Height"))
+    elseif key == "width" or key == "height" then
+        assert(name == (key == "width" and "Frame width" or "Frame height"))
         assert(minimum == (key == "width" and 200 or 120))
         assert(maximum == (key == "width" and 800 or 900) and step == 1)
+    end
+    local appearance = {
+        rowHeight = { "Bar height", 16, 40, 1 },
+        rowSpacing = { "Padding", 0, 12, 1 },
+        windowAlpha = { "Transparency", 50, 100, 1 },
+        backgroundColor = { "Background", 0, 100, 1 },
+        fontSize = { "Text size", 50, 150, 10 },
+    }
+    if appearance[key] then
+        local expected = appearance[key]
+        assert(name == expected[1] and minimum == expected[2] and maximum == expected[3] and step == expected[4])
     end
     frame.editModeSliders = frame.editModeSliders or {}
     frame.editModeSliders[key] = callback
@@ -1166,6 +1177,19 @@ assert(meter:IsShown() and meter.config.enabled, "Activation survives ordinary r
 meter:SetScaleOverride(1.25)
 assert(meter.config.overrides.scale == 1.25)
 assert(eme.framesDB[meter.system].settings[16] ~= nil)
+meter:SetScaleOverride(0.8999997615814)
+assert(meter.config.overrides.scale == 0.9, "Snap Edit Mode scale input before saving")
+assert(eme.framesDB[meter.system].settings[16] == 90)
+meter.config.overrides.scale = 0.923456
+meter:SetScaleOverride(0.923456)
+assert(meter.config.overrides.scale == 0.923456, "Unchanged fractional scale must survive library callbacks")
+meter.config.overrides.width = 401.2345
+app:SyncWindowEditMode(meter)
+assert(eme.framesDB[meter.system].settings[16] == 90)
+assert(eme.framesDB[meter.system].settings[18].width == 401)
+assert(meter.config.overrides.scale == 0.923456 and meter.config.overrides.width == 401.2345)
+meter.editModeSliders.width(449.999976)
+assert(meter.config.overrides.width == 450)
 local originalDatabase = meter.config.editMode
 app.db.profile = { windows = {}, initialized = false, windowDefaults = app.windowDefaults }
 app:RebuildWindows()
@@ -1225,6 +1249,33 @@ app:SyncWindowEditMode(meter)
 assert(dialogRefreshes == 1, "Avoid rebuilding pooled EME sliders during a drag")
 draggingSettings = false
 EditModeExpandedSystemSettingsDialog = nil
+local skin = app.db.profile.skins[meter.config.skin].settings
+meter.editModeSliders.rowHeight(29.999976)
+meter.editModeSliders.windowAlpha(74.999976)
+meter.editModeSliders.fontSize(119.999976)
+assert(skin.rowHeight == 30 and skin.windowAlpha == 0.75 and skin.fontSize == 18)
+skin.fontSize = 17
+app:SyncWindowEditMode(meter)
+assert(eme.framesDB[meter.system].settings[18].fontSize == 110 and skin.fontSize == 17)
+meter.editModeSliders.rowHeight(30)
+meter.editModeSliders.rowSpacing(6)
+meter.editModeSliders.windowAlpha(75)
+meter.editModeSliders.backgroundColor(20)
+meter.editModeSliders.fontSize(120)
+meter.editModeChecks.showIcons.unchecked(false)
+meter.editModeChecks.classColors.unchecked(false)
+assert(skin.rowHeight == 30 and skin.rowSpacing == 6 and skin.windowAlpha == 0.75)
+assert(skin.backgroundColor[4] == 0.2 and skin.fontSize == 18)
+assert(not skin.showIcons and not skin.classColors)
+assert(eme.framesDB[meter.system].settings[18].windowAlpha == 75)
+assert(eme.framesDB[meter.system].settings[12].showIcons == 0)
+meter.editModeSliders.rowHeight(24)
+meter.editModeSliders.rowSpacing(4)
+meter.editModeSliders.windowAlpha(100)
+meter.editModeSliders.backgroundColor(50)
+meter.editModeSliders.fontSize(100)
+meter.editModeChecks.showIcons.checked()
+meter.editModeChecks.classColors.checked()
 meter.editModeChecks.fixedHeight.checked()
 assert(app:GetWindowSetting(meter.config, "fixedHeight"))
 meter.config.overrides.visibleLines = 7.25
@@ -1530,13 +1581,15 @@ print("Damage meter threat window regressions OK")
 local originalGetSession, originalRefreshWindow = app.GetSession, app.RefreshWindow
 local originalWindows, originalEditing = app.windows, app.IsEditingWindows
 local threatReads, threatRenders = 0, 0
-app.windows =
-    { meter, {
+app.windows = {
+    meter,
+    {
         config = { statistic = "DamageDone" },
         IsShown = function()
             return true
         end,
-    } }
+    },
+}
 function app:IsEditingWindows()
     return false
 end

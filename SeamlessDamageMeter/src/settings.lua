@@ -17,6 +17,7 @@ app.windowDefaults = {
 }
 
 app.skinDefaults = {
+    windowAlpha = 1,
     showIcons = true,
     font = "Default damage meter",
     fontSize = 15,

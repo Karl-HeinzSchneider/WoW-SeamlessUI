@@ -74,6 +74,9 @@ to array position. `hidden` and `disabled` accept booleans or zero-argument func
 controls refresh after clicks and guard combat, disabled/hidden features and stale callbacks
 outside Edit Mode. Getters always read current state; Core does not persist feature settings.
 Labels wrap automatically, hidden rows reserve no space, and refreshes reuse existing frames.
+First show and size changes queue a coalesced one-frame refresh on the addon-owned panel;
+never discard layout invalidations during measurement or depend on a second Edit Mode entry.
+Unresolved panel width uses the native window width until anchors settle.
 
 For another widget or a compound group of frames, register a `type = "custom"` row with
 `create(parent)` returning an addon-owned frame directly parented to the supplied panel.

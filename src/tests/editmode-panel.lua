@@ -2,6 +2,7 @@
 local frames, callbacks = {}, {}
 local editing, combat = false, false
 local nativeWidth = 510
+local anchorsReady = false
 local methods = {}
 local function object(parent, template)
     local frame = setmetatable(
@@ -60,7 +61,7 @@ function methods:SetWidth(value)
 end
 function methods:GetWidth()
     if self.points.TOPRIGHT and self.points.TOPRIGHT[1] == EditModeManagerFrame then
-        return nativeWidth
+        return anchorsReady and nativeWidth or 0
     end
     return self.width or 1
 end
@@ -81,10 +82,18 @@ function methods:SetSize(width, height)
     self:SetHeight(height)
 end
 function methods:SetShown(value)
-    self.shown = value
+    if value then
+        self:Show()
+    else
+        self:Hide()
+    end
 end
 function methods:Show()
+    local changed = not self.shown
     self.shown = true
+    if changed and self.scripts.OnShow then
+        self.scripts.OnShow(self)
+    end
 end
 function methods:Hide()
     self.shown = false
@@ -114,7 +123,11 @@ function methods:SetEnabled(value)
     self.enabled = value
 end
 UIParent = object()
-EditModeManagerFrame = setmetatable({}, {
+EditModeManagerFrame = setmetatable({
+    GetWidth = function()
+        return nativeWidth
+    end,
+}, {
     __index = function()
         error("Do not read native layout internals")
     end,
@@ -195,7 +208,13 @@ for _, frame in ipairs(frames) do
 end
 assert(panel and panel.parent == UIParent and panel.strata == "DIALOG")
 assert(border and border.parent == panel and border.allPoints)
+assert(panel.scripts.OnUpdate, "First show must schedule a layout pass after anchors/fonts settle")
+assert(toggle.parent.Label:GetWidth() == 430, "Unresolved panel anchors must use the native window width")
+anchorsReady = true
+local pending = panel.scripts.OnUpdate
+pending(panel)
 assert(panel:GetWidth() == 510 and panel:GetHeight() == 92 and panel:IsShown())
+assert(panel.scripts.OnUpdate == nil, "Settled layout must stop updating")
 assert(panel.points.TOPLEFT[3] == 0 and panel.points.TOPLEFT[4] == -8)
 local foundTitle = false
 for _, frame in ipairs(frames) do
@@ -265,6 +284,8 @@ end
 assert(#frames == allocated, "Refresh must reuse frames")
 nativeWidth = 180
 panel.scripts.OnSizeChanged(panel)
+assert(panel.scripts.OnUpdate)
+panel.scripts.OnUpdate(panel)
 assert(panel:GetHeight() > expanded, "Narrow panels must expand for wrapped labels")
 combat = true
 core:RefreshEditModeOptions()
@@ -281,7 +302,7 @@ core:RefreshEditModeOptions()
 assert(not panel:IsShown(), "Empty companion panel must hide")
 editing = false
 callbacks.exit()
-assert(not panel:IsShown())
+assert(not panel:IsShown() and panel.scripts.OnUpdate == nil)
 button.scripts.OnClick(button)
 assert(clicked == 1, "Stale callbacks must not run outside Edit Mode")
 print("PASS: shared Edit Mode border, anchoring, groups, callbacks, dynamic height/wrapping, reuse and combat guards")

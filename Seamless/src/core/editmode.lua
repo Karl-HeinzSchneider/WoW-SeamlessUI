@@ -19,6 +19,18 @@ local function IsEnabled(spec)
     return spec.enabled == nil or not not Evaluate(spec.enabled)
 end
 
+-- Anchors/font measurements may settle after the first Show. Coalesce that work
+-- on our own frame; never require another click or another Edit Mode entry.
+local function QueueRefresh()
+    if not panel then
+        return
+    end
+    panel:SetScript("OnUpdate", function(self)
+        self:SetScript("OnUpdate", nil)
+        addon:RefreshEditModeOptions()
+    end)
+end
+
 local function EnsurePanel()
     if panel then
         return
@@ -36,11 +48,8 @@ local function EnsurePanel()
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
     title:SetPoint("TOP", 0, -15)
     title:SetText("SeamlessUI")
-    panel:SetScript("OnSizeChanged", function()
-        if not refreshing then
-            addon:RefreshEditModeOptions()
-        end
-    end)
+    panel:SetScript("OnShow", QueueRefresh)
+    panel:SetScript("OnSizeChanged", QueueRefresh)
 end
 
 local function CanInteract(spec, option)
@@ -94,7 +103,9 @@ local function CreateRow(option, spec)
     end
     row.option = option
     row:HookScript("OnSizeChanged", function()
-        if not refreshing then
+        if refreshing then
+            QueueRefresh()
+        else
             addon:RefreshEditModeOptions()
         end
     end)
@@ -108,6 +119,7 @@ function addon:RefreshEditModeOptions()
     end
     if not lib:IsInEditMode() then
         if panel then
+            panel:SetScript("OnUpdate", nil)
             panel:Hide()
         end
         return
@@ -127,7 +139,11 @@ function addon:RefreshEditModeOptions()
     if #groups > 0 then
         EnsurePanel()
     end
-    local width = panel and math.max(1, panel:GetWidth() - PADDING * 2) or 1
+    local panelWidth = panel and panel:GetWidth() or 0
+    if panel and panelWidth <= 0 then
+        panelWidth = EditModeManagerFrame:GetWidth()
+    end
+    local width = math.max(1, panelWidth - PADDING * 2)
     local y, count = HEADER, 0
     for _, group in ipairs(groups) do
         local registration = group.registration

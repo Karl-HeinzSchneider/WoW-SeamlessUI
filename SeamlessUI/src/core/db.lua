@@ -12,6 +12,9 @@ local profile = {
     features = {},
     fpsDisplay = {
         layouts = {},
+        showLatency = false,
+        whiteLatency = false,
+        roundFramerate = false,
     },
     xpBarTooltip = {
         enabled = true,

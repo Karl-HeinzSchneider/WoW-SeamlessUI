@@ -19,7 +19,19 @@ features are ready for public release.
    Frames checkbox "FPS display" controls anchor selection and the temporary counter preview.
    Hiding the preview restores normal counter visibility. The frame's own settings contain
    "Show FPS on startup" (Core's existing preference, default off); changing it also updates
-   visibility when the preview is hidden or Edit Mode exits. Ctrl+R still controls the native
+   visibility when the preview is hidden or Edit Mode exits, and "Show latency" (profile
+   `fpsDisplay.showLatency`, default off). With latency on, the native counter is faded out
+   (alpha 0, still driving Ctrl+R visibility) and an addon-owned two-row display replaces it:
+   "FPS:" and "MS:" left, framerate and world latency (`GetNetStats`, green below 100 ms, yellow
+   below 250 ms, red above; "White latency text", profile `fpsDisplay.whiteLatency`, default off,
+   uses the counter's text color instead) right-aligned. "Round FPS" (profile
+   `fpsDisplay.roundFramerate`, default off) shows whole numbers in both the two-row display and
+   the native counter, through a `hooksecurefunc` on the counter text's `SetFormattedText`. Like the native counter
+   (Blizzard_FramerateFrame) it uses `SystemFont_Shadow_Med1` and is parented to WorldFrame, which
+   the UI scale does not affect; the UIParent anchor is sized through the effective-scale ratio. Values cap at 999.9/999, so the display is sized once
+   for "999.9" and the Edit Mode anchor takes that size. Never parent it to the counter: the
+   counter sizes itself to its children, which pushed the FPS text out of its box. It follows
+   the counter's visibility through OnShow/OnHide hooks and updates four times a second while shown. Ctrl+R still controls the native
    counter outside Edit Mode. Its settings end with Core's Position section; AnchorFrame lists
    `blizzardPosition:GetAnchorFrames(anchor)`, and dragging stores a UIParent position again.
    Positions are stored per native layout in the current UI profile, including layout

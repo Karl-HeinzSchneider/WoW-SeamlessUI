@@ -86,6 +86,7 @@ local app = {
         end,
     },
 }
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessUI/src/features/fpsdisplay.lua"))("SeamlessUI", app)
 module:OnEnable()
 assert(FramerateFrame.points[1][2] == frame, "counter must follow custom anchor")

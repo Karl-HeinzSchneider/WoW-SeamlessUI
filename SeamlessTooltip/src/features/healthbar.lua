@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 
 local media = app.media
@@ -11,9 +13,8 @@ local LSM = media.LSM
 local feature -- declared first: the options below refer to it
 feature = app.features:NewFeature("HealthBar", {
     category = "units",
-    name = "Health bar",
-    desc = "Restyles the health bar of unit tooltips and can show it inside the tooltip, with a health "
-        .. "text like on unit frames.",
+    name = L["Health bar"],
+    desc = L["Restyles the health bar of unit tooltips and can show it inside the tooltip, with a health text like on unit frames."],
     order = 30,
     defaults = {
         inside = true,
@@ -28,14 +29,14 @@ feature = app.features:NewFeature("HealthBar", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Inside the tooltip",
-            desc = "Shows the bar at the bottom of the tooltip, inside its border, instead of below it.",
+            name = L["Inside the tooltip"],
+            desc = L["Shows the bar at the bottom of the tooltip, inside its border, instead of below it."],
         },
         inset = {
             type = "range",
             order = 20,
-            name = "Distance from the edge",
-            desc = "How far the bar stays inside the tooltip's edge; about the border's width.",
+            name = L["Distance from the edge"],
+            desc = L["How far the bar stays inside the tooltip's edge; about the border's width."],
             min = 0,
             max = 20,
             step = 1,
@@ -47,7 +48,7 @@ feature = app.features:NewFeature("HealthBar", {
         height = {
             type = "range",
             order = 30,
-            name = "Height",
+            name = L["Height"],
             min = 2,
             max = 30,
             step = 1,
@@ -55,26 +56,26 @@ feature = app.features:NewFeature("HealthBar", {
         texture = {
             type = "select",
             order = 40,
-            name = "Texture",
+            name = L["Texture"],
             values = media.Values(LSM.MediaType.STATUSBAR),
         },
         backgroundColor = {
             type = "color",
             order = 50,
-            name = "Background color",
-            desc = "Behind the bar, where health is missing.",
+            name = L["Background color"],
+            desc = L["Behind the bar, where health is missing."],
             hasAlpha = true,
         },
         text = {
             type = "select",
             order = 60,
-            name = "Health text",
+            name = L["Health text"],
             values = {
-                NONE = "None",
-                PERCENT = "Percent",
-                VALUE = "Value",
-                VALUE_MAX = "Value / max",
-                VALUE_PERCENT = "Value (percent)",
+                NONE = L["None"],
+                PERCENT = L["Percent"],
+                VALUE = L["Value"],
+                VALUE_MAX = L["Value / max"],
+                VALUE_PERCENT = L["Value (percent)"],
             },
             sorting = { "NONE", "PERCENT", "VALUE", "VALUE_MAX", "VALUE_PERCENT" },
         },
@@ -220,8 +221,8 @@ function feature:UpdateText()
     elseif format == "VALUE" then
         text:SetFormattedText("%s", value)
     elseif format == "VALUE_MAX" then
-        text:SetFormattedText("%s / %s", value, AbbreviateNumbers(UnitHealthMax(unit)))
+        text:SetFormattedText(L["%s / %s"], value, AbbreviateNumbers(UnitHealthMax(unit)))
     else
-        text:SetFormattedText("%s (%.0f%%)", value, percent)
+        text:SetFormattedText(L["%s (%.0f%%)"], value, percent)
     end
 end

@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 app.live = {}
 local live = app.live
 
@@ -13,7 +15,7 @@ end
 -- Threat is a live target snapshot, independent of damage-meter tracking/history.
 function live:GetThreatSession()
     if not UnitDetailedThreatSituation then
-        return nil, "This client does not provide the threat API."
+        return nil, L["This client does not provide the threat API."]
     end
     local session = { combatSources = {}, maxAmount = 100 }
     if not UnitExists("target") then
@@ -69,7 +71,7 @@ function live:GetThreatSession()
             if not duplicate then
                 local ok, _, _, percentage, _, amount = pcall(UnitDetailedThreatSituation, unit, "target")
                 if not ok and not candidate.optional then
-                    return nil, "Threat data is temporarily unavailable."
+                    return nil, L["Threat data is temporarily unavailable."]
                 end
                 if ok and (not candidate.optional or not app.archive:IsPublic(amount) or amount ~= nil) then
                     seen[#seen + 1] = unit
@@ -134,7 +136,7 @@ end
 
 function live:CanRead()
     if not self:IsAvailable() then
-        return false, "This client does not provide the damage meter API."
+        return false, L["This client does not provide the damage meter API."]
     end
     local available, reason = C_DamageMeter.IsDamageMeterAvailable()
     if not available then
@@ -192,7 +194,7 @@ function live:GetSession(config, key)
     end
     local meterType = Enum.DamageMeterType[key]
     if meterType == nil then
-        return nil, "This statistic is unavailable on this client."
+        return nil, L["This statistic is unavailable on this client."]
     end
     local ok, session
     if config.sessionID then
@@ -204,7 +206,7 @@ function live:GetSession(config, key)
             end
         end
         if not found then
-            return nil, "This fight is no longer available. Select another session."
+            return nil, L["This fight is no longer available. Select another session."]
         end
         ok, session = pcall(C_DamageMeter.GetCombatSessionFromID, config.sessionID, meterType)
     else
@@ -215,7 +217,7 @@ function live:GetSession(config, key)
         )
     end
     if not ok or not self:IsReadableTable(session) or not self:IsReadableTable(session.combatSources) then
-        return nil, "Combat data is temporarily unavailable."
+        return nil, L["Combat data is temporarily unavailable."]
     end
     return session
 end
@@ -233,16 +235,16 @@ function live:GetDetails(config, source, key)
             if ok and healthOK then
                 return { deathEvents = events or {}, maxAmount = health }
             end
-            return nil, "Death recap is temporarily unavailable."
+            return nil, L["Death recap is temporarily unavailable."]
         end
-        return { deathEvents = {} }, "No death recap available."
+        return { deathEvents = {} }, L["No death recap available."]
     end
     if not self:CanRead() then
-        return nil, "Live details are unavailable."
+        return nil, L["Live details are unavailable."]
     end
     local meterType = Enum.DamageMeterType[key]
     if meterType == nil then
-        return nil, "This statistic is unavailable on this client."
+        return nil, L["This statistic is unavailable on this client."]
     end
     -- The query APIs accept secret arguments only in untainted code. Never send a
     -- restricted GUID from an addon; the local player's real GUID is already public.
@@ -261,7 +263,7 @@ function live:GetDetails(config, source, key)
         creature = nil
     end
     if not guid and not creature then
-        return nil, "This source's identity is restricted in combat."
+        return nil, L["This source's identity is restricted in combat."]
     end
     local ok, details
     if config.sessionID then
@@ -276,7 +278,7 @@ function live:GetDetails(config, source, key)
         )
     end
     if not ok or not self:IsReadableTable(details) or not self:IsReadableTable(details.combatSpells) then
-        return nil, "Source details are temporarily unavailable."
+        return nil, L["Source details are temporarily unavailable."]
     end
     return details
 end

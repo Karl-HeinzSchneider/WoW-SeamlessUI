@@ -1,2 +1,5 @@
 Seamless/lib/
 .release/
+
+# Translator files use one entry per line for comparison and synchronization.
+Seamless/locales/

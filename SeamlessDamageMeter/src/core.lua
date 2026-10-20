@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 app.core = LibStub("AceAddon-3.0"):GetAddon("Seamless")
 app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 local addon = app.addon
@@ -130,6 +132,6 @@ function addon:SlashCommand(input)
     elseif command == "" or command == "options" then
         app.core:OpenOptions(appName)
     else
-        app.core.logger:chat("/sdm [options], /sdm new, /sdm show. Use each window's menu to deactivate it.")
+        app.core.logger:chat(L["/sdm [options], /sdm new, /sdm show. Use each window's menu to deactivate it."])
     end
 end

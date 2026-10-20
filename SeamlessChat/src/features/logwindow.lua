@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- The chat log window (logwindow.xml): a search box, the groups on the left (All, Whispers, Guild,
 -- ..., Channels with one row per channel), and the matching messages on the right, shown like chat:
 -- colored by type, senders in class color, links clickable. Opened with /seamlesschat log or
@@ -56,7 +58,7 @@ end
 -- A title-only tooltip, like the chat's other buttons.
 function SeamlessChatLogButtonMixin:OnEnter()
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetText("Chat log")
+    GameTooltip:SetText(L["Chat log"])
     GameTooltip:Show()
 end
 
@@ -92,10 +94,11 @@ end
 SeamlessChatLogWindowMixin = {}
 
 function SeamlessChatLogWindowMixin:OnLoad()
-    self:SetTitle("Chat log")
+    self.CopyButton:SetText(L["Copy"])
+    self:SetTitle(L["Chat log"])
     self:RegisterForDrag("LeftButton")
     tinsert(UISpecialFrames, self:GetName())
-    self.selected = { name = "All messages", count = 0 }
+    self.selected = { name = L["All messages"], count = 0 }
     self.matches = {}
     self.updateToken = 0
     self.groupsStale = false
@@ -190,7 +193,7 @@ function SeamlessChatLogWindowMixin:RefreshGroups()
     local chatLog = app.chatLog
     local groups, channels = chatLog:CountGroups()
     ---@type SeamlessChat.LogGroupRow[]
-    local rows = { { name = "All messages", count = chatLog:Count() } }
+    local rows = { { name = L["All messages"], count = chatLog:Count() } }
     for _, group in ipairs(chatLog.GROUPS) do
         local count = groups[group.key]
         if count then
@@ -234,11 +237,11 @@ function SeamlessChatLogWindowMixin:Update()
     results:ScrollToBottom()
 
     if total == 0 then
-        self.Status:SetText("No messages match.")
+        self.Status:SetText(L["No messages match."])
     elseif total > #matches then
-        self.Status:SetFormattedText("%d messages match, showing the newest %d.", total, #matches)
+        self.Status:SetFormattedText(L["%d messages match, showing the newest %d."], total, #matches)
     else
-        self.Status:SetFormattedText("%d messages.", total)
+        self.Status:SetFormattedText(L["%d messages."], total)
     end
     self.CopyButton:SetEnabled(#matches > 0)
 end
@@ -261,5 +264,5 @@ function SeamlessChatLogWindowMixin:CopyResults()
     for i, record in ipairs(self.matches) do
         lines[i] = app.chatLog:FormatRecord(record)
     end
-    SeamlessChatCopyWindow:ShowText(table.concat(lines, "\n"), "Copy chat log")
+    SeamlessChatCopyWindow:ShowText(table.concat(lines, "\n"), L["Copy chat log"])
 end

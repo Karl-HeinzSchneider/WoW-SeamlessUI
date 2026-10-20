@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 local addon = app.addon
 
@@ -19,7 +21,7 @@ function module:OnInitialize()
     ---@type LibDataBroker.QuickLauncher
     local launcher = {
         type = "launcher",
-        text = appName,
+        text = L["Seamless"],
         icon = ICON,
         OnClick = function(_, button)
             self:OnClick(button)
@@ -30,8 +32,8 @@ function module:OnInitialize()
                 return
             end
             GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
-            GameTooltip:AddLine(appName)
-            GameTooltip:AddLine("Left-click: options", 1, 1, 1)
+            GameTooltip:AddLine(L["Seamless"])
+            GameTooltip:AddLine(L["Left-click: options"], 1, 1, 1)
             GameTooltip:Show()
         end,
         OnLeave = function(frame)
@@ -43,7 +45,7 @@ function module:OnInitialize()
     self.ldb = LibStub("LibDataBroker-1.1"):NewDataObject(appName, launcher) --[[@as LibDataBroker.QuickLauncher]]
 
     LibStub("LibDBIcon-1.0"):Register(appName, self.ldb, app.db.profile.minimap)
-    log:debug("Minimap button registered")
+    log:debug(L["Minimap button registered"])
 end
 
 -- Re-read launcher visibility/position from the (possibly new) profile.
@@ -65,6 +67,6 @@ function module:OnClick(button)
     if button == "LeftButton" then
         app.options:Open()
     else
-        log:debug("Minimap button clicked (%s)", button)
+        log:debug(L["Minimap button clicked (%s)"], button)
     end
 end

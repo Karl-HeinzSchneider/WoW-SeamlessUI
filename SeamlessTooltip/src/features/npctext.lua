@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local unitTooltip = app.unitTooltip
 
@@ -8,8 +10,8 @@ local unitTooltip = app.unitTooltip
 -- its difficulty color and the creature type moved into it, the faction left out.
 local feature = app.features:NewFeature("NpcText", {
     category = "units",
-    name = "NPC text",
-    desc = "Changes the text of NPC tooltips.",
+    name = L["NPC text"],
+    desc = L["Changes the text of NPC tooltips."],
     order = 20,
     defaults = {
         shortLevel = true,
@@ -20,9 +22,8 @@ local feature = app.features:NewFeature("NpcText", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Short level line",
-            desc = 'Shows "Level 10 (Elite)" and the creature type line ("Beast") as "10 Beast (Elite)", the '
-                .. "level in its difficulty color.",
+            name = L["Short level line"],
+            desc = L['Shows "Level 10 (Elite)" and the creature type line ("Beast") as "10 Beast (Elite)", the level in its difficulty color.'],
         },
         faction = unitTooltip.FactionOption(20),
     },

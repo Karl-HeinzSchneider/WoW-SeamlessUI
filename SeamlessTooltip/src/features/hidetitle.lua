@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local unitTooltip = app.unitTooltip
 
 -- Leaves a player's title ("Private", "the Explorer") out of the name line.
 local feature = app.features:NewFeature("HideTitle", {
     category = "units",
-    name = "Hide titles",
-    desc = 'Leaves player titles ("Private", "the Explorer") out of the name.',
+    name = L["Hide titles"],
+    desc = L['Leaves player titles ("Private", "the Explorer") out of the name.'],
     order = 21,
     enabled = false,
 })

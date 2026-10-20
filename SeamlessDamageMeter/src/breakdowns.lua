@@ -1,5 +1,7 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
+
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local service = app.combatService
 local archive = app.archive
 
@@ -21,7 +23,7 @@ function service:GetEnemyIndex(config)
     end
     local session, reason = self:GetSession(config, "EnemyDamageTaken")
     if not session then
-        return nil, reason or "Enemy data is restricted or incomplete."
+        return nil, reason or L["Enemy data is restricted or incomplete."]
     end
     local index = { enemies = {}, players = {}, complete = true }
     for sourceIndex, enemy in ipairs(session.combatSources) do
@@ -34,7 +36,7 @@ function service:GetEnemyIndex(config)
             or not archive:IsPublic(enemy.totalAmount)
             or type(enemy.totalAmount) ~= "number"
         then
-            return nil, "Enemy data is restricted or incomplete."
+            return nil, L["Enemy data is restricted or incomplete."]
         end
         local publicEnemy = { name = enemy.name, totalAmount = enemy.totalAmount }
         for _, field in ipairs({ "sourceGUID", "sourceCreatureID", "classFilename", "specIconID" }) do
@@ -44,7 +46,7 @@ function service:GetEnemyIndex(config)
         end
         local details = self:GetDetails(config, enemy, "EnemyDamageTaken")
         if not details or not app.live:IsReadableTable(details.combatSpells) then
-            return nil, "Enemy contributions were not captured or are restricted."
+            return nil, L["Enemy contributions were not captured or are restricted."]
         end
         local contributors, byName = {}, {}
         for _, spell in ipairs(details.combatSpells) do
@@ -53,7 +55,7 @@ function service:GetEnemyIndex(config)
                 or not archive:IsPublic(spell.totalAmount)
                 or type(spell.totalAmount) ~= "number"
             then
-                return nil, "Enemy contribution amounts are restricted."
+                return nil, L["Enemy contribution amounts are restricted."]
             end
             local unit = spell.combatSpellDetails
             if
@@ -62,7 +64,7 @@ function service:GetEnemyIndex(config)
                 or type(unit.unitName) ~= "string"
                 or unit.unitName == ""
             then
-                return nil, "Enemy contributor identities are incomplete."
+                return nil, L["Enemy contributor identities are incomplete."]
             end
             local contributor = byName[unit.unitName]
             if not contributor then
@@ -138,7 +140,7 @@ end
 
 function service:GetPlayerTargets(config, source)
     if not archive:IsPublic(source.name) or not archive:IsPublic(source.totalAmount) then
-        return nil, "Target data restricted."
+        return nil, L["Target data restricted."]
     end
     local index, reason = self:GetEnemyIndex(config)
     if not index then
@@ -156,7 +158,7 @@ function service:GetPlayerTargets(config, source)
         maxAmount = targets[1] and targets[1].totalAmount or 0,
         totalAmount = source.totalAmount,
         complete = complete,
-        message = not complete and "Available contributions only; totals do not fully reconcile." or nil,
+        message = not complete and L["Available contributions only; totals do not fully reconcile."] or nil,
     }
 end
 
@@ -173,7 +175,7 @@ function service:GetEnemyContributors(config, source)
             return result
         end
     end
-    return nil, "This enemy row is no longer current."
+    return nil, L["This enemy row is no longer current."]
 end
 
 function service:GetMetadata(config)

@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessCore.Logger
 ---@operator call(...): nil
 local logger = {}
@@ -60,7 +62,7 @@ end
 function logger:setLevel(level)
     local resolved = resolveLevel(level)
     if not resolved then
-        self:error("Unknown log level: %s", tostring(level))
+        self:error(L["Unknown log level: %s"], tostring(level))
         return false
     end
     self.threshold = resolved
@@ -90,13 +92,13 @@ function logger:print(level, fmt, ...)
     local msg
     if select("#", ...) > 0 then
         local ok, result = pcall(string.format, tostring(fmt), ...)
-        msg = ok and result or ("format error: " .. tostring(result))
+        msg = ok and result or (L["format error: "] .. tostring(result))
     else
         msg = tostring(fmt)
     end
 
     local color = levelColors[level] or "ffffff"
-    print(("%s |cff%s[%s]|r %s"):format(PREFIX, color, levelNames[level], msg))
+    print((L["%s |cff%s[%s]|r %s"]):format(PREFIX, color, levelNames[level], msg))
 end
 
 -- Level shortcuts: logger:info("Looted %s x%d", link, count)
@@ -131,10 +133,10 @@ function logger:dump(tbl, label)
         return
     end
     if type(tbl) ~= "table" then
-        self:debug("%s = %s", label or "value", tostring(tbl))
+        self:debug(L["%s = %s"], label or "value", tostring(tbl))
         return
     end
-    self:debug("%s = {", label or "table")
+    self:debug(L["%s = {"], label or "table")
     for k, v in pairs(tbl) do
         self:debug("    [%s] = %s", tostring(k), tostring(v))
     end

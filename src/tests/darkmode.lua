@@ -116,7 +116,9 @@ StatusTrackingBarInfo = { BarsEnum = { Experience = 1, Reputation = 2, Honor = 3
 MainStatusTrackingBarContainer = { shownBarIndex = 1, BarFrameTexture = texture(0.8) }
 SecondaryStatusTrackingBarContainer = { shownBarIndex = 2, BarFrameTexture = texture() }
 
+dofile("src/tests/locale-support.lua")
 assert(loadfile(root .. "frames.lua"))("SeamlessDarkmode", app)
+dofile("src/tests/locale-support.lua")
 assert(loadfile(root .. "core.lua"))("SeamlessDarkmode", app)
 app.db = {
     profile = {

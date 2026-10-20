@@ -12,6 +12,9 @@
 
 embeds.xml
 
+locales\enUS.lua
+locales\[TextLocale]\strings.lua
+
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua

@@ -1,6 +1,8 @@
 ---@type string, SeamlessDarkmode
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local options = app.addon:NewModule("Options")
 function options:OnInitialize()
     local groups = {}
@@ -20,12 +22,12 @@ function options:OnInitialize()
         }
     end
     app.core:RegisterOptions(appName, {
-        title = "Darkmode",
+        title = L["Darkmode"],
         general = {
             enabled = {
                 type = "toggle",
                 order = 1,
-                name = "Enable darkmode",
+                name = L["Enable darkmode"],
                 width = "full",
                 get = function()
                     return app.db.profile.enabled
@@ -38,9 +40,9 @@ function options:OnInitialize()
             color = {
                 type = "color",
                 order = 2,
-                name = "Darkmode color",
+                name = L["Darkmode color"],
                 hasAlpha = false,
-                desc = "Tint for the frame borders of every group switched on below.",
+                desc = L["Tint for the frame borders of every group switched on below."],
                 disabled = function()
                     return not app.db.profile.enabled
                 end,
@@ -56,13 +58,13 @@ function options:OnInitialize()
             description = {
                 type = "description",
                 order = 3,
-                name = "Tint unit frame and minimap borders, action bar slot borders and gryphons, and XP and reputation bar borders. Each group can be switched independently. Icons, portraits, text and bar fills keep their colors.",
+                name = L["Tint unit frame and minimap borders, action bar slot borders and gryphons, and XP and reputation bar borders. Each group can be switched independently. Icons, portraits, text and bar fills keep their colors."],
             },
             groups = {
                 type = "group",
                 inline = true,
                 order = 10,
-                name = "Frames",
+                name = L["Frames"],
                 disabled = function()
                     return not app.db.profile.enabled
                 end,

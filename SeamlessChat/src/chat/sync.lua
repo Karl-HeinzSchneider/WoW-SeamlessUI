@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 local addon = app.addon
 local chatState = app.chatState
@@ -121,7 +123,7 @@ function module:CHAT_MSG_CHANNEL_NOTICE(_, notice, _, _, _, _, _, _, _, channelN
     for i = #stored.channels, 1, -1 do
         if stored.channels[i]:lower() == channelName:lower() then
             table.remove(stored.channels, i)
-            log:debug("Stopped syncing channel %s", channelName)
+            log:debug(L["Stopped syncing channel %s"], channelName)
         end
     end
 end
@@ -137,7 +139,7 @@ function module:Sync()
     else
         self.ready = true
         if self:Save() then
-            log:info("Saved this character's chat setup; your other characters will get it.")
+            log:info(L["Saved this character's chat setup; your other characters will get it."])
         end
     end
 end
@@ -172,7 +174,7 @@ function module:Apply()
             changed = true
         end
         if changed or joined > 0 then
-            log:info("Applied the chat setup saved by %s.", stored.savedBy or "another character")
+            log:info(L["Applied the chat setup saved by %s."], stored.savedBy or L["another character"])
         end
         C_Timer.After(SAVE_DELAY, function()
             self.busy = false
@@ -205,10 +207,10 @@ function module:ApplyChatFrame()
     elseif reason == "preset" and not self.presetNoticeShown then
         self.presetNoticeShown = true
         log:info(
-            "The chat window stays where it is: this character uses one of the game's preset Edit Mode layouts, which can't be changed. Choose or create your own layout in Edit Mode to have it placed like on your other characters."
+            L["The chat window stays where it is: this character uses one of the game's preset Edit Mode layouts, which can't be changed. Choose or create your own layout in Edit Mode to have it placed like on your other characters."]
         )
     elseif reason then
-        log:debug("Chat window not placed: %s", reason)
+        log:debug(L["Chat window not placed: %s"], reason)
     end
     return changed
 end
@@ -218,7 +220,7 @@ function module:RetryChatFrame(event)
     -- Next frame: Edit Mode handles EDIT_MODE_LAYOUTS_UPDATED itself first.
     C_Timer.After(0, function()
         if self:ApplyChatFrame() then
-            log:debug("Placed the chat window")
+            log:debug(L["Placed the chat window"])
         end
     end)
 end
@@ -279,7 +281,7 @@ function module:Save(force)
     snapshot.savedBy = UnitName("player") .. "-" .. GetNormalizedRealmName()
     snapshot.savedAt = time()
     profile.chat = snapshot
-    log:debug("Saved the chat setup")
+    log:debug(L["Saved the chat setup"])
     app.options:Refresh()
     return true
 end

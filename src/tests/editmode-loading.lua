@@ -55,6 +55,7 @@ LibStub = function(name)
     }
 end
 suite.logger = {}
+dofile("src/tests/locale-support.lua")
 assert(loadfile("Seamless/src/core/ace.lua"))("Seamless", suite)
 assert(registeredAddon:GetEditModeLibrary() == suite.LibEditMode)
 print("PASS: namespaced embed/widgets, isolated instances, and Core accessor")

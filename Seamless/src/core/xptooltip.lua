@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessCore.XPTooltip : AceModule, AceEvent-3.0, AceHook-3.0
 local module = {}
 app.addon:NewModule("XPTooltip", module, "AceEvent-3.0", "AceHook-3.0")
@@ -9,7 +11,7 @@ local function durationText(seconds)
     local minutes = math.ceil(seconds / 60)
     local days = math.floor(minutes / 1440)
     local hours = math.floor(minutes / 60) % 24
-    return string.format("%dd %dh %dm", days, hours, minutes % 60)
+    return string.format(L["%dd %dh %dm"], days, hours, minutes % 60)
 end
 
 ---@param tooltip GameTooltip
@@ -27,8 +29,8 @@ function module:AddXPDetails(tooltip)
     local ratePercent = settings.restedXPRate
     tooltip:AddLine(" ")
     tooltip:AddDoubleLine(
-        "XP to next level",
-        string.format("%s (%.1f%%)", BreakUpLargeNumbers(remaining), remaining / maxXP * 100),
+        L["XP to next level"],
+        string.format(L["%s (%.1f%%)"], BreakUpLargeNumbers(remaining), remaining / maxXP * 100),
         1,
         0.82,
         0,
@@ -37,8 +39,8 @@ function module:AddXPDetails(tooltip)
         1
     )
     tooltip:AddDoubleLine(
-        "Rested XP",
-        string.format("%s (%.1f%% of a level)", BreakUpLargeNumbers(rested), restedPercent),
+        L["Rested XP"],
+        string.format(L["%s (%.1f%% of a level)"], BreakUpLargeNumbers(rested), restedPercent),
         1,
         0.82,
         0,
@@ -46,14 +48,23 @@ function module:AddXPDetails(tooltip)
         1,
         1
     )
-    tooltip:AddDoubleLine("Rested cap (configured)", string.format("%g%% of a level", capPercent), 1, 0.82, 0, 1, 1, 1)
+    tooltip:AddDoubleLine(
+        L["Rested cap (configured)"],
+        string.format(L["%g%% of a level"], capPercent),
+        1,
+        0.82,
+        0,
+        1,
+        1,
+        1
+    )
     if restedPercent >= capPercent then
-        tooltip:AddDoubleLine("Rested cap", "Reached", 1, 0.82, 0, 1, 1, 1)
+        tooltip:AddDoubleLine(L["Rested cap"], L["Reached"], 1, 0.82, 0, 1, 1, 1)
     elseif ratePercent > 0 then
         local seconds = (capPercent - restedPercent) / ratePercent * 8 * 60 * 60
-        tooltip:AddDoubleLine("Time to cap (estimate)", durationText(seconds), 1, 0.82, 0, 1, 1, 1)
+        tooltip:AddDoubleLine(L["Time to cap (estimate)"], durationText(seconds), 1, 0.82, 0, 1, 1, 1)
         tooltip:AddLine(
-            string.format("Assumes inn/city rest at %g%% per 8 hours, without spending rested XP.", ratePercent),
+            string.format(L["Assumes inn/city rest at %g%% per 8 hours, without spending rested XP."], ratePercent),
             0.7,
             0.7,
             0.7,

@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 ---@class SeamlessChat.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0
@@ -22,17 +24,17 @@ function addon:OnInitialize()
     self:RegisterChatCommand("seamlesschat", "OnSlashCommand")
 
     self:OnProfileRefresh()
-    log:debug("Initialized (profile: %s)", db:GetCurrentProfile())
+    log:debug(L["Initialized (profile: %s)"], db:GetCurrentProfile())
 end
 
 -- Called after OnInitialize and whenever the addon is re-enabled. Register events here.
 function addon:OnEnable()
-    log:debug("Enabled")
+    log:debug(L["Enabled"])
 end
 
 -- Ace unregisters events/timers/hooks automatically on disable.
 function addon:OnDisable()
-    log:debug("Disabled")
+    log:debug(L["Disabled"])
 end
 
 -- Re-apply everything that depends on profile settings. Modules opt in by defining OnProfileRefresh.
@@ -55,12 +57,12 @@ function addon:OnSlashCommand(input)
         app.core:OnSlashCommand(input)
     elseif cmd == "reset" then
         self.db:ResetProfile()
-        log:chat("Profile reset")
+        log:chat(L["Profile reset"])
     elseif cmd == "save" then
         if app.sync:Save(true) then
-            log:chat("Saved this character's chat; your other characters get it at their next login.")
+            log:chat(L["Saved this character's chat; your other characters get it at their next login."])
         else
-            log:chat("The chat hasn't loaded yet, try again in a moment.")
+            log:chat(L["The chat hasn't loaded yet, try again in a moment."])
         end
     elseif cmd == "apply" then
         app.sync:Apply()
@@ -71,7 +73,7 @@ function addon:OnSlashCommand(input)
         app.chatLog:Search(input:match("^%s*%S+%s*(.-)%s*$") or "")
     else
         log:chat(
-            "Commands: /seamlesschat [options], /seamlesschat log, /seamlesschat search <text>, /seamlesschat save, /seamlesschat apply, /seamlesschat loglevel <level>, /seamlesschat reset"
+            L["Commands: /seamlesschat [options], /seamlesschat log, /seamlesschat search <text>, /seamlesschat save, /seamlesschat apply, /seamlesschat loglevel <level>, /seamlesschat reset"]
         )
     end
 end

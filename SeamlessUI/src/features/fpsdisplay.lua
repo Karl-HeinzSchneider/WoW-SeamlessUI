@@ -1,6 +1,8 @@
 ---@type string, SeamlessUI
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessUI.FPSDisplay : AceModule
 local module = app.addon:NewModule("FPSDisplay") --[[@as SeamlessUI.FPSDisplay]]
 app.fpsDisplay = module
@@ -49,10 +51,10 @@ function module:OnEnable()
             if module:IsEnabled() and layoutName then
                 app.db.profile.fpsDisplay.layouts[layoutName] = { point = point, x = x, y = y }
             end
-        end, defaults, "FPS display")
+        end, defaults, L["FPS display"])
         lib:AddFrameSettings(anchor, {
             {
-                name = "Show FPS on startup",
+                name = L["Show FPS on startup"],
                 kind = lib.SettingType.Checkbox,
                 default = false,
                 get = function()
@@ -102,7 +104,7 @@ app.core:RegisterEditModeOptions("SeamlessUI.FPSDisplay", {
         {
             key = "fpsDisplay",
             type = "toggle",
-            name = "FPS display",
+            name = L["FPS display"],
             get = function()
                 return showAnchor
             end,

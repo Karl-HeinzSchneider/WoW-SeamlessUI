@@ -407,6 +407,7 @@ local app = {
     },
 }
 local function Load(file)
+    dofile("src/tests/locale-support.lua")
     assert(loadfile("SeamlessUnitframes/src/" .. file))("test", app)
 end
 Load("core/unitframes.lua")

@@ -1,3 +1,4 @@
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- The copy window (copywindow.xml): chat lines in a scrolling edit box, all of them selected when it
 -- opens, so Ctrl+C copies them right away. Opened by the copy button in each chat window (copy.lua).
 
@@ -7,7 +8,7 @@
 SeamlessChatCopyWindowMixin = {}
 
 function SeamlessChatCopyWindowMixin:OnLoad()
-    self:SetTitle("Copy chat")
+    self:SetTitle(L["Copy chat"])
     self:RegisterForDrag("LeftButton")
     ScrollUtil.RegisterScrollBoxWithScrollBar(self.ScrollingEditBox:GetScrollBox(), self.ScrollBar)
     self.ScrollingEditBox:GetEditBox():SetMaxLetters(0)
@@ -34,7 +35,7 @@ end
 ---@param text string
 ---@param title string? "Copy chat" when nil
 function SeamlessChatCopyWindowMixin:ShowText(text, title)
-    self:SetTitle(title or "Copy chat")
+    self:SetTitle(title or L["Copy chat"])
     self:Show()
     self.ScrollingEditBox:SetText(text)
     local editBox = self.ScrollingEditBox:GetEditBox()

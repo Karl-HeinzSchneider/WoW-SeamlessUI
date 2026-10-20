@@ -180,6 +180,32 @@ L["Space (short)"] = "Sp"
 L["Tab (short)"] = "Tab"
 L["Up Arrow (short)"] = "Up"
 
+-- SeamlessCastbar
+L["%s (%s) (spell and rank)"] = "%s (%s)"
+L["%s / %s (cast time)"] = "%s / %s"
+L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."] = true
+L["After a finished cast"] = true
+L["After an interrupt"] = true
+L["Cast bars"] = true
+L["Cast time format"] = true
+L["Cast time"] = true
+L["Castbar"] = true
+L["Channel ticks"] = true
+L["Choose which of the game's cast bars the options below change."] = true
+L["Decimals"] = true
+L["Elapsed / total (1.2 / 2.5)"] = true
+L["Hold time"] = true
+L["How long a cast bar stays before it fades out."] = true
+L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."] = true
+L["Player spell icon"] = true
+L["Remaining (1.3)"] = true
+L["Remaining / total (1.3 / 2.5)"] = true
+L["Seconds. The game uses 0.2."] = true
+L["Seconds. The game uses 1."] = true
+L["Show the cast time on the target and focus cast bars. The player cast bar shows it when Show Cast Time is on in its Edit Mode settings; this changes how it reads."] = true
+L["Show the spell icon beside the player cast bar when it is not locked to the player frame. Target and focus bars always show it."] = true
+L["Spell rank"] = true
+
 -- SeamlessChat
 L["%d messages match, showing the newest %d."] = true
 L["%d messages, the oldest from %s.\n"] = true

@@ -45,7 +45,7 @@ the old repository must be replaced with one pointing to this repo; `dev:link` r
 
 ## Internal development modules
 
-SeamlessChat, SeamlessDamageMeter, SeamlessUI, SeamlessDarkmode and SeamlessActionBars are unfinished and excluded from public release archives.
+SeamlessChat, SeamlessDamageMeter, SeamlessUI, SeamlessDarkmode, SeamlessActionBars and SeamlessCastbar are unfinished and excluded from public release archives.
 Their source remains in this repository for internal development and testing.
 
 - **SeamlessDarkmode** (optional): tints the borders of the unit frames, the minimap and its
@@ -55,6 +55,12 @@ Their source remains in this repository for internal development and testing.
   when you lack mana, rage or energy (both colors configurable), and shortens keybind labels
   (`SM4`, `N5`, `WU`). Install beside Core and use `/seamlessactionbars`. Includes independent
   `SeamlessActionBarsDB` profiles.
+
+- **SeamlessCastbar** (optional): adds cast time text (`1.2 / 2.5`) to the target and focus cast
+  bars and the chosen format to the player's Edit Mode cast time, the spell rank to the spell name,
+  tick marks on channeled spells, the spell icon on the detached player bar and a configurable hold
+  time after a cast. Install beside Core and use `/seamlesscastbar`. Includes independent
+  `SeamlessCastbarDB` profiles.
 
 - **SeamlessUI** (optional): the foundation for general UI improvements, with independent
   `SeamlessUIDB` profiles and a UI panel under Seamless. No improvements are implemented yet.

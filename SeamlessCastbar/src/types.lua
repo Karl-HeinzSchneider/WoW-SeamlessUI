@@ -1,0 +1,24 @@
+-- Annotations only; not loaded by the TOC.
+---@class SeamlessCastbar
+---@field core SeamlessCore.Addon
+---@field addon SeamlessCastbar.Addon
+---@field db AceDBObject-3.0
+---@field BarKey fun(bar: StatusBar): string?
+---@field Active fun(bar: StatusBar): boolean
+---@field Known fun(value: any): boolean
+---@field FormatCastTime fun(elapsed: number, total: number, format: string, decimals: integer): string
+---@field UpdateCastTime fun(bar: StatusBar)
+---@field RestoreCastTime fun(bar: StatusBar)
+---@field UpdateName fun(bar: StatusBar)
+---@field RestoreName fun(bar: StatusBar)
+---@field UpdateIcon fun(bar: StatusBar)
+---@field RestoreIcon fun(bar: StatusBar)
+---@field TickInterval fun(name: string): number?
+---@field TickTimes fun(interval: number, total: number): number[]
+---@field UpdateTicks fun(bar: StatusBar)
+---@field HideTicks fun(bar: StatusBar)
+---@field ApplyHold fun(bar: StatusBar)
+---@field RestoreHold fun(bar: StatusBar)
+
+---@class SeamlessCastbar.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
+---@field Refresh fun(self: SeamlessCastbar.Addon)

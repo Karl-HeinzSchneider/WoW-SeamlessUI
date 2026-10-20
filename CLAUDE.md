@@ -27,12 +27,14 @@ TOC is an independently selectable addon.
   Internal pending in-game validation. See its `CLAUDE.md`.
 - `SeamlessActionBars/`: optional range/mana icon colors and short keybind labels on the game's
   action buttons, with independent profiles. Internal pending in-game validation. See its `CLAUDE.md`.
+- `SeamlessCastbar/`: optional cast time, spell rank, channel ticks and hold time on the game's player,
+  target and focus cast bars, with independent profiles. Internal pending in-game validation. See its `CLAUDE.md`.
 - `.github/`: release workflows using the BigWigs packager.
 
 Every feature addon must declare `## Dependencies: Seamless`; `check:addons` enforces
 this and checks dependency cycles. Addons are discovered automatically by tooling; add each
 release-ready addon to `.pkgmeta` move-folders for releases. Internal addons must stay in its ignore list.
-Only Core, Tooltip and Unitframes currently ship; Chat, DamageMeter, UI, Darkmode and ActionBars are internal. Users enable or disable feature addons
+Only Core, Tooltip and Unitframes currently ship; Chat, DamageMeter, UI, Darkmode, ActionBars and Castbar are internal. Users enable or disable feature addons
 in the game's AddOns screen and reload. Core works without any feature addon enabled.
 
 ## Working on the code

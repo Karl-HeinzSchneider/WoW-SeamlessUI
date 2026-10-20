@@ -174,6 +174,12 @@ local function AddScrolling(dialog)
 
     -- Size the scroll frame from the list itself, so collapsing a section always shrinks the window.
     local function LayoutDialog()
+        -- Pin the top edge where it is now, so resizing only moves the bottom edge.
+        local left, top = dialog:GetLeft(), dialog:GetTop()
+        if left and top then
+            dialog:ClearAllPoints()
+            dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+        end
         settings:Layout()
         scroll.fixedWidth = settings:GetWidth()
         scroll.fixedHeight = math.min(settings:GetHeight(), scroll.maximumHeight)

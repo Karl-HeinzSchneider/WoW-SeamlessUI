@@ -25,7 +25,8 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   `SeamlessDB.global.editModeCollapsed`. It also puts the selected frame's settings list in a
   scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
   scrolling past 400 pixels or 60% of the screen height, whichever is smaller. Each layout sizes
-  the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. LayoutFrame ignores
+  the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. Each layout
+  first pins the dialog's top edge, so it grows and shrinks downward only. LayoutFrame ignores
   `maximumHeight` without a `minimumHeight`, so the scroll frame sets both. The list keeps its
   fully expanded width while sections collapse, and the scroll bar sits outside the window's right
   edge, so the window never changes width. This is the

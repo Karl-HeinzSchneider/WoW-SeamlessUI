@@ -46,6 +46,12 @@ end
 function methods:GetRight()
     return self.right
 end
+function methods:GetLeft()
+    return self.left
+end
+function methods:GetTop()
+    return self.top
+end
 function methods:SetShown(value)
     self.shown = not not value
 end
@@ -303,6 +309,7 @@ assert(not inside:IsShown() and after:IsShown() and header:IsShown())
 assert(header.StateIcon.atlas == "common-button-list-plus" and dialog.layouts == layouts + 2 and dialog:IsShown())
 -- A short list shrinks the window and drops any scroll offset it no longer needs.
 dialog.Settings.height = 120
+dialog.left, dialog.top = 300, 700
 layoutOrder = {}
 dialog:RefreshWidgets()
 local scrollIndex, dialogIndex
@@ -315,6 +322,9 @@ for index, frame in ipairs(layoutOrder) do
     end
 end
 assert(scrollIndex and scrollIndex < dialogIndex, "The scroll frame resizes before the dialog measures its buttons")
+local top = dialog.points.TOPLEFT
+assert(top and top[1] == UIParent and top[2] == "BOTTOMLEFT" and top[3] == 300 and top[4] == 700)
+assert(not dialog.points.BOTTOMRIGHT, "The dialog grows downward from its top edge")
 assert(scroll.fixedHeight == 120 and scroll.verticalScroll == 0, "Collapsing shrinks the window")
 dialog:Update(selection)
 assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")

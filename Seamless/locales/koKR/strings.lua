@@ -319,7 +319,7 @@ end
 -- L["Stopped syncing channel %s"] = "Stopped syncing channel %s"
 -- L["System & other"] = "System & other"
 -- L["Text to speech"] = "Text to speech"
--- L["That line is too old to copy."] = "That line is too old to copy."
+-- L["That line is no longer in a chat window, so it can't be copied."] = "That line is no longer in a chat window, so it can't be copied."
 -- L["The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."] = "The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."
 -- L["The chat hasn't loaded yet, try again in a moment."] = "The chat hasn't loaded yet, try again in a moment."
 -- L["The chat window stays where it is: this character uses one of the game's preset Edit Mode layouts, which can't be changed. Choose or create your own layout in Edit Mode to have it placed like on your other characters."] = "The chat window stays where it is: this character uses one of the game's preset Edit Mode layouts, which can't be changed. Choose or create your own layout in Edit Mode to have it placed like on your other characters."

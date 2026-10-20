@@ -99,7 +99,8 @@ after `features.lua`.
 - `copy.lua` — `app.copy`. The game can only copy out of an edit box, so copying puts the line into
   the chat input, selected (`ChatFrameUtil.OpenChat(nil, frame)`, then `SetText` +
   `HighlightText`). `WrapTimestamp` (called by timestamps.lua) keeps the line under an id (last 1000) and wraps the stamp in `|Haddon:SeamlessChat:copy:<id>|h`; the game hands `addon` links to
-  `EventRegistry` `"SetItemRef"`, where `OnSetItemRef` copies the line, stripped with
+  `EventRegistry` `"SetItemRef"`, where `OnSetItemRef` copies the line (`FindLine`: the kept one, else
+  read back from the chat window still showing the link, so restored history stays copyable), stripped with
   `C_StringUtil.StripHyperlinks`. Secret lines get no link. The copy button (`CreateButton`, one
   per chat window, top right) follows the game's chat fade via hooks on `FCF_FadeInChatFrame` /
   `FCF_FadeOutChatFrame` with its own OnUpdate fade (not `UIFrameFadeIn`, whose shared list would

@@ -9,7 +9,7 @@ local log = app.logger
 -- is put into the chat input, selected, where Ctrl+C copies it.
 --
 -- Click to copy: the timestamp (src/features/timestamps.lua) becomes a link carrying an id; the
--- line itself is kept here under that id until it is too old to still be in a chat window.
+-- line itself is kept here under that id for a while, and found in its chat window after that.
 --
 -- Copy button: a subtle button in the top right corner of every chat window opens the copy window
 -- (copywindow.xml) with the window's last lines, selected.
@@ -35,8 +35,7 @@ app.copy = app.features:New(
     defaults
 ) --[[@as SeamlessChat.Copy]]
 
--- Lines kept for their links. Chat windows keep a few hundred lines at most, so older links are
--- scrolled out anyway.
+-- Lines kept for their links, the quick way to find them (FindLine).
 local MAX_LINES = 1000
 
 -- |Haddon:...|h links are the ones the game hands to addons (EventRegistry "SetItemRef").
@@ -132,14 +131,61 @@ local function linkId(link)
     return type(link) == "string" and tonumber(link:match(LINK_PATTERN)) or nil
 end
 
+-- The line of `chatFrame` that carries the copy link `link`, newest first, or nil.
+---@param chatFrame Frame
+---@param link string
+---@return string?
+local function findLine(chatFrame, link)
+    if not (chatFrame and chatFrame.GetNumMessages and chatFrame.GetMessageInfo) then
+        return nil
+    end
+    local wanted = "|H" .. link .. "|h"
+    for i = chatFrame:GetNumMessages(), 1, -1 do
+        local message = chatFrame:GetMessageInfo(i)
+        if
+            type(message) == "string"
+            and not (issecretvalue and issecretvalue(message))
+            and message:find(wanted, 1, true)
+        then
+            return message
+        end
+    end
+end
+
+-- The line a copy link belongs to. Kept lines are quickest, but only the last MAX_LINES are kept,
+-- and a long restored history (history.lua) pushes its own out: then the line is read back from
+-- the chat window it is still shown in, the clicked one first.
+---@param id integer
+---@param link string
+---@param chatFrame Frame?
+---@return string?
+function module:FindLine(id, link, chatFrame)
+    if self.lines[id] then
+        return self.lines[id]
+    end
+    local message = chatFrame and findLine(chatFrame, link)
+    if message then
+        return message
+    end
+    for _, name in ipairs(CHAT_FRAMES) do
+        local other = _G[name]
+        if other ~= chatFrame and not IsCombatLog(other) then
+            message = findLine(other, link)
+            if message then
+                return message
+            end
+        end
+    end
+end
+
 function module:OnSetItemRef(link, _, _, chatFrame)
     local id = linkId(link)
     if not id then
         return
     end
-    local message = self.lines[id]
+    local message = self:FindLine(id, link, chatFrame)
     if not message then
-        log:chat(L["That line is too old to copy."])
+        log:chat(L["That line is no longer in a chat window, so it can't be copied."])
         return
     end
     self:CopyToChatInput(plainText(message), chatFrame)

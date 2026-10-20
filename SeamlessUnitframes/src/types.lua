@@ -12,8 +12,14 @@
 ---@field dbDefaults SeamlessUnitframes.DBDefaults
 ---@field db SeamlessUnitframes.DB
 ---@field options SeamlessUnitframes.Options  # AceConfig panel under Settings > AddOns > Seamless
+---@field editMode SeamlessUnitframes.EditMode  # Style sections in the unit frames' Edit Mode settings
+---@field StyleGroups fun(key: string): SeamlessUnitframes.StyleGroup[]
+---@field StyleOptions fun(entry: SeamlessUnitframes.UnitFrame): SeamlessCore.EditModeSystemOption[]
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
+---@field nameDisplay SeamlessUnitframes.NameDisplay
+---@field classIcon SeamlessUnitframes.ClassIcon
+---@field pvpIcon SeamlessUnitframes.PvPIcon
 ---@field legacyLayout SeamlessUnitframes.LegacyLayout
 ---@field legacyAtlases table<string, table>
 ---@field questIcons SeamlessUnitframes.QuestIcons

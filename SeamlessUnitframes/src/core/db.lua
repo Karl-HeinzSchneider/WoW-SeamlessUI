@@ -11,6 +11,13 @@ local unitFrame = {
     -- src/healthcolor. Class plus reaction for NPCs by default; see the frames below.
     ---@type SeamlessUnitframes.HealthBarColor
     healthBarColor = "classReaction",
+    -- src/name. The game's full name (first name and surname).
+    ---@type SeamlessUnitframes.NameDisplayMode
+    nameDisplay = "full",
+    -- src/portrait. A player character's class icon instead of the portrait.
+    classIcon = false,
+    -- src/pvpicon. Hides the frame's PvP icon.
+    hidePvPIcon = false,
 }
 
 -- Player, pet and party only show players (a pet takes its owner's class), so reaction adds

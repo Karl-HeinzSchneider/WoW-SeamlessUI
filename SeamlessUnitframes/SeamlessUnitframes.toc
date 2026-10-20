@@ -16,12 +16,17 @@ src\core\db.lua
 src\core\ace.lua
 src\core\unitframes.lua
 src\core\questicons.lua
+src\core\style.lua
 src\core\options.lua
+src\core\editmode.lua
 
 src\layout\atlas.lua
 src\layout\layout.lua
 src\layout\geometry.lua
 src\healthcolor\healthcolor.lua
+src\name\namedisplay.lua
+src\portrait\classicon.lua
+src\pvpicon\pvpicon.lua
 src\questicon\targetquesticon.lua
 
 SeamlessUnitframes.lua

@@ -47,6 +47,10 @@ local function PvP(icon, parent, side, x, legacy)
         background:SetAtlas(P .. "SmallCircle", true)
         background:SetScale(0.8)
         backgrounds[icon] = background
+        -- A new circle follows the frame's Hide PvP icon setting.
+        if app.pvpIcon then
+            app.pvpIcon:Refresh()
+        end
     end
     Point(background, "TOP", parent, side, x, -50)
     local shown = icon:IsShown()
@@ -684,6 +688,13 @@ function module:ApplyGeometry(roots, legacy)
     if ComboFrame and self:CheckPaths(TargetFrame, "Combo", { "TargetFrameContainer.Portrait" }) then
         Point(ComboFrame, "CENTER", TargetFrame.TargetFrameContainer.Portrait, "CENTER", legacy and 0 or 2, 2)
     end
+end
+
+-- The Legacy layout's circle behind a PvP icon, once it was created.
+---@param icon Texture
+---@return Texture?
+function module:PvPBackground(icon)
+    return backgrounds[icon]
 end
 
 function module:HideLegacyBackgrounds()

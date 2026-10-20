@@ -1,212 +1,169 @@
 # CLAUDE.md
 
-Guidance for Claude Code when working in this repository. This file holds the map and the rules
-that apply everywhere; the addon folder has its own `CLAUDE.md` with its load order and file map.
+Guidance for Claude Code in this repository. This file holds the map and the rules that apply
+everywhere; each addon folder has its own `CLAUDE.md` with its load order and file map.
 
 ## What this is
 
-Seamless is a modular World of Warcraft addon suite (Lua 5.1 / Ace3), targeting the
-client in the TOCs (`16001` = WoW Forever). Each direct child folder with a same-named
-TOC is an independently selectable addon.
+Seamless is a modular World of Warcraft addon suite (Lua 5.1 / Ace3) for the client in the TOCs
+(`16001` = WoW Forever). Each direct child folder with a same-named TOC is an independently
+selectable addon:
 
-- `Seamless/`: required shared libraries, logger, AceDB core settings, minimap launcher,
-  `/seamless`, the "Seamless" options panel and the AceConfig options layout every addon uses
-  (General tab, the addon's tabs, Profiles tab). See its `CLAUDE.md` for the public API.
-- `SeamlessUnitframes/`: optional unit-frame features, depending on Seamless. Keeps
-  `SeamlessUnitframesDB` and its existing profiles. See its `CLAUDE.md`.
-- `SeamlessTooltip/`: optional tooltip features, depending on Seamless. Keeps
-  `SeamlessTooltipDB` and existing profiles. See its `CLAUDE.md`.
-- `SeamlessChat/`: optional chat sync, history, copy/log windows and chat enhancements. Keeps
-  its profile and per-character SavedVariables. See its `CLAUDE.md`.
-- `SeamlessDamageMeter/`: optional windows and a shared live/archive combat-data service.
-  Saves public per-character fight history independently of appearance profiles. See its `CLAUDE.md`.
-- `src/`: Node 20+ / TypeScript tooling, never shipped.
-- `SeamlessUI/`: optional general UI improvements, with independent `SeamlessUIDB` profiles.
-  Currently a scaffold. See its `CLAUDE.md`.
-- `SeamlessDarkmode/`: optional shared tint for unit frame, minimap and minimap button borders, with independent profiles.
-  See its `CLAUDE.md`.
-- `SeamlessActionBars/`: optional range/mana icon colors and short keybind labels on the game's
-  action buttons, with independent profiles. See its `CLAUDE.md`.
-- `SeamlessCastbar/`: optional cast time, spell rank, channel ticks and hold time on the game's player,
-  target and focus cast bars, with independent profiles. See its `CLAUDE.md`.
-- `.github/`: release workflows using the BigWigs packager.
+- `Seamless/`: the required core: shared libraries, logger, locales, core settings, minimap
+  launcher, `/seamless`, the shared options layout and the shared Edit Mode API.
+- `SeamlessUnitframes/`: health colors, name display, class icons, PvP and quest icons and an
+  optional legacy layout on the game's unit frames.
+- `SeamlessTooltip/`: switchable tooltip enhancements.
+- `SeamlessChat/`: the same chat setup on every character, history, copy/log windows and chat
+  enhancements.
+- `SeamlessDamageMeter/`: damage/threat meter windows on a shared live/archive combat-data service.
+- `SeamlessUI/`: general UI improvements: XP bar tooltip, FPS display and extensions of the game's
+  Edit Mode settings windows (position controls, other addons' Style sections).
+- `SeamlessDarkmode/`: one shared tint for unit frame, minimap, action bar, gryphon and
+  XP/reputation borders.
+- `SeamlessActionBars/`: range/mana icon colors and short keybind labels on the game's action buttons.
+- `SeamlessCastbar/`: cast time, spell rank, channel ticks and hold time on the game's cast bars.
 
-Every feature addon must declare `## Dependencies: Seamless`; `check:addons` enforces
-this and checks dependency cycles. Addons are discovered automatically by tooling; add each
-addon to `.pkgmeta` move-folders for releases; an addon kept out of releases must be in its ignore list.
-Every addon currently ships. Users enable or disable feature addons
-in the game's AddOns screen and reload. Core works without any feature addon enabled.
+Also at the root: `src/` (Node 20+ / TypeScript tooling, never shipped), `docs/`, `.github/`
+(release workflows).
+
+Every feature addon declares `## Dependencies: Seamless` and keeps its own SavedVariables and
+AceDB profiles. Core works without any feature addon enabled; users enable or disable features
+in the game's AddOns screen and reload. Tooling discovers addons automatically, but every addon
+must be added to `.pkgmeta` `move-folders` (or its `ignore` list, to keep it out of releases).
 
 ## Working on the code
 
-WoW addons are plain Lua/XML files loaded by the game; there is no build step. To try a change:
-`npm run dev:link -- "<WoW>/Interface/AddOns"` (once; links every addon directory, also honors
-`WOW_ADDONS_DIR`) and `/reload` in-game. `/seamless` opens the suite options,
-`/seamless loglevel debug` shows the debug log.
+There is no build step. `npm run dev:link -- "<WoW>/Interface/AddOns"` (once; also honors
+`WOW_ADDONS_DIR`) links every addon into a client, then `/reload` in game. `/seamless` opens the
+options, `/seamless loglevel debug` shows the debug log.
 
-## Commands (Node 20+, run from the root after `npm install` once)
+## Commands (Node 20+, from the root after `npm install`)
 
-| Command                            | Does                                                                                                                                                                                                                                |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `npm run check`                    | Everything below that validates, in order: typecheck, addons, Lua syntax, XML schema, formatting. Run it before finishing a change.                                                                                                 |
-| `npm run format`                   | Prettier (`.prettierrc.json`, `.prettierignore`) on TS/JSON/Markdown/YAML, then StyLua (`stylua.toml`, `.styluaignore`) on Lua. Leaves XML to the editor. `npm run format:check` only reports.                                      |
-| `npm run check:addons`             | Every TOC load entry exists (a `[TextLocale]` entry for every client language), all feature addons depend on `Seamless`, no dependency cycles.                                                                                      |
-| `npm run check:lua`                | `luac -p` on every addon Lua file (needs a Lua 5.1 `luac` on PATH).                                                                                                                                                                 |
-| `npm run check:xml`                | Validates every addon XML against Blizzard's `UI.xsd` via python + lxml; skipped when `../_data/wow_classic_beta` is absent; `lib/` is not checked.                                                                                 |
-| `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                                                                           |
-| `npm run dev:link -- <AddOns dir>` | Symlink (junction on Windows) every addon into a client; refuses to replace a path that isn't already our link.                                                                                                                     |
-| `npm run package:addons`           | Deterministic `dist/Seamless-<version>.zip` of public addons listed in `.pkgmeta` move-folders (gitignored), without `CLAUDE.md` files.                                                                                             |
-| `npm run package:local`            | The BigWigs packager the release workflows use (`.pkgmeta`), run locally without uploading: addon folders and zip in `.release/` (gitignored). Extra `release.sh` options go after `--`. On Windows it needs Git for Windows' bash. |
+| Command                            | Does                                                                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `npm run check`                    | typecheck, check:addons, check:lua, check:xml, format:check, in that order. Run it before finishing a change.                  |
+| `npm run format`                   | Prettier on TS/JSON/Markdown/YAML, then StyLua on Lua. XML is left to the editor. `format:check` only reports.                 |
+| `npm run check:addons`             | Every TOC entry exists (for every client language of `[TextLocale]`), features depend on `Seamless`, no dependency cycles.     |
+| `npm run check:lua`                | `luac -p` on every addon Lua file (needs Lua 5.1 `luac` on PATH).                                                              |
+| `npm run check:xml`                | Validates addon XML against Blizzard's `UI.xsd` (python + lxml); skipped without `../_data/wow_classic_beta`; `lib/` skipped.  |
+| `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                      |
+| `npm run locales:sync`             | Synchronizes the client locale files with the English catalogue (see Localization).                                            |
+| `npm run dev:link -- <AddOns dir>` | Symlinks (junctions on Windows) every addon into a client; never replaces a path that isn't already our link.                  |
+| `npm run package:addons`           | Quick `dist/Seamless-<version>.zip` of the addons in `.pkgmeta` `move-folders`, without `CLAUDE.md` files.                     |
+| `npm run package:local`            | The BigWigs packager the release workflows use, locally and without uploading, into `.release/`. Needs bash (Git for Windows). |
 
-Static checks also used ad hoc: `lua-language-server --check` (config in `.luarc.json`; `lib/` is
-excluded from LuaLS, StyLua and Prettier).
-
-`npm run locales:sync` synchronizes translation stubs with the English catalogue.
-Run `npx tsx src/tests/sync-locales.ts` and `lua src/tests/locales.lua` for locale regressions.
+Tests are plain Lua harnesses with mocks, run from the root: `lua src/tests/<name>.lua` (each
+addon's `CLAUDE.md` names its own), plus `npx tsx src/tests/sync-locales.ts`. LuaLS
+(`lua-language-server --check`, `.luarc.json`) is used ad hoc; `lib/` is excluded from LuaLS,
+StyLua and Prettier.
 
 ## Tooling (`src/`)
 
 ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
 
-- `config.ts` â€” `ROOT`, `CLIENT_LOCALES` (every `[TextLocale]` value), `packageName()` (the
-  `package-as` of `.pkgmeta`, used for zip names; `CORE_ADDON` identifies the core addon, Seamless).
-- `addons.ts` â€” `addonDirectories()` (every direct child with a same-named `.toc`),
-  `addonVersion`, `walkFiles`.
-- `check-addons.ts`, `check-lua.ts`, `check-xml.ts`, `link-addons.ts`, `package-addons.ts`,
-  `package-local.ts` â€” one per `npm run` script above.
-- `zip.ts` â€” `createZip` (stored, fixed timestamps), `directoryEntries`, `fileNamePart` (a TOC
-  version as a file name), shared by the two packaging scripts.
+- `config.ts`: `ROOT`, `CLIENT_LOCALES`, `CORE_ADDON`, `packageName()` (`.pkgmeta` `package-as`).
+- `addons.ts`: `addonDirectories()`, `addonVersion`, `walkFiles`.
+- One script per `npm run` command above; `zip.ts` is shared by the two packaging scripts.
+- `generate-*.py`: regenerate the unit frame atlas tables and the damage meter bar texture.
 
 ## Releases
 
 `.github/workflows/` runs the BigWigs packager on a pushed `v*` tag (`release-tag.yml`) and from
 Actions > Run workflow (`release.yml`, `beta.yml`, `alpha.yml`, which tag the head of `main`
-first); all four call `package.yml`. The tag decides the type: `v1.1.0-beta1` is a beta,
-`v1.1.0-alpha1` an alpha, anything else a release. `## Version: @project-version@` in the TOC is
-filled in by the packager.
+first); all call `package.yml`. `v1.1.0-beta1` is a beta, `v1.1.0-alpha1` an alpha, anything
+else a release. The packager fills in `@project-version@` in the TOCs.
 
-What goes into the zip is set by `.pkgmeta` â€” **a new root file or folder that is not an addon
-must be added to its `ignore` list**, or it ships inside the addon's folder. Uploads need the
-repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the project ids in the TOC
-(`## X-Curse-Project-ID`, `## X-Wago-ID`, `## X-WoWI-ID`); a site without both is skipped.
+`.pkgmeta` decides what ships: **a new root file or folder that is not an addon must be added to
+its `ignore` list**, or it ships inside the core's folder. Each site needs its repository secret
+(`CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN`) and its project id in `Seamless.toc`
+(`## X-Curse-Project-ID`, `## X-Wago-ID`, `## X-WoWI-ID`); a site missing either is skipped.
 
 ## Shared Edit Mode controls
 
-These terms and placement rules apply to every Edit Mode request:
+Terms for every Edit Mode request:
 
-- **Main Edit Mode window** means Seamless's shared window anchored to Blizzard's main
-  Edit Mode window in the middle of the screen. It contains **GLOBAL options** and a
-  **Frames** list where users activate or deactivate Edit Mode for individual frames.
-- **GLOBAL options** are suite-wide controls in that main window. Add an option there
-  only when the user explicitly requests a global option. Frame-specific settings belong
-  in the selected frame's settings window.
-- **Frames** is the heading for the main window's frame activation/deactivation list.
-  Entries here control whether a frame participates in Edit Mode; they are not the
-  frame's individual settings.
-- **Edit Mode settings** or a request to **add an option to Edit Mode** means the settings
-  window shown when the user selects the relevant frame in Edit Mode. Put the requested
-  option in that frame's settings window unless the user explicitly specifies otherwise.
+- **Main Edit Mode window**: Seamless's shared window below Blizzard's main Edit Mode window. It
+  holds **GLOBAL options** and the **Frames** list.
+- **GLOBAL options**: suite-wide controls in that window (`section = "options"`, the default).
+  Add one only when the user explicitly asks for a global option.
+- **Frames**: the list of checkboxes that let a frame take part in Edit Mode (preview/selection),
+  registered with `core:RegisterEditModeOptions(id, { section = "frames", options = { ... } })`.
+  These are not the frame's settings.
+- **Edit Mode settings** / "add an option to Edit Mode": the settings window of the selected
+  frame. Put the option there unless the user says otherwise.
 
-Register frame activation/deactivation (preview/movability) checkboxes in the main window with
-`core:RegisterEditModeOptions(id, { section = "frames", options = { ... } })`.
-They belong under the shared **Frames** heading. `section = "options"` (the default) places
-controls in the main window's GLOBAL options area; use it only for explicitly requested
-global options. See `Seamless/CLAUDE.md` for the APIs, row types and callbacks used by
-the shared panel and selected-frame settings.
+`Seamless/CLAUDE.md` documents the APIs, row types and callbacks.
 
 ## Localization
 
-All addon-authored text displayed to users must come from the suite's AceLocale object:
-`local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")`, then `L["Open"]`.
-This applies to every addon, including options, frame names, menus, tooltips, dialogs,
-Edit Mode controls and chat/log messages. Do not introduce literal English display text.
-Game-provided content (player/item/spell names, chat messages, API error messages), user-entered
-names and library-owned UI remain owned by their source. Technical IDs, slash-command tokens,
-texture/font registry keys, patterns and empty strings are not translated.
+All addon-authored text shown to users comes from the suite's AceLocale object:
+`local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")`, then `L["Open"]`. That covers
+options, frame names, menus, tooltips, dialogs, Edit Mode controls and chat/log messages. Game
+content (names, chat, API errors), user-entered names and library-owned UI stay as they are;
+technical IDs, slash-command tokens, registry keys, patterns and empty strings are not translated.
 
-Add complete English phrases and format strings to `Seamless/locales/enUS.lua` first.
-Keep generic/shared phrases and frame names together, then addon-specific sections; sort
-within each section. Reuse common keys, preserve format placeholders and avoid concatenating
-sentence fragments so translators can change word order. Use a distinct descriptive key when
-the same English phrase needs different meanings. Never localize SavedVariables keys or API IDs.
-Run `npm run locales:sync` after changing the baseline. It creates guarded client files under
-`Seamless/locales/<locale>/strings.lua`, keeps existing translations, and inserts commented English
-stubs in exactly the baseline order. Uncomment and replace the value to translate it. Use one
-double-quoted key/value assignment per line; resolve obsolete keys explicitly when reported.
-Core loads English first and only the client's `[TextLocale]` file afterward. Untranslated entries
-fall back to English; `enGB` uses AceLocale's English normalization.
+Add complete English phrases and format strings to `Seamless/locales/enUS.lua` first, in the
+right section (shared phrases and frame names, then one section per addon), sorted within it.
+Reuse common keys, keep placeholders, never build sentences from fragments, and use a distinct
+key when the same English needs a different meaning. Never localize SavedVariables keys or API
+IDs. Then run `npm run locales:sync`: it keeps existing translations in
+`Seamless/locales/<locale>/strings.lua` and inserts commented English stubs in baseline order
+(one double-quoted assignment per line; obsolete keys are reported, resolve them by hand).
+Untranslated entries fall back to English.
 
 ## WoW addon constraints
 
-- Lua 5.1 with Blizzard's restricted API. No `require`, `io`, `os`, or `loadstring` of external
-  files; every code file must be listed in its addon's TOC, in dependency order, or it will not
-  load.
-- Addons share one global namespace. Keep state in the private table passed to each file. Each addon has its own private table. A Unitframes file
-  that uses it starts with
+- Lua 5.1 with Blizzard's restricted API: no `require`, `io`, `os` or loading external files.
+  Every code file must be listed in its addon's TOC, in dependency order.
+- Addons share one global namespace. Keep state in the addon's private table, declared per file as
 
   ```lua
   ---@type string, SeamlessUnitframes
   local appName, app = ...
   ```
 
-  (`local _, app = ...` when the name is unused, or LuaLS flags it). The `---@type` line gives the
-  language server completion on `app.*`. When a file adds a member to `app`, add a matching
-  `---@field` to `SeamlessUnitframes/src/types.lua`.
+  (`local _, app = ...` when the name is unused). When a file adds a member to `app`, add a
+  matching `---@field` to that addon's `src/types.lua` (annotations only, not in the TOC).
 
-- The only sanctioned globals are the SavedVariables tables and XML-required mixins/frames, which
-  are prefixed `SeamlessUnitframesâ€¦`.
-- Persistent state lives only in tables declared via `## SavedVariables`; they are populated after
-  `ADDON_LOADED`, not at file-load time (AceDB `OnInitialize` is the first safe place).
-- Ace3 types (`AceAddon`, `AceDBObject-3.0`, `AceDB.Schema`, â€¦) come from the `ketho.wow-api`
-  VS Code extension (`.vscode/settings.json` â†’ `Lua.workspace.library`), not from `lib/`;
-  inherit from them rather than redeclaring the API.
+- Sanctioned globals: SavedVariables tables, XML-required mixins/frames, and documented public
+  frames (e.g. `SeamlessDamageMeterWindow<ID>`), all prefixed with their addon's name.
+- SavedVariables are populated after `ADDON_LOADED`, not at file load; AceDB `OnInitialize` is the
+  first safe place.
+- Ace3 and WoW API types come from the `ketho.wow-api` VS Code extension
+  (`.vscode/settings.json`), not from `lib/`; inherit from them rather than redeclaring the API.
+- Never patch vendored libraries in `Seamless/lib/`.
 
 ## XML files
 
 Every XML file starts with `<Ui xmlns="http://www.blizzard.com/wow/ui/">` and **no**
-`xsi:schemaLocation` â€” the client ignores it and a wrong path makes the VS Code XML extension
-report errors. Schema validation comes from `xml.fileAssociations` in `.vscode/settings.json`
-(mapping `**/*.xml` to `../_data/wow_classic_beta/.../Blizzard_SharedXML/UI.xsd`) and from
-`npm run check:xml`. Lua mixin files must be listed in the TOC _before_ the XML that references
-them.
+`xsi:schemaLocation`. Validation comes from `.vscode/settings.json` and `npm run check:xml`. Lua
+mixin files are listed in the TOC _before_ the XML that uses them.
 
 ## Files with backslashes
 
-Lua strings for texture paths need `\\` (`"Interface\\Icons\\INV_Misc_Bag_10"`). Shell heredocs
-and inline Python strip the doubled backslash; write such files with the Write/Edit tools (or a
-script file with raw strings).
+Texture paths in Lua need `\\` (`"Interface\\Icons\\INV_Misc_Bag_10"`). Shell heredocs and inline
+Python strip the doubled backslash; write such files with the Write/Edit tools.
 
-## Optional: Blizzard's own UI source and art for reference
+## Blizzard's UI source and art (optional, read-only)
 
-A developer may place Blizzard's exported interface files in `../_data/` (a sibling of the repo,
-`E:\Projects\_data\` here â€” outside the repo, so nothing needs gitignoring):
+A developer may place Blizzard's exported interface files next to the repo:
 
-- `../_data/wow_classic_beta/` â€” the WoW Forever (classic beta) client's `/run ExportInterfaceFiles("code")`: Lua/XML of all
-  FrameXML/AddOns.
-- `../_data/BlizzardInterfaceArt/` â€” from `/run ExportInterfaceFiles("art")`: every texture as
-  `.blp` under `BlizzardInterfaceArt/Interface/...`.
+- `../_data/wow_classic_beta/`: `/run ExportInterfaceFiles("code")` of the WoW Forever client.
+- `../_data/BlizzardInterfaceArt/`: `/run ExportInterfaceFiles("art")`, every texture as `.blp`.
 
-If they exist, **read them, never edit them**:
-
-- Code: look up exact API signatures/return values, event payloads, frame templates and global
-  strings. Prefer it over memory; this client's API differs from retail and from Classic.
-- Art: verify that a texture path used in code exists (case-insensitive) and browse for suitable
-  icons/textures by name. `.blp` can't be viewed; the file list is what matters. Atlas names
-  (`atlas="..."`) are _not_ in the export â€” find them in XML usages under `wow_classic_beta`.
-
-Never list anything from these folders in a TOC or copy files out of them into the repo.
+If present, **read them, never edit them**. Use the code for exact API signatures, event
+payloads, templates and global strings (this client differs from retail and Classic), and the art
+file list to verify texture paths (case-insensitive). Atlas names are not in the art export; find
+them in XML under `wow_classic_beta`. Never list these files in a TOC or copy them into the repo.
 
 ## Textures and Blizzard frames: reuse art, remake code
 
-- **Don't create new textures unless there is no other way.** Prefer the game's own textures
-  and atlases (they scale with the frame and need no shipping; the client does not load `.png`).
-  If something really must be drawn, ask first.
-- **Don't hard-reference a frame from retail or Classic WoW.** Don't inherit its templates, call
-  its mixins, anchor to its frames or name it as the thing being copied in comments or docs.
-  Learn how it is built, then remake the look with our own template and mixin; naming it as "an
-  example" in a comment is fine. Its _art_ (atlases, textures) may be reused freely.
-- On WoW Forever, code the client itself ships (`Blizzard_*/Camelot/` and shared templates it
-  loads such as `Blizzard_SharedXML`) may be leaned on directly: inheriting from e.g.
-  `PortraitFrameBaseTemplate` or `PagingControlsTemplate` is fine. Verify the file is loaded by
-  this client before depending on it.
-- A screenshot the user shares is a look reference, not a template to reproduce pixel by pixel.
+- **Don't create new textures unless there is no other way**; prefer the game's textures and
+  atlases (the client does not load `.png`). Ask before drawing anything.
+- **Don't hard-reference a frame from retail or Classic WoW**: don't inherit its templates, call
+  its mixins or anchor to it. Remake the look with our own template and mixin; its art may be
+  reused freely.
+- Code the WoW Forever client itself ships and loads (`Blizzard_*/Camelot/`, `Blizzard_SharedXML`
+  templates such as `PortraitFrameBaseTemplate`) may be used directly; verify it is loaded first.
+- A screenshot the user shares is a look reference, not a pixel template.

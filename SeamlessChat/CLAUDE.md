@@ -1,25 +1,20 @@
 # SeamlessChat
 
-Optional chat addon in the Seamless suite, imported from `../WoW-SeamlessChat`.
-Requires `Seamless`; users enable/disable it in WoW's AddOns screen and reload.
-Preserves `SeamlessChatDB` (profiles, sync snapshots and character input history),
-`SeamlessChatHistoryDB` and `SeamlessChatLogDB` (per-character history and log).
+Optional chat addon. `SeamlessChatDB` holds profiles (with the synced chat snapshot) and
+per-character input history; `SeamlessChatHistoryDB` and `SeamlessChatLogDB` are per-character
+saved lines and the chat log.
 
 ## Load order and integration
 
-Every runtime Lua/XML file must be listed in dependency order in `SeamlessChat.toc`.
-
 1. `src/core/bootstrap.lua`: obtains Core through AceAddon and shares its logger.
-2. `db.lua`, `ace.lua`: defaults, independent AceDB/AceAddon lifecycle and legacy slash commands.
+2. `db.lua`, `ace.lua`: defaults, AceDB/AceAddon lifecycle and `/seamlesschat`.
 3. `options.lua`: the Chat panel: General (sync, chat input), Messages, Windows, Buttons, Log, Profiles.
 4. `src/chat/`: state, sync, line transforms and input history.
 5. `src/features/features.lua`, followed by features in TOC order. Window mixins load before their XML.
 6. `SeamlessChat.lua`: load diagnostic.
 
-LibEditModeOverride is vendored and loaded by Core, alongside Ace3. No local library embeds,
-minimap launcher or standalone options window. `/seamlesschat` opens the Chat panel;
-`save`, `apply`, `log`, `search <text>` and `reset` keep their existing behavior. `loglevel` delegates
-to Core. Legacy local minimap/logLevel settings are unused; shared preferences live in Core.
+`/seamlesschat` opens the Chat panel; `save`, `apply`, `log`, `search <text>`, `reset` and
+`loglevel` (delegated to Core) are subcommands. LibEditModeOverride comes from Core.
 
 Each feature is an inline section (`core.FeatureGroup`) on the tab named by its prototype's
 `optionsTab` (`messages`, `windows`, `buttons`, `log`; the `TABS` table in `options.lua`), in TOC

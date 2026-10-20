@@ -685,7 +685,6 @@ L["Vendor price"] = true
 
 -- SeamlessUI
 L["%d / %d"] = true
-L["%d / %d ms"] = true
 L["%s (%.2f%%)"] = true
 L["%s / %s (%.2f%%)"] = true
 L["%s XP"] = true
@@ -707,7 +706,9 @@ L["Completed quests:"] = true
 L["Could not set the anchor: %s"] = true
 L["Enable Blizzard Edit Mode extensions"] = true
 L["Extend Edit Mode"] = true
+L["FPS:"] = true
 L["General UI improvements for the Seamless suite."] = true
+L["MS:"] = true
 L["Position editing is unavailable. Select an enabled frame in a custom layout."] = true
 L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."] = true
 L["Reserved for future frame options. This setting has no effect yet."] = true

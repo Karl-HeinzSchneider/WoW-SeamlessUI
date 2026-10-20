@@ -1,6 +1,6 @@
 -- Run from the repository root: lua src/tests/fps-display.lua
 unpack = unpack or table.unpack
-local callbacks, move, spec, frame, latency
+local callbacks, move, spec, frame, display
 local frames = {}
 local frameSettings
 callbacks = {}
@@ -32,7 +32,9 @@ local lib = {
 local function newFrame()
     return {
         points = {},
-        SetSize = function() end,
+        SetSize = function(self, width, height)
+            self.width, self.height = width, height
+        end,
         SetClampedToScreen = function() end,
         ClearAllPoints = function(self)
             self.points = {}
@@ -66,10 +68,29 @@ local function newFrame()
         SetScript = function(self, name, script)
             self[name] = script
         end,
+        SetAlpha = function(self, alpha)
+            self.alpha = alpha
+        end,
+        GetWidth = function(self)
+            return self.width or 0
+        end,
+        GetHeight = function(self)
+            return self.height or 0
+        end,
         CreateFontString = function()
             return {
                 SetFontObject = function() end,
                 SetPoint = function() end,
+                SetJustifyH = function() end,
+                SetText = function(self, text)
+                    self.text = text
+                end,
+                GetStringWidth = function(self)
+                    return #self.text * 6
+                end,
+                GetStringHeight = function()
+                    return 12
+                end,
                 SetTextColor = function(self, r, g, b)
                     self.color = { r, g, b }
                 end,
@@ -87,10 +108,13 @@ CreateFrame = function(_, _, parent)
     local created = newFrame()
     created.parent = parent
     table.insert(frames, created)
-    frame, latency = frames[1], frames[2]
+    frame, display = frames[1], frames[2]
     return created
 end
 local netHome, netWorld = 40, 60
+GetFramerate = function()
+    return 1234.56
+end
 GetNetStats = function()
     return 0, 0, netHome, netWorld
 end
@@ -128,21 +152,30 @@ assert(frame.shown and spec.options[1].name == "FPS display")
 assert(FramerateFrame.shown, "showing Edit Mode frame must show FPS")
 assert(frameSettings[1].default == false and not frameSettings[1].get())
 assert(frameSettings[2].default == false and not frameSettings[2].get())
-assert(not latency.shown, "latency must be off by default")
+assert(not display.shown and FramerateFrame.alpha ~= 0, "latency must be off by default")
 frameSettings[2].set(nil, true)
-assert(profile.fpsDisplay.showLatency and latency.shown, "latency option must show latency")
-latency.OnShow()
-assert(latency.Text.text == "40 / 60 ms" and latency.Text.color[1] < latency.Text.color[2])
+assert(profile.fpsDisplay.showLatency and display.shown, "latency option must show the two-row display")
+assert(FramerateFrame.alpha == 0, "the two-row display must replace the native counter")
+assert(display.parent ~= FramerateFrame, "display must not resize the counter as its child")
+assert(display.points[1][2] == frame, "display must follow the custom anchor")
+assert(frame.width == display.width and frame.height == display.height, "anchor must match the display")
+assert(display.height == 26, "display must have two rows")
+display.OnShow()
+assert(display.FramerateText.text == "999.9", "framerate must be capped at 999.9")
+assert(display.LatencyText.text == "60" and display.LatencyText.color[1] < display.LatencyText.color[2])
 netWorld = 300
-latency.OnUpdate(latency, 1)
-assert(latency.Text.text == "40 / 300 ms" and latency.Text.color[1] == 1 and latency.Text.color[2] < 1)
-assert(latency.parent ~= FramerateFrame, "latency must not resize the counter as its child")
+display.OnUpdate(display, 1)
+assert(display.LatencyText.text == "300" and display.LatencyText.color[1] == 1)
+netWorld = 5000
+display.OnUpdate(display, 1)
+assert(display.LatencyText.text == "999", "latency must be capped at 999")
 FramerateFrame:SetShown(false)
-assert(not latency.shown, "latency must hide with the counter")
+assert(not display.shown, "display must hide with the counter")
 FramerateFrame:SetShown(true)
-assert(latency.shown, "latency must show with the counter")
+assert(display.shown, "display must show with the counter")
 frameSettings[2].set(nil, false)
-assert(not latency.shown, "turning latency off must hide it")
+assert(not display.shown and FramerateFrame.alpha == 1, "turning latency off must restore the counter")
+assert(frame.width == 120, "anchor must return to its normal size")
 move(frame, layout, "CENTER", 100, 200)
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "CENTER" and frame.points[1][4] == 100)
@@ -179,6 +212,6 @@ layout = "Modern"
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "BOTTOMRIGHT", "profiles must have independent positions")
 module:OnDisable()
-assert(not frame.shown and not latency.shown and FramerateFrame.points[1][2] == UIParent)
+assert(not frame.shown and not display.shown and FramerateFrame.points[1][2] == UIParent)
 assert(FramerateFrame.points[1][4] == -2, "disable must restore original anchor")
 print("FPS display tests passed")

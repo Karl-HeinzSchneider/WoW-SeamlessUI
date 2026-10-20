@@ -688,7 +688,6 @@ end
 
 -- SeamlessUI
 -- L["%d / %d"] = "%d / %d"
--- L["%d / %d ms"] = "%d / %d ms"
 -- L["%s (%.2f%%)"] = "%s (%.2f%%)"
 -- L["%s / %s (%.2f%%)"] = "%s / %s (%.2f%%)"
 -- L["%s XP"] = "%s XP"
@@ -710,7 +709,9 @@ end
 -- L["Could not set the anchor: %s"] = "Could not set the anchor: %s"
 -- L["Enable Blizzard Edit Mode extensions"] = "Enable Blizzard Edit Mode extensions"
 -- L["Extend Edit Mode"] = "Extend Edit Mode"
+-- L["FPS:"] = "FPS:"
 -- L["General UI improvements for the Seamless suite."] = "General UI improvements for the Seamless suite."
+-- L["MS:"] = "MS:"
 -- L["Position editing is unavailable. Select an enabled frame in a custom layout."] = "Position editing is unavailable. Select an enabled frame in a custom layout."
 -- L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."] = "Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."
 -- L["Reserved for future frame options. This setting has no effect yet."] = "Reserved for future frame options. This setting has no effect yet."

@@ -13,50 +13,72 @@ local originalPoints
 local showAnchor = true
 local visibilityBeforeEditMode
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
-local latency
-local LATENCY_INTERVAL = 1
+local display
+local UPDATE_INTERVAL = 0.25
+local ROW_GAP = 2
 
-local function UpdateLatency()
-    local _, _, home, world = GetNetStats()
-    home, world = home or 0, world or 0
-    local worst = math.max(home, world)
-    if worst < 100 then
-        latency.Text:SetTextColor(0.1, 1, 0.1)
-    elseif worst < 250 then
-        latency.Text:SetTextColor(1, 0.82, 0)
+local function UpdateDisplay()
+    local _, _, _, world = GetNetStats()
+    world = math.min(world or 0, 999)
+    if world < 100 then
+        display.LatencyText:SetTextColor(0.1, 1, 0.1)
+    elseif world < 250 then
+        display.LatencyText:SetTextColor(1, 0.82, 0)
     else
-        latency.Text:SetTextColor(1, 0.1, 0.1)
+        display.LatencyText:SetTextColor(1, 0.1, 0.1)
     end
-    latency.Text:SetFormattedText(L["%d / %d ms"], home, world)
+    display.LatencyText:SetFormattedText("%d", world)
+    display.FramerateText:SetFormattedText("%.1f", math.min(GetFramerate(), 999.9))
 end
 
-local function RefreshLatency()
-    latency:SetShown(module:IsEnabled() and app.db.profile.fpsDisplay.showLatency and FramerateFrame:IsShown())
+-- With latency on, the native counter is faded out and this two-row display takes its place:
+-- labels left, values right-aligned, sized once for "999.9" so it never resizes. Kept out of
+-- the counter's children, since the counter sizes itself to fit them. Follows the counter's
+-- visibility (Ctrl+R) through script hooks; OnUpdate only runs while shown.
+local function RefreshDisplay()
+    local shown = module:IsEnabled() and app.db.profile.fpsDisplay.showLatency and FramerateFrame:IsShown()
+    display:SetShown(shown)
+    FramerateFrame:SetAlpha(shown and 0 or 1)
+    anchor:SetSize(shown and display:GetWidth() or 120, shown and display:GetHeight() or 24)
 end
 
--- Home/world latency left of the counter. Kept out of the counter's children: the counter
--- sizes itself to fit them, so a child pushes its own text out of place. Follows the
--- counter's visibility through script hooks; OnUpdate only runs while shown.
-local function CreateLatency()
-    latency = CreateFrame("Frame", nil, UIParent)
-    latency:SetSize(80, 16)
-    latency.Text = latency:CreateFontString(nil, "OVERLAY")
+local function CreateDisplay()
+    display = CreateFrame("Frame", nil, UIParent)
+    display:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
     local counterText = FramerateFrame.FramerateText or FramerateText
-    latency.Text:SetFontObject(counterText and counterText:GetFontObject() or GameFontHighlightSmall)
-    latency.Text:SetPoint("RIGHT")
-    local label = FramerateFrame.Label or FramerateLabel
-    latency:SetPoint("RIGHT", label or FramerateFrame, "LEFT", -8, 0)
-    local elapsedTotal = LATENCY_INTERVAL
-    latency:SetScript("OnUpdate", function(_, elapsed)
+    local font = counterText and counterText:GetFontObject() or GameFontHighlightSmall
+    local function Text(justify)
+        local text = display:CreateFontString(nil, "OVERLAY")
+        text:SetFontObject(font)
+        text:SetJustifyH(justify)
+        return text
+    end
+    display.FramerateLabel = Text("LEFT")
+    display.FramerateLabel:SetText(type(FRAMERATE_LABEL) == "string" and FRAMERATE_LABEL or L["FPS:"])
+    display.LatencyLabel = Text("LEFT")
+    display.LatencyLabel:SetText(L["MS:"])
+    display.FramerateText = Text("RIGHT")
+    display.LatencyText = Text("RIGHT")
+    display.FramerateText:SetText("999.9")
+    local labelWidth = math.max(display.FramerateLabel:GetStringWidth(), display.LatencyLabel:GetStringWidth())
+    local valueWidth = display.FramerateText:GetStringWidth()
+    local rowHeight = display.FramerateText:GetStringHeight()
+    display:SetSize(math.ceil(labelWidth + 4 + valueWidth), math.ceil(rowHeight * 2 + ROW_GAP))
+    display.FramerateLabel:SetPoint("TOPLEFT")
+    display.LatencyLabel:SetPoint("BOTTOMLEFT")
+    display.FramerateText:SetPoint("TOPRIGHT")
+    display.LatencyText:SetPoint("BOTTOMRIGHT")
+    local elapsedTotal = UPDATE_INTERVAL
+    display:SetScript("OnUpdate", function(_, elapsed)
         elapsedTotal = elapsedTotal + elapsed
-        if elapsedTotal >= LATENCY_INTERVAL then
+        if elapsedTotal >= UPDATE_INTERVAL then
             elapsedTotal = 0
-            UpdateLatency()
+            UpdateDisplay()
         end
     end)
-    latency:SetScript("OnShow", UpdateLatency)
-    FramerateFrame:HookScript("OnShow", RefreshLatency)
-    FramerateFrame:HookScript("OnHide", RefreshLatency)
+    display:SetScript("OnShow", UpdateDisplay)
+    FramerateFrame:HookScript("OnShow", RefreshDisplay)
+    FramerateFrame:HookScript("OnHide", RefreshDisplay)
 end
 
 function module:Refresh()
@@ -77,7 +99,7 @@ function module:Refresh()
         FramerateFrame:SetShown(visibilityBeforeEditMode)
         visibilityBeforeEditMode = nil
     end
-    RefreshLatency()
+    RefreshDisplay()
     app.core:RefreshEditModeOptions()
 end
 
@@ -125,7 +147,7 @@ function module:OnEnable()
                 end,
             },
         })
-        CreateLatency()
+        CreateDisplay()
     end
     FramerateFrame:ClearAllPoints()
     FramerateFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
@@ -139,7 +161,9 @@ function module:OnDisable()
     end
     if anchor then
         anchor:Hide()
-        latency:Hide()
+        anchor:SetSize(120, 24)
+        display:Hide()
+        FramerateFrame:SetAlpha(1)
     end
     if originalPoints then
         FramerateFrame:ClearAllPoints()

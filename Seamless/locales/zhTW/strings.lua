@@ -725,6 +725,7 @@ end
 -- L["This frame has no anchor in the active layout."] = "This frame has no anchor in the active layout."
 -- L["Time to max rested:"] = "Time to max rested:"
 -- L["UI"] = "UI"
+-- L["White latency text"] = "White latency text"
 -- L["X and Y must be finite numbers."] = "X and Y must be finite numbers."
 -- L["X"] = "X"
 -- L["XP bar tooltip"] = "XP bar tooltip"

@@ -722,6 +722,7 @@ L["The previous secondary anchor is unavailable or would create a cycle."] = tru
 L["This frame has no anchor in the active layout."] = true
 L["Time to max rested:"] = true
 L["UI"] = true
+L["White latency text"] = true
 L["X and Y must be finite numbers."] = true
 L["X"] = true
 L["XP bar tooltip"] = true

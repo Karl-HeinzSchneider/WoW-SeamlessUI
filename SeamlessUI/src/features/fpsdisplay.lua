@@ -16,11 +16,14 @@ local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
 local display
 local UPDATE_INTERVAL = 0.25
 local ROW_GAP = 2
+local textColor = { 1, 1, 1 }
 
 local function UpdateDisplay()
     local _, _, _, world = GetNetStats()
     world = math.min(world or 0, 999)
-    if world < 100 then
+    if app.db.profile.fpsDisplay.whiteLatency then
+        display.LatencyText:SetTextColor(unpack(textColor))
+    elseif world < 100 then
         display.LatencyText:SetTextColor(0.1, 1, 0.1)
     elseif world < 250 then
         display.LatencyText:SetTextColor(1, 0.82, 0)
@@ -45,11 +48,27 @@ end
 local function CreateDisplay()
     display = CreateFrame("Frame", nil, UIParent)
     display:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
+    -- Copy the counter's own font and color so both rows look like the default display.
     local counterText = FramerateFrame.FramerateText or FramerateText
-    local font = counterText and counterText:GetFontObject() or GameFontHighlightSmall
+    if not counterText then
+        for _, region in ipairs({ FramerateFrame:GetRegions() }) do
+            if region:GetObjectType() == "FontString" then
+                counterText = region
+            end
+        end
+    end
+    local fontPath, fontSize, fontFlags
+    if counterText then
+        fontPath, fontSize, fontFlags = counterText:GetFont()
+        textColor = { counterText:GetTextColor() }
+    end
     local function Text(justify)
         local text = display:CreateFontString(nil, "OVERLAY")
-        text:SetFontObject(font)
+        text:SetFontObject(SystemFont_Shadow_Med1 or GameFontHighlight)
+        if fontPath then
+            text:SetFont(fontPath, fontSize, fontFlags)
+        end
+        text:SetTextColor(unpack(textColor))
         text:SetJustifyH(justify)
         return text
     end
@@ -144,6 +163,18 @@ function module:OnEnable()
                 set = function(_, value)
                     app.db.profile.fpsDisplay.showLatency = value
                     module:Refresh()
+                end,
+            },
+            {
+                name = L["White latency text"],
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.whiteLatency
+                end,
+                set = function(_, value)
+                    app.db.profile.fpsDisplay.whiteLatency = value
+                    UpdateDisplay()
                 end,
             },
         })

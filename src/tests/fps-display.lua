@@ -49,6 +49,7 @@ local function newFrame()
                 hook(self)
             end
         end,
+        GetRegions = function() end,
         HookScript = function(self, name, script)
             self.hooks = self.hooks or {}
             self.hooks[name] = script
@@ -82,6 +83,13 @@ local function newFrame()
                 SetFontObject = function() end,
                 SetPoint = function() end,
                 SetJustifyH = function() end,
+                SetFont = function() end,
+                GetFont = function()
+                    return "Fonts\\FRIZQT__.TTF", 16, "OUTLINE"
+                end,
+                GetTextColor = function()
+                    return 1, 1, 1
+                end,
                 SetText = function(self, text)
                     self.text = text
                 end,
@@ -169,6 +177,12 @@ assert(display.LatencyText.text == "300" and display.LatencyText.color[1] == 1)
 netWorld = 5000
 display.OnUpdate(display, 1)
 assert(display.LatencyText.text == "999", "latency must be capped at 999")
+assert(frameSettings[3].default == false and not frameSettings[3].get())
+frameSettings[3].set(nil, true)
+local r, g, b = unpack(display.LatencyText.color)
+assert(profile.fpsDisplay.whiteLatency and r == 1 and g == 1 and b == 1, "white latency option must use white")
+frameSettings[3].set(nil, false)
+assert(display.LatencyText.color[2] < 1, "latency colors must return")
 FramerateFrame:SetShown(false)
 assert(not display.shown, "display must hide with the counter")
 FramerateFrame:SetShown(true)

@@ -23,7 +23,9 @@ features are ready for public release.
    `fpsDisplay.showLatency`, default off). With latency on, the native counter is faded out
    (alpha 0, still driving Ctrl+R visibility) and an addon-owned two-row display replaces it:
    "FPS:" and "MS:" left, framerate and world latency (`GetNetStats`, green below 100 ms, yellow
-   below 250 ms, red above) right-aligned. Values cap at 999.9/999, so the display is sized once
+   below 250 ms, red above; "White latency text", profile `fpsDisplay.whiteLatency`, default off,
+   uses the counter's text color instead) right-aligned. Copies the counter's font (`GetFont`)
+   and text color so it matches the default size. Values cap at 999.9/999, so the display is sized once
    for "999.9" and the Edit Mode anchor takes that size. Never parent it to the counter: the
    counter sizes itself to its children, which pushed the FPS text out of its box. It follows
    the counter's visibility through OnShow/OnHide hooks and updates four times a second while shown. Ctrl+R still controls the native

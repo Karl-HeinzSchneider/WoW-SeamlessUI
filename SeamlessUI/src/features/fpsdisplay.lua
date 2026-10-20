@@ -90,14 +90,38 @@ local function CreateDisplay()
     FramerateFrame:HookScript("OnHide", RefreshDisplay)
 end
 
+-- The active layout's position; dragging stores only point, x and y relative to UIParent.
+local function CurrentPosition()
+    local name = lib:GetActiveLayoutName()
+    local position = (name and app.db.profile.fpsDisplay.layouts[name]) or defaults
+    return {
+        point = position.point,
+        relativePoint = position.relativePoint or position.point,
+        relativeTo = position.relativeTo or "UIParent",
+        x = position.x,
+        y = position.y,
+    }
+end
+
+local function RelativeFrame(name)
+    local frame = _G[name]
+    if type(frame) == "table" and frame.IsObjectType and frame:IsObjectType("Frame") then
+        for _, entry in ipairs(app.blizzardPosition:GetAnchorFrames(anchor)) do
+            if entry.value == name then
+                return frame
+            end
+        end
+    end
+    return UIParent
+end
+
 function module:Refresh()
     if not anchor or not self:IsEnabled() then
         return
     end
-    local name = lib:GetActiveLayoutName()
-    local position = (name and app.db.profile.fpsDisplay.layouts[name]) or defaults
+    local position = CurrentPosition()
     anchor:ClearAllPoints()
-    anchor:SetPoint(position.point, UIParent, position.point, position.x, position.y)
+    anchor:SetPoint(position.point, RelativeFrame(position.relativeTo), position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
     if lib:IsInEditMode() then
         if visibilityBeforeEditMode == nil then
@@ -127,9 +151,11 @@ function module:OnEnable()
         lib:AddFrame(anchor, function(_, layoutName, point, x, y)
             if module:IsEnabled() and layoutName then
                 app.db.profile.fpsDisplay.layouts[layoutName] = { point = point, x = x, y = y }
+                -- Reset Position does not refresh the dialog itself; keep the Position values current.
+                lib:RefreshFrameSettings(anchor)
             end
         end, defaults, L["FPS display"])
-        lib:AddFrameSettings(anchor, {
+        local settings = {
             {
                 name = L["Show FPS on startup"],
                 kind = lib.SettingType.Checkbox,
@@ -167,7 +193,29 @@ function module:OnEnable()
                     UpdateDisplay()
                 end,
             },
+        }
+        local position = app.core:GetEditModePositionSettings({
+            get = function(key)
+                return CurrentPosition()[key]
+            end,
+            set = function(key, value)
+                local name = lib:GetActiveLayoutName()
+                if not name or not module:IsEnabled() then
+                    return
+                end
+                local current = CurrentPosition()
+                current[key] = value
+                app.db.profile.fpsDisplay.layouts[name] = current
+                module:Refresh()
+            end,
+            anchorFrames = function()
+                return app.blizzardPosition:GetAnchorFrames(anchor)
+            end,
         })
+        for _, setting in ipairs(position) do
+            settings[#settings + 1] = setting
+        end
+        lib:AddFrameSettings(anchor, settings)
         CreateDisplay()
     end
     FramerateFrame:ClearAllPoints()
@@ -246,7 +294,13 @@ lib:RegisterCallback("create", function(name, _, sourceName)
     ForEachLayout(function(layouts)
         local source = sourceName and layouts[sourceName]
         if source then
-            layouts[name] = { point = source.point, x = source.x, y = source.y }
+            layouts[name] = {
+                point = source.point,
+                relativePoint = source.relativePoint,
+                relativeTo = source.relativeTo,
+                x = source.x,
+                y = source.y,
+            }
         end
     end)
 end)

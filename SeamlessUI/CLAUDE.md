@@ -30,7 +30,9 @@ features are ready for public release.
    for "999.9" and the Edit Mode anchor takes that size. Never parent it to the counter: the
    counter sizes itself to its children, which pushed the FPS text out of its box. It follows
    the counter's visibility through OnShow/OnHide hooks and updates four times a second while shown. Ctrl+R still controls the native
-   counter outside Edit Mode. Positions are stored per native layout in the current UI profile, including layout
+   counter outside Edit Mode. Its settings end with Core's Position section; AnchorFrame lists
+   `blizzardPosition:GetAnchorFrames(anchor)`, and dragging stores a UIParent position again.
+   Positions are stored per native layout in the current UI profile, including layout
    copy/rename/delete handling. Disabling restores the counter's original anchors.
 6. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
    system. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft, except
@@ -82,8 +84,9 @@ features are ready for public release.
    enum groups are safe. Linked frames without their own Edit Mode system have no separate entry.
    XP/reputation entries identify native containers, not a fixed kind of content.
    Profile `blizzardEditMode` has a global `enabled` switch and per-frame
-   `enabled`, `addPosition`, `addMoreOptions` switches. Add position displays the position
-   widgets; Add more options only stores a preference for future controls. All extension
+   `enabled`, `addPosition`, `addMoreOptions` switches. Add position shows Core's collapsible
+   Position header (`core:CreateEditModeHeader`, sharing the Position sections' collapsed state)
+   with the position widgets under it; Add more options only stores a preference for future controls. All extension
    switches default on; both optional-control switches default off.
    AceDB wildcard defaults add independent settings for new registry keys without resetting
    existing frame preferences. Position editing honors the selected system's `isLocked` state.

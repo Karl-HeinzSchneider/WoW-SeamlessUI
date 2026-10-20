@@ -185,8 +185,8 @@ Only one favorites view is open at a time. Hide, collapse and profile rebuild di
 All ten slots register once with Core's namespaced LibEditMode via `core:GetEditModeLibrary()`.
 Use only documented library methods/callbacks; never read or alter Selection, internal pools,
 frameSelections or other library-owned state. The library owns selection visibility and dragging;
-we show/hide our parent windows. Position locking rejects movement in the position callback
-(the dragged preview can move temporarily until dropped). Dynamic getters and
+we show/hide our parent windows. Edit Mode moves always persist, even with Lock position outside
+Edit Mode on. Dynamic getters and
 setters read each pooled frame's current AceDB profile configuration. Geometry and skin settings
 remain authoritative; legacy `config.editMode` data is retained but no longer read. Each window's
 `editModeLayouts[layoutName]` snapshots position, dimensions, scale and linked anchor overrides
@@ -229,10 +229,10 @@ size lock, a skin dropdown and an Edit selected skin button opening that skin's 
 Meter configuration remains authoritative; synchronize checkbox/slider values and selected
 skin labels on rebuild/profile changes. Ignore initialization/outside-Edit-Mode callbacks.
 Explicit saved fixed-height choices are retained when changing the default to seven fixed rows.
-`lockPosition` defaults to false, supports shared defaults and per-window overrides, and
-blocks header dragging and rejects committed Edit Mode drag/arrow/reset movement independently of size.
-It is available in addon options, Edit Mode and the window gear menu. Explicit coordinate
-settings and anchor updates remain available while locked.
+`lockPosition` ("Lock position outside Edit Mode") defaults to false, supports shared defaults
+and per-window overrides, and blocks header dragging outside Edit Mode independently of size.
+Edit Mode dragging, arrow keys, Reset Position and the Position controls still move the window.
+It is available in addon options, Edit Mode (under Position) and the window gear menu.
 
 Run `lua src/tests/editmode-loading.lua` for namespaced embedding, isolated instances and Core access.
 Run `lua src/tests/damage-meter-service.lua` for capture, persistence, restrictions and indexes.
@@ -256,8 +256,11 @@ Verify default changes propagate only to inherited settings, including fonts and
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.
 
-Edit Mode lists window settings first, then a Style divider, Skin, Modify global style,
-and the appearance controls. It exposes bar height, padding (row spacing), transparency,
+Edit Mode lists Core's Position section first (its header, Lock position outside Edit Mode, then
+Anchor, AnchorParent, AnchorFrame = screen or another window, X, Y; edits go to the window's
+overrides and the active layout record), then the Window header and window settings, then a
+Style header with Numbers, Skin, Modify global style and the appearance controls. Headers use Core's
+collapsible `lib.SettingType.Header` row (see `Seamless/CLAUDE.md`). It exposes bar height, padding (row spacing), transparency,
 background, text size, spec icons, class colors and type selector visibility. Appearance edits
 update the selected shared skin when Modify global style is enabled (the default), refreshing
 all windows using it; otherwise they update only the selected window's local style overrides.

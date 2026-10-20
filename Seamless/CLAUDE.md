@@ -34,7 +34,7 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   edge, so the window never changes width. This is the
   only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
   `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
-  header plus Anchor, AnchorParent, AnchorFrame, X, Y and an "Anchor to a frame" button starting the
+  header plus Anchor, AnchorParent, AnchorFrame, X, Y and an "Quick anchor to frame" button starting the
   anchor picker on the selected frame, with `spec.anchorFrames` as targets resolved by the optional
   `spec.anchorFrame(value)` or the global of that name, UIParent excluded; the button row is
   `lib.SettingType.Button`, whose `click(frame)` gets the selected frame; collapse key

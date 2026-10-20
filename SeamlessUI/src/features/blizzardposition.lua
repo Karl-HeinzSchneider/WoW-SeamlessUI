@@ -336,7 +336,7 @@ function position:Create(parent)
     local pick = CreateFrame("Button", nil, view, "EditModeSystemSettingsDialogButtonTemplate")
     view.AnchorButton = pick
     pick:SetPoint("TOP", 0, -180)
-    pick:SetText(L["Anchor to a frame"])
+    pick:SetText(L["Quick anchor to frame"])
     pick:SetOnClickHandler(function()
         local system = view.system
         if not position:CanEdit(system) then

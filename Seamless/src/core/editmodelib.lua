@@ -347,7 +347,7 @@ local POINT_LABELS = {
 }
 
 ---LibEditMode settings for a collapsible Position section: Anchor, AnchorParent, AnchorFrame, X, Y
----and an "Anchor to a frame" button that starts the anchor picker.
+---and an "Quick anchor to frame" button that starts the anchor picker.
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and y;
 ---`spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
@@ -412,7 +412,7 @@ function addon:GetEditModePositionSettings(spec)
         offset(L["X"], "x", UIParent:GetWidth()),
         offset(L["Y"], "y", UIParent:GetHeight()),
         {
-            name = L["Anchor to a frame"],
+            name = L["Quick anchor to frame"],
             kind = lib.SettingType.Button,
             disabled = disabled,
             click = function(frame)

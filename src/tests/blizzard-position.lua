@@ -578,7 +578,7 @@ pet.systemInfo.isInDefaultPosition = false
 assert(position:Read(pet).relativeTo == "UIParent")
 EditModeManagerFrame.GetActiveLayoutSystemInfo = petLayout
 
--- "Anchor to a frame" offers the dropdown's frames, minus UIParent and frames that depend on
+-- "Quick anchor to frame" offers the dropdown's frames, minus UIParent and frames that depend on
 -- the selected one, and applies the picked anchor to the live draft.
 selected = player
 view.error = nil

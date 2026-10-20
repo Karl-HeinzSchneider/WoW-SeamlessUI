@@ -112,7 +112,6 @@ L["%s |cff%s[%s]|r %s"] = true
 L["/rl reloads the interface"] = true
 L["Addon compartment entry"] = true
 L["Addons"] = true
-L["Anchor to a frame"] = true
 L["Assumes inn/city rest at %g%% per 8 hours, without spending rested XP."] = true
 L["Click an anchor point on another frame. Right-click or Escape cancels."] = true
 L["Click an anchor point on the selected frame. Right-click or Escape cancels."] = true
@@ -133,6 +132,7 @@ L["Open the Seamless settings from Blizzard's addon compartment on the minimap, 
 L["Open the Seamless settings from the minimap."] = true
 L["Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent."] = true
 L["Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly."] = true
+L["Quick anchor to frame"] = true
 L["Reached"] = true
 L["Rested cap (configured)"] = true
 L["Rested cap"] = true

@@ -384,7 +384,7 @@ assert(stored.point == "TOP" and position[2].disabled(), "a locked position cann
 locked = false
 -- The anchor picker button lists the resolved frames and writes all five values at once.
 local button = position[7]
-assert(button.kind == lib.SettingType.Button and button.name == "Anchor to a frame")
+assert(button.kind == lib.SettingType.Button and button.name == "Quick anchor to frame")
 local picker
 function app.StartAnchorPicker(spec)
     picker = spec

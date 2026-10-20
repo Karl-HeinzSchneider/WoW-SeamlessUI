@@ -107,6 +107,9 @@ local function ApplyCollapsed(dialog)
     end
 end
 
+-- Space between the window's right edge and its scroll bar, which sits outside the window.
+local SCROLL_BAR_GAP = 6
+
 -- Put the selected frame's settings list in a scroll frame, built like Blizzard's own
 -- Edit Mode settings container (ResizeLayoutFrame + ScrollFrameTemplate with a maximum height).
 local function AddScrolling(dialog)
@@ -129,22 +132,40 @@ local function AddScrolling(dialog)
     dialog.Buttons:SetPoint("TOP", scroll, "BOTTOM", 0, -12)
     dialog.SettingsScroll = scroll
 
+    -- Keep the scroll bar outside the window's right edge, so it never takes width from the rows.
+    local function PlaceScrollBar()
+        local dialogRight, scrollRight = dialog:GetRight(), scroll:GetRight()
+        local inset = (dialogRight and scrollRight) and (dialogRight - scrollRight) or dialog.widthPadding / 2
+        local bar = scroll.ScrollBar
+        bar:ClearAllPoints()
+        bar:SetPoint("TOPLEFT", scroll, "TOPRIGHT", inset + SCROLL_BAR_GAP, 0)
+        bar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", inset + SCROLL_BAR_GAP, 0)
+    end
+
+    local function LayoutDialog()
+        dialog:Layout()
+        PlaceScrollBar()
+    end
+
     local update, refreshWidgets = dialog.Update, dialog.RefreshWidgets
     function dialog:Update(selection)
         if selection ~= self.selection then
             scroll:SetVerticalScroll(0)
         end
         scroll.maximumHeight = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
+        -- Measure with every section open, then keep that width so collapsing never resizes the window.
+        settings.fixedWidth = nil
         update(self, selection)
+        settings.fixedWidth = settings:GetWidth()
         ApplyCollapsed(self)
-        self:Layout()
+        LayoutDialog()
     end
     -- Never hide the dialog here: its OnHide clears the frame selection.
     function dialog:RefreshWidgets()
         refreshWidgets(self)
         ApplyCollapsed(self)
         if self:IsShown() then
-            self:Layout()
+            LayoutDialog()
         end
     end
 end

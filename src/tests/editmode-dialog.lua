@@ -40,6 +40,12 @@ end
 function methods:GetHeight()
     return self.height
 end
+function methods:GetWidth()
+    return self.width
+end
+function methods:GetRight()
+    return self.right
+end
 function methods:SetShown(value)
     self.shown = not not value
 end
@@ -252,6 +258,10 @@ scroll.verticalScroll = 50
 dialog:Update(selection)
 assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like Blizzard's container")
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
+assert(dialog.Settings.fixedWidth == dialog.Settings.width, "The list keeps its fully expanded width")
+local bar = scroll.ScrollBar
+assert(bar.points.TOPLEFT[1] == scroll and bar.points.TOPLEFT[3] == 20 + 6, "Scroll bar sits outside the window")
+assert(bar.points.BOTTOMLEFT[2] == "BOTTOMRIGHT" and bar.points.BOTTOMLEFT[3] == 26)
 local widgets = dialog.Settings.widgets
 local header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
 assert(header.template == "ListHeaderThreeSliceTemplate" and header.headerText == "Section")
@@ -268,7 +278,11 @@ header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widget
 
 -- Clicking a header collapses its rows and remembers it for the next Update.
 local layouts = dialog.layouts
+local fixedWidth = dialog.Settings.fixedWidth
+dialog.right, scroll.right = 400, 370
 header.click()
+assert(dialog.Settings.fixedWidth == fixedWidth, "Collapsing keeps the width")
+assert(bar.points.TOPLEFT[3] == 30 + 6, "Scroll bar follows the measured window edge")
 assert(not inside:IsShown() and after:IsShown() and header:IsShown())
 assert(header.collapsed and dialog.layouts == layouts + 2 and dialog:IsShown())
 dialog:Update(selection)

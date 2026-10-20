@@ -257,7 +257,7 @@ function addon:RefreshEditModeOptions()
                 if option.type == "header" then
                     row:SetHeaderText(option.name)
                     row:UpdateCollapsedState(collapsed)
-                    height = 26
+                    height = 28
                 elseif option.type == "toggle" then
                     row.Label:SetWidth(math.max(1, width - 32))
                     row.Label:SetText(option.name)

@@ -17,9 +17,10 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `editmodelib.lua`: suite-only additions to the namespaced LibEditMode, loaded before any
-  Edit Mode user. Adds `lib.SettingType.Header`: a collapsible section header built from Blizzard's
-  `ListHeaderThreeSliceTemplate` (the header its Settings and key binding lists use; supports
-  `name`, optional `key` and `hidden`), via `app.CreateEditModeHeader`. Clicking it
+  Edit Mode user. Adds `lib.SettingType.Header`: a collapsible section header remade in our code to
+  look like the character frame's reputation headers (`common-button-list-collapseExpand` bar,
+  gold `GameFontNormalLeft` name, +/- state icon on the right; supports `name`, optional `key`
+  and `hidden`), via `app.CreateEditModeHeader`. Clicking it
   hides every row up to the next header; collapsed sections are saved account-wide in
   `SeamlessDB.global.editModeCollapsed`. It also puts the selected frame's settings list in a
   scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),

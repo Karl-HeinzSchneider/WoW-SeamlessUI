@@ -30,18 +30,48 @@ function app.SetEditModeSectionCollapsed(key, collapsed)
     CollapsedSections()[key] = collapsed or nil
 end
 
----Create a collapsible section header from Blizzard's own list header template, the one its
----Settings and key bindings lists use (three-slice bar, title, expand/collapse arrow).
+local function SetCollapsedState(header, collapsed)
+    header.StateIcon:SetAtlas(collapsed and "common-button-list-plus" or "common-button-list-minus", true)
+end
+
+local function SetHeaderText(header, text)
+    header.Name:SetText(text)
+end
+
+---Create a collapsible section header that looks like the character frame's reputation headers:
+---the collapse/expand bar, a gold name on the left and a +/- icon on the right.
 ---@param parent table
 ---@param onClick fun()
 ---@return table header
 function app.CreateEditModeHeader(parent, onClick)
-    local header = CreateFrame("Button", nil, parent, "ListHeaderThreeSliceTemplate")
-    header:SetHeight(26)
-    header:SetClickHandler(function()
+    local header = CreateFrame("Button", nil, parent)
+    header:SetHeight(28)
+    local background = header:CreateTexture(nil, "BACKGROUND")
+    background:SetAtlas("common-button-list-collapseExpand")
+    background:SetAllPoints()
+    local highlight = header:CreateTexture(nil, "HIGHLIGHT")
+    highlight:SetAtlas("common-button-list-collapseExpand")
+    highlight:SetBlendMode("ADD")
+    highlight:SetAlpha(0.3)
+    highlight:SetAllPoints()
+    header.StateIcon = header:CreateTexture(nil, "BORDER")
+    header.StateIcon:SetPoint("RIGHT", -8, -1)
+    header.Name = header:CreateFontString(nil, "OVERLAY", "GameFontNormalLeft")
+    header.Name:SetPoint("LEFT", 10, 0)
+    header.Name:SetPoint("RIGHT", header.StateIcon, "LEFT", -4, 0)
+    header.SetHeaderText = SetHeaderText
+    header.UpdateCollapsedState = SetCollapsedState
+    header:SetScript("OnMouseDown", function()
+        header.Name:AdjustPointsOffset(1, -1)
+    end)
+    header:SetScript("OnMouseUp", function()
+        header.Name:AdjustPointsOffset(-1, 1)
+    end)
+    header:SetScript("OnClick", function()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         onClick()
     end)
+    SetCollapsedState(header, false)
     return header
 end
 
@@ -108,7 +138,7 @@ local function ApplyCollapsed(dialog)
 end
 
 -- Space between the window's right edge and its scroll bar, which sits outside the window.
-local SCROLL_BAR_GAP = 6
+local SCROLL_BAR_GAP = 2
 
 -- Put the selected frame's settings list in a scroll frame, built like Blizzard's own
 -- Edit Mode settings container (ResizeLayoutFrame + ScrollFrameTemplate with a maximum height).

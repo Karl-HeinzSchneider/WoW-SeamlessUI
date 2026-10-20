@@ -182,7 +182,7 @@ local app = {
         collapsedSections[key] = value or nil
     end,
     CreateEditModeHeader = function(parent, onClick)
-        local header = object(parent, "ListHeaderThreeSliceTemplate")
+        local header = object(parent, "Header")
         header.Toggle = onClick
         function header:SetHeaderText(text)
             self.headerText = text
@@ -341,20 +341,20 @@ for _, frame in ipairs(frames) do
         sectionHeader = frame
     end
 end
-assert(sectionHeader and sectionHeader.headerText == "Section" and sectionHeader:GetHeight() == 26)
-assert(sectionHeader.template == "ListHeaderThreeSliceTemplate" and not sectionHeader.collapsed)
-assert(panel:GetHeight() == expanded + 32 + 38)
+assert(sectionHeader and sectionHeader.headerText == "Section" and sectionHeader:GetHeight() == 28)
+assert(sectionHeader.template == "Header" and not sectionHeader.collapsed)
+assert(panel:GetHeight() == expanded + 34 + 38)
 -- Clicking a header collapses the rows after it, and clicking again expands them.
 sectionHeader.Toggle()
 assert(collapsedSections["panel:sections:title"] and sectionHeader.collapsed)
-assert(panel:GetHeight() == expanded + 32, "Collapsed rows reserve no space")
+assert(panel:GetHeight() == expanded + 34, "Collapsed rows reserve no space")
 sectionHeader.Toggle()
-assert(not collapsedSections["panel:sections:title"] and panel:GetHeight() == expanded + 32 + 38)
+assert(not collapsedSections["panel:sections:title"] and panel:GetHeight() == expanded + 34 + 38)
 -- A panel near the screen bottom caps its height and scrolls the rest.
 panel.top = 44 + 16 + 8 + 100
 core:RefreshEditModeOptions()
 assert(scroll:GetHeight() == 100 and panel:GetHeight() == 44 + 100 + 16)
-assert(scroll.scrollChild:GetHeight() == expanded - 44 - 16 + 32 + 38)
+assert(scroll.scrollChild:GetHeight() == expanded - 44 - 16 + 34 + 38)
 panel.top = nil
 for _, frame in ipairs(frames) do
     if frame.option and (frame.option.key == "title" or frame.option.key == "inside") then

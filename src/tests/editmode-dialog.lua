@@ -87,6 +87,9 @@ end
 function methods:SetNormalTexture(texture)
     self.normalTexture = texture
 end
+function methods:SetAtlas(atlas)
+    self.atlas = atlas
+end
 function methods:Layout()
     self.layouts = (self.layouts or 0) + 1
 end
@@ -109,6 +112,9 @@ for _, name in ipairs({
     "SetPushedTexture",
     "SetAllPoints",
     "EnableMouseWheel",
+    "SetBlendMode",
+    "SetAlpha",
+    "AdjustPointsOffset",
 }) do
     methods[name] = function() end
 end
@@ -181,17 +187,6 @@ function CreateFrame(kind, name, parent, template)
     if template and template:find("ScrollFrameTemplate", 1, true) then
         frame.ScrollBar = object("EventFrame", frame)
     end
-    if template == "ListHeaderThreeSliceTemplate" then
-        function frame:SetClickHandler(handler)
-            self.click = handler
-        end
-        function frame:SetHeaderText(text)
-            self.headerText = text
-        end
-        function frame:UpdateCollapsedState(collapsed)
-            self.collapsed = collapsed
-        end
-    end
     if template == "UIPanelCloseButton" then
         frame.HookScript = function() end
     end
@@ -260,14 +255,14 @@ assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like B
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
 assert(dialog.Settings.fixedWidth == dialog.Settings.width, "The list keeps its fully expanded width")
 local bar = scroll.ScrollBar
-assert(bar.points.TOPLEFT[1] == scroll and bar.points.TOPLEFT[3] == 20 + 6, "Scroll bar sits outside the window")
-assert(bar.points.BOTTOMLEFT[2] == "BOTTOMRIGHT" and bar.points.BOTTOMLEFT[3] == 26)
+assert(bar.points.TOPLEFT[1] == scroll and bar.points.TOPLEFT[3] == 20 + 2, "Scroll bar sits outside the window")
+assert(bar.points.BOTTOMLEFT[2] == "BOTTOMRIGHT" and bar.points.BOTTOMLEFT[3] == 22)
 local widgets = dialog.Settings.widgets
 local header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
-assert(header.template == "ListHeaderThreeSliceTemplate" and header.headerText == "Section")
-assert(header.height == 26 and header.width == 330 and header.layoutIndex == 1 and header:IsShown())
+assert(header.kind == "Button" and header.Name.text == "Section" and header.Name.font == "GameFontNormalLeft")
+assert(header.height == 28 and header.width == 330 and header.layoutIndex == 1 and header:IsShown())
 assert(not hiddenHeader:IsShown() and after:IsShown(), "A hidden header collapses nothing")
-assert(inside:IsShown() and header.collapsed == false)
+assert(inside:IsShown() and header.StateIcon.atlas == "common-button-list-minus")
 assert(header:GetParent():GetParent() == scroll)
 
 scroll.verticalScroll = 50
@@ -280,11 +275,11 @@ header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widget
 local layouts = dialog.layouts
 local fixedWidth = dialog.Settings.fixedWidth
 dialog.right, scroll.right = 400, 370
-header.click()
+header.scripts.OnClick(header)
 assert(dialog.Settings.fixedWidth == fixedWidth, "Collapsing keeps the width")
-assert(bar.points.TOPLEFT[3] == 30 + 6, "Scroll bar follows the measured window edge")
+assert(bar.points.TOPLEFT[3] == 30 + 2, "Scroll bar follows the measured window edge")
 assert(not inside:IsShown() and after:IsShown() and header:IsShown())
-assert(header.collapsed and dialog.layouts == layouts + 2 and dialog:IsShown())
+assert(header.StateIcon.atlas == "common-button-list-plus" and dialog.layouts == layouts + 2 and dialog:IsShown())
 dialog:Update(selection)
 assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")
 widgets[1]:Toggle()

@@ -8,12 +8,145 @@ local module = app.addon:NewModule("BlizzardEditMode", "AceEvent-3.0", "AceHook-
 app.blizzardEditMode = module
 module:SetEnabledState(false)
 
-local frames = {
-    { key = "player", name = L["Player frame"], index = "Player" },
-    { key = "target", name = L["Target frame"], index = "Target" },
-    { key = "pet", name = L["Pet frame"], index = "Pet" },
-    { key = "focus", name = L["Focus frame"], index = "Focus" },
+local frames = {}
+local function add(key, name, system, indices, index, category)
+    frames[#frames + 1] =
+        { key = key, name = name, system = system, indices = indices, index = index, category = category }
+end
+add("player", L["Player frame"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Player", "units")
+add("target", L["Target frame"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Target", "units")
+add("pet", L["Pet frame"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Pet", "units")
+add("focus", L["Focus frame"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Focus", "units")
+add("party", L["Party frames"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Party", "units")
+add("raid", L["Raid frames"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Raid", "units")
+add("boss", L["Boss frames"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Boss", "units")
+add("arena", L["Arena frames"], "UnitFrame", "EditModeUnitFrameSystemIndices", "Arena", "units")
+add(
+    "actionBar1",
+    string.format(L["Action bar %d"], 1),
+    "ActionBar",
+    "EditModeActionBarSystemIndices",
+    "MainBar",
+    "bars"
+)
+add("actionBar2", string.format(L["Action bar %d"], 2), "ActionBar", "EditModeActionBarSystemIndices", "Bar2", "bars")
+add("actionBar3", string.format(L["Action bar %d"], 3), "ActionBar", "EditModeActionBarSystemIndices", "Bar3", "bars")
+add(
+    "actionBar4",
+    string.format(L["Action bar %d"], 4),
+    "ActionBar",
+    "EditModeActionBarSystemIndices",
+    "RightBar1",
+    "bars"
+)
+add(
+    "actionBar5",
+    string.format(L["Action bar %d"], 5),
+    "ActionBar",
+    "EditModeActionBarSystemIndices",
+    "RightBar2",
+    "bars"
+)
+add(
+    "actionBar6",
+    string.format(L["Action bar %d"], 6),
+    "ActionBar",
+    "EditModeActionBarSystemIndices",
+    "ExtraBar1",
+    "bars"
+)
+add(
+    "actionBar7",
+    string.format(L["Action bar %d"], 7),
+    "ActionBar",
+    "EditModeActionBarSystemIndices",
+    "ExtraBar2",
+    "bars"
+)
+add(
+    "actionBar8",
+    string.format(L["Action bar %d"], 8),
+    "ActionBar",
+    "EditModeActionBarSystemIndices",
+    "ExtraBar3",
+    "bars"
+)
+add("stanceBar", L["Stance bar"], "ActionBar", "EditModeActionBarSystemIndices", "StanceBar", "bars")
+add("petBar", L["Pet action bar"], "ActionBar", "EditModeActionBarSystemIndices", "PetActionBar", "bars")
+add("possessBar", L["Possess action bar"], "ActionBar", "EditModeActionBarSystemIndices", "PossessActionBar", "bars")
+add("buffs", L["Buffs"], "AuraFrame", "EditModeAuraFrameSystemIndices", "BuffFrame", "auras")
+add("debuffs", L["Debuffs"], "AuraFrame", "EditModeAuraFrameSystemIndices", "DebuffFrame", "auras")
+add(
+    "statusBar1",
+    string.format(L["XP / reputation bar %d"], 1),
+    "StatusTrackingBar",
+    "EditModeStatusTrackingBarSystemIndices",
+    "StatusTrackingBar1",
+    "other"
+)
+add(
+    "statusBar2",
+    string.format(L["XP / reputation bar %d"], 2),
+    "StatusTrackingBar",
+    "EditModeStatusTrackingBarSystemIndices",
+    "StatusTrackingBar2",
+    "other"
+)
+add("minimap", L["Minimap"], "Minimap", nil, nil, "other")
+add("castBar", L["Cast bar"], "CastBar", nil, nil, "other")
+add("encounterBar", L["Encounter bar"], "EncounterBar", nil, nil, "other")
+add("extraAbilities", L["Extra abilities"], "ExtraAbilities", nil, nil, "other")
+add("objectiveTracker", L["Objective tracker"], "ObjectiveTracker", nil, nil, "other")
+add("microMenu", L["Micro menu"], "MicroMenu", nil, nil, "other")
+add("bags", L["Bags"], "Bags", nil, nil, "other")
+add("vehicleLeave", L["Leave vehicle button"], "VehicleLeaveButton", nil, nil, "other")
+add("vehicleSeat", L["Vehicle seat indicator"], "VehicleSeatIndicator", nil, nil, "other")
+add("loot", L["Loot frame"], "LootFrame", nil, nil, "other")
+add("tooltip", L["Tooltip"], "HudTooltip", nil, nil, "other")
+add("durability", L["Durability indicator"], "DurabilityFrame", nil, nil, "other")
+add("timers", L["Timer bars"], "TimerBars", nil, nil, "other")
+add("chat", L["Chat frame"], "ChatFrame", nil, nil, "other")
+add("talkingHead", L["Talking head"], "TalkingHeadFrame", nil, nil, "other")
+add("resource", L["Personal resource display"], "PersonalResourceDisplay", nil, nil, "other")
+add("totems", L["Totem action bar"], "TotemActionBar", nil, nil, "other")
+add("raidWarning", L["Raid warning"], "RaidWarning", nil, nil, "other")
+add("groupFinder", L["Group finder"], "GroupFinder", nil, nil, "other")
+add("lossOfControl", L["Loss of control"], "LossOfControl", nil, nil, "other")
+add("archaeology", L["Archaeology bar"], "ArchaeologyBar", nil, nil, "other")
+add("swingMainHand", L["Main-hand swing timer"], "SwingTimer", "EditModeSwingTimerSystemIndices", "MainHand", "other")
+add("swingOffHand", L["Off-hand swing timer"], "SwingTimer", "EditModeSwingTimerSystemIndices", "OffHand", "other")
+add("swingRanged", L["Ranged swing timer"], "SwingTimer", "EditModeSwingTimerSystemIndices", "Ranged", "other")
+
+local categories = {
+    { key = "units", name = L["Unit frames"] },
+    { key = "bars", name = L["Action bars"] },
+    { key = "auras", name = L["Auras"] },
+    { key = "other", name = L["Other frames"] },
 }
+
+local function matches(system, spec)
+    local id = Enum.EditModeSystem[spec.system]
+    if not id or system.system ~= id then
+        return false
+    end
+    if spec.index then
+        local indices = Enum[spec.indices]
+        local index = indices and indices[spec.index]
+        return index ~= nil and system.systemIndex == index
+    end
+    return true
+end
+
+local function available(spec)
+    local manager = EditModeManagerFrame
+    for _, system in ipairs(manager and manager.registeredSystemFrames or {}) do
+        if matches(system, spec) then
+            return true
+        end
+    end
+    return false
+end
+
 local panel, title, positionView
 
 local function settings()
@@ -62,12 +195,11 @@ function module:GetSelectedFrame()
         return
     end
     local system = dialog.attachedToSystem
-    if not system or system.system ~= Enum.EditModeSystem.UnitFrame then
+    if not system then
         return
     end
     for _, spec in ipairs(frames) do
-        local index = Enum.EditModeUnitFrameSystemIndices[spec.index]
-        if index and system.systemIndex == index and settings().frames[spec.key].enabled then
+        if matches(system, spec) and settings().frames[spec.key].enabled then
             return system, spec
         end
     end
@@ -149,12 +281,36 @@ function module:Options()
             end,
         },
     }
+    for categoryOrder, category in ipairs(categories) do
+        args[category.key .. "Heading"] = {
+            type = "header",
+            order = categoryOrder * 1000,
+            name = category.name,
+            hidden = function()
+                for _, spec in ipairs(frames) do
+                    if spec.category == category.key and available(spec) then
+                        return false
+                    end
+                end
+                return true
+            end,
+        }
+    end
     for order, spec in ipairs(frames) do
         local key = spec.key
+        local categoryOrder = 1
+        for index, category in ipairs(categories) do
+            if category.key == spec.category then
+                categoryOrder = index
+            end
+        end
         args[key] = {
             type = "group",
             inline = true,
-            order = order + 10,
+            order = categoryOrder * 1000 + order,
+            hidden = function()
+                return not available(spec)
+            end,
             name = spec.name,
             disabled = function()
                 return not settings().enabled

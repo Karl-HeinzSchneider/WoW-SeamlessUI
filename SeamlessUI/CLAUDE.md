@@ -23,7 +23,7 @@ features are ready for public release.
    counter outside Edit Mode. Positions are stored per native layout in the current UI profile, including layout
    copy/rename/delete handling. Disabling restores the counter's original anchors.
 6. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
-   unit frame. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft;
+   system. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft;
    Anchor/AnchorParent dropdowns expose nine anchor points. AnchorFrame offers only UIParent
    first, then Focus frame (`FocusFrame`), Minimap (`Minimap`), Player frame (`PlayerFrame`),
    Target frame (`TargetFrame`) in display-name order; invalid/cyclic targets are disabled.
@@ -52,11 +52,23 @@ features are ready for public release.
    anchor labels and errors; frame/anchor IDs stay unchanged. AnchorFrame sorts translated
    display names alphabetically after UIParent. Add new English keys under shared/Frames or
    SeamlessUI in `Seamless/locales/enUS.lua`, then run `npm run locales:sync`.
-7. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extension for Player,
-   Target, Pet and Focus. Profile `blizzardEditMode` has a global `enabled` switch and per-frame
+7. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extensions. Its registry
+   matches system enum plus subsystem enum/index, rather than assuming every selection is a
+   unit frame. Supports Player/Target/Pet/Focus/Party/Raid/Boss/Arena, action bars 1–8,
+   stance/pet/possess bars, buffs/debuffs, the two XP/reputation containers, minimap and other
+   native UI systems (cast/encounter/extra-ability bars, tracker, micro menu, bags, vehicle controls,
+   loot, tooltip, durability, timers, chat, talking head, personal resources, totems, raid warning,
+   group finder, loss of control, archaeology and swing timers).
+   Options are grouped under Unit frames, Action bars, Auras and Other frames. Entries/headings
+   are hidden until a matching frame exists in the client's `registeredSystemFrames`; missing
+   enum groups are safe. Linked frames without their own Edit Mode system have no separate entry.
+   XP/reputation entries identify native containers, not a fixed kind of content.
+   Profile `blizzardEditMode` has a global `enabled` switch and per-frame
    `enabled`, `addPosition`, `addMoreOptions` switches. Add position displays the position
    widgets; Add more options only stores a preference for future controls. All extension
    switches default on; both optional-control switches default off.
+   AceDB wildcard defaults add independent settings for new registry keys without resetting
+   existing frame preferences. Position editing honors the selected system's `isLocked` state.
    Uses removable AceHook post-hooks on the client dialog and an addon-owned UIParent panel
    below it; never joins native layout containers or accesses LibEditMode internals. The library
    has no public unregister/hide API for system extensions, so this panel is owned here to make

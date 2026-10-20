@@ -20,6 +20,7 @@ local profile = {
     blizzardEditMode = {
         enabled = true,
         frames = {
+            ["*"] = { enabled = true, addPosition = false, addMoreOptions = false },
             player = { enabled = true, addPosition = false, addMoreOptions = false },
             target = { enabled = true, addPosition = false, addMoreOptions = false },
             pet = { enabled = true, addPosition = false, addMoreOptions = false },

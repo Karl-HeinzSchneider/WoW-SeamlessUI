@@ -129,6 +129,7 @@ function position:CanEdit(system)
         and spec
         and app.db.profile.blizzardEditMode.frames[spec.key].addPosition
         and not InCombatLockdown()
+        and not system.isLocked
         and not EditModeManagerFrame:IsActiveLayoutPreset()
         and not EditModeManagerFrame.overrideLayoutInfo
         and override:IsReady()

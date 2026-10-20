@@ -296,6 +296,9 @@ AnchorTarget:ClearAllPoints()
 combat = true
 reject({ offsetX = 99 })
 combat = false
+player.isLocked = true
+reject({ offsetX = 99 })
+player.isLocked = false
 preset = true
 reject({ offsetX = 99 })
 preset = false

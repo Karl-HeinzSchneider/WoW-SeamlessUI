@@ -129,6 +129,87 @@ for _, key in ipairs({ "player", "target", "pet", "focus" }) do
     assert(panel:IsShown() and group.get({ "addPosition" }) and group.get({ "addMoreOptions" }))
 end
 local originalPanel = panel
+-- Simulate AceDB's per-entry wildcard defaults for newly introduced frame keys.
+setmetatable(app.db.profile.blizzardEditMode.frames, {
+    __index = function(t, key)
+        local defaults = rawget(t, "*")
+        local value =
+            { enabled = defaults.enabled, addPosition = defaults.addPosition, addMoreOptions = defaults.addMoreOptions }
+        rawset(t, key, value)
+        return value
+    end,
+})
+Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
+Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
+Enum.EditModeSystem.ObjectiveTracker = 6
+Enum.EditModeActionBarSystemIndices = {
+    MainBar = 1,
+    Bar2 = 2,
+    Bar3 = 3,
+    RightBar1 = 4,
+    RightBar2 = 5,
+    ExtraBar1 = 6,
+    ExtraBar2 = 7,
+    ExtraBar3 = 8,
+    StanceBar = 9,
+    PetActionBar = 10,
+    PossessActionBar = 11,
+}
+Enum.EditModeAuraFrameSystemIndices = { BuffFrame = 1, DebuffFrame = 2 }
+Enum.EditModeStatusTrackingBarSystemIndices = { StatusTrackingBar1 = 1, StatusTrackingBar2 = 2 }
+for i, name in ipairs({ "Party", "Raid", "Boss", "Arena" }) do
+    Enum.EditModeUnitFrameSystemIndices[name] = i + 4
+end
+local samples = {
+    { "party", 1, 5 },
+    { "raid", 1, 6 },
+    { "boss", 1, 7 },
+    { "arena", 1, 8 },
+    { "actionBar1", 2, 1 },
+    { "actionBar2", 2, 2 },
+    { "actionBar3", 2, 3 },
+    { "actionBar4", 2, 4 },
+    { "actionBar5", 2, 5 },
+    { "actionBar6", 2, 6 },
+    { "actionBar7", 2, 7 },
+    { "actionBar8", 2, 8 },
+    { "stanceBar", 2, 9 },
+    { "petBar", 2, 10 },
+    { "possessBar", 2, 11 },
+    { "buffs", 3, 1 },
+    { "debuffs", 3, 2 },
+    { "statusBar1", 4, 1 },
+    { "statusBar2", 4, 2 },
+    { "minimap", 5, 1 },
+    { "objectiveTracker", 6, 1 },
+}
+EditModeManagerFrame.registeredSystemFrames = {}
+assert(config.minimap.hidden() and config.barsHeading.hidden())
+for _, sample in ipairs(samples) do
+    local key, id, index = sample[1], sample[2], sample[3]
+    local native = { system = id, systemIndex = index }
+    table.insert(EditModeManagerFrame.registeredSystemFrames, native)
+    assert(not config[key].hidden(), key)
+    EditModeSystemSettingsDialog.attachedToSystem = native
+    module:RefreshPanel()
+    local selected, spec = module:GetSelectedFrame()
+    assert(selected == native and spec.key == key and panel:IsShown(), key)
+    assert(config[key].get({ "enabled" }) and not config[key].get({ "addPosition" }))
+    config[key].set({ "addPosition" }, true)
+    config[key].set({ "enabled" }, false)
+    assert(not panel:IsShown())
+    config[key].set({ "enabled" }, true)
+    assert(panel:IsShown())
+end
+assert(not config.barsHeading.hidden() and not config.aurasHeading.hidden())
+assert(config.swingMainHand.hidden(), "Missing enum groups must be hidden safely")
+config.buffs.set({ "enabled" }, false)
+assert(config.debuffs.get({ "enabled" }), "Different systems/indices must keep independent switches")
+EditModeSystemSettingsDialog.attachedToSystem = { system = 2, systemIndex = 999 }
+module:RefreshPanel()
+assert(not panel:IsShown())
+EditModeSystemSettingsDialog.attachedToSystem = { system = 1, systemIndex = 4 }
+module:RefreshPanel()
 combat = true
 module:RefreshPanel()
 assert(not panel:IsShown())

@@ -1,6 +1,7 @@
 -- Run from the repository root: lua src/tests/fps-display.lua
 unpack = unpack or table.unpack
-local callbacks, move, spec, frame
+local callbacks, move, spec, frame, display
+local frames = {}
 local frameSettings, positionSpec
 callbacks = {}
 local layout = "Modern"
@@ -32,7 +33,9 @@ local lib = {
 local function newFrame()
     return {
         points = {},
-        SetSize = function() end,
+        SetSize = function(self, width, height)
+            self.width, self.height = width, height
+        end,
         SetClampedToScreen = function() end,
         ClearAllPoints = function(self)
             self.points = {}
@@ -42,6 +45,14 @@ local function newFrame()
         end,
         SetShown = function(self, shown)
             self.shown = shown
+            local hook = self.hooks and self.hooks[shown and "OnShow" or "OnHide"]
+            if hook then
+                hook(self)
+            end
+        end,
+        HookScript = function(self, name, script)
+            self.hooks = self.hooks or {}
+            self.hooks[name] = script
         end,
         IsShown = function(self)
             return not not self.shown
@@ -55,17 +66,86 @@ local function newFrame()
         GetPoint = function(self, index)
             return unpack(self.points[index])
         end,
+        SetScript = function(self, name, script)
+            self[name] = script
+        end,
+        SetAlpha = function(self, alpha)
+            self.alpha = alpha
+        end,
+        GetEffectiveScale = function(self)
+            return self.parent == WorldFrame and 1.5 or 1
+        end,
+        GetWidth = function(self)
+            return self.width or 0
+        end,
+        GetHeight = function(self)
+            return self.height or 0
+        end,
+        CreateFontString = function()
+            return {
+                SetFontObject = function() end,
+                SetPoint = function() end,
+                SetJustifyH = function() end,
+                GetTextColor = function()
+                    return 1, 1, 1
+                end,
+                SetText = function(self, text)
+                    self.text = text
+                end,
+                GetStringWidth = function(self)
+                    return #self.text * 6
+                end,
+                GetStringHeight = function()
+                    return 12
+                end,
+                SetTextColor = function(self, r, g, b)
+                    self.color = { r, g, b }
+                end,
+                SetFormattedText = function(self, pattern, ...)
+                    self.text = string.format(pattern, ...)
+                end,
+            }
+        end,
     }
 end
+hooksecurefunc = function(object, method, hook)
+    local original = object[method]
+    object[method] = function(...)
+        original(...)
+        hook(...)
+    end
+end
 UIParent = {}
+WorldFrame = {}
 FramerateFrame = newFrame()
 FramerateFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2)
-CreateFrame = function()
-    frame = newFrame()
-    return frame
+FramerateFrame.FramerateText = {
+    SetFormattedText = function(self, pattern, ...)
+        self.text = string.format(pattern, ...)
+    end,
+    SetText = function(self, text)
+        self.text = text
+    end,
+    GetText = function(self)
+        return self.text
+    end,
+}
+CreateFrame = function(_, _, parent)
+    local created = newFrame()
+    created.parent = parent
+    table.insert(frames, created)
+    frame, display = frames[1], frames[2]
+    return created
+end
+local netHome, netWorld = 40, 60
+GetFramerate = function()
+    return 1234.56
+end
+GetNetStats = function()
+    return 0, 0, netHome, netWorld
 end
 EventRegistry = { TriggerEvent = function() end }
-local profile = { fpsDisplay = { layouts = {} } }
+local profile = { fpsDisplay = { layouts = {}, showLatency = false } }
 local app = {
     addon = {
         NewModule = function()
@@ -106,7 +186,55 @@ callbacks.enter()
 assert(frame.shown and spec.options[1].name == "FPS display")
 assert(FramerateFrame.shown, "showing Edit Mode frame must show FPS")
 assert(frameSettings[1].default == false and not frameSettings[1].get())
-assert(frameSettings[2].name == "Position", "the Position section follows the frame's settings")
+assert(frameSettings[2].default == false and not frameSettings[2].get())
+assert(not display.shown and FramerateFrame.alpha ~= 0, "latency must be off by default")
+frameSettings[2].set(nil, true)
+assert(profile.fpsDisplay.showLatency and display.shown, "latency option must show the two-row display")
+assert(FramerateFrame.alpha == 0, "the two-row display must replace the native counter")
+assert(display.parent ~= FramerateFrame, "display must not resize the counter as its child")
+assert(display.points[1][2] == frame, "display must follow the custom anchor")
+assert(display.parent == WorldFrame, "display must share the counter's parent and scale")
+assert(frame.width == display.width * 1.5 and frame.height == display.height * 1.5, "anchor must match the display")
+assert(display.height == 26, "display must have two rows")
+display.OnShow()
+assert(display.FramerateText.text == "999.9", "framerate must be capped at 999.9")
+assert(display.LatencyText.text == "60" and display.LatencyText.color[1] < display.LatencyText.color[2])
+netWorld = 300
+display.OnUpdate(display, 1)
+assert(display.LatencyText.text == "300" and display.LatencyText.color[1] == 1)
+netWorld = 5000
+display.OnUpdate(display, 1)
+assert(display.LatencyText.text == "999", "latency must be capped at 999")
+assert(frameSettings[3].default == false and not frameSettings[3].get())
+frameSettings[3].set(nil, true)
+local r, g, b = unpack(display.LatencyText.color)
+assert(profile.fpsDisplay.whiteLatency and r == 1 and g == 1 and b == 1, "white latency option must use white")
+frameSettings[3].set(nil, false)
+assert(display.LatencyText.color[2] < 1, "latency colors must return")
+GetFramerate = function()
+    return 119.6
+end
+assert(frameSettings[4].default == false and not frameSettings[4].get())
+display.OnUpdate(display, 1)
+assert(display.FramerateText.text == "119.6")
+FramerateFrame.FramerateText:SetFormattedText("%.1f", 119.6)
+assert(FramerateFrame.FramerateText.text == "119.6", "native counter must keep decimals by default")
+frameSettings[4].set(nil, true)
+assert(profile.fpsDisplay.roundFramerate and display.FramerateText.text == "120", "display must round FPS")
+FramerateFrame.FramerateText:SetFormattedText("%.1f", 119.6)
+assert(FramerateFrame.FramerateText.text == "120", "native counter must round FPS")
+FramerateFrame.FramerateText:SetFormattedText("%.1f (CPU)", 59.4)
+assert(FramerateFrame.FramerateText.text == "59 (CPU)", "rounding must keep the counter's suffix")
+frameSettings[4].set(nil, false)
+assert(display.FramerateText.text == "119.6")
+FramerateFrame:SetShown(false)
+assert(not display.shown, "display must hide with the counter")
+FramerateFrame:SetShown(true)
+assert(display.shown, "display must show with the counter")
+frameSettings[2].set(nil, false)
+assert(not display.shown and FramerateFrame.alpha == 1, "turning latency off must restore the counter")
+assert(frame.width == 120, "anchor must return to its normal size")
+assert(frameSettings[5].name == "Position", "the Position section follows the frame's settings")
 PlayerFrame = newFrame()
 PlayerFrame.IsObjectType = function(_, kind)
     return kind == "Frame"
@@ -155,6 +283,6 @@ layout = "Modern"
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "BOTTOMRIGHT", "profiles must have independent positions")
 module:OnDisable()
-assert(not frame.shown and FramerateFrame.points[1][2] == UIParent)
+assert(not frame.shown and not display.shown and FramerateFrame.points[1][2] == UIParent)
 assert(FramerateFrame.points[1][4] == -2, "disable must restore original anchor")
 print("FPS display tests passed")

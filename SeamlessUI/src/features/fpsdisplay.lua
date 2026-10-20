@@ -13,6 +13,104 @@ local originalPoints
 local showAnchor = true
 local visibilityBeforeEditMode
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
+local display
+local UPDATE_INTERVAL = 0.25
+local ROW_GAP = 2
+local textColor
+
+local function UpdateDisplay()
+    local _, _, _, world = GetNetStats()
+    world = math.min(world or 0, 999)
+    if app.db.profile.fpsDisplay.whiteLatency then
+        display.LatencyText:SetTextColor(unpack(textColor))
+    elseif world < 100 then
+        display.LatencyText:SetTextColor(0.1, 1, 0.1)
+    elseif world < 250 then
+        display.LatencyText:SetTextColor(1, 0.82, 0)
+    else
+        display.LatencyText:SetTextColor(1, 0.1, 0.1)
+    end
+    display.LatencyText:SetFormattedText("%d", world)
+    local framerate = math.min(GetFramerate(), 999.9)
+    if app.db.profile.fpsDisplay.roundFramerate then
+        display.FramerateText:SetFormattedText("%d", math.floor(framerate + 0.5))
+    else
+        display.FramerateText:SetFormattedText("%.1f", framerate)
+    end
+end
+
+-- The native counter formats "%.1f" itself (Blizzard_FramerateFrame); rewrite it right after.
+-- Its Layout() runs after this hook, so the counter still resizes to the rounded text.
+local function HookNativeFramerate()
+    local text = FramerateFrame.FramerateText or FramerateText
+    if not text then
+        return
+    end
+    hooksecurefunc(text, "SetFormattedText", function(self)
+        if module:IsEnabled() and app.db.profile.fpsDisplay.roundFramerate then
+            local rounded = (self:GetText() or ""):gsub("%d+%.%d+", function(value)
+                return tostring(math.floor(tonumber(value) + 0.5))
+            end, 1)
+            self:SetText(rounded)
+        end
+    end)
+end
+
+-- With latency on, the native counter is faded out and this two-row display takes its place:
+-- labels left, values right-aligned, sized once for "999.9" so it never resizes. Kept out of
+-- the counter's children, since the counter sizes itself to fit them. Follows the counter's
+-- visibility (Ctrl+R) through script hooks; OnUpdate only runs while shown.
+local function RefreshDisplay()
+    local shown = module:IsEnabled() and app.db.profile.fpsDisplay.showLatency and FramerateFrame:IsShown()
+    display:SetShown(shown)
+    FramerateFrame:SetAlpha(shown and 0 or 1)
+    if shown then
+        -- The anchor lives in UIParent's scale, the display in WorldFrame's.
+        local scale = display:GetEffectiveScale() / anchor:GetEffectiveScale()
+        anchor:SetSize(display:GetWidth() * scale, display:GetHeight() * scale)
+    else
+        anchor:SetSize(120, 24)
+    end
+end
+
+local function CreateDisplay()
+    -- Same parent and font as the native counter (Blizzard_FramerateFrame): WorldFrame is not
+    -- affected by the UI scale, so a UIParent child would look smaller than the counter.
+    display = CreateFrame("Frame", nil, WorldFrame)
+    display:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
+    local function Text(justify)
+        local text = display:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Med1")
+        text:SetJustifyH(justify)
+        return text
+    end
+    display.FramerateLabel = Text("LEFT")
+    display.FramerateLabel:SetText(type(FRAMERATE_LABEL) == "string" and FRAMERATE_LABEL or L["FPS:"])
+    display.LatencyLabel = Text("LEFT")
+    display.LatencyLabel:SetText(L["MS:"])
+    display.FramerateText = Text("RIGHT")
+    display.LatencyText = Text("RIGHT")
+    display.FramerateText:SetText("999.9")
+    textColor = { display.FramerateText:GetTextColor() }
+    local labelWidth = math.max(display.FramerateLabel:GetStringWidth(), display.LatencyLabel:GetStringWidth())
+    local valueWidth = display.FramerateText:GetStringWidth()
+    local rowHeight = display.FramerateText:GetStringHeight()
+    display:SetSize(math.ceil(labelWidth + 4 + valueWidth), math.ceil(rowHeight * 2 + ROW_GAP))
+    display.FramerateLabel:SetPoint("TOPLEFT")
+    display.LatencyLabel:SetPoint("BOTTOMLEFT")
+    display.FramerateText:SetPoint("TOPRIGHT")
+    display.LatencyText:SetPoint("BOTTOMRIGHT")
+    local elapsedTotal = UPDATE_INTERVAL
+    display:SetScript("OnUpdate", function(_, elapsed)
+        elapsedTotal = elapsedTotal + elapsed
+        if elapsedTotal >= UPDATE_INTERVAL then
+            elapsedTotal = 0
+            UpdateDisplay()
+        end
+    end)
+    display:SetScript("OnShow", UpdateDisplay)
+    FramerateFrame:HookScript("OnShow", RefreshDisplay)
+    FramerateFrame:HookScript("OnHide", RefreshDisplay)
+end
 
 -- The active layout's position; dragging stores only point, x and y relative to UIParent.
 local function CurrentPosition()
@@ -56,6 +154,7 @@ function module:Refresh()
         FramerateFrame:SetShown(visibilityBeforeEditMode)
         visibilityBeforeEditMode = nil
     end
+    RefreshDisplay()
     app.core:RefreshEditModeOptions()
 end
 
@@ -92,6 +191,42 @@ function module:OnEnable()
                     module:Refresh()
                 end,
             },
+            {
+                name = L["Show latency"],
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.showLatency
+                end,
+                set = function(_, value)
+                    app.db.profile.fpsDisplay.showLatency = value
+                    module:Refresh()
+                end,
+            },
+            {
+                name = L["White latency text"],
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.whiteLatency
+                end,
+                set = function(_, value)
+                    app.db.profile.fpsDisplay.whiteLatency = value
+                    UpdateDisplay()
+                end,
+            },
+            {
+                name = L["Round FPS"],
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.roundFramerate
+                end,
+                set = function(_, value)
+                    app.db.profile.fpsDisplay.roundFramerate = value
+                    UpdateDisplay()
+                end,
+            },
         }
         local position = app.core:GetEditModePositionSettings({
             get = function(key)
@@ -115,6 +250,8 @@ function module:OnEnable()
             settings[#settings + 1] = setting
         end
         lib:AddFrameSettings(anchor, settings)
+        CreateDisplay()
+        HookNativeFramerate()
     end
     FramerateFrame:ClearAllPoints()
     FramerateFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
@@ -128,6 +265,9 @@ function module:OnDisable()
     end
     if anchor then
         anchor:Hide()
+        anchor:SetSize(120, 24)
+        display:Hide()
+        FramerateFrame:SetAlpha(1)
     end
     if originalPoints then
         FramerateFrame:ClearAllPoints()

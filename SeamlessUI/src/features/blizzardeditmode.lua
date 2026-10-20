@@ -175,8 +175,9 @@ end
 
 local panel, title, positionHeader, positionView
 
--- Panel heights: title only, and title plus a collapsed Position header.
-local TITLE_HEIGHT, COLLAPSED_HEIGHT = 60, 92
+-- Panel height with the title only; where the first header starts, its height, the gap between
+-- blocks and the space below the last one.
+local TITLE_HEIGHT, TOP, HEADER, GAP, BOTTOM = 60, 44, 28, 8, 20
 
 local function settings()
     return app.db.profile.blizzardEditMode
@@ -220,6 +221,21 @@ local function ensurePanel()
     positionHeader:SetPoint("TOPRIGHT", -16, -44)
     positionHeader:SetHeaderText(L["Position"])
     positionHeader:Hide()
+    -- Stacks Position and the sections other addons register; the position view calls it
+    -- whenever its own height changes.
+    function panel:LayoutContent()
+        local y, spaced = TOP, false
+        if positionHeader:IsShown() then
+            y, spaced = y + HEADER, true
+            if positionView and positionView:IsShown() then
+                y = y + GAP + positionView:GetHeight()
+            end
+        end
+        y = app.systemOptions:Layout(self, self.system, y, spaced, function()
+            module:RefreshPanel()
+        end)
+        self:SetHeight(y == TOP and TITLE_HEIGHT or y + BOTTOM)
+    end
 end
 
 function module:GetSelectedFrame()
@@ -254,6 +270,7 @@ function module:RefreshPanel()
         return
     end
     ensurePanel()
+    panel.system = system
     title:SetText(string.format(L["SeamlessUI - %s"], spec.name))
     panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
     local collapsed = app.core:IsEditModeSectionCollapsed(app.core:GetEditModePositionSectionKey())
@@ -271,8 +288,8 @@ function module:RefreshPanel()
         if positionView then
             positionView:Hide()
         end
-        panel:SetHeight(settings().frames[spec.key].addPosition and COLLAPSED_HEIGHT or TITLE_HEIGHT)
     end
+    panel:LayoutContent()
     panel:Show()
 end
 
@@ -292,6 +309,7 @@ function module:OnEnable()
     self:RegisterEvent("ADDON_LOADED", "InstallHooks")
     self:RegisterEvent("PLAYER_REGEN_DISABLED", hidePanel)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "RefreshPanel")
+    self:RegisterMessage(app.core:GetEditModeSystemOptionsMessage(), "RefreshPanel")
     self:InstallHooks()
 end
 
@@ -299,6 +317,7 @@ function module:OnDisable()
     hidePanel()
     self:UnhookAll()
     self:UnregisterAllEvents()
+    self:UnregisterAllMessages()
 end
 
 function module:OnProfileRefresh()

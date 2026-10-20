@@ -1,0 +1,19 @@
+## Interface: 16001
+## Title: Seamless: Castbar
+## Group: Seamless
+## Notes: Cast time, spell rank, channel ticks and hold time on the player, target and focus cast bars.
+## IconTexture: Interface\Icons\INV_Misc_Orb_Blue
+## Author: Karl-HeinzSchneider
+## Version: |cff8080ff@project-version@|r
+## Dependencies: Seamless
+## SavedVariables: SeamlessCastbarDB
+## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
+
+src\core.lua
+src\text.lua
+src\ticks.lua
+src\hold.lua
+src\options.lua
+src\editmode.lua
+src\preview.lua

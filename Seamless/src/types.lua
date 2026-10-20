@@ -20,9 +20,14 @@
 ---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)
+---@field RegisterEditModeSystemOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemOptions)
+---@field GetEditModeSystemOptions fun(self: SeamlessCore.Addon, system: table): SeamlessCore.EditModeSystemOptions[]
+---@field RefreshEditModeSystemOptions fun(self: SeamlessCore.Addon)
+---@field GetEditModeSystemOptionsMessage fun(self: SeamlessCore.Addon): string
 ---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
 ---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
+---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
@@ -71,3 +76,28 @@
 ---@field click? fun() Button callback.
 ---@field create? fun(parent: table): table Custom row factory; return a child of parent.
 ---@field layout? fun(frame: table, width: number, disabled: boolean): number? Optional custom row sizing/state callback.
+
+---@class SeamlessCore.EditModeSystemOptions
+---@field id string? Set by RegisterEditModeSystemOptions.
+---@field system integer `Enum.EditModeSystem` value.
+---@field systemIndex integer? Only this subsystem, such as one action bar.
+---@field name string Section header.
+---@field key string? Collapse key; defaults to the name.
+---@field order number? Section order; ties use the registration id.
+---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
+---@field options SeamlessCore.EditModeSystemOption[]
+
+---@class SeamlessCore.EditModeSystemOption
+---@field key string Unique within the section.
+---@field type "toggle"|"select"|"range"
+---@field name string
+---@field desc string? Tooltip.
+---@field hidden boolean|fun(): boolean|nil
+---@field disabled boolean|fun(): boolean|nil
+---@field get fun(): any
+---@field set fun(value: any)
+---@field values? { text: string, value: any }[] Select entries.
+---@field min? number
+---@field max? number
+---@field step? number
+---@field format? fun(value: number): string Range value text.

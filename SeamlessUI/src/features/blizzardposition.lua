@@ -549,7 +549,12 @@ function position:Create(parent)
         message:SetText(self.error or "")
         message:SetShown(self.error ~= nil)
         self:SetHeight(self.error and 296 or 250)
-        self:GetParent():SetHeight(self:GetHeight() + 100)
+        local parent = self:GetParent()
+        if parent.LayoutContent then
+            parent:LayoutContent()
+        else
+            parent:SetHeight(self:GetHeight() + 100)
+        end
     end
 
     -- Native dragging, arrow nudges, scale changes and Revert all update the same

@@ -65,6 +65,7 @@ L["Durability indicator"] = true
 L["Encounter bar"] = true
 L["Extra abilities"] = true
 L["FPS display"] = true
+L["Focus cast bar"] = true
 L["Focus frame"] = true
 L["Focus"] = true
 L["Group finder"] = true
@@ -91,6 +92,7 @@ L["Raid warning"] = true
 L["Ranged swing timer"] = true
 L["Stance bar"] = true
 L["Talking head"] = true
+L["Target cast bar"] = true
 L["Target frame"] = true
 L["Target of Focus"] = true
 L["Target of Target"] = true
@@ -183,6 +185,34 @@ L["Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N
 L["Space (short)"] = "Sp"
 L["Tab (short)"] = "Tab"
 L["Up Arrow (short)"] = "Up"
+
+-- SeamlessCastbar
+L["%s (%s) (spell and rank)"] = "%s (%s)"
+L["%s / %s (cast time)"] = "%s / %s"
+L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."] = true
+L["After a finished cast"] = true
+L["After an interrupt"] = true
+L["Apply the Seamless options to this cast bar."] = true
+L["Cast bars"] = true
+L["Cast time format"] = true
+L["Cast time"] = true
+L["Castbar"] = true
+L["Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."] = true
+L["Channel ticks"] = true
+L["Decimals"] = true
+L["Each cast bar has its own tab. The player cast bar's options are also under Style in SeamlessUI's extended Edit Mode window."] = true
+L["Elapsed / total (1.2 / 2.5)"] = true
+L["Hold time"] = true
+L["How long a cast bar stays before it fades out."] = true
+L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."] = true
+L["Remaining (1.3)"] = true
+L["Remaining / total (1.3 / 2.5)"] = true
+L["Seconds. The game uses 0.2."] = true
+L["Seconds. The game uses 1."] = true
+L["Show the cast time to the right of the cast bar."] = true
+L["Show the spell icon beside the player cast bar when it is not locked to the player frame."] = true
+L["Spell icon"] = true
+L["Spell rank"] = true
 
 -- SeamlessChat
 L["%d messages match, showing the newest %d."] = true

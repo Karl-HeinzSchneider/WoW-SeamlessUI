@@ -15,6 +15,7 @@ ignore:
   - SeamlessUI
   - SeamlessDarkmode
   - SeamlessActionBars
+  - SeamlessCastbar
   # Root tooling (the root src/ would also collide with SeamlessUnitframes/src/ when the addon is moved).
   - docs
   - screenshots
@@ -37,3 +38,4 @@ ignore:
   - SeamlessUI/src/types.lua
   - SeamlessDarkmode/src/types.lua
   - SeamlessActionBars/src/types.lua
+  - SeamlessCastbar/src/types.lua

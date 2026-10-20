@@ -8,6 +8,17 @@ local internal = lib.internal
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
 assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
 assert(type(internal.CreatePool) == "function" and type(internal.CreateDialog) == "function")
+assert(type(internal.MoveParent) == "function" and type(lib.frameSelections) == "table")
+
+-- Frames that can be selected in Edit Mode but never moved: no dragging, no arrow-key nudges and
+-- no Reset Position button.
+local fixedFrames = {}
+local moveParent = internal.MoveParent
+function internal:MoveParent(selection, ...)
+    if not fixedFrames[selection.parent] then
+        return moveParent(self, selection, ...)
+    end
+end
 
 -- Collapsed sections are remembered account-wide, by section key.
 local collapsedFallback = {}
@@ -287,8 +298,23 @@ local function AddScrolling(dialog)
         scroll.maximumHeight = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
         -- Measure with every section open, then keep that width so collapsing never resizes the window.
         settings.fixedWidth = nil
+        self.Buttons:Show()
         update(self, selection)
         settings.fixedWidth = settings:GetWidth()
+        if selection.parent and fixedFrames[selection.parent] and self.Buttons.ResetPositionButton then
+            self.Buttons.ResetPositionButton:Hide()
+            -- An empty button list has no valid size and stretched the window across the screen;
+            -- hidden, the window leaves it out.
+            local anyShown = false
+            for _, button in ipairs({ self.Buttons:GetChildren() }) do
+                anyShown = anyShown or button:IsShown()
+            end
+            if anyShown then
+                self.Buttons:Layout()
+            else
+                self.Buttons:Hide()
+            end
+        end
         ApplyCollapsed(self)
         LayoutDialog()
         if newSelection and selection.parent then
@@ -340,6 +366,17 @@ function addon:SetEditModeSectionCollapsed(key, collapsed)
 end
 
 ---@return string
+---Keep a frame registered with LibEditMode's AddFrame selectable, with its settings, but never
+---movable: for a preview of a frame the client places itself.
+---@param frame table
+function addon:SetEditModeFrameFixed(frame)
+    local selection = lib.frameSelections[frame]
+    assert(selection, "Register the frame with AddFrame first")
+    fixedFrames[frame] = true
+    selection:SetScript("OnDragStart", nil)
+    selection:SetScript("OnDragStop", nil)
+end
+
 function addon:GetEditModePositionSectionKey()
     return POSITION_SECTION
 end

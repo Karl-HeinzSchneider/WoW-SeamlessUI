@@ -98,7 +98,14 @@ features are ready for public release.
    Uses removable AceHook post-hooks on the client dialog and an addon-owned UIParent panel
    below it; never joins native layout containers or accesses LibEditMode internals. The library
    has no public unregister/hide API for system extensions, so this panel is owned here to make
-   the recovery switches effective immediately. Disabling globally removes hooks/events; disabling
+   the recovery switches effective immediately. Below Position, the panel shows the sections
+   other addons register for the selected system with Core's `RegisterEditModeSystemOptions`
+   (Castbar's Style), drawn by `src/features/systemoptions.lua` (loaded before this file) under
+   Core's collapsible headers with LibEditMode's row templates (`EditModeSettingCheckboxTemplate`,
+   `WowStyle1DropdownTemplate`, `EditModeSettingSliderTemplate`). They follow the frame's Extend
+   Edit Mode switch, not Add more options. `panel:LayoutContent()` stacks Position and those
+   sections and sizes the panel; the position view calls it when its height changes. The
+   module redraws on Core's system options message. Disabling globally removes hooks/events; disabling
    a frame hides its panel. Hides on dialog close, Edit Mode exit and combat; profile changes apply
    immediately. Supports Blizzard_EditMode loading after this addon.
 8. `src/core/options.lua`: UI child panel under Seamless, with General, Blizzard Edit Mode

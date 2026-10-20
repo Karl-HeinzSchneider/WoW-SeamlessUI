@@ -22,6 +22,15 @@ end
 function methods:GetParent()
     return self.parent
 end
+function methods:GetChildren()
+    local children = {}
+    for _, child in ipairs(frames) do
+        if child.parent == self then
+            children[#children + 1] = child
+        end
+    end
+    return unpack(children)
+end
 function methods:SetPoint(point, ...)
     self.points[point] = { ... }
 end
@@ -417,3 +426,26 @@ dialog.width = 340
 dialog:Update({ parent = rightFrame, system = selection.system })
 assert(dialog.points.TOPLEFT[3] == 1300 - 16 - 340 and dialog.points.TOPLEFT[4] == 500)
 print("PASS: settings dialog opens beside the selected frame")
+
+-- A fixed frame can be selected with its settings but never moved.
+local fixedFrame, moved = object("Frame", UIParent), false
+fixedFrame.left, fixedFrame.right, fixedFrame.top = 100, 250, 500
+fixedFrame.GetPoint = frame.GetPoint
+local layoutCache, isEditing = lib.layoutCache, lib.isEditing
+lib.layoutCache, lib.isEditing = nil, false
+lib:AddFrame(fixedFrame, function()
+    moved = true
+end, { point = "CENTER", x = 0, y = 0 }, "Fixed")
+lib.layoutCache, lib.isEditing = layoutCache, isEditing
+app.addon:SetEditModeFrameFixed(fixedFrame)
+local fixedSelection = lib.frameSelections[fixedFrame]
+assert(fixedSelection.scripts.OnDragStart == nil and fixedSelection.scripts.OnDragStop == nil, "no dragging")
+lib.internal:MoveParent(fixedSelection, 5, 0)
+assert(not moved, "no arrow-key nudges")
+lib.frameSettings[fixedFrame], lib.frameButtons[fixedFrame] = {}, {}
+dialog:Update({ parent = fixedFrame, system = selection.system })
+assert(not dialog.Buttons.ResetPositionButton:IsShown(), "no Reset Position")
+assert(not dialog.Buttons:IsShown(), "an empty button list is left out of the window")
+dialog:Update({ parent = rightFrame, system = selection.system })
+assert(dialog.Buttons:IsShown() and dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
+print("PASS: fixed frames are selectable but never move")

@@ -37,6 +37,9 @@ local function frame(name, parent)
     function f:SetScript(event, callback)
         self.scripts[event] = callback
     end
+    function f:SetOnClickHandler(callback)
+        self.click = callback
+    end
     function f:SetText(text)
         self.text = text
     end
@@ -235,6 +238,10 @@ end
 function player:SetHasActiveChanges(value)
     self.dirty = value
 end
+local otherFrameDirty = false
+function EditModeManagerFrame:CheckForSystemActiveChanges()
+    self.dirty = player.dirty or otherFrameDirty
+end
 local selected = player
 local app = {
     db = { profile = { blizzardEditMode = { frames = { player = { addPosition = true } } } } },
@@ -377,4 +384,88 @@ draft = copy(saved.layouts[1])
 player.systemInfo = draft.systems[1]
 view:Refresh(player)
 assert(x.Slider.value == 120 and saves == 0)
+assert(view.RevertButton.template == "EditModeSystemSettingsDialogButtonTemplate")
+assert(not view.RevertButton.enabled)
+-- Detect watched fields changed by native dragging, and preserve unrelated data.
+draft.systems[1].anchorInfo.offsetX = 350
+draft.systems[1].pendingOtherSetting = 123
+player.dirty = true
+view:Refresh(player)
+assert(view.RevertButton.enabled)
+view.RevertButton.click()
+assert(position:Read(player).offsetX == 120 and not view.RevertButton.enabled)
+assert(draft.systems[1].pendingOtherSetting == 123 and player.dirty and EditModeManagerFrame.dirty)
+draft.systems[1].pendingOtherSetting = nil
+otherFrameDirty = true
+local moved = position:Read(player)
+moved.offsetY = 50
+assert(position:Apply(player, moved))
+view:Refresh(player)
+view.RevertButton.click()
+assert(not player.dirty and EditModeManagerFrame.dirty and not view.RevertButton.enabled)
+otherFrameDirty = false
+-- Restoring position alone clears the global dirty state when nothing else differs.
+moved = position:Read(player)
+moved.offsetX = 500
+assert(position:Apply(player, moved))
+view:Refresh(player)
+view.RevertButton.click()
+assert(not player.dirty and not EditModeManagerFrame.dirty and not view.RevertButton.enabled)
+-- A new saved baseline replaces the before version, rather than restoring defaults.
+draft.systems[1].anchorInfo.offsetX = 777
+player.savedSystemInfo = copy(draft.systems[1])
+view:Refresh(player)
+assert(not view.RevertButton.enabled)
+moved = position:Read(player)
+moved.offsetX = 800
+assert(position:Apply(player, moved))
+view:Refresh(player)
+view.RevertButton.click()
+assert(position:Read(player).offsetX == 777)
+-- Follow every point through multiple frames, including a secondary anchor.
+AnchorTarget:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+AnchorTarget.points[2] = { "TOP", player, "BOTTOM", 0, 0 }
+FocusFrame:SetPoint("TOP", AnchorTarget, "BOTTOM", 0, 0)
+moved = position:Read(player)
+moved.relativeTo = "FocusFrame"
+assert(not position:Apply(player, moved))
+AnchorTarget.points[2] = nil
+-- Followers remain attached when their target moves to a safe anchor.
+FocusFrame:SetPoint("TOP", player, "BOTTOM", 0, 0)
+moved = position:Read(player)
+moved.offsetX = 820
+assert(position:Apply(player, moved))
+assert(FocusFrame.points[1][2] == player)
+FocusFrame:ClearAllPoints()
+-- Revert validates old targets again: relationships may have changed since edit.
+player.savedSystemInfo = copy(draft.systems[1])
+player.savedSystemInfo.anchorInfo.relativeTo = "TargetFrame"
+TargetFrame:SetPoint("TOP", player, "BOTTOM", 0, 0)
+view:Refresh(player)
+assert(view.RevertButton.enabled)
+view.RevertButton.click()
+assert(view.error and position:Read(player).relativeTo == "UIParent" and view.RevertButton.enabled)
+TargetFrame:ClearAllPoints()
+view.RevertButton.click()
+assert(not view.error and position:Read(player).relativeTo == "TargetFrame" and not view.RevertButton.enabled)
+-- Restore the secondary anchor and default-position metadata as one position state.
+player.savedSystemInfo.anchorInfo2 =
+    { point = "BOTTOM", relativeTo = "Minimap", relativePoint = "TOP", offsetX = 0, offsetY = 10 }
+player.savedSystemInfo.isInDefaultPosition = true
+Minimap:SetPoint("CENTER", player, "CENTER", 0, 0)
+view:Refresh(player)
+view.RevertButton.click()
+assert(view.error and draft.systems[1].anchorInfo2 == nil)
+Minimap:ClearAllPoints()
+view.RevertButton.click()
+assert(draft.systems[1].anchorInfo2.relativeTo == "Minimap" and draft.systems[1].isInDefaultPosition)
+assert(not view.RevertButton.enabled and not player.dirty and saves == 0)
+-- Read-only/disabled windows cannot revert, even through a stale button callback.
+draft.systems[1].anchorInfo.offsetX = 999
+preset = true
+view:Refresh(player)
+assert(not view.RevertButton.enabled)
+view.RevertButton.click()
+assert(position:Read(player).offsetX == 999)
+preset = false
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")

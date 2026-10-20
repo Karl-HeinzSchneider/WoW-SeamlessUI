@@ -36,6 +36,42 @@ local function finite(value)
     return value and value == value and value > -math.huge and value < math.huge
 end
 
+local function equal(a, b)
+    if type(a) ~= type(b) then
+        return false
+    end
+    if type(a) ~= "table" then
+        return a == b
+    end
+    for key, value in pairs(a) do
+        if not equal(value, b[key]) then
+            return false
+        end
+    end
+    for key in pairs(b) do
+        if a[key] == nil then
+            return false
+        end
+    end
+    return true
+end
+
+local function positionState(info)
+    return info
+        and {
+            anchorInfo = info.anchorInfo and CopyTable(info.anchorInfo),
+            anchorInfo2 = info.anchorInfo2 and CopyTable(info.anchorInfo2),
+            isInDefaultPosition = info.isInDefaultPosition,
+        }
+end
+
+function position:HasChanges(system)
+    local info = EditModeManagerFrame:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
+    return info ~= nil
+        and system.savedSystemInfo ~= nil
+        and not equal(positionState(info), positionState(system.savedSystemInfo))
+end
+
 -- Check anchors and ownership: anchoring to a descendant or to a frame whose
 -- anchors lead back here would create a layout cycle.
 local function dependsOn(frame, target, seen)
@@ -75,7 +111,7 @@ function position:CanEdit(system)
         and override:IsReady()
 end
 
-function position:Apply(system, values)
+function position:Apply(system, values, restoreState)
     if not self:CanEdit(system) then
         return false, "Position editing is unavailable. Select an enabled frame in a custom layout."
     end
@@ -97,6 +133,13 @@ function position:Apply(system, values)
     end
     if dependsOn(relativeTo, system, {}) then
         return false, "AnchorFrame would create an anchor cycle."
+    end
+    if restoreState and restoreState.anchorInfo2 then
+        local second = restoreState.anchorInfo2
+        local target = _G[second.relativeTo]
+        if not target or dependsOn(target, system, {}) then
+            return false, "The previous secondary anchor is unavailable or would create a cycle."
+        end
     end
     local manager = EditModeManagerFrame
     local info = manager:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
@@ -124,30 +167,58 @@ function position:Apply(system, values)
         offsetX = x,
         offsetY = y,
     }
-    info.anchorInfo2 = nil
+    info.anchorInfo2 = restoreState and restoreState.anchorInfo2 and CopyTable(restoreState.anchorInfo2) or nil
     info.isInDefaultPosition = false
+    if restoreState then
+        info.isInDefaultPosition = restoreState.isInDefaultPosition
+    end
     system:ClearFrameSnap()
     system.systemInfo = info
     system:ApplySystemAnchor()
-    system:SetHasActiveChanges(true)
-    manager:SetHasActiveChanges(true)
+    -- Only clear the native dirty flag if the whole frame matches its baseline.
+    -- Other settings on this frame and other frames must remain pending.
+    system:SetHasActiveChanges(not equal(info, system.savedSystemInfo))
+    manager:CheckForSystemActiveChanges()
     EditModeSystemSettingsDialog:UpdateDialog(system)
     return true
+end
+
+function position:Revert(system)
+    if not self:CanEdit(system) or not self:HasChanges(system) then
+        return false
+    end
+    local before = positionState(system.savedSystemInfo)
+    if not before or not before.anchorInfo then
+        return false
+    end
+    return self:Apply(system, before.anchorInfo, before)
 end
 
 function position:Create(parent)
     local view = CreateFrame("Frame", nil, parent)
     view:SetPoint("TOPLEFT", 24, -48)
     view:SetPoint("TOPRIGHT", -24, -48)
-    view:SetHeight(226)
+    view:SetHeight(218)
     view.controls = {}
     view.values = {}
 
     local message = view:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    message:SetPoint("TOPLEFT", 0, -180)
-    message:SetPoint("TOPRIGHT", 0, -180)
+    message:SetPoint("TOPLEFT", 0, -212)
+    message:SetPoint("TOPRIGHT", 0, -212)
     message:SetJustifyH("LEFT")
     message:SetWordWrap(true)
+    message:Hide()
+
+    local revert = CreateFrame("Button", nil, view, "EditModeSystemSettingsDialogButtonTemplate")
+    view.RevertButton = revert
+    revert:SetPoint("TOPLEFT", 0, -180)
+    revert:SetPoint("TOPRIGHT", 0, -180)
+    revert:SetText(HUD_EDIT_MODE_REVERT_CHANGES or "Revert changes")
+    revert:SetOnClickHandler(function()
+        local ok, err = position:Revert(view.system)
+        view.error = not ok and err or nil
+        view:Refresh(view.system)
+    end)
 
     function view:Commit(key, value, system)
         if system ~= self.system or system ~= app.blizzardEditMode:GetSelectedFrame() then
@@ -309,14 +380,11 @@ function position:Create(parent)
         if changedSystem then
             self.error = nil
         end
-        message:SetText(
-            self.error
-                or (
-                    editable
-                        and "Click a value to type; Enter applies, Escape cancels. Use Edit Mode Save or Revert to finish."
-                    or "Select a custom Edit Mode layout to edit position."
-                )
-        )
+        revert:SetEnabled(editable and position:HasChanges(system))
+        message:SetText(self.error or "")
+        message:SetShown(self.error ~= nil)
+        self:SetHeight(self.error and 264 or 218)
+        self:GetParent():SetHeight(self:GetHeight() + 68)
     end
 
     -- Native dragging, arrow nudges, scale changes and Revert all update the same

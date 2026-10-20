@@ -34,6 +34,12 @@ features are ready for public release.
    and override layouts are read-only. Fields refresh while visible after dragging/nudging,
    but never replace focused input. As in LibEditMode, click the value to type, Enter commits,
    and Escape/focus loss discards typed input.
+   The native-style Revert changes button watches position state against the frame's native
+   `savedSystemInfo` baseline, including secondary anchor/default-position metadata. It restores
+   only that state, preserving unrelated settings and pending edits on other frames. Restore
+   targets are revalidated for cycles before any mutation. Recomputes frame/global dirty flags
+   after applying, so position-only Revert clears pending state while other edits remain dirty.
+   No persistent helper text; the footer shows errors only when an action fails.
 6. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extension for Player,
    Target, Pet and Focus. Profile `blizzardEditMode` has a global `enabled` switch and per-frame
    `enabled`, `addPosition`, `addMoreOptions` switches. Add position displays the position
@@ -54,6 +60,8 @@ profile changes, late native UI loading, unsupported systems, combat and visibil
 Run `lua src/tests/blizzard-position.lua` for the actual vendored override integration,
 anchor/numeric/cycle validation, preserving pending changes and the Revert baseline, scale,
 focused input and stale-selection guards.
+Also covers the Revert button/baseline, preserving unrelated edits/dirty flags, transitive and
+secondary-anchor cycles, incoming followers, and cycle rejection during Revert.
 
 `src/types.lua` contains annotations only and is not loaded by the TOC. Add a field there
 whenever a runtime file adds a member to the private `app` table.

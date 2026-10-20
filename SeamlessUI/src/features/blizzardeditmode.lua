@@ -12,7 +12,7 @@ local frames = {
     { key = "pet", name = "Pet frame", index = "Pet" },
     { key = "focus", name = "Focus frame", index = "Focus" },
 }
-local panel, title, description, positionView
+local panel, title, positionView
 
 local function settings()
     return app.db.profile.blizzardEditMode
@@ -32,7 +32,7 @@ local function ensurePanel()
     -- panel so the recovery switches can remove it without library internals.
     panel = CreateFrame("Frame", nil, UIParent)
     panel:Hide()
-    panel:SetHeight(100)
+    panel:SetHeight(60)
     panel:SetFrameStrata("DIALOG")
     panel:EnableMouse(true)
     panel:SetPoint("TOPLEFT", EditModeSystemSettingsDialog, "BOTTOMLEFT", 0, -8)
@@ -43,11 +43,6 @@ local function ensurePanel()
     title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     title:SetPoint("TOPLEFT", 24, -20)
     title:SetPoint("TOPRIGHT", -24, -20)
-    description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    description:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -10)
-    description:SetPoint("TOPRIGHT", title, "BOTTOMRIGHT", 0, -10)
-    description:SetWordWrap(true)
-    description:SetText("Enable Add position for this frame in UI > Blizzard Edit Mode Extensions to edit its anchors.")
 end
 
 function module:GetSelectedFrame()
@@ -87,16 +82,13 @@ function module:RefreshPanel()
     panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
     if settings().frames[spec.key].addPosition then
         positionView = positionView or app.blizzardPosition:Create(panel)
-        description:Hide()
-        panel:SetHeight(286)
         positionView:Refresh(system)
         positionView:Show()
     else
         if positionView then
             positionView:Hide()
         end
-        description:Show()
-        panel:SetHeight(100)
+        panel:SetHeight(60)
     end
     panel:Show()
 end

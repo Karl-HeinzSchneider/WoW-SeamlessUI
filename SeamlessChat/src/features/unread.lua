@@ -17,7 +17,7 @@ local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.UnreadSettings : SeamlessChat.FeatureSettings
 local defaults = {
-    enabled = true,
+    enabled = false,
     channels = true, -- numbered channels (General, Trade, ...) count too
     color = { r = 0.75, g = 0.12, b = 0.1 }, -- the badge
 }

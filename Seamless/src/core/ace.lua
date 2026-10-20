@@ -6,7 +6,6 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local log = app.logger
 
 ---@class SeamlessCore.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0
----@field db SeamlessCore.DB
 local addon = {}
 LibStub("AceAddon-3.0"):NewAddon(addon, appName, "AceConsole-3.0", "AceEvent-3.0")
 app.addon = addon

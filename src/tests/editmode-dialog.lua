@@ -46,6 +46,9 @@ end
 function methods:GetRight()
     return self.right
 end
+function methods:GetEffectiveScale()
+    return self.scale or 1
+end
 function methods:GetLeft()
     return self.left
 end
@@ -276,7 +279,10 @@ local selection = {
 }
 scroll.verticalScroll = 50
 dialog.Settings.height = 1000
+frame.left, frame.right, frame.top = 100, 300, 600
 dialog:Update(selection)
+local placed = dialog.points.TOPLEFT
+assert(placed[1] == UIParent and placed[3] == 316 and placed[4] == 600, "A new selection opens beside its frame")
 assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like Blizzard's container")
 assert(scroll.fixedHeight == 400 and scroll.height == 400, "A long list scrolls at the cap")
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
@@ -367,3 +373,13 @@ locked = true
 position[2].set(nil, "LEFT")
 assert(stored.point == "TOP" and position[2].disabled(), "a locked position cannot change")
 print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dialog and widget refresh")
+
+-- A frame near the right edge gets its settings on its left.
+local rightFrame = object("Frame", UIParent)
+rightFrame.left, rightFrame.right, rightFrame.top = 1300, 1450, 500
+lib.frameSettings[rightFrame], lib.frameButtons[rightFrame] = {}, {}
+rightFrame.GetPoint = frame.GetPoint
+dialog.width = 340
+dialog:Update({ parent = rightFrame, system = selection.system })
+assert(dialog.points.TOPLEFT[3] == 1300 - 16 - 340 and dialog.points.TOPLEFT[4] == 500)
+print("PASS: settings dialog opens beside the selected frame")

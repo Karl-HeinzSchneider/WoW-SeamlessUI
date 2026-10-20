@@ -26,7 +26,9 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
   scrolling past 400 pixels or 60% of the screen height, whichever is smaller. Each layout sizes
   the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. Each layout
-  first pins the dialog's top edge, so it grows and shrinks downward only. LayoutFrame ignores
+  first pins the dialog's top edge, so it grows and shrinks downward only. A new selection opens the
+  dialog 16 pixels beside its frame (the side with more room, top edges aligned, kept on screen)
+  instead of the library's fixed bottom-right spot; it does not follow the frame afterwards. LayoutFrame ignores
   `maximumHeight` without a `minimumHeight`, so the scroll frame sets both. The list keeps its
   fully expanded width while sections collapse, and the scroll bar sits outside the window's right
   edge, so the window never changes width. This is the

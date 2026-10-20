@@ -139,6 +139,8 @@ end
 
 -- Space between the window's right edge and its scroll bar, which sits outside the window.
 local SCROLL_BAR_GAP = 2
+-- Space between the selected frame and its settings window.
+local DIALOG_GAP = 16
 
 -- Put the selected frame's settings list in a scroll frame, built like Blizzard's own
 -- Edit Mode settings container (ResizeLayoutFrame + ScrollFrameTemplate with a maximum height).
@@ -195,9 +197,34 @@ local function AddScrolling(dialog)
         PlaceScrollBar()
     end
 
+    -- Open beside the selected frame, on the side with more room, aligned with its top edge.
+    -- Coordinates are converted to the dialog's scale; it does not follow the frame afterwards.
+    local function PlaceBesideFrame(frame)
+        local left, right, top = frame:GetLeft(), frame:GetRight(), frame:GetTop()
+        local width, height = dialog:GetWidth(), dialog:GetHeight()
+        if not left or not right or not top or not width or not height then
+            return
+        end
+        local scale = dialog:GetEffectiveScale()
+        local ratio = frame:GetEffectiveScale() / scale
+        left, right, top = left * ratio, right * ratio, top * ratio
+        local screenWidth = UIParent:GetWidth() * UIParent:GetEffectiveScale() / scale
+        local screenHeight = UIParent:GetHeight() * UIParent:GetEffectiveScale() / scale
+        local x
+        if screenWidth - right >= left then
+            x = math.min(right + DIALOG_GAP, screenWidth - width)
+        else
+            x = math.max(left - DIALOG_GAP - width, 0)
+        end
+        local y = math.max(math.min(top, screenHeight), math.min(height, screenHeight))
+        dialog:ClearAllPoints()
+        dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+    end
+
     local update, refreshWidgets = dialog.Update, dialog.RefreshWidgets
     function dialog:Update(selection)
-        if selection ~= self.selection then
+        local newSelection = selection ~= self.selection
+        if newSelection then
             scroll:SetVerticalScroll(0)
         end
         scroll.maximumHeight = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
@@ -207,6 +234,9 @@ local function AddScrolling(dialog)
         settings.fixedWidth = settings:GetWidth()
         ApplyCollapsed(self)
         LayoutDialog()
+        if newSelection and selection.parent then
+            PlaceBesideFrame(selection.parent)
+        end
     end
     -- Never hide the dialog here: its OnHide clears the frame selection.
     function dialog:RefreshWidgets()

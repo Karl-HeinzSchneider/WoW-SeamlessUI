@@ -8,6 +8,8 @@
 ---@field db SeamlessUI.DB
 ---@field options SeamlessUI.Options
 ---@field xpBarTooltip SeamlessUI.XPBarTooltip
+---@field blizzardEditMode SeamlessUI.BlizzardEditMode
+---@field blizzardPosition SeamlessUI.BlizzardPosition
 ---@field fpsDisplay SeamlessUI.FPSDisplay
 
 ---@class SeamlessUI.DB : AceDBObject-3.0

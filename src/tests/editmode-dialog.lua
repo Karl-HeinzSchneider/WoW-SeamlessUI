@@ -101,7 +101,9 @@ end
 function methods:SetAtlas(atlas)
     self.atlas = atlas
 end
+local layoutOrder = {}
 function methods:Layout()
+    layoutOrder[#layoutOrder + 1] = self
     self.layouts = (self.layouts or 0) + 1
     if self.fixedHeight then
         self.height = self.fixedHeight
@@ -301,7 +303,18 @@ assert(not inside:IsShown() and after:IsShown() and header:IsShown())
 assert(header.StateIcon.atlas == "common-button-list-plus" and dialog.layouts == layouts + 2 and dialog:IsShown())
 -- A short list shrinks the window and drops any scroll offset it no longer needs.
 dialog.Settings.height = 120
+layoutOrder = {}
 dialog:RefreshWidgets()
+local scrollIndex, dialogIndex
+for index, frame in ipairs(layoutOrder) do
+    if frame == scroll and not scrollIndex then
+        scrollIndex = index
+    end
+    if frame == dialog then
+        dialogIndex = index
+    end
+end
+assert(scrollIndex and scrollIndex < dialogIndex, "The scroll frame resizes before the dialog measures its buttons")
 assert(scroll.fixedHeight == 120 and scroll.verticalScroll == 0, "Collapsing shrinks the window")
 dialog:Update(selection)
 assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")

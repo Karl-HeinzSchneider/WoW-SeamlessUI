@@ -177,6 +177,9 @@ local function AddScrolling(dialog)
         settings:Layout()
         scroll.fixedWidth = settings:GetWidth()
         scroll.fixedHeight = math.min(settings:GetHeight(), scroll.maximumHeight)
+        -- Resize the scroll frame first: the dialog measures the buttons below it before
+        -- reaching the scroll frame itself, which it created last.
+        scroll:Layout()
         dialog:Layout()
         scroll:UpdateScrollChildRect()
         local range = scroll:GetVerticalScrollRange()

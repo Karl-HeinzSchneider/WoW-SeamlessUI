@@ -521,4 +521,54 @@ local invalid = localizedPosition:Read(player)
 invalid.offsetX = "invalid"
 local ok, err = localizedPosition:Apply(player, invalid)
 assert(not ok and err == "Translated numeric error")
+-- A managed frame in default position ignores its placeholder layout anchor;
+-- the live anchor through an unnamed/managed container resolves to PlayerFrame.
+local function rect(f, left, top, width, height, scale)
+    function f:GetLeft()
+        return left
+    end
+    function f:GetRight()
+        return left + width
+    end
+    function f:GetTop()
+        return top
+    end
+    function f:GetBottom()
+        return top - height
+    end
+    function f:GetEffectiveScale()
+        return scale
+    end
+end
+rect(player, 100, 800, 200, 80, 1)
+local container = frame("PlayerBottomManagedFrameContainer", player)
+container.AddManagedFrame = function() end
+container:SetPoint("TOP", player, "BOTTOM", 30, 25)
+local layoutChild = frame(nil, container)
+layoutChild:SetPoint("TOPLEFT", container, "TOPLEFT", 0, 0)
+local pet = frame("PetFrame", layoutChild)
+pet.system, pet.systemIndex = 1, 2
+pet.systemInfo = {
+    isInDefaultPosition = true,
+    anchorInfo = { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", offsetX = 0, offsetY = 0 },
+}
+function pet:IsInDefaultPosition()
+    return self.systemInfo.isInDefaultPosition
+end
+function pet:GetScale()
+    return 0.5
+end
+rect(pet, 260, 1520, 120, 50, 0.5)
+pet:SetPoint("TOPLEFT", layoutChild, "TOPLEFT", 15, 0)
+local petLayout = EditModeManagerFrame.GetActiveLayoutSystemInfo
+function EditModeManagerFrame:GetActiveLayoutSystemInfo(_, systemIndex)
+    return systemIndex == 2 and pet.systemInfo or petLayout(self)
+end
+local live = position:Read(pet)
+-- Screen offset (130 - 100, 760 - 800) at effective scale 0.5, times frame scale 0.5.
+assert(live.relativeTo == "PlayerFrame" and live.point == "TOPLEFT" and live.relativePoint == "TOPLEFT")
+assert(live.offsetX == 30 and live.offsetY == -40)
+pet.systemInfo.isInDefaultPosition = false
+assert(position:Read(pet).relativeTo == "UIParent")
+EditModeManagerFrame.GetActiveLayoutSystemInfo = petLayout
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")

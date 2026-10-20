@@ -81,6 +81,17 @@ end
 function methods:SetVerticalScroll(offset)
     self.verticalScroll = offset
 end
+function methods:GetVerticalScroll()
+    return self.verticalScroll or 0
+end
+function methods:GetVerticalScrollRange()
+    local child = self.scrollChild
+    return child and math.max(0, child.height - self.height) or 0
+end
+-- The dialog's Layout sizes the scroll frame to its fixed size before the rect updates.
+function methods:UpdateScrollChildRect()
+    self.height = self.fixedHeight or self.height
+end
 function methods:SetHideIfUnscrollable(value)
     self.hideIfUnscrollable = value
 end
@@ -92,6 +103,9 @@ function methods:SetAtlas(atlas)
 end
 function methods:Layout()
     self.layouts = (self.layouts or 0) + 1
+    if self.fixedHeight then
+        self.height = self.fixedHeight
+    end
 end
 for _, name in ipairs({
     "SetFrameStrata",
@@ -253,8 +267,10 @@ local selection = {
     },
 }
 scroll.verticalScroll = 50
+dialog.Settings.height = 1000
 dialog:Update(selection)
 assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like Blizzard's container")
+assert(scroll.fixedHeight == 400 and scroll.height == 400, "A long list scrolls at the cap")
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
 assert(dialog.Settings.fixedWidth == dialog.Settings.width, "The list keeps its fully expanded width")
 local bar = scroll.ScrollBar
@@ -283,6 +299,10 @@ assert(dialog.Settings.fixedWidth == fixedWidth, "Collapsing keeps the width")
 assert(bar.points.TOPLEFT[3] == 30 + 2, "Scroll bar follows the measured window edge")
 assert(not inside:IsShown() and after:IsShown() and header:IsShown())
 assert(header.StateIcon.atlas == "common-button-list-plus" and dialog.layouts == layouts + 2 and dialog:IsShown())
+-- A short list shrinks the window and drops any scroll offset it no longer needs.
+dialog.Settings.height = 120
+dialog:RefreshWidgets()
+assert(scroll.fixedHeight == 120 and scroll.verticalScroll == 0, "Collapsing shrinks the window")
 dialog:Update(selection)
 assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")
 widgets[1]:Toggle()

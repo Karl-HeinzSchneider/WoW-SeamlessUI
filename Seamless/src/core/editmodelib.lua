@@ -172,8 +172,17 @@ local function AddScrolling(dialog)
         bar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", inset + SCROLL_BAR_GAP, 0)
     end
 
+    -- Size the scroll frame from the list itself, so collapsing a section always shrinks the window.
     local function LayoutDialog()
+        settings:Layout()
+        scroll.fixedWidth = settings:GetWidth()
+        scroll.fixedHeight = math.min(settings:GetHeight(), scroll.maximumHeight)
         dialog:Layout()
+        scroll:UpdateScrollChildRect()
+        local range = scroll:GetVerticalScrollRange()
+        if scroll:GetVerticalScroll() > range then
+            scroll:SetVerticalScroll(range)
+        end
         PlaceScrollBar()
     end
 

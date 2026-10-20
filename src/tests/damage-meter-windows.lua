@@ -1167,7 +1167,7 @@ end
 function methods:GetChecked()
     return self.checked
 end
-local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider" } }
+local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider", Expander = "expander" } }
 function lem:AddFrame(frame, callback, defaults, name)
     assert(name == "Seamless Damage " .. frame.windowID)
     assert(defaults.point == "CENTER")
@@ -1244,7 +1244,17 @@ for index, entry in ipairs(controls[meter]) do
 end
 assert(order.Numbers < order.Style and order.Style < order.Skin)
 assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
-assert(setting("Style").kind == lem.SettingType.Divider)
+assert(controls[meter][1].name == "Window" and controls[meter][1].kind == lem.SettingType.Expander)
+assert(setting("Style").kind == lem.SettingType.Expander)
+assert(setting("Window").get() and not setting("Style").get(), "Window opens and Style starts collapsed")
+assert(not setting("Lock size").hidden() and setting("Skin").hidden() and setting("Bar height").hidden())
+setting("Style").set(nil, true)
+assert(not setting("Skin").hidden() and not setting("Show type selector").hidden())
+setting("Window").set(nil, false)
+assert(setting("Numbers").hidden() and setting("Row count").hidden() and not setting("Style").hidden)
+setting("Window").set(nil, true, true)
+assert(not setting("Window").get(), "Reset keeps sections as they are")
+setting("Window").set(nil, true)
 assert(setting("Modify global style").default and setting("Modify global style").get())
 local sharedStyle = app.db.profile.skins[meter.config.skin].settings
 local sharedHeight, sharedAlpha, sharedClasses =

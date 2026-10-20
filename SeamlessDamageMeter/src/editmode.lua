@@ -141,8 +141,41 @@ local function SetSkinOption(frame, key, value)
     app:RebuildWindows()
 end
 
+-- Collapsible Edit Mode sections, shared by every window in the profile.
+local sectionDefaults = { window = true, style = false }
+
+local function SectionExpanded(key)
+    local saved = app.db.profile.editModeSections
+    local value = saved and saved[key]
+    if value == nil then
+        return sectionDefaults[key]
+    end
+    return value
+end
+
+local function Section(key, name)
+    return {
+        name = name,
+        kind = lib.SettingType.Expander,
+        section = key,
+        default = sectionDefaults[key],
+        get = function()
+            return SectionExpanded(key)
+        end,
+        set = function(_, value, fromReset)
+            -- Reset to default restores settings, not which sections are open.
+            if fromReset then
+                return
+            end
+            local profile = app.db.profile
+            profile.editModeSections = profile.editModeSections or {}
+            profile.editModeSections[key] = value
+        end,
+    }
+end
+
 local function RegisterControls(frame)
-    local settings = {}
+    local settings = { Section("window", L["Window"]) }
     local function add(name, key, kind, minimum, maximum, step, multiplier, skin)
         multiplier = multiplier or 1
         local function get()
@@ -220,7 +253,7 @@ local function RegisterControls(frame)
         },
     }
     local styleStart = #settings + 1
-    settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Divider }
+    settings[#settings + 1] = Section("style", L["Style"])
     for _, definition in ipairs(appearanceSliders) do
         add(
             definition[1],
@@ -297,6 +330,18 @@ local function RegisterControls(frame)
             app:RebuildWindows()
         end,
     })
+    -- Every row belongs to the section header above it.
+    local section
+    for _, entry in ipairs(settings) do
+        if entry.kind == lib.SettingType.Expander then
+            section = entry.section
+        else
+            local key = section
+            entry.hidden = function()
+                return not SectionExpanded(key)
+            end
+        end
+    end
     lib:AddFrameSettings(frame, settings)
     lib:AddFrameSettingsButtons(frame, {
         {

@@ -61,7 +61,7 @@ colors via `ChangeChatColor`, channels via `GetChannelList`). The profile holds 
 secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argument (so
   PARTY_LEADER, not PARTY), nil for print(). Each transform runs in pcall and checks its own
   feature's switch; secret lines only reach `secretSafe` transforms, which may only concatenate.
-  Orders: URLs 10, channel names 20, timestamps 1000 (last, so its copy link holds the final line).
+  Orders: unread counts 1 (only counts), URLs 10, channel names 20, timestamps 1000 (last, so its copy link holds the final line).
   Never wrap AddMessage anywhere else.
 - `input.lua` — `app.input`: plain arrow keys browse the chat input's sent lines (not secure slash
   commands, no consecutive repeats; Down past the newest empties the input), `inputHistoryLines`
@@ -99,7 +99,8 @@ after `features.lua`.
 - `copy.lua` — `app.copy`. The game can only copy out of an edit box, so copying puts the line into
   the chat input, selected (`ChatFrameUtil.OpenChat(nil, frame)`, then `SetText` +
   `HighlightText`). `WrapTimestamp` (called by timestamps.lua) keeps the line under an id (last 1000) and wraps the stamp in `|Haddon:SeamlessChat:copy:<id>|h`; the game hands `addon` links to
-  `EventRegistry` `"SetItemRef"`, where `OnSetItemRef` copies the line, stripped with
+  `EventRegistry` `"SetItemRef"`, where `OnSetItemRef` copies the line (`FindLine`: the kept one, else
+  read back from the chat window still showing the link, so restored history stays copyable), stripped with
   `C_StringUtil.StripHyperlinks`. Secret lines get no link. The copy button (`CreateButton`, one
   per chat window, top right) follows the game's chat fade via hooks on `FCF_FadeInChatFrame` /
   `FCF_FadeOutChatFrame` with its own OnUpdate fade (not `UIFrameFadeIn`, whose shared list would
@@ -147,6 +148,11 @@ after `features.lua`.
   window, display only: `FCF_SetWindowColor` / `FCF_SetWindowAlpha` with `doNotSave`, so the
   windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
   hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
+- `unread.lua` — line transform 1 (`secretSafe`, returns the line unchanged): counts chat lines (a
+  `chatType`; numbered channels per `channels`) reaching a docked window that isn't the selected one
+  (`FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)`), shown as a badge (`color`) at its tab's top right
+  corner. The badge is on UIParent, anchored to the tab, so it stays while the game fades idle tabs;
+  it hides with the tab. Cleared by hooks on `FCFDock_SelectWindow`, `FCF_UnDockFrame`, `FCF_Close`.
 - `skin.lua` — the button bar left of the main chat window (feature key `skin`, "Chat buttons").
   `BUTTONS` lists the game's chat buttons and ours top to bottom; `Arrange` reparents the shown ones
   into `SeamlessChatButtonBar` (on UIParent where the game puts ChatFrame1's strip, so it stays while
@@ -156,8 +162,12 @@ after `features.lua`.
   (copy window for `SELECTED_CHAT_FRAME`) and options (Chat settings). Bottom up: options, copy, log,
   chat menu, channels, social, then text to speech and voice. Its settings are on the
   Buttons tab. Every button gets a dark plate (1 px edge + fill,
-  the edge in `accent` on hover); the button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
-  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors and
+  the edge in `accent` on hover) and one icon style (`StyleIcons`): its own normal, pushed,
+  highlight and disabled art hidden (again on `UpdateHighlight`, voice buttons swap it), its icon
+  textures (`icons`, default `Icon`; the chat menu's art includes a frame, so a cropped `glyph`)
+  desaturated and tinted `ICON_COLOR`, `accent` on hover. The social button's friends count is a
+  corner badge shown only above 0 (hook on `UpdateDisplayedFriendCount`). The button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
+  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors, art, icon colors and
   hidden buttons back when disabled.
 
 To add a feature: a new `src/features/<name>.lua` calling `app.features:New` with an `optionsTab`

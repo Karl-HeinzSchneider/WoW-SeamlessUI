@@ -46,13 +46,16 @@ local PLATE = { 0.04, 0.04, 0.05, 0.72 }
 local EDGE = { 0.32, 0.32, 0.34, 0.55 }
 local BUTTON_SIZE = 26
 local GAP = 2
+-- Every icon in one color: the game's art desaturated and tinted, in `accent` under the mouse. The
+-- buttons' own frames (normal, pushed, highlight art) are hidden; the plate is the frame.
+local ICON_COLOR = { 0.85, 0.85, 0.88 }
+local ICON_SIZE = 16
 local COPY_ICON = "Interface\\Buttons\\UI-GuildButton-PublicNote-Up"
--- The game's own settings (gear) button art, as on its damage meter's settings button.
-local OPTIONS_ART = {
-    normal = "common-dropdown-a-button-settings-shadowless",
-    pushed = "common-dropdown-a-button-settings-pressed-shadowless",
-    highlight = "common-dropdown-a-button-settings-hover-shadowless",
-}
+local OPTIONS_ICON = "Interface\\Buttons\\UI-OptionsButton"
+-- The chat menu button's art is a speech bubble inside a button frame of its own; only the bubble.
+local MENU_GLYPH = { file = "Interface\\ChatFrame\\UI-ChatIcon-Chat-Up", coords = { 7 / 32, 23 / 32, 9 / 32, 25 / 32 } }
+-- The social button's art fills the whole button, around the icon.
+local SOCIAL_ICON_SIZE = 22
 
 ---@class SeamlessChat.BarButton
 ---@field key string
@@ -60,6 +63,11 @@ local OPTIONS_ART = {
 ---@field frame fun(): Button?
 ---@field own boolean? made by this feature, not the game
 ---@field game boolean? shown and hidden by the game itself (voice chat, text to speech)
+---@field icons (fun(button: Button): Texture[])? the textures tinted as its icon; default the button's Icon
+---@field glyph { file: string, coords: number[] }? its art can't be used as an icon: one made from this
+---@field hide string[]? keys of the button's textures hidden while styled
+---@field style fun(button: Button)? more styling, undone by `unstyle`
+---@field unstyle fun(button: Button)?
 
 -- Top to bottom, as stacked in the bar: from the bottom options, copy, chat log, chat menu, channels,
 -- social, then the buttons the game only shows now and then. Buttons the client doesn't have are skipped.
@@ -72,6 +80,7 @@ local BUTTONS = {
         frame = function()
             return TextToSpeechButton
         end,
+        hide = { "Background" },
     },
     {
         key = "voiceDeafen",
@@ -95,6 +104,30 @@ local BUTTONS = {
         frame = function()
             return QuickJoinToastButton
         end,
+        icons = function(button)
+            return { button.FriendsButton, button.QueueButton }
+        end,
+        -- The art a little smaller than the button, and the online friends count as a badge in the
+        -- corner, only while someone is online.
+        style = function(button)
+            for _, icon in ipairs({ button.FriendsButton, button.QueueButton }) do
+                icon:ClearAllPoints()
+                icon:SetSize(SOCIAL_ICON_SIZE, SOCIAL_ICON_SIZE)
+                icon:SetPoint("CENTER")
+            end
+            button.FriendCount:ClearAllPoints()
+            button.FriendCount:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
+            button.FriendCount:SetShown(button.FriendCount:GetText() ~= "0")
+        end,
+        unstyle = function(button)
+            for _, icon in ipairs({ button.FriendsButton, button.QueueButton }) do
+                icon:ClearAllPoints()
+                icon:SetAllPoints(button)
+            end
+            button.FriendCount:ClearAllPoints()
+            button.FriendCount:SetPoint("BOTTOM", button, "BOTTOM", 0, 4)
+            button.FriendCount:Show()
+        end,
     },
     {
         key = "channels",
@@ -109,6 +142,7 @@ local BUTTONS = {
         frame = function()
             return ChatFrameMenuButton
         end,
+        glyph = MENU_GLYPH,
     },
     {
         key = "log",
@@ -223,6 +257,120 @@ function module:SkinButton(button)
     setFaded(parts, true)
 end
 
+---@class SeamlessChat.IconStyle
+---@field icons Texture[] tinted
+---@field art table<Texture, true> the button's own art, hidden
+---@field glyph Texture? the icon made for a button whose art can't be one
+
+-- How every bar button is styled, so disabling can undo it.
+---@type table<Button, SeamlessChat.IconStyle>
+local styled = {}
+
+local function tint(style, r, g, b)
+    for _, icon in ipairs(style.icons) do
+        icon:SetDesaturated(true)
+        icon:SetVertexColor(r, g, b)
+    end
+end
+
+-- Hides the button's normal, pushed, highlight and disabled art. Again whenever the game sets new
+-- art (voice buttons change it with their state), as it may come as a new texture.
+local function hideArt(style, button, entry)
+    local function hide(texture)
+        if texture then
+            style.art[texture] = true
+            texture:SetAlpha(0)
+        end
+    end
+    hide(button:GetNormalTexture())
+    hide(button:GetPushedTexture())
+    hide(button:GetHighlightTexture())
+    hide(button:GetDisabledTexture())
+    for _, key in ipairs(entry.hide or {}) do
+        hide(button[key])
+    end
+end
+
+-- The icon of a bar button in the bar's style: no art of its own, one color, `accent` on hover.
+function module:StyleIcons(button, entry)
+    local style = styled[button]
+    if not style then
+        style = { icons = {}, art = {} }
+        styled[button] = style
+        if entry.glyph then
+            local glyph = button:CreateTexture(nil, "ARTWORK")
+            glyph:SetTexture(entry.glyph.file)
+            glyph:SetTexCoord(unpack(entry.glyph.coords))
+            glyph:SetSize(ICON_SIZE, ICON_SIZE)
+            glyph:SetPoint("CENTER")
+            style.glyph = glyph
+            button:HookScript("OnMouseDown", function()
+                glyph:SetPoint("CENTER", -1, -2)
+            end)
+            button:HookScript("OnMouseUp", function()
+                glyph:SetPoint("CENTER")
+            end)
+        end
+        button:HookScript("OnEnter", function()
+            if self:IsEnabled() and styled[button].icons[1] then
+                hideArt(style, button, entry)
+                local accent = self:Settings().accent
+                tint(style, accent.r, accent.g, accent.b)
+            end
+        end)
+        button:HookScript("OnLeave", function()
+            if self:IsEnabled() and styled[button].icons[1] then
+                tint(style, unpack(ICON_COLOR))
+            end
+        end)
+        if button.UpdateHighlight then
+            hooksecurefunc(button, "UpdateHighlight", function()
+                if self:IsEnabled() and styled[button].icons[1] then
+                    hideArt(style, button, entry)
+                end
+            end)
+        end
+    end
+    style.icons = entry.icons and entry.icons(button) or { button.Icon }
+    if style.glyph then
+        style.glyph:Show()
+        style.icons[#style.icons + 1] = style.glyph
+    end
+    hideArt(style, button, entry)
+    if entry.style then
+        entry.style(button)
+    end
+    if button:IsMouseOver() then
+        local accent = self:Settings().accent
+        tint(style, accent.r, accent.g, accent.b)
+    else
+        tint(style, unpack(ICON_COLOR))
+    end
+end
+
+-- The button's own art and colors back.
+function module:UnstyleIcons(button)
+    local style = styled[button]
+    if not style then
+        return
+    end
+    for texture in pairs(style.art) do
+        texture:SetAlpha(1)
+    end
+    for _, icon in ipairs(style.icons) do
+        icon:SetDesaturated(false)
+        icon:SetVertexColor(1, 1, 1)
+    end
+    style.icons = {}
+    if style.glyph then
+        style.glyph:Hide()
+    end
+    local entry = entryOf[button]
+    if entry and entry.unstyle then
+        entry.unstyle(button)
+    end
+end
+
 -- The strip of buttons beside a chat window: its own background goes, its buttons get plates.
 function module:SkinButtonFrame(buttonFrame)
     local parts = skinned[buttonFrame]
@@ -262,9 +410,8 @@ end
 
 -- Our buttons -----------------------------------------------------------------------------------
 
--- A bar button of our own, made like the log button: the chat buttons' art with an icon on top, or
--- with `art` (normal, pushed, highlight atlases) a button whose art already shows its icon.
-function module:CreateBarButton(title, iconFile, onClick, art)
+-- A bar button of our own: just its icon (`Icon`), the bar styles it.
+function module:CreateBarButton(title, iconFile, onClick)
     local button = CreateFrame("Button", nil, self.bar)
     button:SetFrameStrata("MEDIUM")
     button:SetSize(BUTTON_SIZE, BUTTON_SIZE)
@@ -277,20 +424,11 @@ function module:CreateBarButton(title, iconFile, onClick, art)
     button:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    if art then
-        button:SetNormalAtlas(art.normal)
-        button:SetPushedAtlas(art.pushed)
-        button:SetHighlightAtlas(art.highlight)
-        return button
-    end
-    button:SetNormalAtlas("chatframe-button-up")
-    button:SetPushedAtlas("chatframe-button-down")
-    button:SetHighlightAtlas("chatframe-button-highlight", "ADD")
     local icon = button:CreateTexture(nil, "OVERLAY")
     icon:SetTexture(iconFile)
-    icon:SetSize(16, 16)
+    icon:SetSize(ICON_SIZE, ICON_SIZE)
     icon:SetPoint("CENTER")
-    -- The icon moves with the pushed art, as on the chat's other buttons.
+    button.Icon = icon
     button:SetScript("OnMouseDown", function()
         icon:SetPoint("CENTER", -1, -2)
         icon:SetAlpha(0.75)
@@ -310,9 +448,9 @@ function module:CreateOwnButtons()
             app.copy:OpenWindow(chatFrame)
         end
     end)
-    self.optionsButton = self:CreateBarButton(L["Chat options"], nil, function()
+    self.optionsButton = self:CreateBarButton(L["Chat options"], OPTIONS_ICON, function()
         app.options:Open()
-    end, OPTIONS_ART)
+    end)
 end
 
 -- Bar ---------------------------------------------------------------------------------------------
@@ -382,6 +520,7 @@ function module:Arrange()
                     button:SetPoint("BOTTOM", self.bar, "BOTTOM", 0, 0)
                 end
                 self:SkinButton(button)
+                self:StyleIcons(button, entry)
                 below = button
             end
         end
@@ -393,6 +532,7 @@ end
 function module:Release()
     arranging = true
     for button, original in pairs(originals) do
+        self:UnstyleIcons(button)
         button:SetParent(original.parent)
         button:SetSize(original.width, original.height)
         button:ClearAllPoints()
@@ -441,6 +581,14 @@ function module:Refresh()
 end
 
 function module:OnInitialize()
+    -- The online friends badge shows only while someone is online.
+    if QuickJoinToastButton and QuickJoinToastButton.UpdateDisplayedFriendCount then
+        hooksecurefunc(QuickJoinToastButton, "UpdateDisplayedFriendCount", function(button)
+            if self:IsEnabled() and styled[button] and styled[button].icons[1] then
+                button.FriendCount:SetShown(button.FriendCount:GetText() ~= "0")
+            end
+        end)
+    end
     -- New and temporary windows bring their own button strips.
     hooksecurefunc("FCF_OpenTemporaryWindow", function()
         self:Refresh()

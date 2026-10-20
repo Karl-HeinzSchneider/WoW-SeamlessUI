@@ -70,7 +70,7 @@ Their source remains in this repository for internal development and testing.
 
 - **SeamlessChat** (optional): shared chat layouts/colors/channels, input history, timestamps,
   persistent message history, copy and searchable log windows, clickable URLs, short channel labels,
-  class colors, fading and backgrounds.
+  class colors, fading, backgrounds and unread counts on chat tabs.
 
 **SeamlessDamageMeter** (optional) provides multiple movable, resizable meter windows using
 the client's `C_DamageMeter` combat statistics. Each window independently selects damage,

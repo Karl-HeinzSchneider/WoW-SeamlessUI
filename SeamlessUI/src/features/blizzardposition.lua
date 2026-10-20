@@ -136,9 +136,74 @@ local function dependsOn(frame, target, seen)
     return false
 end
 
+local function pointPosition(frame, point)
+    local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+    if not left or not right or not top or not bottom then
+        return nil
+    end
+    local x = point:find("LEFT") and left or point:find("RIGHT") and right or (left + right) / 2
+    local y = point:find("TOP") and top or point:find("BOTTOM") and bottom or (top + bottom) / 2
+    local scale = frame:GetEffectiveScale()
+    return x * scale, y * scale
+end
+
+local function round(value)
+    return math.floor(value * 100 + 0.5) / 100
+end
+
+-- Managed containers and their unnamed layout children are implementation
+-- details; report the named frame that places them instead.
+local function isLayoutHelper(frame)
+    return frame ~= UIParent and (not frame:GetName() or frame.AddManagedFrame ~= nil)
+end
+
+-- In default position, managed frames (Pet, cast bar, ...) and default action
+-- bars are placed by the client's layout code, and their layout anchorInfo is a
+-- placeholder such as CENTER of UIParent. Read the frame's live anchor instead,
+-- in the same scale-independent units Edit Mode stores after a drag.
+local function liveAnchor(system)
+    local point, relativeTo, relativePoint, x, y = system:GetPoint(1)
+    if not point then
+        return nil
+    end
+    relativeTo = relativeTo or UIParent
+    local target, seen = relativeTo, {}
+    while isLayoutHelper(target) and not seen[target] do
+        seen[target] = true
+        local _, anchor = target:GetPoint(1)
+        target = anchor or target:GetParent() or UIParent
+    end
+    if target ~= relativeTo then
+        local fx, fy = pointPosition(system, point)
+        local tx, ty = pointPosition(target, relativePoint)
+        if not fx or not tx or not target:GetName() then
+            return nil
+        end
+        local scale = system:GetEffectiveScale()
+        x, y = (fx - tx) / scale, (fy - ty) / scale
+    end
+    local frameScale = system:GetScale()
+    return {
+        point = point,
+        relativeTo = target:GetName(),
+        relativePoint = relativePoint,
+        offsetX = round(x * frameScale),
+        offsetY = round(y * frameScale),
+    }
+end
+
 function position:Read(system)
     local info = EditModeManagerFrame:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
-    return info and info.anchorInfo and CopyTable(info.anchorInfo)
+    if not info or not info.anchorInfo then
+        return nil
+    end
+    if system.IsInDefaultPosition and system:IsInDefaultPosition() then
+        local live = liveAnchor(system)
+        if live then
+            return live
+        end
+    end
+    return CopyTable(info.anchorInfo)
 end
 
 function position:CanEdit(system)

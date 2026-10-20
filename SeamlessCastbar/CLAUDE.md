@@ -3,7 +3,7 @@
 Optional addon requiring Seamless that adds information to the game's own player, target and focus
 cast bars without replacing them: cast time text, the spell rank in the name, channel tick marks,
 the spell icon on the detached player bar and how long a bar stays after a cast.
-Ships in releases; still being verified in game. Open `/seamlesscastbar` or Seamless > Castbar: one tab per bar
+Ships in releases. Open `/seamlesscastbar` or Seamless > Castbar: one tab per bar
 (Player, Target, Focus). The player bar's options are also under a collapsible Style header in
 SeamlessUI's extended Edit Mode window for the cast bar. `SeamlessCastbarDB` holds independent profiles with one table per bar
 (`player`, `target`, `focus`), each with `enabled`, `castTime` (`enabled`, `format`, `decimals`),

@@ -1,124 +1,88 @@
 # Seamless
 
-A modular World of Warcraft addon suite for WoW Forever.
+A modular World of Warcraft addon suite for WoW Forever. It improves the game's own interface
+instead of replacing it: each part is a separate addon you can switch on or off.
 
 ## Addons
 
-- **Seamless** (required, the core): shared libraries, logging, profiles for shared settings, one
-  minimap button and the **Seamless** entry in WoW Settings > AddOns.
-- **SeamlessUnitframes** (optional): per-frame health colors for player, pet, target, focus,
-  their targets and party. Choose default, class, reaction or combined colors, and configure
-  the client's numeric target threat display.
+- **Seamless** (required): the core. Shared libraries, logging, one minimap button and the
+  **Seamless** entry in Settings > AddOns. It also adds small tweaks: `/rl` to reload, completed
+  quests and their XP in the quest log, and more XP details on the experience bar tooltip.
+- **SeamlessUnitframes**: per-frame settings for the player, pet, target, target of target, focus,
+  target of focus and party frames: health colors (default, class, reaction or class and reaction),
+  first, last or full player names, class icons as portraits, hiding the PvP icon, a quest icon on
+  quest targets, the numeric threat display and an optional legacy frame layout.
+- **SeamlessTooltip**: 23 switchable tooltip enhancements, including cursor or action button
+  anchoring, scale, backgrounds and borders, player and NPC text, status tags and raid markers,
+  targets and "targeted by", health bars, item level, IDs, stack sizes, vendor prices, spell IDs
+  and aura casters.
+- **SeamlessChat**: the same chat setup (windows, channels, message types, colors) on every
+  character, input history, timestamps, saved message history, copy and searchable log windows,
+  clickable URLs, short channel names, class colors, fading, backgrounds, unread counts on tabs
+  and a restyled chat button bar.
+- **SeamlessDamageMeter**: up to ten movable, resizable meter windows on the client's combat
+  statistics (damage, DPS, healing, HPS, absorbs, interrupts, dispels, damage taken, deaths) and a
+  live threat meter, with spell breakdowns on hover or click, shared skins and favorites.
+- **SeamlessUI**: general improvements: a fuller XP bar tooltip, an FPS display with optional
+  latency, and extra controls in the game's Edit Mode (exact positions and anchors for Blizzard
+  frames, and the Style settings of the other addons).
+- **SeamlessDarkmode**: one shared dark tint for the borders of unit frames, the minimap and its
+  addon buttons, action bar slots, gryphons and the XP and reputation bars, switchable per group.
+- **SeamlessActionBars**: action button icons turn red when out of range and blue when you lack
+  mana, rage or energy (both colors configurable), and keybind labels get shorter (`SM4`, `N5`,
+  `WU`).
+- **SeamlessCastbar**: cast time on the player, target and focus cast bars, the spell rank in the
+  spell name, tick marks on channeled spells, the spell icon on the detached player bar and a
+  configurable hold time after a cast, with each bar's settings in Edit Mode.
 
-- **SeamlessTooltip** (optional): 23 switchable tooltip enhancements, including cursor/action-button
-  anchoring, scale, shared-media backgrounds and borders, player/NPC text, status and raid markers,
-  targets, health bars, item details and vendor prices, spell IDs and aura casters.
+## Installation
 
-## Installation and usage
-
-Extract `Seamless` and your chosen feature folders (`SeamlessUnitframes`, `SeamlessTooltip`) from the release zip into your client's
-`Interface/AddOns` directory. Keep Core enabled and select the feature addons you want in
-WoW's AddOns screen, then reload. Each feature requires Core; Core can run alone.
-
-- `/seamless`: open Settings > AddOns > Seamless.
-- `/rl`: reload the UI. Enabled by default; toggle it in Settings > AddOns > Seamless > Tweaks.
-- Core can show the FPS counter on startup (off by default). Enable this in the Tweaks category; Ctrl+R still toggles the counter normally.
-- `/seamless loglevel <level>`: set shared logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).
-- `/seamless reset`: reset the current core profile (shared preferences only).
-- `/seamlessunitframes`: open the Unit Frames options.
-- `/seamlessunitframes reset`: reset the current Unitframes profile.
-- `/seamlesstooltip`: open the Tooltip options.
-- `/seamlesstooltip reset`: reset the current Tooltip profile.
-
-Existing Unitframes settings and profiles remain in `SeamlessUnitframesDB`; Tooltip keeps
-`SeamlessTooltipDB` and all feature keys from the standalone addon. Core preferences
-use `SeamlessDB`; logging and minimap preferences initially use the core defaults.
-Each feature manages its own profiles, independently of the core profile.
+Extract the release zip into your client's `Interface/AddOns` folder. Keep **Seamless** enabled
+and choose the other addons in the game's AddOns screen, then reload. Every addon needs Seamless;
+Seamless works on its own.
 
 Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
-addon's own sections, and Profiles last, where its profiles are selected, created, copied, deleted
-and reset.
+addon's own sections, then Profiles, where its profiles are selected, created, copied, deleted
+and reset. Each addon keeps its own profiles.
 
-When replacing standalone SeamlessTooltip, replace its existing AddOns folder with the suite version
-and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to
-the old repository must be replaced with one pointing to this repo; `dev:link` refuses to overwrite it.
+## Commands
 
-## More feature addons
+| Command                                                        | Does                                                                                          |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `/seamless`                                                    | Opens the Seamless options.                                                                   |
+| `/seamless loglevel <level>`                                   | Sets logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).                  |
+| `/seamless reset`                                              | Resets the current core profile.                                                              |
+| `/rl`                                                          | Reloads the UI (can be switched off under Seamless > Tweaks).                                 |
+| `/seamlessunitframes`, `/seamlesstooltip`                      | Open the addon's options; `reset` resets its current profile.                                 |
+| `/seamlesschat`                                                | Opens the Chat options; `log` or `search <text>` opens the chat log, `save`/`apply` the sync. |
+| `/sdm`                                                         | Opens the Damage Meter options; `/sdm new` adds a window, `/sdm show` shows hidden windows.   |
+| `/seamlessui`                                                  | Opens the UI options; `reset` resets its current profile.                                     |
+| `/seamlessdarkmode`, `/seamlessactionbars`, `/seamlesscastbar` | Open the addon's options.                                                                     |
 
-SeamlessChat, SeamlessDamageMeter, SeamlessUI, SeamlessDarkmode, SeamlessActionBars and SeamlessCastbar
-are included in release archives. They are newer and still being validated in game.
+## Edit Mode
 
-- **SeamlessDarkmode** (optional): tints the borders of the unit frames, the minimap and its
-  addon buttons with one shared color, with a switch per group. Install beside Core and use `/seamlessdarkmode`. Includes independent `SeamlessDarkmodeDB` profiles.
-
-- **SeamlessActionBars** (optional): colors action button icons red when out of range and blue
-  when you lack mana, rage or energy (both colors configurable), and shortens keybind labels
-  (`SM4`, `N5`, `WU`). Install beside Core and use `/seamlessactionbars`. Includes independent
-  `SeamlessActionBarsDB` profiles.
-
-- **SeamlessCastbar** (optional): adds cast time text (`1.2 / 2.5`) to the target and focus cast
-  bars and the chosen format to the player's Edit Mode cast time, the spell rank to the spell name,
-  tick marks on channeled spells, the spell icon on the detached player bar and a configurable hold
-  time after a cast, with a tab per cast bar and each bar's Style options in Edit Mode (the target
-  and focus bars as selectable previews). Install beside Core and use `/seamlesscastbar`. Includes independent
-  `SeamlessCastbarDB` profiles.
-
-- **SeamlessUI** (optional): the foundation for general UI improvements, with independent
-  `SeamlessUIDB` profiles and a UI panel under Seamless. No improvements are implemented yet.
-  Install its folder alongside Core and use `/seamlessui` to open settings or
-  `/seamlessui reset` to reset its current profile.
-
-- **SeamlessChat** (optional): shared chat layouts/colors/channels, input history, timestamps,
-  persistent message history, copy and searchable log windows, clickable URLs, short channel labels,
-  class colors, fading, backgrounds and unread counts on chat tabs.
-
-**SeamlessDamageMeter** (optional) provides multiple movable, resizable meter windows using
-the client's `C_DamageMeter` combat statistics. Each window independently selects damage,
-DPS, healing, HPS, absorbs, interrupts, dispels or damage taken, and current, overall or a
-retained fight. Layouts and selections are saved in its own AceDB profiles.
-Install its folder alongside Core. `/sdm` opens settings, `/sdm new` adds a window, and
-`/sdm show` restores hidden windows. Windows use Blizzard's default meter art and fonts.
-The gear menu adds or removes windows; the collapse button hides a window.
-Drag the header or bottom-right corner to move or resize; mouse-wheel over
-the window to scroll players. Enable Blizzard combat tracking in its settings if needed.
-The "SeamlessUI" panel below Edit Mode has a "Seamless Damage Meter" checkbox controlling previews of active windows,
-including temporarily hidden slots. It does not change normal window visibility or activation.
-Edit Mode displays sample bars with classic WoW
-characters, class colors and example amounts instead of reading live combat data.
-Collapsed windows temporarily expand to show the preview. Select a window to move it
-or adjust its scale. Use the Width/Height sliders in its Edit Mode dialog or drag the
-visible bottom-right grip to resize it. Leaving Edit Mode restores live data and the saved collapse state.
-Edit Mode changes update
-the window's position and scale overrides in the current Damage Meter profile.
-Position, size, scale and anchor links are remembered separately for each Edit Mode layout;
-new layouts start with the current geometry.
-The built-in meter's visibility remains controlled by the game's own settings; keep tracking
-enabled for data. Fight history belongs to Blizzard and may expire or reset independently
-of saved layouts. This first version intentionally focuses on the base windows, without
-spell drilldowns or an independent combat recorder.
+Seamless adds a panel below the game's Edit Mode window. Its **Frames** list turns on previews of
+the suite's own frames (damage meter windows, FPS display, target and focus cast bars) so they
+can be selected and moved. Selecting a frame shows its settings, including a Position section with
+exact anchors and a quick anchor picker. With SeamlessUI enabled, Blizzard's own frames get the
+same position controls and the Style settings of the other addons.
 
 ## Development
 
 Node 20+; run `npm install` once. `npm run dev:link -- "<WoW>/Interface/AddOns"` links every addon
-into a client; rerun it after this upgrade to link Core too. `/reload` picks up changes.
-`npm run format` formats the repo; `npm run check` validates it (Lua 5.1 `luac` required).
-`npm run package:addons` creates a source zip of the public addons in `dist/`; it leaves version
-tokens unchanged. `npm run package:local` uses the release packager and replaces version tokens.
-Both include every addon listed in `.pkgmeta` move-folders. Use the release packager
-for distributable archives.
+into a client; `/reload` picks up changes. `npm run format` formats the repo, `npm run check`
+validates it (needs Lua 5.1 `luac`). `npm run package:local` builds the release archive with the
+same packager the release workflows use.
 
-To add a feature, create `SeamlessFeature/SeamlessFeature.toc` with `## Dependencies: Seamless`,
-list its runtime files, and add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
-Use the core API documented in [Seamless/CLAUDE.md](Seamless/CLAUDE.md) for shared options
-and logging. Keep feature state in its private addon table and its own SavedVariables.
-No core code change is needed to register another feature.
+To add an addon, create `SeamlessFeature/SeamlessFeature.toc` with `## Dependencies: Seamless`,
+list its files, and add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
+[CLAUDE.md](CLAUDE.md) and [Seamless/CLAUDE.md](Seamless/CLAUDE.md) document the structure and the
+core API.
 
 ## Credits
 
-Thanks to **p3lim** for the **LibEditMode** library
-used to integrate the damage meter windows with Edit Mode.
-
-- [LibEditMode on GitHub](https://github.com/p3lim-wow/LibEditMode)
+Thanks to **p3lim** for [LibEditMode](https://github.com/p3lim-wow/LibEditMode), used for the
+Edit Mode integration.
 
 ## License
 

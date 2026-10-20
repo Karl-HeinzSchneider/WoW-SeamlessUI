@@ -4,8 +4,8 @@ Optional addon requiring Seamless that adds information to the game's own player
 cast bars without replacing them: cast time text, the spell rank in the name, channel tick marks,
 the spell icon on the detached player bar and how long a bar stays after a cast.
 Internal until verified in game. Open `/seamlesscastbar` or Seamless > Castbar: one tab per bar
-(Player, Target, Focus). The player bar's options are also in its Edit Mode settings under a
-collapsible Style header. `SeamlessCastbarDB` holds independent profiles with one table per bar
+(Player, Target, Focus). The player bar's options are also under a collapsible Style header in
+SeamlessUI's extended Edit Mode window for the cast bar. `SeamlessCastbarDB` holds independent profiles with one table per bar
 (`player`, `target`, `focus`), each with `enabled`, `castTime` (`enabled`, `format`, `decimals`),
 `rank`, `ticks`, `hold` (`enabled`, `success`, `interrupt`) and, for the player only, `icon`.
 Everything but `hold` is on by default.
@@ -37,10 +37,12 @@ system, so they are not part of this addon.
    duration of `HoldFadeOutAnim`'s first alpha, remembering the client's values.
 5. `src/options.lua`: a short General tab and one tab per bar: its Enable switch, then
    `core.FeatureGroup` groups (greyed out while the bar is off).
-6. `src/editmode.lua`: `app.RegisterEditMode` (from `OnEnable`, once) adds the Style section to
-   the cast bar system with LibEditMode's `AddSystemSettings`, which Core keeps below SeamlessUI's
-   panel. The rows write the player profile and refresh the options; they hide while the addon is
-   disabled because the library cannot remove them.
+6. `src/editmode.lua`: `app.RegisterEditMode` (from `OnEnable`, once) registers the Style section
+   for the cast bar system with Core's `RegisterEditModeSystemOptions`. SeamlessUI draws it in its
+   extended window below the cast bar's settings, so it needs SeamlessUI with the cast bar's Edit
+   Mode extension on; it is never a window of its own. The rows write the player profile and
+   refresh the options; `Refresh` and `OnDisable` call `RefreshEditModeSystemOptions`, and the
+   section leaves while the addon is disabled.
 7. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules

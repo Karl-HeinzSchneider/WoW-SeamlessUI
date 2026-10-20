@@ -246,15 +246,12 @@ assert(fade.startDelay == 0.2 and hold.duration == 1, "hold restored")
 
 print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 
--- Edit Mode: a Style section in the player cast bar's settings, writing the player profile.
-local registered, refreshes, optionRefreshes, enabled = nil, 0, 0, true
-local lib = { SettingType = { Checkbox = 1, Slider = 2, Dropdown = 3, Header = "seamless-header" } }
-function lib:AddSystemSettings(system, rows)
-    registered = { system = system, rows = rows }
-end
+-- Edit Mode: a Style section in the extended window of the cast bar system, writing the player profile.
+local registered, registrations, refreshes, optionRefreshes, enabled = nil, 0, 0, 0, true
 app.core = {
-    GetEditModeLibrary = function()
-        return lib
+    RegisterEditModeSystemOptions = function(_, id, spec)
+        registered, registrations = spec, registrations + 1
+        assert(id == "SeamlessCastbar")
     end,
     RefreshOptions = function()
         optionRefreshes = optionRefreshes + 1
@@ -272,24 +269,26 @@ Enum = { EditModeSystem = { CastBar = 11 } }
 load("editmode.lua")
 app.RegisterEditMode()
 app.RegisterEditMode()
-assert(registered and registered.system == 11, "registered once for the cast bar system")
-local rows = {}
-for _, row in ipairs(registered.rows) do
+assert(registrations == 1 and registered.system == 11, "registered once for the cast bar system")
+assert(registered.name == "Style" and registered.enabled())
+local rows, keys = {}, {}
+for _, row in ipairs(registered.options) do
     rows[row.name] = row
+    assert(not keys[row.key], "unique row keys")
+    keys[row.key] = true
 end
-assert(registered.rows[1].kind == lib.SettingType.Header and registered.rows[1].name == "Style")
 local player = app.db.profile.player
-rows["Spell rank"].set("Modern", false)
+rows["Spell rank"].set(false)
 assert(player.rank.enabled == false and refreshes == 1 and optionRefreshes == 1)
 assert(rows["Spell rank"].get() == false)
-rows["Cast time format"].set("Modern", "REMAINING")
+rows["Cast time format"].set("REMAINING")
 assert(player.castTime.format == "REMAINING" and #rows["Cast time format"].values == 3)
-rows["After a finished cast"].set("Modern", 0.30000000000000004)
-assert(player.hold.success == 0.3 and rows["After a finished cast"].formatter(0.3) == "0.3")
+rows["After a finished cast"].set(0.30000000000000004)
+assert(player.hold.success == 0.3 and rows["After a finished cast"].format(0.3) == "0.3")
 player.hold.enabled = false
 assert(rows["After a finished cast"].disabled(), "hold sliders follow their switch")
-rows["Enable"].set("Modern", false)
+rows["Enable"].set(false)
 assert(player.enabled == false and rows["Spell rank"].disabled() and not rows["Enable"].disabled)
 enabled = false
-assert(rows["Style"].hidden() and rows["Enable"].hidden(), "rows hide while the addon is disabled")
+assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")

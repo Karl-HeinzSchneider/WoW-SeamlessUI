@@ -25,6 +25,24 @@ local function frame()
     function f:SetHeight(height)
         self.height = height
     end
+    function f:GetHeight()
+        return self.height or 0
+    end
+    function f:SetChecked(checked)
+        self.checked = checked
+    end
+    function f:SetEnabled(enabled)
+        self.enabled = enabled
+    end
+    function f:Init(value)
+        self.value = value
+    end
+    function f:SetupMenu(generator)
+        self.generator = generator
+    end
+    function f:SetDefaultText(text)
+        self.defaultText = text
+    end
     for _, method in ipairs({
         "SetFrameStrata",
         "EnableMouse",
@@ -32,18 +50,47 @@ local function frame()
         "SetAllPoints",
         "SetFrameLevel",
         "SetWordWrap",
+        "ClearAllPoints",
+        "SetScript",
+        "SetTextColor",
+        "SetWidth",
+        "SetJustifyH",
+        "SetSize",
+        "SetPropagateMouseMotion",
+        "GenerateMenu",
     }) do
         f[method] = function() end
     end
     return f
 end
-function CreateFrame(_, _, parent)
+local created = {}
+function CreateFrame(_, _, parent, template)
     local f = frame()
     if parent == UIParent then
         panel = f
     end
+    if template == "EditModeSettingCheckboxTemplate" then
+        f.Button, f.Label = frame(), frame()
+    elseif template == "EditModeSettingSliderTemplate" then
+        f.Label, f.Slider = frame(), frame()
+        f.Slider.MinText, f.Slider.MaxText = frame(), frame()
+        f.cbrHandles = {
+            Unregister = function() end,
+            RegisterCallback = function(_, _, _, callback)
+                f.onValueChanged = callback
+            end,
+        }
+    end
+    if template then
+        created[template] = f
+    end
     return f
 end
+WHITE_FONT_COLOR, DISABLED_FONT_COLOR = { GetRGB = function() end }, { GetRGB = function() end }
+MinimalSliderWithSteppersMixin = { Event = { OnValueChanged = 1 }, Label = { Right = 1 } }
+function CreateMinimalSliderFormatter() end
+function PlaySound() end
+SOUNDKIT = {}
 UIParent = {}
 Enum = {
     EditModeSystem = { UnitFrame = 1 },
@@ -56,7 +103,7 @@ function IsLoggedIn()
     return true
 end
 local app = { addon = {}, db = { profile = {} } }
-local collapsedSections, header, positionView, dialogPanel = {}, nil, nil, nil
+local collapsedSections, header, positionView = {}, nil, nil
 app.core = {
     CreateEditModeHeader = function(_, _, onClick)
         header = frame()
@@ -78,10 +125,15 @@ app.core = {
     SetEditModeSectionCollapsed = function(_, key, collapsed)
         collapsedSections[key] = collapsed
     end,
-    AddEditModeDialogPanel = function(_, panel)
-        dialogPanel = panel
-    end,
 }
+-- Core's real registry for sections other addons add to a system; its message reaches the module.
+function app.core:SendMessage(message)
+    local handler = module.messages and module.messages[message]
+    if handler then
+        module[handler](module)
+    end
+end
+assert(loadfile("Seamless/src/core/systemoptions.lua"))("Seamless", { addon = app.core })
 app.blizzardPosition = {
     Create = function()
         local view = frame()
@@ -120,6 +172,13 @@ function app.addon:NewModule()
     function module:UnregisterAllEvents()
         self.events = {}
     end
+    function module:RegisterMessage(message, handler)
+        self.messages = self.messages or {}
+        self.messages[message] = handler
+    end
+    function module:UnregisterAllMessages()
+        self.messages = {}
+    end
     function module:IsHooked(object, method)
         return self.hooks[object] and self.hooks[object][method]
     end
@@ -133,6 +192,7 @@ function app.addon:NewModule()
     end
     return module
 end
+assert(loadfile("SeamlessUI/src/features/systemoptions.lua"))("SeamlessUI", app)
 assert(loadfile("SeamlessUI/src/features/blizzardeditmode.lua"))("SeamlessUI", app)
 module:OnProfileRefresh() -- Native UI not loaded yet.
 assert(module.events.ADDON_LOADED and next(module.hooks) == nil)
@@ -310,7 +370,81 @@ assert(not panel:IsShown() and not config.enabled.get())
 app.db.profile = oldProfile
 module:OnProfileRefresh()
 assert(panel:IsShown())
+-- Sections other addons register for a system stack below Position under their own header.
+Enum.EditModeSystem.CastBar = 7
+local castBar = { system = 7 }
+table.insert(EditModeManagerFrame.registeredSystemFrames, castBar)
+EditModeSystemSettingsDialog.attachedToSystem = castBar
+local style, sectionEnabled = { on = true, format = "A", size = 1 }, true
+local function accessors(key)
+    return function()
+        return style[key]
+    end, function(value)
+        style[key] = value
+    end
+end
+local getOn, setOn = accessors("on")
+local getFormat, setFormat = accessors("format")
+local getSize, setSize = accessors("size")
+app.core:RegisterEditModeSystemOptions("Test", {
+    system = 7,
+    name = "Style",
+    enabled = function()
+        return sectionEnabled
+    end,
+    options = {
+        { key = "on", type = "toggle", name = "On", get = getOn, set = setOn },
+        {
+            key = "format",
+            type = "select",
+            name = "Format",
+            values = { { text = "Alpha", value = "A" }, { text = "Beta", value = "B" } },
+            get = getFormat,
+            set = setFormat,
+            disabled = function()
+                return not style.on
+            end,
+        },
+        {
+            key = "size",
+            type = "range",
+            name = "Size",
+            min = 0,
+            max = 2,
+            step = 0.5,
+            get = getSize,
+            set = setSize,
+            hidden = function()
+                return not style.on
+            end,
+        },
+    },
+})
+assert(panel:IsShown() and header.text == "Style" and not header.collapsed)
+-- Title, header, then three rows: 44 + 28 + 8 + 32 + 3 + 32 + 3 + 32 + 20.
+assert(panel.height == 202, panel.height)
+local toggle = created.EditModeSettingCheckboxTemplate
+local slider = created.EditModeSettingSliderTemplate
+local dropdown = created.WowStyle1DropdownTemplate
+assert(toggle.Button.checked == true and dropdown.defaultText == "Alpha" and slider.Slider.value == 1)
+slider.onValueChanged(nil, 1.5)
+assert(style.size == 1.5)
+local radios = {}
+dropdown.generator(nil, {
+    CreateRadio = function(_, text, _, select)
+        radios[text] = select
+    end,
+})
+radios.Beta()
+assert(style.format == "B" and dropdown.defaultText == "Beta")
+toggle:OnCheckButtonClick()
+assert(style.on == false and toggle.Button.checked == false and dropdown.enabled == false)
+assert(not slider.shown and panel.height == 167, "hidden rows take no space")
+header.onClick()
+assert(header.collapsed and not toggle.shown and panel.height == 92)
+sectionEnabled = false
+app.core:RefreshEditModeSystemOptions()
+assert(not header.shown and panel.height == 60, "a disabled feature's section leaves")
 module:OnDisable()
 assert(not panel:IsShown() and next(module.hooks) == nil)
-assert(dialogPanel == panel, "System settings from other addons stack below the panel")
 print("Blizzard Edit Mode extensions OK")

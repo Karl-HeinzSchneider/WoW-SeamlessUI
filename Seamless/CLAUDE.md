@@ -35,14 +35,22 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
   `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
   header plus Anchor, AnchorParent, AnchorFrame, X and Y; collapse key
-  `core:GetEditModePositionSectionKey()`, shared by every Position header). Settings added to a Blizzard
-  system with LibEditMode's `AddSystemSettings` (the library's extension window) get the same
-  collapsible headers; `core:AddEditModeDialogPanel(panel)` registers an addon panel shown directly
-  under the native dialog, and the extension moves below it while it is shown. This is the it asserts on what it relies on, so recheck it and run
+  `core:GetEditModePositionSectionKey()`, shared by every Position header). This is the it asserts on what it relies on, so recheck it and run
   `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
   dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes
   to visible groups/rows. It owns its UIParent frame; never modify native layout containers.
+- `systemoptions.lua`: registry for settings feature addons add to a Blizzard Edit Mode system.
+  `core:RegisterEditModeSystemOptions(id, spec)` takes `system` (an `Enum.EditModeSystem` value),
+  optional `systemIndex`, `name` (the section's collapsible header), optional `key` (collapse
+  key `"settings:" .. (key or name)`), `order`, `enabled` and `options`: rows with `key`, `type`
+  (`toggle`, `select` with `values = { { text, value } }`, or `range` with `min`, `max`, `step`
+  and optional `format`), `name`, optional `desc` (tooltip), `get()`, `set(value)`, `hidden` and
+  `disabled`. SeamlessUI draws the sections in its extended window below the selected frame's
+  native settings; Core only keeps the registry, so no feature addon depends on SeamlessUI.
+  Call `core:RefreshEditModeSystemOptions()` after a change made elsewhere; it sends the message
+  `core:GetEditModeSystemOptionsMessage()`. `core:GetEditModeSystemOptions(system)` returns the
+  enabled sections for a system frame, in order.
 - `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
 - `questlog.lua`: displays completed quest count and XP in the quest log/world map header,
   left of its minimize button; refreshes when shown and when quest data or player level changes.

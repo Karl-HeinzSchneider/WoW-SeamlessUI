@@ -59,8 +59,8 @@ Their source remains in this repository for internal development and testing.
 - **SeamlessCastbar** (optional): adds cast time text (`1.2 / 2.5`) to the target and focus cast
   bars and the chosen format to the player's Edit Mode cast time, the spell rank to the spell name,
   tick marks on channeled spells, the spell icon on the detached player bar and a configurable hold
-  time after a cast, with a tab per cast bar and a Style section in the player cast bar's Edit Mode
-  settings. Install beside Core and use `/seamlesscastbar`. Includes independent
+  time after a cast, with a tab per cast bar and a Style section for the player cast bar in
+  SeamlessUI's extended Edit Mode window. Install beside Core and use `/seamlesscastbar`. Includes independent
   `SeamlessCastbarDB` profiles.
 
 - **SeamlessUI** (optional): the foundation for general UI improvements, with independent

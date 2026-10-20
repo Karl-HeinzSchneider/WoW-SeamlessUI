@@ -3,12 +3,9 @@ local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- The player cast bar's options in its own Edit Mode settings, under a collapsible Style header.
--- They show in LibEditMode's window below the client's dialog for the cast bar system and write
--- the same profile as the Player tab. LibEditMode cannot remove system settings again, so the
--- rows hide while the addon is disabled.
-
-local lib = app.core:GetEditModeLibrary()
+-- The player cast bar's options under a collapsible Style header in the extended window below
+-- the cast bar's own Edit Mode settings (SeamlessUI draws it). They write the same profile as
+-- the Player tab.
 
 local function player()
     return app.db.profile.player
@@ -17,10 +14,6 @@ end
 local function changed()
     app.addon:Refresh()
     app.core:RefreshOptions(appName)
-end
-
-local function hidden()
-    return not app.addon:IsEnabled()
 end
 
 -- Greyed out while the player bar or, when given, the feature is switched off.
@@ -35,110 +28,102 @@ local function tenths(value)
     return math.floor(value * 10 + 0.5) / 10
 end
 
+local function formatTenths(value)
+    return ("%.1f"):format(value)
+end
+
 ---@param name string
 ---@param desc string?
----@param default boolean
 ---@param feature string? the profile table; nil for the bar's own switch
-local function checkbox(name, desc, default, feature)
+local function toggle(name, desc, feature)
     return {
-        kind = lib.SettingType.Checkbox,
+        key = feature or "enabled",
+        type = "toggle",
         name = name,
         desc = desc,
-        default = default,
         get = function()
             return (feature and player()[feature] or player()).enabled
         end,
-        set = function(_, value)
+        set = function(value)
             (feature and player()[feature] or player()).enabled = value
             changed()
         end,
         disabled = feature and disabledUnless() or nil,
-        hidden = hidden,
     }
 end
 
 ---@param name string
 ---@param feature string
 ---@param key string
----@param default number
----@param minValue number
----@param maxValue number
+---@param min number
+---@param max number
 ---@param step number
-local function slider(name, feature, key, default, minValue, maxValue, step)
+local function range(name, feature, key, min, max, step)
     return {
-        kind = lib.SettingType.Slider,
+        key = feature .. "." .. key,
+        type = "range",
         name = name,
-        default = default,
-        minValue = minValue,
-        maxValue = maxValue,
-        valueStep = step,
+        min = min,
+        max = max,
+        step = step,
         get = function()
             return player()[feature][key]
         end,
-        set = function(_, value)
+        set = function(value)
             player()[feature][key] = step < 1 and tenths(value) or value
             changed()
         end,
-        formatter = function(value)
-            return step < 1 and ("%.1f"):format(value) or tostring(value)
-        end,
+        format = step < 1 and formatTenths or nil,
         disabled = disabledUnless(feature),
-        hidden = hidden,
     }
 end
 
----@return table[] rows LibEditMode settings for the cast bar system
+---@return SeamlessCore.EditModeSystemOption[] rows for the cast bar system
 function app.EditModeSettings()
     local formats = {}
     for _, format in ipairs(app.castTimeFormatOrder) do
         formats[#formats + 1] = { text = app.castTimeFormats[format], value = format }
     end
     return {
-        { kind = lib.SettingType.Header, name = L["Style"], key = "castbar-style", hidden = hidden },
-        checkbox(L["Enable"], L["Apply the Seamless options to this cast bar."], true),
-        checkbox(
+        toggle(L["Enable"], L["Apply the Seamless options to this cast bar."]),
+        toggle(
             L["Cast time"],
             L["Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."],
-            true,
             "castTime"
         ),
         {
-            kind = lib.SettingType.Dropdown,
+            key = "castTime.format",
+            type = "select",
             name = L["Cast time format"],
-            default = "ELAPSED_TOTAL",
             values = formats,
             get = function()
                 return player().castTime.format
             end,
-            set = function(_, value)
+            set = function(value)
                 player().castTime.format = value
                 changed()
             end,
             disabled = disabledUnless("castTime"),
-            hidden = hidden,
         },
-        slider(L["Decimals"], "castTime", "decimals", 1, 0, 2, 1),
-        checkbox(
+        range(L["Decimals"], "castTime", "decimals", 0, 2, 1),
+        toggle(
             L["Spell rank"],
             L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."],
-            true,
             "rank"
         ),
-        checkbox(
+        toggle(
             L["Channel ticks"],
             L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."],
-            true,
             "ticks"
         ),
-        checkbox(
+        toggle(
             L["Spell icon"],
             L["Show the spell icon beside the player cast bar when it is not locked to the player frame."],
-            true,
             "icon"
         ),
-        checkbox(L["Hold time"], L["How long a cast bar stays before it fades out."], false, "hold"),
-        slider(L["After a finished cast"], "hold", "success", 0.2, 0, 3, 0.1),
-        slider(L["After an interrupt"], "hold", "interrupt", 1, 0.1, 5, 0.1),
+        toggle(L["Hold time"], L["How long a cast bar stays before it fades out."], "hold"),
+        range(L["After a finished cast"], "hold", "success", 0, 3, 0.1),
+        range(L["After an interrupt"], "hold", "interrupt", 0.1, 5, 0.1),
     }
 end
 
@@ -150,5 +135,13 @@ function app.RegisterEditMode()
         return
     end
     registered = true
-    lib:AddSystemSettings(Enum.EditModeSystem.CastBar, app.EditModeSettings())
+    app.core:RegisterEditModeSystemOptions(appName, {
+        system = Enum.EditModeSystem.CastBar,
+        name = L["Style"],
+        key = "castbar-style",
+        enabled = function()
+            return app.addon:IsEnabled()
+        end,
+        options = app.EditModeSettings(),
+    })
 end

@@ -383,38 +383,3 @@ dialog.width = 340
 dialog:Update({ parent = rightFrame, system = selection.system })
 assert(dialog.points.TOPLEFT[3] == 1300 - 16 - 340 and dialog.points.TOPLEFT[4] == 500)
 print("PASS: settings dialog opens beside the selected frame")
-
--- System settings (AddSystemSettings) use the same collapsible headers and go below suite panels.
-local systemRows = {
-    { kind = lib.SettingType.Header, name = "Style" },
-    { kind = lib.SettingType.Divider, name = "Styled" },
-}
--- Skip the library's layout fetch, which needs the client's C_EditMode.
-local layoutCache = lib.layoutCache
-lib.layoutCache = nil
-lib:AddSystemSettings(7, systemRows)
-lib.layoutCache = layoutCache
-local extension = lib.internal.extension
-assert(extension, "the library created its extension through Core's wrapper")
-extension:Update(7)
-local extensionHeader, styled = extension.Settings.widgets[1], extension.Settings.widgets[2]
-assert(extensionHeader:IsShown() and styled:IsShown())
-assert(extension.points.TOP[1] == EditModeSystemSettingsDialog and extension.points.TOP[4] == 0)
-extensionHeader.scripts.OnClick(extensionHeader)
-assert(not styled:IsShown(), "Collapsing hides the system settings below the header")
-assert(app.IsEditModeSectionCollapsed("settings:Style"))
-extension:Update(7)
-assert(not extension.Settings.widgets[2]:IsShown(), "Collapsed system sections stay collapsed")
-extension.Settings.widgets[1]:Toggle()
-assert(extension.Settings.widgets[2]:IsShown())
-
-local suitePanel = object("Frame", UIParent)
-suitePanel.HookScript = function(self, event, callback)
-    self.scripts[event] = callback
-end
-app.addon:AddEditModeDialogPanel(suitePanel)
-assert(extension.points.TOP[1] == suitePanel and extension.points.TOP[4] == -8, "Below a shown suite panel")
-suitePanel:Hide()
-suitePanel.scripts.OnHide(suitePanel)
-assert(extension.points.TOP[1] == EditModeSystemSettingsDialog, "Back under the dialog when the panel hides")
-print("PASS: system settings extension collapses and stacks below suite panels")

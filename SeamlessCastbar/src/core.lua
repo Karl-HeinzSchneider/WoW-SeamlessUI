@@ -93,9 +93,11 @@ function app.addon:OnDisable()
         app.RestoreHold(bar)
     end
     wipe(keys)
+    app.core:RefreshEditModeSystemOptions()
 end
 
 function app.addon:Refresh()
+    app.core:RefreshEditModeSystemOptions()
     if not self:IsEnabled() then
         return
     end

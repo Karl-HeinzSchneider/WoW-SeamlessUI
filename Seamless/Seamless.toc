@@ -20,6 +20,7 @@ src\core\db.lua
 src\core\ace.lua
 src\core\editmodelib.lua
 src\core\editmode.lua
+src\core\systemoptions.lua
 src\core\quests.lua
 src\core\questlog.lua
 src\core\xptooltip.lua

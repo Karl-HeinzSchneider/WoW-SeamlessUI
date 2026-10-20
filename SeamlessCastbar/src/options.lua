@@ -129,7 +129,7 @@ function options:OnInitialize()
                     desc = {
                         type = "description",
                         order = 1,
-                        name = L["Each cast bar has its own tab. The player cast bar's options are also in its Edit Mode settings, under Style."],
+                        name = L["Each cast bar has its own tab. The player cast bar's options are also under Style in SeamlessUI's extended Edit Mode window."],
                     },
                 },
             },

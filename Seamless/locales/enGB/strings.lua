@@ -198,7 +198,7 @@ end
 -- L["Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."] = "Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."
 -- L["Channel ticks"] = "Channel ticks"
 -- L["Decimals"] = "Decimals"
--- L["Each cast bar has its own tab. The player cast bar's options are also in its Edit Mode settings, under Style."] = "Each cast bar has its own tab. The player cast bar's options are also in its Edit Mode settings, under Style."
+-- L["Each cast bar has its own tab. The player cast bar's options are also under Style in SeamlessUI's extended Edit Mode window."] = "Each cast bar has its own tab. The player cast bar's options are also under Style in SeamlessUI's extended Edit Mode window."
 -- L["Elapsed / total (1.2 / 2.5)"] = "Elapsed / total (1.2 / 2.5)"
 -- L["Hold time"] = "Hold time"
 -- L["How long a cast bar stays before it fades out."] = "How long a cast bar stays before it fades out."

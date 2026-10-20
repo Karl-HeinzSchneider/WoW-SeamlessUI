@@ -3,7 +3,7 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- The game's unit frames this addon changes. The options have a health bar color per entry and the
+-- The game's unit frames this addon changes. The options have a tab per entry and the
 -- settings live in profile.unitFrames[key]; a feature finds its frames through here.
 ---@class SeamlessUnitframes.UnitFrames
 local unitFrames = {}
@@ -13,21 +13,23 @@ app.unitFrames = unitFrames
 ---@field key string  # the key in profile.unitFrames
 ---@field name string  # the label in the options
 ---@field frameName? string  # the global unit frame; nil for the party frames
+---@field system? string  # its Enum.EditModeUnitFrameSystemIndices name, if it has an Edit Mode system
+---@field linkedTo? string  # the key of the frame whose Edit Mode settings show this one's
 
 -- A game unit frame, with the field UnitFrame_Initialize sets.
 ---@class SeamlessUnitframes.GameUnitFrame : Frame
 ---@field healthbar StatusBar?
 
--- In the order of the options.
+-- In the order of the options tabs.
 ---@type SeamlessUnitframes.UnitFrame[]
 unitFrames.list = {
-    { key = "player", name = L["Player"], frameName = "PlayerFrame" },
-    { key = "pet", name = L["Pet"], frameName = "PetFrame" },
-    { key = "target", name = L["Target"], frameName = "TargetFrame" },
-    { key = "targettarget", name = L["Target of Target"], frameName = "TargetFrameToT" },
-    { key = "focus", name = L["Focus"], frameName = "FocusFrame" },
-    { key = "focustarget", name = L["Target of Focus"], frameName = "FocusFrameToT" },
-    { key = "party", name = L["Party"] },
+    { key = "player", name = L["Player"], frameName = "PlayerFrame", system = "Player" },
+    { key = "pet", name = L["Pet"], frameName = "PetFrame", system = "Pet" },
+    { key = "target", name = L["Target"], frameName = "TargetFrame", system = "Target" },
+    { key = "targettarget", name = L["Target of Target"], frameName = "TargetFrameToT", linkedTo = "target" },
+    { key = "focus", name = L["Focus"], frameName = "FocusFrame", system = "Focus" },
+    { key = "focustarget", name = L["Target of Focus"], frameName = "FocusFrameToT", linkedTo = "focus" },
+    { key = "party", name = L["Party"], system = "Party" },
 }
 
 -- Whether this client has the frame (the party frames always count).

@@ -11,19 +11,33 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
 3. `ace.lua`: independent AceAddon and AceDB lifecycle, profile refresh callbacks and legacy
    `/seamlessunitframes` alias. `reset` resets only the feature profile; `loglevel` delegates to core.
 4. `unitframes.lua`: registry of player, pet, target, target of target, focus, target of focus,
-   and party frames, with `Exists`, `KeyOf` and `All` helpers.
-5. `options.lua`: the Unit Frames panel (Settings > AddOns > Seamless) via `core:RegisterOptions`:
-   General (health bar color per unit frame), Target (threat percentage, quest icon), Profiles.
-   Getters follow the active profile; CVAR_UPDATE refreshes external threat changes.
-6. `src/layout/atlas.lua`, `layout.lua`, `geometry.lua`: optional legacy layout.
-7. `src/healthcolor/healthcolor.lua`: feature implementation.
+   and party frames, with `Exists`, `KeyOf` and `All` helpers. Each entry names its
+   `Enum.EditModeUnitFrameSystemIndices` `system`, or `linkedTo` the frame whose Edit Mode
+   settings show it (target of target under target, target of focus under focus).
+5. `style.lua`: the single source of every per-frame setting. `app.StyleGroups(key)` returns a
+   frame's groups (Health bar; for the target also Threat and Quest icon) of rows in the shape of
+   Core's Edit Mode system options; setters write the profile (or the `threatShowNumeric` CVar),
+   apply the change and refresh the options and Edit Mode. `app.StyleOptions(entry)` flattens a
+   frame's rows and appends its linked frames' health bar color rows.
+6. `options.lua`: the Unit Frames panel (Settings > AddOns > Seamless) via `core:RegisterOptions`:
+   General (the global unit frame layout), one tab per unit frame (hidden when the client lacks the
+   frame) built from `StyleGroups` as inline groups, Profiles. Getters follow the active profile;
+   CVAR_UPDATE refreshes external threat changes.
+7. `editmode.lua`: on enable, registers each frame with an Edit Mode system with Core's
+   `RegisterEditModeSystemOptions` as a collapsible Style section (collapse key
+   `unitframe-style`) built from `StyleOptions`. SeamlessUI draws it in its extended window below
+   the frame's own settings, so it needs SeamlessUI with that frame's Edit Mode extension on; it is
+   never a window of its own. The section leaves while the addon is disabled.
+8. `src/layout/atlas.lua`, `layout.lua`, `geometry.lua`: optional legacy layout.
+9. `src/healthcolor/healthcolor.lua`: feature implementation.
    `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
    objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.
    The `targetQuestIcon` profile settings control enablement, scale and offsets (disabled by default).
-8. `SeamlessUnitframes.lua`: load diagnostic.
+10. `SeamlessUnitframes.lua`: load diagnostic.
 
 Every new runtime Lua/XML file must be listed in dependency order in the TOC.
-New feature settings need defaults in `db.lua` and controls in `options.lua`.
+New per-frame settings need defaults in `db.lua` and rows in `style.lua`, which puts them in both the
+frame's tab and its Edit Mode Style section. Run `lua src/tests/unitframes-options.lua`.
 Shared services belong in Seamless. The old logLevel/minimap SavedVariables are no longer
 used; shared preferences are stored independently in SeamlessDB.
 
@@ -91,4 +105,5 @@ used; shared preferences are stored independently in SeamlessDB.
 - Prototype-style Ace modules: define methods on a local `module` table and pass it to
   `addon:NewModule("Name", module, â€¦)`; state lives on the object Ace returns (see
   `minimapbutton.lua`). A module that depends on profile settings defines `OnProfileRefresh`.
-- New user settings get a default in `db.lua` and an entry in `options.lua`.
+- New user settings get a default in `db.lua` and a row in `style.lua` (or, when global, an entry in
+  `options.lua`'s General tab).

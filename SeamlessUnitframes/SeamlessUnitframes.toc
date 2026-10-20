@@ -16,7 +16,9 @@ src\core\db.lua
 src\core\ace.lua
 src\core\unitframes.lua
 src\core\questicons.lua
+src\core\style.lua
 src\core\options.lua
+src\core\editmode.lua
 
 src\layout\atlas.lua
 src\layout\layout.lua

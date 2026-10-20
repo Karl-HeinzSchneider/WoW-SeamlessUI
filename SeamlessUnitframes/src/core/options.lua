@@ -7,125 +7,67 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = {}
 app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.Options]]
 
-local healthBarColors = {
-    default = L["Default"],
-    class = L["Class"],
-    reaction = L["Reaction"],
-    classReaction = L["Class, reaction for NPCs"],
-}
-local healthBarColorOrder = { "default", "class", "reaction", "classReaction" }
-
-local healthBarColorDesc =
-    L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."]
-
--- One select per unit frame this client has, stored in profile.unitFrames[key].healthBarColor.
-local function HealthBarColors()
-    local args = {
-        info = {
-            type = "description",
-            order = 0,
-            name = L["The color of each unit frame's health bar.\n"],
-        },
+---One style row (style.lua) as an AceConfig option.
+---@param row SeamlessCore.EditModeSystemOption
+---@param order number
+local function Option(row, order)
+    local option = {
+        type = row.type,
+        order = order,
+        name = row.name,
+        desc = row.desc,
+        get = function()
+            return row.get()
+        end,
+        set = function(_, value)
+            row.set(value)
+        end,
+        hidden = row.hidden,
+        disabled = row.disabled,
     }
-    for i, entry in ipairs(app.unitFrames.list) do
-        args[entry.key] = {
-            type = "select",
-            order = i,
-            name = entry.name,
-            desc = entry.key == "pet" and healthBarColorDesc .. L["\n\nA pet takes its owner's class color."]
-                or healthBarColorDesc,
-            values = healthBarColors,
-            sorting = healthBarColorOrder,
-            hidden = function()
-                return not app.unitFrames:Exists(entry)
-            end,
-        }
+    if row.type == "toggle" then
+        option.width = "full"
+        option.descStyle = "inline"
+    elseif row.type == "select" then
+        option.values, option.sorting = {}, {}
+        for _, entry in ipairs(row.values) do
+            option.values[entry.value] = entry.text
+            option.sorting[#option.sorting + 1] = entry.value
+        end
+    elseif row.type == "range" then
+        option.min, option.max, option.step = row.min, row.max, row.step
+    end
+    return option
+end
+
+-- One tab per unit frame, hidden when this client lacks the frame, with an inline group per
+-- style group.
+---@param entry SeamlessUnitframes.UnitFrame
+---@param order number
+local function FrameTab(entry, order)
+    local args = {}
+    for i, group in ipairs(app.StyleGroups(entry.key)) do
+        local groupArgs = {}
+        for j, row in ipairs(group.rows) do
+            groupArgs[row.key:gsub("%.", "_")] = Option(row, j * 10)
+        end
+        args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
     end
     return {
-        type = "group",
-        inline = true,
-        order = 10,
-        name = L["Health bar colors"],
-        get = function(info)
-            return app.db.profile.unitFrames[info[#info]].healthBarColor
-        end,
-        set = function(info, value)
-            app.db.profile.unitFrames[info[#info]].healthBarColor = value
-            app.healthColor:Refresh()
+        order = order,
+        name = entry.name,
+        hidden = function()
+            return not app.unitFrames:Exists(entry)
         end,
         args = args,
     }
 end
 
-local function TargetTab()
-    local function questIconOff()
-        return not app.db.profile.targetQuestIcon.enabled
-    end
-    local function slider(order, name, min, max, step)
-        return { type = "range", order = order, name = name, min = min, max = max, step = step, disabled = questIconOff }
-    end
-    return {
-        order = 10,
-        name = L["Target"],
-        args = {
-            threat = {
-                type = "group",
-                inline = true,
-                order = 10,
-                name = L["Threat"],
-                args = {
-                    threatPercentage = {
-                        type = "toggle",
-                        order = 10,
-                        width = "full",
-                        name = L["Threat percentage"],
-                        desc = L["Shows the game's threat percentage badge above the target frame. This client-wide game setting also affects other frames that support it."],
-                        descStyle = "inline",
-                        get = function()
-                            return GetCVarBool("threatShowNumeric")
-                        end,
-                        set = function(_, value)
-                            SetCVar("threatShowNumeric", value and "1" or "0")
-                        end,
-                    },
-                },
-            },
-            questIcon = {
-                type = "group",
-                inline = true,
-                order = 20,
-                name = L["Quest icon"],
-                get = function(info)
-                    return app.db.profile.targetQuestIcon[info[#info]]
-                end,
-                set = function(info, value)
-                    local key = info[#info]
-                    app.db.profile.targetQuestIcon[key] = value
-                    if key == "enabled" then
-                        app.targetQuestIcon:OnProfileRefresh()
-                    else
-                        app.targetQuestIcon:ApplyLayout()
-                    end
-                end,
-                args = {
-                    enabled = {
-                        type = "toggle",
-                        order = 10,
-                        width = "full",
-                        name = L["Enable"],
-                        desc = L["Shows a slay icon on the target frame for unfinished kill objectives, or a loot icon for other unfinished quest objectives the target's tooltip reports."],
-                        descStyle = "inline",
-                    },
-                    scale = slider(20, L["Scale"], 0.5, 3, 0.1),
-                    x = slider(30, L["X offset"], -150, 150, 1),
-                    y = slider(40, L["Y offset"], -100, 100, 1),
-                },
-            },
-        },
-    }
-end
-
 function module:OnInitialize()
+    local tabs = {}
+    for i, entry in ipairs(app.unitFrames.list) do
+        tabs[entry.key] = FrameTab(entry, i * 10)
+    end
     app.core:RegisterOptions(appName, {
         title = L["Unit Frames"],
         general = {
@@ -144,9 +86,8 @@ function module:OnInitialize()
                     app.legacyLayout:Refresh()
                 end,
             },
-            healthBarColors = HealthBarColors(),
         },
-        tabs = { target = TargetTab() },
+        tabs = tabs,
         db = app.db,
     })
 end
@@ -159,6 +100,10 @@ function module:OnEnable()
     end)
 end
 
+function module:OnProfileRefresh()
+    app.core:RefreshEditModeSystemOptions()
+end
+
 ---@param tab? string
 function module:Open(tab)
     app.core:OpenOptions(appName, tab)
@@ -166,4 +111,5 @@ end
 
 function module:Refresh()
     app.core:RefreshOptions(appName)
+    app.core:RefreshEditModeSystemOptions()
 end

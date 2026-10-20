@@ -100,7 +100,7 @@ features are ready for public release.
    has no public unregister/hide API for system extensions, so this panel is owned here to make
    the recovery switches effective immediately. Below Position, the panel shows the sections
    other addons register for the selected system with Core's `RegisterEditModeSystemOptions`
-   (Castbar's Style), drawn by `src/features/systemoptions.lua` (loaded before this file) under
+   (the Style sections of Castbar and Unitframes), drawn by `src/features/systemoptions.lua` (loaded before this file) under
    Core's collapsible headers with LibEditMode's row templates (`EditModeSettingCheckboxTemplate`,
    `WowStyle1DropdownTemplate`, `EditModeSettingSliderTemplate`). They follow the frame's Extend
    Edit Mode switch, not Add more options. `panel:LayoutContent()` stacks Position and those

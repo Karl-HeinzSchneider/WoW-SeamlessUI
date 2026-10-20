@@ -202,6 +202,39 @@ for _, sample in ipairs(samples) do
     assert(panel:IsShown())
 end
 assert(not config.barsHeading.hidden() and not config.aurasHeading.hidden())
+-- Anchor candidates come from those same registered frames, using their real
+-- persistent names, independently of whether their extension is enabled.
+for index, native in ipairs(EditModeManagerFrame.registeredSystemFrames) do
+    local name = "NativeAnchor" .. index
+    _G[name] = native
+    function native:GetName()
+        return name
+    end
+end
+local function anchorMap()
+    local result = {}
+    for _, entry in ipairs(module:GetAnchorTargets()) do
+        result[entry.value] = entry.text
+    end
+    return result
+end
+local targets = anchorMap()
+assert(targets.NativeAnchor5 == config.actionBar1.name)
+assert(targets.NativeAnchor14 == config.petBar.name)
+assert(targets.NativeAnchor16 == config.buffs.name)
+assert(targets.NativeAnchor18 == config.statusBar1.name)
+assert(targets.NativeAnchor20 == nil, "Minimap keeps its existing dedicated anchor")
+config.buffs.set({ "enabled" }, false)
+assert(anchorMap().NativeAnchor16 == config.buffs.name)
+_G.NativeAnchor18 = nil
+assert(anchorMap().NativeAnchor18 == nil, "Unresolvable names cannot persist as anchors")
+EditModeManagerFrame.registeredSystemFrames[#EditModeManagerFrame.registeredSystemFrames + 1] = {
+    system = 999,
+    GetName = function()
+        return "UnknownAnchor"
+    end,
+}
+assert(anchorMap().UnknownAnchor == nil)
 assert(config.swingMainHand.hidden(), "Missing enum groups must be hidden safely")
 config.buffs.set({ "enabled" }, false)
 assert(config.debuffs.get({ "enabled" }), "Different systems/indices must keep independent switches")

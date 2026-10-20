@@ -250,6 +250,10 @@ local app = {
     db = { profile = { blizzardEditMode = { frames = { player = { addPosition = true } } } } },
     blizzardEditMode = {},
 }
+local extraAnchorTargets = {}
+function app.blizzardEditMode:GetAnchorTargets()
+    return extraAnchorTargets
+end
 function app.blizzardEditMode:GetSelectedFrame()
     if enabled then
         return selected, { key = "player" }
@@ -315,6 +319,9 @@ assert(x.template == "EditModeSettingSliderTemplate" and y.template == "EditMode
 assert(x.Slider.value == -42.5 and x.Slider.min == -1920 and x.Slider.max == 1920)
 assert(x.Slider.steps == 3840)
 local menu = { entries = {} }
+function menu:SetScrollMode(height)
+    self.scrollHeight = height
+end
 function menu:CreateRadio(text, get, set)
     local entry = { get = get, set = set }
     function entry:SetEnabled(value)
@@ -329,11 +336,11 @@ view.controls.point.Dropdown.menu(nil, menu)
 assert(menu.entries.Bottom.get())
 menu.entries["Top right"].set()
 assert(position:Read(player).point == "TOPRIGHT")
-local parentMenu = { entries = {}, CreateRadio = menu.CreateRadio }
+local parentMenu = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 view.controls.relativePoint.Dropdown.menu(nil, parentMenu)
 parentMenu.entries["Bottom left"].set()
 assert(position:Read(player).relativePoint == "BOTTOMLEFT" and position:Read(player).point == "TOPRIGHT")
-local frameMenu = { entries = {}, CreateRadio = menu.CreateRadio }
+local frameMenu = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
 assert(table.concat(frameMenu.order, ",") == "UIParent,Focus frame,Minimap,Player frame,Target frame")
 assert(not frameMenu.entries["Player frame"].enabled and frameMenu.entries.Minimap.enabled)
@@ -349,6 +356,23 @@ TargetFrame = nil
 view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
 assert(not frameMenu.entries["Target frame"].enabled)
 TargetFrame = frame("TargetFrame", UIParent)
+-- Newly registered extension systems are also anchor choices, with clear labels
+-- instead of exposing the sometimes unusual underlying frame names.
+MultiBar5 = frame("MultiBar5", UIParent)
+extraAnchorTargets =
+    { { value = "MultiBar5", text = "Action bar 6" }, { value = "PlayerFrame", text = "Player frame" } }
+local expanded = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
+view.controls.relativeTo.Dropdown.menu(nil, expanded)
+assert(table.concat(expanded.order, ",") == "UIParent,Action bar 6,Focus frame,Minimap,Player frame,Target frame")
+assert(expanded.scrollHeight == 400)
+expanded.entries["Action bar 6"].set()
+assert(position:Read(player).relativeTo == "MultiBar5")
+MultiBar5:SetPoint("CENTER", player, "CENTER", 0, 0)
+view.controls.relativeTo.Dropdown.menu(nil, expanded)
+assert(not expanded.entries["Action bar 6"].enabled)
+MultiBar5:ClearAllPoints()
+expanded.entries.UIParent.set()
+extraAnchorTargets = {}
 -- Steppers and slider dragging use the same override path as typed values.
 x.Slider:SetValue(-41.5)
 assert(position:Read(player).offsetX == -41.5)
@@ -486,10 +510,10 @@ local localizedView = localizedPosition:Create(frame())
 localizedView:Refresh(player)
 assert(localizedView.controls.point.Label.text == "Translated anchor")
 assert(localizedView.RevertButton.text == "Translated revert")
-local localizedMenu = { entries = {}, CreateRadio = menu.CreateRadio }
+local localizedMenu = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 localizedView.controls.relativeTo.Dropdown.menu(nil, localizedMenu)
 assert(table.concat(localizedMenu.order, ",") == "UIParent,A Target,Minimap,Player frame,Z Focus")
-local localizedAnchors = { entries = {}, CreateRadio = menu.CreateRadio }
+local localizedAnchors = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 localizedView.controls.point.Dropdown.menu(nil, localizedAnchors)
 localizedAnchors.entries["Translated top right"].set()
 assert(localizedPosition:Read(player).point == "TOPRIGHT")

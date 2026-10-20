@@ -147,6 +147,32 @@ local function available(spec)
     return false
 end
 
+-- Use the actual registered object's name rather than guessing globals for
+-- composite frames such as raid groups and status-tracking containers.
+function module:GetAnchorTargets()
+    local targets, seen, labels = {}, {}, {}
+    local manager = EditModeManagerFrame
+    for _, system in ipairs(manager and manager.registeredSystemFrames or {}) do
+        for _, spec in ipairs(frames) do
+            if matches(system, spec) and spec.key ~= "minimap" then
+                local name = system.GetName and system:GetName()
+                if name and _G[name] == system and not seen[name] then
+                    seen[name] = true
+                    targets[#targets + 1] = { value = name, text = spec.name }
+                    labels[spec.name] = (labels[spec.name] or 0) + 1
+                end
+                break
+            end
+        end
+    end
+    for _, entry in ipairs(targets) do
+        if labels[entry.text] > 1 then
+            entry.text = string.format(L["%s (%s)"], entry.text, entry.value)
+        end
+    end
+    return targets
+end
+
 local panel, title, positionView
 
 local function settings()

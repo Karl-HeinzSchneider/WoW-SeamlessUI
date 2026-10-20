@@ -35,18 +35,37 @@ local anchorFrames = {
     { value = "TargetFrame", text = L["Target frame"] },
 }
 
-table.sort(anchorFrames, function(a, b)
+local function sortAnchorFrames(a, b)
     if a.value == "UIParent" then
         return b.value ~= "UIParent"
     end
     if b.value == "UIParent" then
         return false
     end
+    if a.text == b.text then
+        return a.value < b.value
+    end
     return a.text < b.text
-end)
+end
+
+local function getAnchorFrames()
+    local entries, seen = {}, {}
+    for _, entry in ipairs(anchorFrames) do
+        entries[#entries + 1] = entry
+        seen[entry.value] = true
+    end
+    for _, entry in ipairs(app.blizzardEditMode:GetAnchorTargets()) do
+        if not seen[entry.value] then
+            entries[#entries + 1] = entry
+            seen[entry.value] = true
+        end
+    end
+    table.sort(entries, sortAnchorFrames)
+    return entries
+end
 
 local function anchorFrameLabel(name)
-    for _, entry in ipairs(anchorFrames) do
+    for _, entry in ipairs(getAnchorFrames()) do
         if entry.value == name then
             return entry.text
         end
@@ -272,7 +291,8 @@ function position:Create(parent)
             row.Dropdown:SetupMenu(function(_, root)
                 local system = row.system
                 if index == 3 then
-                    for _, entry in ipairs(anchorFrames) do
+                    root:SetScrollMode(400)
+                    for _, entry in ipairs(getAnchorFrames()) do
                         local item = root:CreateRadio(entry.text, function()
                             return view.values[key] == entry.value
                         end, function()

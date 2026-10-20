@@ -24,9 +24,13 @@ features are ready for public release.
    copy/rename/delete handling. Disabling restores the counter's original anchors.
 6. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
    system. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft;
-   Anchor/AnchorParent dropdowns expose nine anchor points. AnchorFrame offers only UIParent
-   first, then Focus frame (`FocusFrame`), Minimap (`Minimap`), Player frame (`PlayerFrame`),
-   Target frame (`TargetFrame`) in display-name order; invalid/cyclic targets are disabled.
+   Anchor/AnchorParent dropdowns expose nine anchor points. AnchorFrame keeps UIParent first
+   and the original Focus/Minimap/Player/Target choices, then includes named frames from the
+   extension registry through `GetAnchorTargets`. Uses actual `GetName()`/global resolution,
+   rather than guessed names for composite containers. Targets remain available when their
+   extension switch is off. Deduplicates persistent names, sorts translated display names,
+   disambiguates repeated labels with the technical frame name and uses a scrollable menu;
+   invalid/self/cyclic targets are disabled. Minimap keeps its original `Minimap` target.
    Existing anchors outside that list are displayed but never added as selector entries.
    Dropdown label fonts, widths and templates match LibEditMode. X/Y use the library's same
    `EditModeSettingSliderTemplate` with steppers and editable right-hand value. Clear only our

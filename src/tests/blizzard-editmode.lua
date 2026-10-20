@@ -38,7 +38,9 @@ local function frame()
         self.value = value
     end
     function f:SetupMenu(generator)
+        -- Like the client, build the menu at once.
         self.generator = generator
+        generator(self, { CreateRadio = function() end })
     end
     function f:SetDefaultText(text)
         self.defaultText = text

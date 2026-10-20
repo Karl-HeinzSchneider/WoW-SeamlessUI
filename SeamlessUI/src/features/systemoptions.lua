@@ -68,7 +68,11 @@ function creators.select(parent, changed)
     row.Dropdown = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
     row.Dropdown:SetPoint("LEFT", row.Label, "RIGHT", 5, 0)
     row.Dropdown:SetSize(200, 30)
+    -- SetupMenu builds the menu at once, before Layout assigns the row's option.
     row.Dropdown:SetupMenu(function(_, root)
+        if not row.option then
+            return
+        end
         for _, entry in ipairs(row.option.values) do
             root:CreateRadio(entry.text, function()
                 return row.option.get() == entry.value

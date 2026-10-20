@@ -24,7 +24,8 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
 - `src/core.lua`: AceAddon/AceDB lifecycle, independent `SeamlessDarkmodeDB` profiles and the
   `tint`/`restore` painters passed to the frame functions. Hooks `ApplyPendingBarToShow` on
   both status containers; retries hook installation on addon load and entering the world.
-- `src/options.lua`: master switch, shared color, one toggle per group, plus Profiles.
+- `src/options.lua`: master switch, shared color, one toggle per group, plus Profiles. Also
+  registers the master switch as a GLOBAL option in the shared Edit Mode window.
 - `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules

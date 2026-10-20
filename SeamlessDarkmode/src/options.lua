@@ -35,6 +35,7 @@ function options:OnInitialize()
                 set = function(_, value)
                     app.db.profile.enabled = value
                     app.addon:Refresh()
+                    app.core:RefreshEditModeOptions()
                 end,
             },
             color = {
@@ -74,3 +75,24 @@ function options:OnInitialize()
         db = app.db,
     })
 end
+
+-- Global option in the shared Edit Mode window, the same master switch as the options panel.
+app.core:RegisterEditModeOptions(appName, {
+    enabled = function()
+        return app.db and app.addon:IsEnabled()
+    end,
+    options = {
+        {
+            key = "enabled",
+            type = "toggle",
+            name = L["Enable darkmode"],
+            get = function()
+                return app.db.profile.enabled
+            end,
+            set = function(value)
+                app.db.profile.enabled = value
+                app.addon:Refresh()
+            end,
+        },
+    },
+})

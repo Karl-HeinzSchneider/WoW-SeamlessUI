@@ -31,6 +31,17 @@ function module:Refresh()
         frame:HookScript("OnShow", function()
             self:Refresh()
         end)
+        hooksecurefunc(frame, "Maximize", function()
+            self:Refresh()
+        end)
+        hooksecurefunc(frame, "Minimize", function()
+            self:Refresh()
+        end)
+    end
+
+    if frame:IsMaximized() then
+        self.text:Hide()
+        return
     end
 
     local summary = app.addon:GetQuestLogSummary()

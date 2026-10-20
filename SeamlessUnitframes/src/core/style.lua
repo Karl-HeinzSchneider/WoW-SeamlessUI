@@ -75,7 +75,7 @@ local function NameDisplay(key)
         key = key .. ".nameDisplay",
         type = "select",
         name = L["Name display"],
-        desc = L["Full name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the name of a unit without one, such as an NPC."],
+        desc = L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."],
         values = nameDisplays,
         get = function()
             return app.db.profile.unitFrames[key].nameDisplay
@@ -83,6 +83,30 @@ local function NameDisplay(key)
         set = function(value)
             app.db.profile.unitFrames[key].nameDisplay = value
             app.nameDisplay:Refresh()
+            changed()
+        end,
+    }
+end
+
+---A switch in profile.unitFrames[key][field].
+---@param key string
+---@param field string
+---@param name string
+---@param desc string
+---@param module { Refresh: fun(self) }
+---@return SeamlessCore.EditModeSystemOption
+local function Toggle(key, field, name, desc, module)
+    return {
+        key = key .. "." .. field,
+        type = "toggle",
+        name = name,
+        desc = desc,
+        get = function()
+            return app.db.profile.unitFrames[key][field]
+        end,
+        set = function(value)
+            app.db.profile.unitFrames[key][field] = value
+            module:Refresh()
             changed()
         end,
     }
@@ -165,10 +189,12 @@ end
 local linkedNames = {
     targettarget = {
         nameDisplay = L["Target of Target name display"],
+        classIcon = L["Target of Target class icon"],
         healthBarColor = L["Target of Target health bar color"],
     },
     focustarget = {
         nameDisplay = L["Target of Focus name display"],
+        classIcon = L["Target of Focus class icon"],
         healthBarColor = L["Target of Focus health bar color"],
     },
 }
@@ -177,10 +203,38 @@ local linkedNames = {
 ---@param key string
 ---@return SeamlessUnitframes.StyleGroup[]
 function app.StyleGroups(key)
-    local groups = {
-        { name = L["Name"], rows = { NameDisplay(key) } },
-        { name = L["Health bar"], rows = { HealthBarColor(key) } },
-    }
+    local entry = app.unitFrames:Get(key)
+    local groups = {}
+    if entry.players then
+        groups[#groups + 1] = { name = L["Name"], rows = { NameDisplay(key) } }
+        groups[#groups + 1] = {
+            name = L["Portrait"],
+            rows = {
+                Toggle(
+                    key,
+                    "classIcon",
+                    L["Class icon"],
+                    L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."],
+                    app.classIcon
+                ),
+            },
+        }
+    end
+    groups[#groups + 1] = { name = L["Health bar"], rows = { HealthBarColor(key) } }
+    if entry.pvpIcon then
+        groups[#groups + 1] = {
+            name = L["PvP"],
+            rows = {
+                Toggle(
+                    key,
+                    "hidePvPIcon",
+                    L["Hide PvP icon"],
+                    L["Hides the faction or free-for-all PvP icon on the frame."],
+                    app.pvpIcon
+                ),
+            },
+        }
+    end
     if key == "target" then
         for _, group in ipairs(TargetGroups()) do
             groups[#groups + 1] = group
@@ -202,14 +256,15 @@ function app.StyleOptions(entry)
     end
     for _, linked in ipairs(app.unitFrames.list) do
         if linked.linkedTo == entry.key then
-            local linkedRows = { NameDisplay(linked.key), HealthBarColor(linked.key) }
-            linkedRows[1].name = linkedNames[linked.key].nameDisplay
-            linkedRows[2].name = linkedNames[linked.key].healthBarColor
-            for _, row in ipairs(linkedRows) do
-                row.hidden = function()
-                    return not app.unitFrames:Exists(linked)
+            local names = linkedNames[linked.key]
+            for _, group in ipairs(app.StyleGroups(linked.key)) do
+                for _, row in ipairs(group.rows) do
+                    row.name = names[row.key:match("%.(.+)$")] or row.name
+                    row.hidden = function()
+                        return not app.unitFrames:Exists(linked)
+                    end
+                    rows[#rows + 1] = row
                 end
-                rows[#rows + 1] = row
             end
         end
     end

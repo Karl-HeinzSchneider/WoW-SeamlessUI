@@ -24,8 +24,16 @@ end
 PlayerFrame, PetFrame, TargetFrame, TargetFrameToT, FocusFrame = {}, {}, {}, {}, {}
 -- FocusFrameToT is missing: its rows and tab are hidden.
 
-local counts =
-    { optionRefreshes = 0, systemRefreshes = 0, healthColor = 0, names = 0, questLayout = 0, questRefresh = 0 }
+local counts = {
+    optionRefreshes = 0,
+    systemRefreshes = 0,
+    healthColor = 0,
+    names = 0,
+    classIcons = 0,
+    pvpIcons = 0,
+    questLayout = 0,
+    questRefresh = 0,
+}
 local registeredOptions, systemOptions, enabled = nil, {}, true
 local modules = {}
 local app = {
@@ -34,7 +42,12 @@ local app = {
             layout = "current",
             unitFrames = setmetatable({}, {
                 __index = function(self, key)
-                    local frame = { healthBarColor = "classReaction", nameDisplay = "full" }
+                    local frame = {
+                        healthBarColor = "classReaction",
+                        nameDisplay = "full",
+                        classIcon = false,
+                        hidePvPIcon = false,
+                    }
                     rawset(self, key, frame)
                     return frame
                 end,
@@ -75,6 +88,16 @@ local app = {
     nameDisplay = {
         Refresh = function()
             counts.names = counts.names + 1
+        end,
+    },
+    classIcon = {
+        Refresh = function()
+            counts.classIcons = counts.classIcons + 1
+        end,
+    },
+    pvpIcon = {
+        Refresh = function()
+            counts.pvpIcons = counts.pvpIcons + 1
         end,
     },
     targetQuestIcon = {
@@ -124,6 +147,12 @@ local partyName = find(tabs.party, "party_nameDisplay")
 assert(partyName.values.first == "First name only" and partyName.sorting[1] == "full")
 partyName.set(nil, "first")
 assert(app.db.profile.unitFrames.party.nameDisplay == "first" and counts.names == 1)
+assert(not find(tabs.pet, "pet_nameDisplay") and not find(tabs.pet, "pet_classIcon"), "a pet is never a player")
+assert(not find(tabs.pet, "pet_hidePvPIcon") and not find(tabs.targettarget, "targettarget_hidePvPIcon"))
+find(tabs.player, "player_classIcon").set(nil, true)
+assert(app.db.profile.unitFrames.player.classIcon == true and counts.classIcons == 1)
+find(tabs.party, "party_hidePvPIcon").set(nil, true)
+assert(app.db.profile.unitFrames.party.hidePvPIcon == true and counts.pvpIcons == 1)
 
 local threat = find(tabs.target, "threatPercentage")
 threat.set(nil, true)
@@ -163,6 +192,8 @@ assert(targetRows["targettarget.healthBarColor"].name == "Target of Target healt
 assert(not targetRows["targettarget.healthBarColor"].hidden())
 assert(targetRows["targettarget.nameDisplay"].name == "Target of Target name display")
 assert(targetRows["target.nameDisplay"].name == "Name display")
+assert(targetRows["targettarget.classIcon"].name == "Target of Target class icon")
+assert(targetRows["target.hidePvPIcon"] and not targetRows["targettarget.hidePvPIcon"])
 assert(targetRows.threatPercentage and targetRows["questIcon.x"])
 local _, focusRows = rows("focus")
 assert(focusRows["focustarget.healthBarColor"].hidden(), "missing linked frame hides its row")
@@ -186,6 +217,9 @@ print("PASS: unit frame Style sections in Edit Mode")
 local names = { player = { "Anna", "Weber" }, target = { "Hogger" }, party1 = { "Bob-Smith" } }
 UnitName = function(unit)
     return unpack(names[unit])
+end
+UnitIsPlayer = function(unit)
+    return unit ~= "target"
 end
 Constants = { CharacterNameSeparatorConsts = { CHARACTERNAME_SURNAME_SEPARATOR = "-" } }
 local function FontString(text)
@@ -218,7 +252,7 @@ nameDisplay:OnInitialize()
 hooked(PlayerFrame)
 assert(PlayerFrame.name:GetText() == "Anna", "first name")
 hooked(TargetFrame)
-assert(TargetFrame.name:GetText() == "Hogger", "no surname keeps the name")
+assert(TargetFrame.name:GetText() == "Hogger", "NPCs keep their name")
 hooked(member)
 assert(member.name:GetText() == "Smith", "joined surname")
 app.db.profile.unitFrames.player.nameDisplay = "last"
@@ -241,4 +275,96 @@ canaccessvalue = nil
 enabled = false
 nameDisplay:OnDisable()
 assert(member.name:GetText() == "Bob-Smith", "disabled restores the game's text")
+enabled = true
+names.player = { "Anna", "Weber" }
+app.db.profile.unitFrames.party.nameDisplay = "first"
+member.name:SetText("Bob-Smith")
+hooked(member)
+assert(member.name:GetText() == "Bob")
+names.party1 = { "Carl" }
+app.db.profile.unitFrames.party.nameDisplay = "last"
+member.name:SetText("Carl")
+hooked(member)
+assert(member.name:GetText() == "Carl", "no surname keeps the first name")
 print("PASS: name display")
+
+-- Class icon: the class atlas on player characters' portraits, the portrait back when off.
+local function Portrait()
+    local portrait = {}
+    portrait.SetAtlas = function(self, atlas)
+        self.atlas = atlas
+    end
+    return portrait
+end
+UnitClass = function(unit)
+    return "Mage", unit == "target" and "WARRIOR" or "MAGE"
+end
+GetClassAtlas = function(class)
+    return "classicon-" .. class:lower()
+end
+local portraitResets = 0
+SetPortraitTexture = function(portrait)
+    portraitResets = portraitResets + 1
+    portrait.atlas = nil
+end
+local replaceCVar = false
+UnitFrame_ShouldReplacePortrait = function()
+    return replaceCVar
+end
+enabled = true
+PlayerFrame.portrait, TargetFrame.portrait = Portrait(), Portrait()
+app.db.profile.unitFrames.player.classIcon = true
+app.db.profile.unitFrames.target.classIcon = true
+hooksecurefunc = function(name, fn)
+    assert(name == "UnitFramePortrait_Update")
+    hooked = fn
+end
+loadfile("SeamlessUnitframes/src/portrait/classicon.lua")("SeamlessUnitframes", app)
+modules.ClassIcon:OnInitialize()
+hooked(PlayerFrame)
+assert(PlayerFrame.portrait.atlas == "classicon-mage")
+hooked(TargetFrame)
+assert(TargetFrame.portrait.atlas == nil, "NPCs keep their portrait")
+app.db.profile.unitFrames.player.classIcon = false
+modules.ClassIcon:Refresh()
+assert(PlayerFrame.portrait.atlas == nil and portraitResets == 1, "portrait restored")
+modules.ClassIcon:Refresh()
+assert(portraitResets == 1, "only portraits we changed")
+app.db.profile.unitFrames.player.classIcon = true
+modules.ClassIcon:Refresh()
+replaceCVar = true
+app.db.profile.unitFrames.player.classIcon = false
+modules.ClassIcon:Refresh()
+assert(portraitResets == 1, "the client's own class icon setting stays")
+print("PASS: class icon portraits")
+
+-- PvP icon: transparent while hidden, the game's own alpha back when shown.
+local function Icon()
+    local icon = { alpha = 1 }
+    icon.SetAlpha = function(self, alpha)
+        self.alpha = alpha
+    end
+    return icon
+end
+local playerIcon, targetIcon, partyIcon = Icon(), Icon(), Icon()
+PlayerFrame_GetPvPIndicatorElements = function()
+    return { pvpIcon = playerIcon }
+end
+TargetFrame.GetPvPIndicatorElements = function()
+    return { pvpIcon = targetIcon }
+end
+member.PartyMemberOverlay = { PVPIcon = partyIcon }
+app.db.profile.unitFrames.player.hidePvPIcon = true
+app.db.profile.unitFrames.party.hidePvPIcon = true
+app.db.profile.unitFrames.target.hidePvPIcon = false
+loadfile("SeamlessUnitframes/src/pvpicon/pvpicon.lua")("SeamlessUnitframes", app)
+modules.PvPIcon.RegisterEvent = function() end
+modules.PvPIcon:OnEnable()
+assert(playerIcon.alpha == 0 and partyIcon.alpha == 0 and targetIcon.alpha == 1)
+app.db.profile.unitFrames.player.hidePvPIcon = false
+modules.PvPIcon:Refresh()
+assert(playerIcon.alpha == 1)
+enabled = false
+modules.PvPIcon:OnDisable()
+assert(partyIcon.alpha == 1, "disabled shows the icons again")
+print("PASS: PvP icons")

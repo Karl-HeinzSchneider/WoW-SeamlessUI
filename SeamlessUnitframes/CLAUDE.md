@@ -13,12 +13,15 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
 4. `unitframes.lua`: registry of player, pet, target, target of target, focus, target of focus,
    and party frames, with `Exists`, `KeyOf` and `All` helpers. Each entry names its
    `Enum.EditModeUnitFrameSystemIndices` `system`, or `linkedTo` the frame whose Edit Mode
-   settings show it (target of target under target, target of focus under focus).
+   settings show it (target of target under target, target of focus under focus). `players` marks
+   frames that show player characters (name display, class icon); `pvpIcon` frames with a PvP icon.
+   `Get(key)` returns an entry.
 5. `style.lua`: the single source of every per-frame setting. `app.StyleGroups(key)` returns a
-   frame's groups (Name, Health bar; for the target also Threat and Quest icon) of rows in the shape of
+   frame's groups (Name and Portrait where `players`, Health bar, PvP where `pvpIcon`; for the target
+   also Threat and Quest icon) of rows in the shape of
    Core's Edit Mode system options; setters write the profile (or the `threatShowNumeric` CVar),
    apply the change and refresh the options and Edit Mode. `app.StyleOptions(entry)` flattens a
-   frame's rows and appends its linked frames' name and health bar color rows.
+   frame's rows and appends its linked frames' rows.
 6. `options.lua`: the Unit Frames panel (Settings > AddOns > Seamless) via `core:RegisterOptions`:
    General (the global unit frame layout), one tab per unit frame (hidden when the client lacks the
    frame) built from `StyleGroups` as inline groups, Profiles. Getters follow the active profile;
@@ -30,13 +33,22 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
    never a window of its own. The section leaves while the addon is disabled.
 8. `src/layout/atlas.lua`, `layout.lua`, `geometry.lua`: optional legacy layout.
 9. `src/healthcolor/healthcolor.lua`: feature implementation.
-   `src/name/namedisplay.lua`: `app.nameDisplay`, the name on each unit frame per
+   `src/name/namedisplay.lua`: `app.nameDisplay`, the name of player characters (`UnitIsPlayer`;
+   NPCs are never changed) on each unit frame per
    `profile.unitFrames[key].nameDisplay`: `full` (the game's text), `first` or `last`. This client
    gives characters a first name and optional surname (`UnitName` returns both, or one string
    joined by `Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR`); a unit
-   without a surname keeps its name. It post-hooks `UnitFrame_Update` (every unit frame sets its
+   without a surname keeps its first name. It post-hooks `UnitFrame_Update` (every unit frame sets its
    name there), remembers the game's text in a local table keyed by frame and puts it back for
    `full` and on disable. Secret names are left alone.
+   `src/portrait/classicon.lua`: `app.classIcon`, per `classIcon` a player character's
+   `GetClassAtlas` icon on the portrait. Post-hooks `UnitFramePortrait_Update`; when switched off it
+   calls `SetPortraitTexture` only on portraits it changed, unless the client's own
+   `UnitFrame_ShouldReplacePortrait` CVars show a class icon there.
+   `src/pvpicon/pvpicon.lua`: `app.pvpIcon`, per `hidePvPIcon` sets alpha 0 on the regions the
+   game's PvP indicator uses (`PlayerFrame_GetPvPIndicatorElements`, the target/focus
+   `GetPvPIndicatorElements`, the party `PartyMemberOverlay.PVPIcon`); the game never changes their
+   alpha, so no hook is needed. Refreshes on `GROUP_ROSTER_UPDATE` for pooled party frames.
    `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
    objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.
    The `targetQuestIcon` profile settings control enablement, scale and offsets (disabled by default).

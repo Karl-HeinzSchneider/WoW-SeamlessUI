@@ -15,6 +15,8 @@ app.unitFrames = unitFrames
 ---@field frameName? string  # the global unit frame; nil for the party frames
 ---@field system? string  # its Enum.EditModeUnitFrameSystemIndices name, if it has an Edit Mode system
 ---@field linkedTo? string  # the key of the frame whose Edit Mode settings show this one's
+---@field players? boolean  # shows player characters: name display and class icon apply
+---@field pvpIcon? boolean  # has a PvP icon
 
 -- A game unit frame, with the field UnitFrame_Initialize sets.
 ---@class SeamlessUnitframes.GameUnitFrame : Frame
@@ -23,14 +25,51 @@ app.unitFrames = unitFrames
 -- In the order of the options tabs.
 ---@type SeamlessUnitframes.UnitFrame[]
 unitFrames.list = {
-    { key = "player", name = L["Player"], frameName = "PlayerFrame", system = "Player" },
+    {
+        key = "player",
+        name = L["Player"],
+        frameName = "PlayerFrame",
+        system = "Player",
+        players = true,
+        pvpIcon = true,
+    },
     { key = "pet", name = L["Pet"], frameName = "PetFrame", system = "Pet" },
-    { key = "target", name = L["Target"], frameName = "TargetFrame", system = "Target" },
-    { key = "targettarget", name = L["Target of Target"], frameName = "TargetFrameToT", linkedTo = "target" },
-    { key = "focus", name = L["Focus"], frameName = "FocusFrame", system = "Focus" },
-    { key = "focustarget", name = L["Target of Focus"], frameName = "FocusFrameToT", linkedTo = "focus" },
-    { key = "party", name = L["Party"], system = "Party" },
+    {
+        key = "target",
+        name = L["Target"],
+        frameName = "TargetFrame",
+        system = "Target",
+        players = true,
+        pvpIcon = true,
+    },
+    {
+        key = "targettarget",
+        name = L["Target of Target"],
+        frameName = "TargetFrameToT",
+        linkedTo = "target",
+        players = true,
+    },
+    { key = "focus", name = L["Focus"], frameName = "FocusFrame", system = "Focus", players = true, pvpIcon = true },
+    {
+        key = "focustarget",
+        name = L["Target of Focus"],
+        frameName = "FocusFrameToT",
+        linkedTo = "focus",
+        players = true,
+    },
+    { key = "party", name = L["Party"], system = "Party", players = true, pvpIcon = true },
 }
+
+---@param key string
+---@return SeamlessUnitframes.UnitFrame
+function unitFrames:Get(key)
+    for _, entry in ipairs(self.list) do
+        if entry.key == key then
+            return entry
+        end
+    end
+    error("Unknown unit frame " .. tostring(key))
+end
 
 -- Whether this client has the frame (the party frames always count).
 ---@param entry SeamlessUnitframes.UnitFrame

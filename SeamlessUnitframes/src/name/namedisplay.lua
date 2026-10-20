@@ -4,10 +4,10 @@ local _, app = ...
 local addon = app.addon
 local unitFrames = app.unitFrames
 
--- Shortens the name on the game's unit frames to the first name or the surname, chosen per unit
--- frame (profile.unitFrames[key].nameDisplay). The client gives characters a first name and an
--- optional surname (UnitName returns both); the game shows both. Units without a surname, such as
--- NPCs, keep their name.
+-- Shortens the name of player characters on the game's unit frames to the first name or the
+-- surname, chosen per unit frame (profile.unitFrames[key].nameDisplay). The client gives
+-- characters a first name and an optional surname (UnitName returns both); the game shows both.
+-- NPCs always keep their name; a character without a surname keeps its first name.
 ---@class SeamlessUnitframes.NameDisplay : AceModule
 local module = {}
 app.nameDisplay = addon:NewModule("NameDisplay", module) --[[@as SeamlessUnitframes.NameDisplay]]
@@ -56,16 +56,19 @@ local function Apply(frame, key)
     end
     ---@type SeamlessUnitframes.NameDisplayMode
     local mode = app.db.profile.unitFrames[key].nameDisplay
-    if mode == "full" or not addon:IsEnabled() then
+    local text
+    if mode ~= "full" and addon:IsEnabled() then
+        local isPlayer = UnitIsPlayer(unit)
+        if Readable(isPlayer) and isPlayer then
+            local first, surname = NameParts(unit)
+            text = mode == "first" and first or surname or first
+        end
+    end
+    if not text then
         if native[frame] then
             fontString:SetText(native[frame])
             native[frame] = nil
         end
-        return
-    end
-    local first, surname = NameParts(unit)
-    local text = mode == "first" and first or surname
-    if not text then
         return
     end
     if native[frame] == nil then

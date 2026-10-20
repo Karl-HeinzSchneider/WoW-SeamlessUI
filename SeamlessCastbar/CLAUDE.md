@@ -7,8 +7,9 @@ Internal until verified in game. Open `/seamlesscastbar` or Seamless > Castbar: 
 (Player, Target, Focus). The player bar's options are also under a collapsible Style header in
 SeamlessUI's extended Edit Mode window for the cast bar. `SeamlessCastbarDB` holds independent profiles with one table per bar
 (`player`, `target`, `focus`), each with `enabled`, `castTime` (`enabled`, `format`, `decimals`),
-`rank`, `ticks`, `hold` (`enabled`, `success`, `interrupt`) and, for the player only, `icon`.
-Everything but `hold` is on by default.
+`rank`, `ticks`, `hold` (`enabled`, `success`, `interrupt`), for the player only `icon`, and for
+target and focus `move` (`enabled`, `layouts` by Edit Mode layout name). Everything but `hold` and
+`move` is on by default.
 
 ## What the client already does (don't duplicate)
 
@@ -43,7 +44,17 @@ system, so they are not part of this addon.
    Mode extension on; it is never a window of its own. The rows write the player profile and
    refresh the options; `Refresh` and `OnDisable` call `RefreshEditModeSystemOptions`, and the
    section leaves while the addon is disabled.
-7. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
+7. `src/move.lua`: `app.RegisterMove` (from `OnEnable`, once) gives target and focus an addon-owned
+   anchor frame registered with LibEditMode ("Target cast bar", "Focus cast bar"), with Core's
+   Position section and a checkbox each under Edit Mode's Frames heading. The client places these
+   bars only in their `AdjustPosition` (unit frame size, Target of Target, aura rows, alternate
+   power bar); `OnEnable` post-hooks it, and `app.UpdateMove` then saves the client's points and
+   anchors the bar's CENTER to ours. The bars are not protected frames, so this works in combat and
+   taints nothing: no client method is called or replaced, and no protected frame is anchored to
+   ours. Switching off, disabling the addon or a profile without `move` puts the client's latest
+   points back (`app.RestoreMove`). The first switch-on in a layout stores where the client showed
+   the bar, so it does not jump. Layout copy, rename and delete carry the positions along.
+8. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules
 
@@ -54,9 +65,11 @@ system, so they are not part of this addon.
 - New channeled spells go into `intervalsBySpellID` with their tick interval, not a tick count.
 
 `lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks, hold and the
-Edit Mode rows.
+Edit Mode rows and moving the target bar.
 
 Manual validation: cast and channel with each bar locked and unlocked from the player frame, with
 Edit Mode's Show Cast Time on and off; target and focus a caster (interrupt it, change target
 mid-cast, Target of Target shown); Drain Life with pushback, Arcane Missiles rank 1 and max rank,
-bandages; spells without a rank; each option and profile switch; Edit Mode preview.
+bandages; spells without a rank; each option and profile switch; Edit Mode preview; move the target and focus bars, then change
+target, show Target of Target and many auras, enter and leave combat, switch layouts, check
+`/console taintLog 1` stays clean.

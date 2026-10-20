@@ -24,6 +24,9 @@
 ---@field RestoreHold fun(bar: StatusBar)
 ---@field EditModeSettings fun(): table[]
 ---@field RegisterEditMode fun()
+---@field UpdateMove fun(bar: StatusBar, placed: boolean?)
+---@field RestoreMove fun(bar: StatusBar)
+---@field RegisterMove fun()
 
 ---@class SeamlessCastbar.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessCastbar.Addon)

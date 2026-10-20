@@ -16,3 +16,4 @@ src\ticks.lua
 src\hold.lua
 src\options.lua
 src\editmode.lua
+src\move.lua

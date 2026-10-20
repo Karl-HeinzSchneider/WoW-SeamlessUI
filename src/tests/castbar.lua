@@ -292,3 +292,133 @@ assert(player.enabled == false and rows["Spell rank"].disabled() and not rows["E
 enabled = false
 assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")
+
+-- Moving the target cast bar: anchored to an Edit Mode frame while on, the client's points back when off.
+local function Region()
+    local region = { points = {}, shown = false }
+    function region:ClearAllPoints()
+        self.points = {}
+    end
+    function region:SetPoint(...)
+        self.points[#self.points + 1] = { ... }
+    end
+    function region:GetNumPoints()
+        return #self.points
+    end
+    function region:GetPoint(index)
+        return unpack(self.points[index])
+    end
+    function region:SetSize(width, height)
+        self.width, self.height = width, height
+    end
+    function region:SetShown(shown)
+        self.shown = shown
+    end
+    function region:Hide()
+        self.shown = false
+    end
+    region.SetClampedToScreen = function() end
+    return region
+end
+local editMode, layoutName = false, "Modern"
+local editLib, frameCallbacks, moveOptions, libCallbacks = {}, {}, nil, {}
+function editLib:AddFrame(frame, callback, default, name)
+    frameCallbacks[name] = { frame = frame, callback = callback, default = default }
+end
+function editLib:AddFrameSettings() end
+function editLib:RefreshFrameSettings() end
+function editLib:RegisterCallback(event, callback)
+    libCallbacks[event] = callback
+end
+function editLib:GetActiveLayoutName()
+    return layoutName
+end
+function editLib:IsInEditMode()
+    return editMode
+end
+app.core = {
+    GetEditModeLibrary = function()
+        return editLib
+    end,
+    GetEditModePositionSettings = function()
+        return {}
+    end,
+    RegisterEditModeOptions = function(_, _, spec)
+        moveOptions = spec.options
+    end,
+    RefreshOptions = function() end,
+}
+UIParent = Region()
+UIParent.GetEffectiveScale = function()
+    return 1
+end
+UIParent.GetCenter = function()
+    return 500, 400
+end
+TargetFrame = Region()
+function CreateFrame()
+    return Region()
+end
+EventRegistry = { TriggerEvent = function() end }
+function CopyTable(t)
+    local copy = {}
+    for key, value in pairs(t) do
+        copy[key] = value
+    end
+    return copy
+end
+local targetBar = Region()
+targetBar.GetCenter = function()
+    return 600, 300
+end
+targetBar.GetEffectiveScale = function()
+    return 1
+end
+targetBar.GetWidth = function()
+    return 150
+end
+targetBar.GetHeight = function()
+    return 10
+end
+targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 43, 5)
+app.BarKey = function(bar)
+    return bar == targetBar and "target" or nil
+end
+app.db.profile.target.move = { enabled = false, layouts = {} }
+app.db.profile.focus.move = { enabled = false, layouts = {} }
+app.db.profiles = { Default = app.db.profile }
+enabled = true
+app.addon.Refresh = function()
+    app.UpdateMove(targetBar)
+end
+load("move.lua")
+app.RegisterMove()
+local anchor = frameCallbacks["Target cast bar"].frame
+assert(anchor and frameCallbacks["Focus cast bar"] and #moveOptions == 2)
+app.UpdateMove(targetBar, true)
+assert(targetBar.points[1][2] == TargetFrame, "off: the client keeps the bar")
+moveOptions[1].set(true)
+local move = app.db.profile.target.move
+assert(move.layouts.Modern.x == 100 and move.layouts.Modern.y == -100, "starts where the client showed it")
+assert(targetBar.points[1][2] == anchor and #targetBar.points == 1 and not anchor.shown)
+assert(anchor.width == 150 and anchor.points[1][4] == 100)
+-- The unit frame places the bar again (Target of Target, auras): it stays on the anchor.
+targetBar:ClearAllPoints()
+targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 43, -46)
+app.UpdateMove(targetBar, true)
+assert(targetBar.points[1][2] == anchor)
+frameCallbacks["Target cast bar"].callback(anchor, "Modern", "TOP", 10, 20)
+assert(move.layouts.Modern.point == "TOP" and anchor.points[1][1] == "TOP")
+editMode = true
+libCallbacks.enter()
+assert(anchor.shown, "selectable in Edit Mode")
+libCallbacks.create("Copy", nil, "Modern")
+assert(move.layouts.Copy.x == 10)
+libCallbacks.rename("Copy", "Renamed")
+assert(move.layouts.Renamed and not move.layouts.Copy)
+libCallbacks.delete("Renamed")
+assert(not move.layouts.Renamed)
+moveOptions[1].set(false)
+assert(targetBar.points[1][2] == TargetFrame and targetBar.points[1][5] == -46, "the client's latest points return")
+assert(not anchor.shown)
+print("PASS: target and focus cast bars move with Edit Mode")

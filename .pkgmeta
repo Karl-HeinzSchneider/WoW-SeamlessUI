@@ -1,21 +1,20 @@
 # Suite archive: the core addon Seamless/ is the package folder (its TOC supplies the project
 # ids); every feature addon is moved out next to it as a sibling folder in the zip.
-# Only release-ready addons belong in move-folders; ignore internal addons explicitly.
+# Every addon folder in the repo is listed in move-folders; an addon left out must be ignored.
 package-as: Seamless
 
 move-folders:
   Seamless/Seamless: Seamless
   Seamless/SeamlessUnitframes: SeamlessUnitframes
   Seamless/SeamlessTooltip: SeamlessTooltip
+  Seamless/SeamlessChat: SeamlessChat
+  Seamless/SeamlessDamageMeter: SeamlessDamageMeter
+  Seamless/SeamlessUI: SeamlessUI
+  Seamless/SeamlessDarkmode: SeamlessDarkmode
+  Seamless/SeamlessActionBars: SeamlessActionBars
+  Seamless/SeamlessCastbar: SeamlessCastbar
 
 ignore:
-  # Internal development only; not ready for public releases.
-  - SeamlessChat
-  - SeamlessDamageMeter
-  - SeamlessUI
-  - SeamlessDarkmode
-  - SeamlessActionBars
-  - SeamlessCastbar
   # Root tooling (the root src/ would also collide with SeamlessUnitframes/src/ when the addon is moved).
   - docs
   - screenshots

@@ -22,19 +22,19 @@ TOC is an independently selectable addon.
   Saves public per-character fight history independently of appearance profiles. See its `CLAUDE.md`.
 - `src/`: Node 20+ / TypeScript tooling, never shipped.
 - `SeamlessUI/`: optional general UI improvements, with independent `SeamlessUIDB` profiles.
-  Currently an internal scaffold. See its `CLAUDE.md`.
+  Currently a scaffold. See its `CLAUDE.md`.
 - `SeamlessDarkmode/`: optional shared tint for unit frame, minimap and minimap button borders, with independent profiles.
-  Internal pending in-game validation. See its `CLAUDE.md`.
+  See its `CLAUDE.md`.
 - `SeamlessActionBars/`: optional range/mana icon colors and short keybind labels on the game's
-  action buttons, with independent profiles. Internal pending in-game validation. See its `CLAUDE.md`.
+  action buttons, with independent profiles. See its `CLAUDE.md`.
 - `SeamlessCastbar/`: optional cast time, spell rank, channel ticks and hold time on the game's player,
-  target and focus cast bars, with independent profiles. Internal pending in-game validation. See its `CLAUDE.md`.
+  target and focus cast bars, with independent profiles. See its `CLAUDE.md`.
 - `.github/`: release workflows using the BigWigs packager.
 
 Every feature addon must declare `## Dependencies: Seamless`; `check:addons` enforces
 this and checks dependency cycles. Addons are discovered automatically by tooling; add each
-release-ready addon to `.pkgmeta` move-folders for releases. Internal addons must stay in its ignore list.
-Only Core, Tooltip and Unitframes currently ship; Chat, DamageMeter, UI, Darkmode, ActionBars and Castbar are internal. Users enable or disable feature addons
+addon to `.pkgmeta` move-folders for releases; an addon kept out of releases must be in its ignore list.
+Every addon currently ships. Users enable or disable feature addons
 in the game's AddOns screen and reload. Core works without any feature addon enabled.
 
 ## Working on the code

@@ -21,8 +21,9 @@ features are ready for public release.
    "Show FPS on startup" (Core's existing preference, default off); changing it also updates
    visibility when the preview is hidden or Edit Mode exits, and "Show latency" (profile
    `fpsDisplay.showLatency`, default off): home/world ms from `GetNetStats` left of the counter,
-   green below 100 ms, yellow below 250 ms, red above. It is parented to the counter, so it
-   follows the counter's visibility and only updates (once a second) while shown. Ctrl+R still controls the native
+   green below 100 ms, yellow below 250 ms, red above. Never parent it to the counter: the
+   counter sizes itself to its children, which pushed the FPS text out of its box. It follows the
+   counter's visibility through OnShow/OnHide hooks and only updates (once a second) while shown. Ctrl+R still controls the native
    counter outside Edit Mode. Positions are stored per native layout in the current UI profile, including layout
    copy/rename/delete handling. Disabling restores the counter's original anchors.
 6. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard

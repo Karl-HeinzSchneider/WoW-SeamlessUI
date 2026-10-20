@@ -42,6 +42,14 @@ local function newFrame()
         end,
         SetShown = function(self, shown)
             self.shown = shown
+            local hook = self.hooks and self.hooks[shown and "OnShow" or "OnHide"]
+            if hook then
+                hook(self)
+            end
+        end,
+        HookScript = function(self, name, script)
+            self.hooks = self.hooks or {}
+            self.hooks[name] = script
         end,
         IsShown = function(self)
             return not not self.shown
@@ -75,8 +83,9 @@ end
 UIParent = {}
 FramerateFrame = newFrame()
 FramerateFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2)
-CreateFrame = function()
+CreateFrame = function(_, _, parent)
     local created = newFrame()
+    created.parent = parent
     table.insert(frames, created)
     frame, latency = frames[1], frames[2]
     return created
@@ -127,6 +136,11 @@ assert(latency.Text.text == "40 / 60 ms" and latency.Text.color[1] < latency.Tex
 netWorld = 300
 latency.OnUpdate(latency, 1)
 assert(latency.Text.text == "40 / 300 ms" and latency.Text.color[1] == 1 and latency.Text.color[2] < 1)
+assert(latency.parent ~= FramerateFrame, "latency must not resize the counter as its child")
+FramerateFrame:SetShown(false)
+assert(not latency.shown, "latency must hide with the counter")
+FramerateFrame:SetShown(true)
+assert(latency.shown, "latency must show with the counter")
 frameSettings[2].set(nil, false)
 assert(not latency.shown, "turning latency off must hide it")
 move(frame, layout, "CENTER", 100, 200)

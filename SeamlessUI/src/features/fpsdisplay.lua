@@ -30,10 +30,15 @@ local function UpdateLatency()
     latency.Text:SetFormattedText(L["%d / %d ms"], home, world)
 end
 
--- Home/world latency left of the counter. Parented to the counter so it shares its
--- visibility; OnUpdate only runs while shown.
+local function RefreshLatency()
+    latency:SetShown(module:IsEnabled() and app.db.profile.fpsDisplay.showLatency and FramerateFrame:IsShown())
+end
+
+-- Home/world latency left of the counter. Kept out of the counter's children: the counter
+-- sizes itself to fit them, so a child pushes its own text out of place. Follows the
+-- counter's visibility through script hooks; OnUpdate only runs while shown.
 local function CreateLatency()
-    latency = CreateFrame("Frame", nil, FramerateFrame)
+    latency = CreateFrame("Frame", nil, UIParent)
     latency:SetSize(80, 16)
     latency.Text = latency:CreateFontString(nil, "OVERLAY")
     local counterText = FramerateFrame.FramerateText or FramerateText
@@ -50,6 +55,8 @@ local function CreateLatency()
         end
     end)
     latency:SetScript("OnShow", UpdateLatency)
+    FramerateFrame:HookScript("OnShow", RefreshLatency)
+    FramerateFrame:HookScript("OnHide", RefreshLatency)
 end
 
 function module:Refresh()
@@ -61,7 +68,6 @@ function module:Refresh()
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, UIParent, position.point, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
-    latency:SetShown(app.db.profile.fpsDisplay.showLatency)
     if lib:IsInEditMode() then
         if visibilityBeforeEditMode == nil then
             visibilityBeforeEditMode = FramerateFrame:IsShown()
@@ -71,6 +77,7 @@ function module:Refresh()
         FramerateFrame:SetShown(visibilityBeforeEditMode)
         visibilityBeforeEditMode = nil
     end
+    RefreshLatency()
     app.core:RefreshEditModeOptions()
 end
 

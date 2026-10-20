@@ -19,16 +19,30 @@ local function CollapsedSections()
     return app.db.global.editModeCollapsed
 end
 
+-- Every Position header shares this key, so it collapses in all windows at once.
+local POSITION_SECTION = "settings:position"
+-- Sections that start collapsed until the user opens them; opening one is saved as false.
+local COLLAPSED_BY_DEFAULT = { [POSITION_SECTION] = true }
+
 ---@param key string
 ---@return boolean
 function app.IsEditModeSectionCollapsed(key)
-    return CollapsedSections()[key] == true
+    local collapsed = CollapsedSections()[key]
+    if collapsed == nil then
+        return COLLAPSED_BY_DEFAULT[key] == true
+    end
+    return collapsed
 end
 
 ---@param key string
 ---@param collapsed boolean
 function app.SetEditModeSectionCollapsed(key, collapsed)
-    CollapsedSections()[key] = collapsed or nil
+    collapsed = not not collapsed
+    if collapsed == (COLLAPSED_BY_DEFAULT[key] == true) then
+        CollapsedSections()[key] = nil
+    else
+        CollapsedSections()[key] = collapsed
+    end
 end
 
 local function SetCollapsedState(header, collapsed)
@@ -324,9 +338,6 @@ end
 function addon:SetEditModeSectionCollapsed(key, collapsed)
     app.SetEditModeSectionCollapsed(key, collapsed)
 end
-
--- Every Position header shares this key, so it collapses in all windows at once.
-local POSITION_SECTION = "settings:position"
 
 ---@return string
 function addon:GetEditModePositionSectionKey()

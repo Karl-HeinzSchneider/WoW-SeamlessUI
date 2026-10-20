@@ -371,6 +371,12 @@ local position = app.addon:GetEditModePositionSettings({
 })
 assert(#position == 7 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
 assert(app.addon:GetEditModePositionSectionKey() == "settings:position")
+-- Position starts collapsed; opening it is remembered, and collapsing it again clears the entry.
+assert(app.IsEditModeSectionCollapsed("settings:position"), "Position starts collapsed")
+app.SetEditModeSectionCollapsed("settings:position", false)
+assert(not app.IsEditModeSectionCollapsed("settings:position"))
+app.SetEditModeSectionCollapsed("settings:position", true)
+assert(app.IsEditModeSectionCollapsed("settings:position"))
 assert(position[2].name == "Anchor" and #position[2].values == 9 and position[4].height == 400)
 assert(position[5].minValue == -1500 and position[5].maxValue == 1500 and position[6].maxValue == 1000)
 assert(position[5].get() == 5 and position[5].formatter(4.6) == "5")

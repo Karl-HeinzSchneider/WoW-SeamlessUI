@@ -22,7 +22,8 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   gold `GameFontNormalLeft` name, +/- state icon on the right; supports `name`, optional `key`
   and `hidden`), via `app.CreateEditModeHeader`. Clicking it
   hides every row up to the next header; collapsed sections are saved account-wide in
-  `SeamlessDB.global.editModeCollapsed`. It also puts the selected frame's settings list in a
+  `SeamlessDB.global.editModeCollapsed`. The shared Position section starts collapsed: it has no
+  entry until the user opens it, which saves `false`; collapsing it again clears the entry. It also puts the selected frame's settings list in a
   scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
   scrolling past 400 pixels or 60% of the screen height, whichever is smaller. Each layout sizes
   the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. Each layout

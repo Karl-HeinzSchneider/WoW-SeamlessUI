@@ -45,8 +45,6 @@ local function barDefaults(icon)
         ticks = { enabled = true },
         icon = icon and { enabled = true } or nil,
         hold = { enabled = false, success = 0.2, interrupt = 1 },
-        -- Target and focus only: detached from the unit frame and placed per Edit Mode layout.
-        move = not icon and { enabled = false, layouts = {} } or nil,
     }
 end
 
@@ -79,16 +77,10 @@ function app.addon:OnEnable()
             -- A delayed cast that was not shown as casting turns the bar into a cast.
             self:SecureHook(bar, "HandleCastDelayed", app.UpdateTicks)
             self:SecureHook(bar, "UpdateIconShown", app.UpdateIcon)
-            -- Target and focus bars: the unit frame places them here.
-            if bar.AdjustPosition then
-                self:SecureHook(bar, "AdjustPosition", function(castBar)
-                    app.UpdateMove(castBar, true)
-                end)
-            end
         end
     end
     app.RegisterEditMode()
-    app.RegisterMove()
+    app.RegisterPreviews()
     self:Refresh()
 end
 
@@ -100,9 +92,9 @@ function app.addon:OnDisable()
         app.HideTicks(bar)
         app.RestoreIcon(bar)
         app.RestoreHold(bar)
-        app.UpdateMove(bar)
     end
     wipe(keys)
+    app.UpdatePreviews()
     app.core:RefreshEditModeSystemOptions()
 end
 
@@ -125,6 +117,6 @@ function app.addon:Refresh()
             app.RestoreIcon(bar)
             app.RestoreHold(bar)
         end
-        app.UpdateMove(bar)
     end
+    app.UpdatePreviews()
 end

@@ -23,6 +23,7 @@
 ---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
 ---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
+---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field logger SeamlessCore.Logger

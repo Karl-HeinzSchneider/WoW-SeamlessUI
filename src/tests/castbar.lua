@@ -248,7 +248,11 @@ print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 
 -- Edit Mode: a Style section in the extended window of the cast bar system, writing the player profile.
 local registered, registrations, refreshes, optionRefreshes, enabled = nil, 0, 0, 0, true
+local editLib = { SettingType = { Checkbox = 1, Dropdown = 2, Slider = 3, Header = "header" } }
 app.core = {
+    GetEditModeLibrary = function()
+        return editLib
+    end,
     RegisterEditModeSystemOptions = function(_, id, spec)
         registered, registrations = spec, registrations + 1
         assert(id == "SeamlessCastbar")
@@ -293,158 +297,107 @@ enabled = false
 assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")
 
--- Moving the target cast bar: anchored to an Edit Mode frame while on, the client's points back when off.
-local function Region()
-    local region = { points = {}, shown = false }
-    function region:ClearAllPoints()
-        self.points = {}
+-- Target and focus previews: selectable in Edit Mode with their Style settings, never moved.
+local function Frame()
+    local frame = { shown = false, level = 1 }
+    setmetatable(frame, {
+        __index = function()
+            return function() end
+        end,
+    })
+    function frame:Show()
+        self.shown = true
     end
-    function region:SetPoint(...)
-        self.points[#self.points + 1] = { ... }
-    end
-    function region:GetNumPoints()
-        return #self.points
-    end
-    function region:GetPoint(index)
-        return unpack(self.points[index])
-    end
-    function region:SetSize(width, height)
-        self.width, self.height = width, height
-    end
-    function region:SetShown(shown)
-        self.shown = shown
-    end
-    function region:Hide()
+    function frame:Hide()
         self.shown = false
     end
-    region.SetClampedToScreen = function() end
-    return region
+    function frame:SetShown(value)
+        self.shown = value
+    end
+    function frame:GetFrameLevel()
+        return 1
+    end
+    function frame:SetPoint(...)
+        self.point = { ... }
+    end
+    function frame:CreateTexture()
+        return Frame()
+    end
+    function frame:CreateFontString()
+        local text = Frame()
+        function text:SetText(value)
+            self.text = value
+        end
+        return text
+    end
+    function frame:GetParent()
+        return self.parent
+    end
+    return frame
 end
-local editMode, layoutName = false, "Modern"
-local editLib, frameCallbacks, moveOptions, libCallbacks = {}, {}, nil, {}
-function editLib:AddFrame(frame, callback, default, name)
-    frameCallbacks[name] = { frame = frame, callback = callback, default = default }
+function CreateFrame(_, _, parent)
+    local frame = Frame()
+    frame.parent = parent
+    return frame
 end
-function editLib:AddFrameSettings() end
+TargetFrame, FocusFrame = Frame(), Frame()
+TargetFrame.smallSize, TargetFrame.haveToT, FocusFrame.smallSize, FocusFrame.haveToT = false, false, true, false
+TargetFrameSpellBar = {
+    GetScale = function()
+        return 1
+    end,
+}
+EventRegistry = { TriggerEvent = function() end }
+local editMode, added, fixed, frameSettings, libCallbacks, previewOptions = true, {}, {}, {}, {}, nil
+function editLib:AddFrame(frame, _, _, name)
+    added[name] = frame
+end
+function editLib:AddFrameSettings(frame, settings)
+    frameSettings[frame] = settings
+end
 function editLib:RefreshFrameSettings() end
-function editLib:RegisterCallback(event, callback)
-    libCallbacks[event] = callback
-end
-function editLib:GetActiveLayoutName()
-    return layoutName
-end
 function editLib:IsInEditMode()
     return editMode
 end
-app.core = {
-    GetEditModeLibrary = function()
-        return editLib
-    end,
-    GetEditModePositionSettings = function()
-        return {}
-    end,
-    RegisterEditModeOptions = function(_, _, spec)
-        moveOptions = spec.options
-    end,
-    RefreshOptions = function() end,
-}
-UIParent = Region()
-UIParent.GetEffectiveScale = function()
-    return 1
+function editLib:RegisterCallback(event, callback)
+    libCallbacks[event] = callback
 end
-UIParent.GetCenter = function()
-    return 500, 400
+app.core.SetEditModeFrameFixed = function(_, frame)
+    fixed[frame] = true
 end
-TargetFrame = Region()
-TargetFrame.GetName = function()
-    return "TargetFrame"
+app.core.RegisterEditModeOptions = function(_, _, spec)
+    previewOptions = spec.options
 end
-function CreateFrame()
-    return Region()
-end
-EventRegistry = { TriggerEvent = function() end }
-function CopyTable(t)
-    local copy = {}
-    for key, value in pairs(t) do
-        copy[key] = value
-    end
-    return copy
-end
-local targetBar = Region()
-targetBar.GetCenter = function()
-    return 600, 300
-end
-targetBar.GetEffectiveScale = function()
-    return 1
-end
-targetBar.GetParent = function()
-    return TargetFrame
-end
-targetBar.GetWidth = function()
-    return 150
-end
-targetBar.GetHeight = function()
-    return 10
-end
-targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 43, 5)
-app.BarKey = function(bar)
-    return bar == targetBar and "target" or nil
-end
-app.db.profile.target.move = { enabled = false, layouts = {} }
-app.db.profile.focus.move = { enabled = false, layouts = {} }
-app.db.profiles = { Default = app.db.profile }
 enabled = true
-app.addon.Refresh = function()
-    app.UpdateMove(targetBar)
-end
-load("move.lua")
-app.RegisterMove()
-local anchor = frameCallbacks["Target cast bar"].frame
-assert(anchor and frameCallbacks["Focus cast bar"] and #moveOptions == 2)
-app.UpdateMove(targetBar, true)
-assert(targetBar.points[1][2] == TargetFrame, "off: the client keeps the bar")
-moveOptions[1].set(true)
-local move = app.db.profile.target.move
-local start = move.layouts.Modern
-assert(start.relativeTo == "TargetFrame" and start.x == 43 and start.y == 5, "starts where the client puts it")
-assert(targetBar.points[1][2] == anchor and #targetBar.points == 1 and not anchor.shown)
-assert(anchor.width == 150 and anchor.points[1][2] == TargetFrame and anchor.points[1][4] == 43)
--- Anchored to the aura rows, the bar's geometry is secret: the anchor keeps its last size.
-local secret = {}
-issecretvalue = function(value)
-    return value == secret
-end
-targetBar.GetWidth = function()
-    return secret
-end
-targetBar:ClearAllPoints()
-targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 18, secret)
-targetBar.GetNumPoints = function()
-    return secret
-end
-targetBar.GetPoint = function()
-    error("the bar's points are never read")
-end
-app.UpdateMove(targetBar, true)
-assert(targetBar.points[1][2] == anchor and anchor.width == 150)
--- The unit frame places the bar again (Target of Target, auras): it stays on the anchor.
-targetBar:ClearAllPoints()
-targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 43, -46)
-app.UpdateMove(targetBar, true)
-assert(targetBar.points[1][2] == anchor)
-frameCallbacks["Target cast bar"].callback(anchor, "Modern", "TOP", 10, 20)
-assert(move.layouts.Modern.point == "TOP" and anchor.points[1][1] == "TOP")
-editMode = true
+app.db.profile.player.enabled = true
+load("preview.lua")
+app.RegisterPreviews()
+local target, focus = added["Target cast bar"], added["Focus cast bar"]
+assert(target and focus and fixed[target] and fixed[focus] and #previewOptions == 2)
+assert(target:GetParent() == TargetFrame, "a child of the unit frame")
 libCallbacks.enter()
-assert(anchor.shown, "selectable in Edit Mode")
-libCallbacks.create("Copy", nil, "Modern")
-assert(move.layouts.Copy.x == 10)
-libCallbacks.rename("Copy", "Renamed")
-assert(move.layouts.Renamed and not move.layouts.Copy)
-libCallbacks.delete("Renamed")
-assert(not move.layouts.Renamed)
-TargetFrame.haveToT = true
-moveOptions[1].set(false)
-assert(targetBar.points[1][2] == TargetFrame and targetBar.points[1][5] == -46, "back under the unit frame")
-assert(not anchor.shown)
-print("PASS: target and focus cast bars move with Edit Mode")
+assert(target.shown and focus.shown and target.point[2] == TargetFrame and target.point[4] == 43)
+assert(focus.point[4] == 38 and focus.point[5] == 3, "small focus frame spot")
+assert(target.Time.text == "1.2 / 2.5" and target.Text.text == "Target cast bar")
+-- The preview's dialog shows the target bar's Style rows, writing the target profile.
+local settings = frameSettings[target]
+assert(settings[1].kind == "header" and settings[1].name == "Style")
+local byName = {}
+for _, setting in ipairs(settings) do
+    byName[setting.name] = setting
+end
+assert(not byName["Spell icon"], "only the player bar has the icon option")
+app.db.profile.player.castTime.format = "ELAPSED_TOTAL"
+byName["Cast time format"].set("Modern", "REMAINING")
+assert(app.db.profile.target.castTime.format == "REMAINING" and app.db.profile.player.castTime.format ~= "REMAINING")
+byName["After an interrupt"].set("Modern", 0.30000000000000004)
+assert(app.db.profile.target.hold.interrupt == 0.3 and byName["After an interrupt"].formatter(0.3) == "0.3")
+assert(byName["Decimals"].formatter(1) == "1" and byName["Cast time"].default == true)
+app.UpdatePreviews()
+assert(target.Time.text == "1.3", "the preview follows the Style options")
+previewOptions[1].set(false)
+assert(not target.shown and focus.shown, "the Frames checkbox hides a preview")
+editMode = false
+libCallbacks.exit()
+assert(not focus.shown, "hidden outside Edit Mode")
+print("PASS: target and focus previews in Edit Mode")

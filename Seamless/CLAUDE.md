@@ -35,7 +35,10 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
   `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
   header plus Anchor, AnchorParent, AnchorFrame, X and Y; collapse key
-  `core:GetEditModePositionSectionKey()`, shared by every Position header). This is the it asserts on what it relies on, so recheck it and run
+  `core:GetEditModePositionSectionKey()`, shared by every Position header). `core:SetEditModeFrameFixed(frame)` keeps a
+  frame registered with `AddFrame` selectable, with its settings, but removes dragging, arrow-key
+  nudges (`internal.MoveParent`) and the Reset Position button, for previews of frames the client
+  places itself. This is the it asserts on what it relies on, so recheck it and run
   `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
   dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes

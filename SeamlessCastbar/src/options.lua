@@ -101,13 +101,6 @@ local function barTab(order, bar)
             },
         }),
     }
-    if bar.key ~= "player" then
-        args.move = feature(bar, "move", {
-            order = 60,
-            name = L["Move in Edit Mode"],
-            desc = L["Detach this cast bar from its unit frame so Edit Mode can move it. Edit Mode's Frames list has the same switch."],
-        })
-    end
     if bar.key == "player" then
         args.icon = feature(bar, "icon", {
             order = 40,

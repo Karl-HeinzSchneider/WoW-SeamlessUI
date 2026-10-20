@@ -44,7 +44,6 @@ L["Top"] = true
 L["Unknown"] = true
 L["Verbose"] = true
 L["Warn"] = true
-L["Window"] = true
 L["Windows"] = true
 L["X offset"] = true
 L["Y offset"] = true

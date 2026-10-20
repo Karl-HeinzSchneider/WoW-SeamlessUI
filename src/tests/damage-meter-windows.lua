@@ -1242,19 +1242,16 @@ local order = {}
 for index, entry in ipairs(controls[meter]) do
     order[entry.name] = index
 end
-assert(order.Numbers < order.Style and order.Style < order.Skin)
+assert(order.Numbers < order.Style and order.Style < order.Skin and order.Style == order.Numbers + 2)
 assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
-assert(controls[meter][1].name == "Window" and controls[meter][1].kind == lem.SettingType.Expander)
-assert(setting("Style").kind == lem.SettingType.Expander)
-assert(setting("Window").get() and not setting("Style").get(), "Window opens and Style starts collapsed")
-assert(not setting("Lock size").hidden() and setting("Skin").hidden() and setting("Bar height").hidden())
-setting("Style").set(nil, true)
-assert(not setting("Skin").hidden() and not setting("Show type selector").hidden())
-setting("Window").set(nil, false)
-assert(setting("Numbers").hidden() and setting("Row count").hidden() and not setting("Style").hidden)
-setting("Window").set(nil, true, true)
-assert(not setting("Window").get(), "Reset keeps sections as they are")
-setting("Window").set(nil, true)
+local expander = controls[meter][order.Numbers + 1]
+assert(expander.kind == lem.SettingType.Expander and not expander.default and not expander.get())
+assert(controls[meter][order.Numbers + 2].kind == lem.SettingType.Divider)
+assert(not setting("Lock size").hidden and setting("Skin").hidden() and setting("Bar height").hidden())
+expander.set(nil, true)
+assert(expander.get() and not setting("Skin").hidden() and not setting("Show type selector").hidden())
+expander.set(nil, false, true)
+assert(expander.get(), "Reset keeps the style options shown")
 assert(setting("Modify global style").default and setting("Modify global style").get())
 local sharedStyle = app.db.profile.skins[meter.config.skin].settings
 local sharedHeight, sharedAlpha, sharedClasses =

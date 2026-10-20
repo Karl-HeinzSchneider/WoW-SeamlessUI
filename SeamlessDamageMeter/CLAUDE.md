@@ -256,11 +256,10 @@ Verify default changes propagate only to inherited settings, including fonts and
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.
 
-Edit Mode lists a collapsible Window section first (window settings), then a collapsible
-Style section with Skin, Modify global style and the appearance controls. Sections use the
-library's Expander rows; every other row hides while its section is collapsed. Open/closed
-state is shared by all windows in `profile.editModeSections` (Window open and Style collapsed
-by default) and is kept by Reset to default. It exposes bar height, padding (row spacing), transparency,
+Edit Mode lists window settings first, then the library's standard Expand/Collapse options
+toggle (Blizzard's `HUD_EDIT_MODE_*_OPTIONS` labels), then a Style divider, Skin, Modify global
+style and the appearance controls, which stay hidden while collapsed. The shown state is shared
+by all windows in `profile.editModeStyleExpanded` (collapsed by default) and kept by Reset to default. It exposes bar height, padding (row spacing), transparency,
 background, text size, spec icons, class colors and type selector visibility. Appearance edits
 update the selected shared skin when Modify global style is enabled (the default), refreshing
 all windows using it; otherwise they update only the selected window's local style overrides.

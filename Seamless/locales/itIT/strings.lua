@@ -47,7 +47,6 @@ end
 -- L["Unknown"] = "Unknown"
 -- L["Verbose"] = "Verbose"
 -- L["Warn"] = "Warn"
--- L["Window"] = "Window"
 -- L["Windows"] = "Windows"
 -- L["X offset"] = "X offset"
 -- L["Y offset"] = "Y offset"

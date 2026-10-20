@@ -78,6 +78,9 @@ end
 function methods:SetHideIfUnscrollable(value)
     self.hideIfUnscrollable = value
 end
+function methods:SetNormalTexture(texture)
+    self.normalTexture = texture
+end
 function methods:Layout()
     self.layouts = (self.layouts or 0) + 1
 end
@@ -96,6 +99,9 @@ for _, name in ipairs({
     "SetEnabled",
     "SetPropagateMouseMotion",
     "OnLoad",
+    "SetHighlightTexture",
+    "SetPushedTexture",
+    "SetAllPoints",
 }) do
     methods[name] = function() end
 end
@@ -109,6 +115,8 @@ EventRegistry = { RegisterCallback = function() end, RegisterFrameEventAndCallba
 EditModeManagerFrame = { HookScript = function() end }
 EditModeSystemSettingsDialog = { HookScript = function() end }
 DefaultTooltipMixin = {}
+SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
+function PlaySound() end
 function hooksecurefunc() end
 function table.wipe(t)
     for key in pairs(t) do
@@ -207,7 +215,9 @@ end
 local frame = object("Frame", UIParent)
 lib.frameSettings[frame] = {
     { kind = lib.SettingType.Header, name = "Section" },
+    { kind = lib.SettingType.Divider, name = "Inside" },
     { kind = lib.SettingType.Header, name = "Hidden section", hidden = true },
+    { kind = lib.SettingType.Divider, name = "After hidden header" },
 }
 lib.frameButtons[frame] = {}
 function lib:GetFrameDefaultPosition()
@@ -226,20 +236,39 @@ local selection = {
 }
 scroll.verticalScroll = 50
 dialog:Update(selection)
-assert(scroll.maximumHeight == 600, "Settings may use 60% of the screen height")
+assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like Blizzard's container")
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
-local header, hiddenHeader = dialog.Settings.widgets[1], dialog.Settings.widgets[2]
+local widgets = dialog.Settings.widgets
+local header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
 assert(header.Label.text == "Section" and header.Label.font == "GameFontNormalLarge")
 assert(header.height == 32 and header.layoutIndex == 1 and header:IsShown())
-assert(not hiddenHeader:IsShown())
+assert(not hiddenHeader:IsShown() and after:IsShown(), "A hidden header collapses nothing")
+assert(inside:IsShown() and header.CollapseButton.normalTexture:find("MinusButton"))
 assert(header:GetParent():GetParent() == scroll)
 
 scroll.verticalScroll = 50
 dialog:Update(selection)
 assert(scroll.verticalScroll == 50, "Refreshing the same selection keeps its scroll position")
+-- Updating re-acquires pooled widgets, so read them again.
+header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
+
+-- Clicking a header collapses its rows and remembers it for the next Update.
+local layouts = dialog.layouts
+header:Toggle()
+assert(not inside:IsShown() and after:IsShown() and header:IsShown())
+assert(header.CollapseButton.normalTexture:find("PlusButton") and dialog.layouts == layouts + 2 and dialog:IsShown())
+dialog:Update(selection)
+assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")
+widgets[1]:Toggle()
+assert(widgets[2]:IsShown())
+header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
 
 -- Widgets refresh through their grandparent; it must reach the dialog.
-lib.frameSettings[frame][2].hidden = false
+lib.frameSettings[frame][3].hidden = false
 header:GetParent():GetParent():RefreshWidgets()
 assert(hiddenHeader:IsShown())
-print("PASS: namespaced LibEditMode header widget, scrolling settings dialog and widget refresh")
+-- Rows after a collapsed header stay hidden even when their own state refreshes.
+hiddenHeader:Toggle()
+assert(not after:IsShown())
+assert(app.IsEditModeSectionCollapsed("settings:Hidden section"))
+print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dialog and widget refresh")

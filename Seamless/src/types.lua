@@ -1,5 +1,9 @@
 -- Annotations only; not loaded by the client.
 ---@class SeamlessCore
+---@field IsEditModeSectionCollapsed fun(key: string): boolean
+---@field SetEditModeSectionCollapsed fun(key: string, collapsed: boolean)
+---@field CreateEditModeHeaderButton fun(frame: table): table
+---@field SetEditModeHeaderCollapsed fun(button: table, collapsed: boolean)
 ---@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (SettingType.Header, scrolling dialog).
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessCore.Addon

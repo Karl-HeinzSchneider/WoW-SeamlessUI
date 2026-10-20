@@ -168,8 +168,25 @@ WHITE_FONT_COLOR = {
     end,
 }
 DISABLED_FONT_COLOR = WHITE_FONT_COLOR
+SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
+function PlaySound() end
 local core = {}
+-- Collapse helpers come from editmodelib.lua (covered by editmode-dialog.lua).
+local collapsedSections = {}
 local app = {
+    IsEditModeSectionCollapsed = function(key)
+        return collapsedSections[key] == true
+    end,
+    SetEditModeSectionCollapsed = function(key, value)
+        collapsedSections[key] = value or nil
+    end,
+    CreateEditModeHeaderButton = function(frame)
+        frame.CollapseButton = object(frame, "CollapseButton")
+        return frame.CollapseButton
+    end,
+    SetEditModeHeaderCollapsed = function(button, collapsed)
+        button.collapsed = collapsed
+    end,
     addon = core,
     LibEditMode = {
         IsInEditMode = function()
@@ -321,6 +338,12 @@ for _, frame in ipairs(frames) do
 end
 assert(sectionHeader and sectionHeader.Label.text == "Section" and sectionHeader:GetHeight() == 32 - 6)
 assert(panel:GetHeight() == expanded + 32 + 38)
+-- Clicking a header collapses the rows after it, and clicking again expands them.
+sectionHeader.Toggle()
+assert(collapsedSections["panel:sections:title"] and sectionHeader.CollapseButton.collapsed)
+assert(panel:GetHeight() == expanded + 32, "Collapsed rows reserve no space")
+sectionHeader.Toggle()
+assert(not collapsedSections["panel:sections:title"] and panel:GetHeight() == expanded + 32 + 38)
 -- A panel near the screen bottom caps its height and scrolls the rest.
 panel.top = 44 + 16 + 8 + 100
 core:RefreshEditModeOptions()

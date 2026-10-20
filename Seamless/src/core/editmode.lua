@@ -78,7 +78,11 @@ local function CanInteract(spec, option)
         and not Evaluate(option.disabled)
 end
 
-local function CreateRow(option, spec)
+local function SectionKey(id, option)
+    return "panel:" .. id .. ":" .. option.key
+end
+
+local function CreateRow(option, spec, id)
     local row
     if option.type == "custom" then
         row = option.create(content)
@@ -89,9 +93,20 @@ local function CreateRow(option, spec)
     else
         row = CreateFrame("Frame", nil, content)
         if option.type == "header" then
-            -- Matches the Frames heading and Blizzard's Edit Mode category titles.
+            -- Collapsible section title, like the frame settings window's headers.
+            function row.Toggle()
+                if lib:IsInEditMode() and not InCombatLockdown() then
+                    local key = SectionKey(id, row.option)
+                    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+                    app.SetEditModeSectionCollapsed(key, not app.IsEditModeSectionCollapsed(key))
+                end
+                addon:RefreshEditModeOptions()
+            end
+            app.CreateEditModeHeaderButton(row)
+            row.CollapseButton:ClearAllPoints()
+            row.CollapseButton:SetPoint("TOPLEFT", 3, -2)
             row.Label = row:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-            row.Label:SetPoint("TOPLEFT", 5, 0)
+            row.Label:SetPoint("TOPLEFT", 23, 0)
             row.Label:SetJustifyH("LEFT")
             row.Label:SetWordWrap(true)
         elseif option.type == "toggle" then
@@ -224,12 +239,19 @@ function addon:RefreshEditModeOptions()
             title:Show()
             y = y + title:GetStringHeight() + GAP
         end
+        local collapsed = false
         for _, entry in ipairs(options) do
             local option = entry.option
             local row = registration.rows[option.key]
-            if visible and not Evaluate(option.hidden) then
+            local shown = visible and not Evaluate(option.hidden)
+            if option.type == "header" then
+                collapsed = shown and app.IsEditModeSectionCollapsed(SectionKey(group.id, option))
+            elseif collapsed then
+                shown = false
+            end
+            if shown then
                 if not row then
-                    row = CreateRow(option, spec)
+                    row = CreateRow(option, spec, group.id)
                     registration.rows[option.key] = row
                 end
                 row:ClearAllPoints()
@@ -238,7 +260,8 @@ function addon:RefreshEditModeOptions()
                 local disabled = InCombatLockdown() or not not Evaluate(option.disabled)
                 local height
                 if option.type == "header" then
-                    row.Label:SetWidth(math.max(1, width - 5))
+                    app.SetEditModeHeaderCollapsed(row.CollapseButton, collapsed)
+                    row.Label:SetWidth(math.max(1, width - 23))
                     row.Label:SetText(option.name)
                     height = math.max(32, row.Label:GetStringHeight() + GAP) - GAP
                 elseif option.type == "toggle" then

@@ -16,7 +16,7 @@ local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
 local display
 local UPDATE_INTERVAL = 0.25
 local ROW_GAP = 2
-local textColor = { 1, 1, 1 }
+local textColor
 
 local function UpdateDisplay()
     local _, _, _, world = GetNetStats()
@@ -42,33 +42,22 @@ local function RefreshDisplay()
     local shown = module:IsEnabled() and app.db.profile.fpsDisplay.showLatency and FramerateFrame:IsShown()
     display:SetShown(shown)
     FramerateFrame:SetAlpha(shown and 0 or 1)
-    anchor:SetSize(shown and display:GetWidth() or 120, shown and display:GetHeight() or 24)
+    if shown then
+        -- The anchor lives in UIParent's scale, the display in WorldFrame's.
+        local scale = display:GetEffectiveScale() / anchor:GetEffectiveScale()
+        anchor:SetSize(display:GetWidth() * scale, display:GetHeight() * scale)
+    else
+        anchor:SetSize(120, 24)
+    end
 end
 
 local function CreateDisplay()
-    display = CreateFrame("Frame", nil, UIParent)
+    -- Same parent and font as the native counter (Blizzard_FramerateFrame): WorldFrame is not
+    -- affected by the UI scale, so a UIParent child would look smaller than the counter.
+    display = CreateFrame("Frame", nil, WorldFrame)
     display:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
-    -- Copy the counter's own font and color so both rows look like the default display.
-    local counterText = FramerateFrame.FramerateText or FramerateText
-    if not counterText then
-        for _, region in ipairs({ FramerateFrame:GetRegions() }) do
-            if region:GetObjectType() == "FontString" then
-                counterText = region
-            end
-        end
-    end
-    local fontPath, fontSize, fontFlags
-    if counterText then
-        fontPath, fontSize, fontFlags = counterText:GetFont()
-        textColor = { counterText:GetTextColor() }
-    end
     local function Text(justify)
-        local text = display:CreateFontString(nil, "OVERLAY")
-        text:SetFontObject(SystemFont_Shadow_Med1 or GameFontHighlight)
-        if fontPath then
-            text:SetFont(fontPath, fontSize, fontFlags)
-        end
-        text:SetTextColor(unpack(textColor))
+        local text = display:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Med1")
         text:SetJustifyH(justify)
         return text
     end
@@ -79,6 +68,7 @@ local function CreateDisplay()
     display.FramerateText = Text("RIGHT")
     display.LatencyText = Text("RIGHT")
     display.FramerateText:SetText("999.9")
+    textColor = { display.FramerateText:GetTextColor() }
     local labelWidth = math.max(display.FramerateLabel:GetStringWidth(), display.LatencyLabel:GetStringWidth())
     local valueWidth = display.FramerateText:GetStringWidth()
     local rowHeight = display.FramerateText:GetStringHeight()

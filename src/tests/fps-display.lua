@@ -49,7 +49,6 @@ local function newFrame()
                 hook(self)
             end
         end,
-        GetRegions = function() end,
         HookScript = function(self, name, script)
             self.hooks = self.hooks or {}
             self.hooks[name] = script
@@ -72,6 +71,9 @@ local function newFrame()
         SetAlpha = function(self, alpha)
             self.alpha = alpha
         end,
+        GetEffectiveScale = function(self)
+            return self.parent == WorldFrame and 1.5 or 1
+        end,
         GetWidth = function(self)
             return self.width or 0
         end,
@@ -83,10 +85,6 @@ local function newFrame()
                 SetFontObject = function() end,
                 SetPoint = function() end,
                 SetJustifyH = function() end,
-                SetFont = function() end,
-                GetFont = function()
-                    return "Fonts\\FRIZQT__.TTF", 16, "OUTLINE"
-                end,
                 GetTextColor = function()
                     return 1, 1, 1
                 end,
@@ -110,6 +108,7 @@ local function newFrame()
     }
 end
 UIParent = {}
+WorldFrame = {}
 FramerateFrame = newFrame()
 FramerateFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2)
 CreateFrame = function(_, _, parent)
@@ -166,7 +165,8 @@ assert(profile.fpsDisplay.showLatency and display.shown, "latency option must sh
 assert(FramerateFrame.alpha == 0, "the two-row display must replace the native counter")
 assert(display.parent ~= FramerateFrame, "display must not resize the counter as its child")
 assert(display.points[1][2] == frame, "display must follow the custom anchor")
-assert(frame.width == display.width and frame.height == display.height, "anchor must match the display")
+assert(display.parent == WorldFrame, "display must share the counter's parent and scale")
+assert(frame.width == display.width * 1.5 and frame.height == display.height * 1.5, "anchor must match the display")
 assert(display.height == 26, "display must have two rows")
 display.OnShow()
 assert(display.FramerateText.text == "999.9", "framerate must be capped at 999.9")

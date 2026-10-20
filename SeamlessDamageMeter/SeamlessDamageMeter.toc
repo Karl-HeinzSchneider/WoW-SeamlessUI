@@ -8,6 +8,7 @@
 ## Dependencies: Seamless
 ## SavedVariables: SeamlessDamageMeterDB
 ## X-License: MIT
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
 
 src\core.lua
 src\data.lua

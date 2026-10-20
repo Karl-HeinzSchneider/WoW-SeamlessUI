@@ -1,17 +1,13 @@
 # SeamlessTooltip
 
-Optional tooltip addon in the Seamless suite, imported from `../WoW-SeamlessTooltip`.
-Requires `Seamless`; users disable it through WoW's AddOns screen and reload.
-`SeamlessTooltipDB`, feature keys and profiles are preserved from the standalone addon.
-The old local minimap/logLevel preferences are unused; shared preferences belong to Core.
+Optional tooltip addon: switchable enhancements of the game's tooltips. Settings and profiles
+live in `SeamlessTooltipDB`; feature keys there are persistent (see Features and conventions).
 
 ## Load order and ownership
 
-Every runtime Lua/XML file must be listed in dependency order in `SeamlessTooltip.toc`.
-
 1. `src/core/bootstrap.lua`: obtains Core through AceAddon and shares its logger.
-2. `db.lua`, then `ace.lua`: feature defaults, independent AceAddon/AceDB lifecycle and the legacy
-   `/seamlesstooltip` command. `loglevel` delegates to Core; `reset` resets only Tooltip's profile.
+2. `db.lua`, then `ace.lua`: defaults, AceAddon/AceDB lifecycle and `/seamlesstooltip` (opens
+   the Tooltip panel). `loglevel` delegates to Core; `reset` resets only Tooltip's profile.
 3. `features.lua`: nested feature modules and their options sections (`OptionsByCategory`). Defaults are declared
    at file load; all modules exist before AceDB initialization.
 4. `media.lua`: LibSharedMedia lookup helpers (the library is vendored and loaded by Core).
@@ -23,12 +19,7 @@ Every runtime Lua/XML file must be listed in dependency order in `SeamlessToolti
 8. `src/features/*.lua`: the features below, in category order.
 9. `SeamlessTooltip.lua`: load diagnostic.
 
-No local library embeds, launcher or standalone options window. `/seamlesstooltip` opens
-Settings > AddOns > Seamless > Tooltip.
-
 ### `src/features/`
-
-One file per tooltip enhancement, listed by options section.
 
 #### All tooltips (`all`)
 
@@ -36,13 +27,11 @@ One file per tooltip enhancement, listed by options section.
   re-owns the tooltip with a cursor anchor (`position`: `ANCHOR_CURSOR_RIGHT` by default,
   `offsetX` = 16, `offsetY` = 0). Action buttons call the default anchor before `SetAction`, so
   `ActionButtonAnchor` wins for them while both are on. Unit frames (a parent with `.unit` or a
-  "unit" attribute) and forbidden parents are left alone; unit frame tooltips are meant to get
-  options of their own later.
+  "unit" attribute) and forbidden parents are left alone.
 - `actionbuttonanchor.lua` — `ActionButtonAnchor`: a tooltip filled by `GameTooltip:SetAction`,
   `SetPetAction` or `SetShapeshift` is re-anchored to its owner, the button, with
   `SetAnchorType` (`position`: an `ANCHOR_*` type, default `ANCHOR_RIGHT` = above, to the right;
-  or `AUTO` = above or below toward the screen center). The post-hooks are AceHook's, set in
-  `OnEnable`.
+  or `AUTO` = above or below toward the screen center).
 - `backdrop.lua` — `Backdrop`: the border and background of the top-level tooltips (`GameTooltip`,
   `ItemRefTooltip`, the shopping tooltips) from LibSharedMedia (`background`, `border` by name,
   their colors, `edgeSize`, `inset`). Each tooltip gets a `BackdropTemplate` child at its own
@@ -107,7 +96,6 @@ One file per tooltip enhancement, listed by options section.
   table; our texture/font string and its original look are locals. The text only passes health
   values to secret-accepting APIs (`AbbreviateNumbers`, `UnitHealthPercent` with
   `CurveConstants.ScaleTo100`, `SetFormattedText`) and refreshes on the bar's `OnValueChanged`.
-
 - `unitborder.lua` — `UnitBorder`: `app.border.Paint` in a Unit post-call: players in class color
   (`players`), NPCs in `unitTooltip.UnitColor` (`npcs`), tapped NPCs in grey (`tapped`).
 - `hideunits.lua` — `HideUnits` (off by default): a `GameTooltip` `OnShow` hook hides unit tooltips
@@ -123,10 +111,8 @@ One file per tooltip enhancement, listed by options section.
 - `itemlevel.lua` — `ItemLevel`: "Item Level 52" for weapons and armor
   (`C_Item.GetDetailedItemLevelInfo`), in the quality color (`qualityColor`); left out when the
   game's data has an `ItemLevel` line (seen in a line pre-call).
-- `itemdetails.lua` — `ItemDetails`: details about an item (`stackSize`, off: "Stack Size"
-  (`AUCTION_STACK_SIZE`) from `C_Item.GetItemMaxStackSizeByID`, only above 1). The place for
-  further item information.
-
+- `itemdetails.lua` — `ItemDetails`: further item information; so far `stackSize` (off,
+  `C_Item.GetItemMaxStackSizeByID`, only above 1).
 - `vendorprice.lua` — `VendorPrice`: "Sell Price <money>" (`MoneyFormatterUtil.FormatMoney` with
   `GameTooltipMoneyFormat`) for the stack, plus "(<money> each)" (`perItem`). The game's
   `SellPrice` line is dropped in its pre-call where one item's price (`C_Item.GetItemInfo`) is
@@ -186,4 +172,4 @@ never write to the game's tooltip data tables or call Show from post-calls.
 Read settings through `self:Settings()` at use time. `ApplySettings()` reapplies frame changes
 when enabled settings or profiles change; `OnEnable` applies settings on activation.
 New private-table members belong in `src/types.lua`. Update this map and the suite README when
-adding features. Use the source client's exported UI code as read-only API reference.
+adding features.

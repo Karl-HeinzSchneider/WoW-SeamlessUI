@@ -9,7 +9,7 @@
 ## SavedVariables: SeamlessChatDB
 ## SavedVariablesPerCharacter: SeamlessChatHistoryDB, SeamlessChatLogDB
 ## X-License: MIT
-## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUnitframes
+## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
 
 src\core\bootstrap.lua
 src\core\db.lua

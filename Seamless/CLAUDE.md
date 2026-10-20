@@ -1,238 +1,152 @@
 # Seamless (core)
 
-Required entry point for the Seamless suite. It works with no feature addons enabled.
+Required entry point of the suite; works with no feature addon enabled.
 
-## Ownership and load order
+## Load order and ownership
 
-- `locales/enUS.lua` loads after shared libraries and before runtime code. It owns the suite's
-  shared `Seamless` AceLocale catalogue. The TOC then loads only `locales/[TextLocale]/strings.lua`.
-  Every feature addon obtains this same object with `LibStub("AceLocale-3.0"):GetLocale("Seamless")`.
-  Run `npm run locales:sync` to keep guarded translation files aligned with English.
+- `embeds.xml`: every shared vendored library from `lib/` (Ace3, AceGUI, AceConfig, AceDBOptions,
+  LibSharedMedia, LibDBIcon, LibEditModeOverride, LibEditMode). LibEditMode loads `namespaced.lua`
+  before `embed.xml` into Core's private table and is never registered with LibStub; feature
+  addons get it through `core:GetEditModeLibrary()`. Never patch vendored code.
+- `locales/enUS.lua`, then only the client's `locales/[TextLocale]/strings.lua`: the shared
+  `Seamless` AceLocale catalogue every addon uses (see the root `CLAUDE.md`).
+- `src/core/logger.lua`: the shared logger, `core.logger`.
+- `db.lua`: `SeamlessDB` defaults (logging, minimap, tweaks).
+- `ace.lua`: AceAddon lifecycle, core profiles, `/seamless`, the public API below.
+- `editmodelib.lua`: suite additions to the namespaced LibEditMode (see below). The only file
+  allowed to use `lib.internal`.
+- `anchorpicker.lua`: the quick anchor picker (see below).
+- `editmode.lua`: the shared Edit Mode panel below the main Edit Mode window (see below).
+- `systemoptions.lua`: registry of settings sections feature addons add to a Blizzard Edit Mode
+  system (see below).
+- `quests.lua`: `core:GetQuestLogSummary()`. `questlog.lua`: completed quest count and XP in the
+  quest log header.
+- `xptooltip.lua`: `tweaks.enhancedXPTooltip` (on by default) adds XP left and rested XP to the
+  player XP bar tooltip. SeamlessUI's XP bar tooltip replaces it while enabled. Time to max rested
+  uses `restedXPCap` (150%) and `restedXPRate` (5% per eight hours), because the client exposes
+  neither.
+- `tweaks.lua`: `/rl` (on by default) and showing the framerate once on startup (off; its toggle is
+  in the FPS display's Edit Mode settings, owned by SeamlessUI).
+- `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's panels:
+  "Seamless" (General: minimap button, log level, a button per enabled feature addon; Profiles)
+  and its "Tweaks" child.
+- `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
+  compartment entry (off by default, disabled where the client lacks it).
+- `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
 
-- `embeds.xml` loads all shared vendored libraries from `lib/`, including AceGUI, AceConfig,
-  AceDBOptions, LibSharedMedia, LibEditModeOverride and LibEditMode. LibEditMode loads
-  `namespaced.lua` before `embed.xml` into Core's private table; never register it with LibStub.
-  Feature addons obtain that instance through `core:GetEditModeLibrary()`. Never patch vendored code.
-- `src/core/logger.lua`: shared suite logger.
-- `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
-- `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
-- `editmodelib.lua`: suite-only additions to the namespaced LibEditMode, loaded before any
-  Edit Mode user. Adds `lib.SettingType.Header`: a collapsible section header remade in our code to
-  look like the character frame's reputation headers (`common-button-list-collapseExpand` bar,
-  gold `GameFontNormalLeft` name, +/- state icon on the right; supports `name`, optional `key`
-  and `hidden`), via `app.CreateEditModeHeader`. Clicking it
-  hides every row up to the next header; collapsed sections are saved account-wide in
-  `SeamlessDB.global.editModeCollapsed`. The shared Position section starts collapsed: it has no
-  entry until the user opens it, which saves `false`; collapsing it again clears the entry. It also puts the selected frame's settings list in a
-  scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
-  scrolling past 400 pixels or 60% of the screen height, whichever is smaller. Each layout sizes
-  the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. Each layout
-  first pins the dialog's top edge, so it grows and shrinks downward only. A new selection opens the
-  dialog 16 pixels beside its frame (the side with more room, top edges aligned, kept on screen)
-  instead of the library's fixed bottom-right spot; it does not follow the frame afterwards. LayoutFrame ignores
-  `maximumHeight` without a `minimumHeight`, so the scroll frame sets both. The list keeps its
-  fully expanded width while sections collapse, and the scroll bar sits outside the window's right
-  edge, so the window never changes width. This is the
-  only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
-  `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
-  header plus Anchor, AnchorParent, AnchorFrame, X, Y and an "Quick anchor to frame" button starting the
-  anchor picker on the selected frame, with `spec.anchorFrames` as targets resolved by the optional
-  `spec.anchorFrame(value)` or the global of that name, UIParent excluded; the button row is
-  `lib.SettingType.Button`, whose `click(frame)` gets the selected frame; collapse key
-  `core:GetEditModePositionSectionKey()`, shared by every Position header). `core:SetEditModeFrameFixed(frame)` keeps a
-  frame registered with `AddFrame` selectable, with its settings, but removes dragging, arrow-key
-  nudges (`internal.MoveParent`) and the Reset Position button, for previews of frames the client
-  places itself. This is the it asserts on what it relies on, so recheck it and run
-  `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
-- `anchorpicker.lua`: Edit Mode's quick anchor picker, `core:StartEditModeAnchorPicker(spec)` (also
-  `Stop…`/`IsEditModeAnchorPickerActive`). It covers the screen with a click catcher above Edit Mode,
-  puts nine dark square markers (`common-dropdown-c-button`, sized to a third of the frame's smaller
-  side, 10–22 pixels) on the selected frame's anchor points, then on the smallest hovered frame from
-  `spec.targets()` (`{ frame, value }`). The second click calls `spec.apply(point, value,
-relativePoint, x, y)` with a 5-pixel gap on each axis where the two points face each other (the
-  frames do not overlap) and 0 elsewhere. Right-click, Escape (not passed on, so Edit Mode stays
-  open), combat, leaving Edit Mode or hiding the frame cancel. Run `lua src/tests/anchor-picker.lua`.
-- `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
-  dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes
-  to visible groups/rows. It owns its UIParent frame; never modify native layout containers.
-- `systemoptions.lua`: registry for settings feature addons add to a Blizzard Edit Mode system.
-  `core:RegisterEditModeSystemOptions(id, spec)` takes `system` (an `Enum.EditModeSystem` value),
-  optional `systemIndex`, `name` (the section's collapsible header), optional `key` (collapse
-  key `"settings:" .. (key or name)`), `order`, `enabled` and `options`: rows with `key`, `type`
-  (`toggle`, `select` with `values = { { text, value } }`, or `range` with `min`, `max`, `step`
-  and optional `format`), `name`, optional `desc` (tooltip), `get()`, `set(value)`, `hidden` and
-  `disabled`. SeamlessUI draws the sections in its extended window below the selected frame's
-  native settings; Core only keeps the registry, so no feature addon depends on SeamlessUI.
-  Call `core:RefreshEditModeSystemOptions()` after a change made elsewhere; it sends the message
-  `core:GetEditModeSystemOptionsMessage()`. `core:GetEditModeSystemOptions(system)` returns the
-  enabled sections for a system frame, in order.
-- `quests.lua`: shared quest-log summary, exposed as `core:GetQuestLogSummary()`.
-- `questlog.lua`: displays completed quest count and XP in the quest log/world map header,
-  left of its minimize button; refreshes when shown and when quest data or player level changes.
-- `xptooltip.lua`: the `tweaks.enhancedXPTooltip` toggle (on by default) appends XP remaining and
-  rested XP as a percentage of a level to the default player XP bar/rested tick tooltip; reads the
-  current profile on each hover. SeamlessUI's XP bar tooltip replaces that builder while enabled
-  (its completed-quests lines were Core's former `tweaks.questXPTooltip`). Time to cap is an inn/city estimate without spending rested XP,
-  using configurable `restedXPCap` (150%) and `restedXPRate` (5% per eight hours); adjust these
-  assumptions for perks because the client does not expose the actual cap or accrual rate.
-- `tweaks.lua`: profile-aware optional conveniences; `/rl` reloads the UI (enabled by default).
-  Can show the framerate once on startup (off by default); its toggle lives in the FPS display settings in
-  the shared Edit Mode menu, applies on next login/reload and leaves Ctrl+R in control afterward.
-  SeamlessUI owns the temporary FPS preview in Edit Mode.
-- `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's own panel,
-  "Seamless": General (minimap button, log level, a button per enabled feature addon), Profiles.
-  Core tweaks have their own "Tweaks" child category (General, Profiles), using the Core database.
-- `minimapbutton.lua`: the suite's single launcher, shared by the minimap button and optional
-  Blizzard addon compartment entry. Their visibility toggles are independent and profile-aware;
-  the compartment entry defaults off and its toggle is disabled when the client lacks support.
-  Only the minimap button shows a hover tooltip; the compartment entry does not.
-- `src/types.lua`: annotations only, not loaded by the TOC.
+## Public API
 
-## Shared Edit Mode panel
+At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamless")`.
 
-Core owns the extension window and all built-in controls. Feature addons register once with
-`core:RegisterEditModeOptions(id, spec)`, then call `core:RefreshEditModeOptions()` when their
-profile, enabled state, or other external values change. Core refreshes on Edit Mode enter,
-exit, layout changes and combat transitions. The panel hides outside Edit Mode or when it has
-no visible rows. Registration IDs must be unique; row keys must be unique within a group.
+- `core.logger`: shared logger; its level follows the core profile.
+- `core:GetEditModeLibrary()`: the suite's namespaced LibEditMode.
+- `core:GetQuestLogSummary()`: a fresh `{ totalQuests, completedQuests, completedQuestXP }`,
+  counting quests under collapsed headers without changing the selection. Call again on
+  `QUEST_LOG_UPDATE`.
+- `core:RegisterOptions`, `OpenOptions`, `RefreshOptions`, `core.FeatureGroup`: see Options.
+- Edit Mode: `RegisterEditModeOptions`, `RefreshEditModeOptions`, `RegisterEditModeSystemOptions`
+  and the `editmodelib.lua` helpers, below.
 
-```lua
-core:RegisterEditModeOptions("MyAddon", {
-    section = "frames",
-    order = 100,
-    name = "My frames", -- optional group heading
-    enabled = function() return addon:IsEnabled() end,
-    options = {
-        {
-            key = "preview",
-            type = "toggle",
-            name = "Show my frames",
-            get = function() return showFrames end,
-            set = function(value)
-                showFrames = value
-                RefreshMyFrames()
-            end,
-        },
-        {
-            key = "reset",
-            type = "button",
-            name = "Reset my frames",
-            click = ResetMyFrames,
-        },
-    },
-})
-```
-
-Register frame preview/movability checkboxes with `section = "frames"`. This is the
-correct place for every custom frame's Edit Mode checkbox, including Damage Meter and
-future frames. Core adds one shared gold **Frames** heading, hidden when no frame rows
-are visible. Frames checkboxes fill two columns row by row, across groups, like the native
-Edit Mode window; a group heading or any other row type starts a new full-width line. The checkbox controls the feature's preview/selection state; register the actual
-movable frame through `core:GetEditModeLibrary()` as before.
-
-Custom options belong above Frames, inside the same window. Use the same simple API,
-`core:RegisterEditModeOptions(id, { section = "options", options = { ... } })`;
-`section` defaults to `"options"`. Toggle, button and custom rows all work there with the
-callbacks shown here. Use separate registration IDs when an addon contributes to both areas.
-The options area takes only the space its visible controls need.
-
-Sections always place options before frames, regardless of group order.
-Within each section, groups sort by `order` (default 100), then registration ID. Rows sort by `order`, defaulting
-to array position. `hidden` and `disabled` accept booleans or zero-argument functions. Built-in
-controls refresh after clicks and guard combat, disabled/hidden features and stale callbacks
-outside Edit Mode. Getters always read current state; Core does not persist feature settings.
-Labels wrap automatically, hidden rows reserve no space, and refreshes reuse existing frames.
-First show and size changes queue a coalesced one-frame refresh on the addon-owned panel;
-never discard layout invalidations during measurement or depend on a second Edit Mode entry.
-Unresolved panel width uses the native window width until anchors settle.
-
-Use `type = "header"` with a `name` for a collapsible section title inside a group; clicking it
-hides the group's rows up to its next header, saved like the settings window's headers. Rows sit in a scroll child: when the panel would pass the screen bottom, its height
-is capped and the rows scroll.
-
-For another widget or a compound group of frames, register a `type = "custom"` row with
-`create(parent)` returning an addon-owned frame directly parented to the supplied parent (the scroll child).
-Set its height; Core lays it out at full content width. An optional
-`layout(frame, width, disabled)` callback can update contents/child anchors and return its
-measured height (or leave the row's height in place). It must honor `disabled` for its own
-controls. Later row height changes automatically resize the panel. Do not reposition the row
-itself, reparent it, register it with Blizzard layout containers, or access library internals.
-Use the namespaced LibEditMode instance for movable systems and their individual dialogs;
-this registration API supplies the shared suite controls beside those systems.
-
-Run `lua src/tests/editmode-panel.lua` for grouping, dimensions, wrapped labels, custom rows,
-control callbacks, frame reuse, native-state isolation and visibility/combat guards.
+Core never references a feature by name or loads disabled features; core profiles hold only
+shared settings. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act on
+core settings.
 
 ## Options: one panel per addon, tabs inside
 
-Every addon has one AceConfig panel in Settings > AddOns, rendered by AceConfigDialog into the
-native Settings window. Core's "Seamless" panel is the parent; each feature addon's panel is its
-child. A panel is a tab group, always in this order:
+Every addon has one AceConfig panel in Settings > AddOns; Core's "Seamless" panel is the parent.
+Tabs are always **General**, then the addon's own tabs (`order` 1–999; few and broad, related
+controls in inline groups), then **Profiles** (added by Core).
 
-1. **General** — the addon's main settings.
-2. The addon's own tabs (`order` 1–999). Few and broad; a tab should hold enough to be worth a
-   click, but never so much that it feels cramped. Group related controls into inline groups.
-3. **Profiles** — AceDBOptions for the addon's database, added by Core.
+- `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
+  `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
+  `type = "group"` is filled in) and `db` (adds Profiles).
+- `core:OpenOptions(addonName, tab)`: opens the panel, optionally on a tab; no name opens Seamless.
+- `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
+  changes redraw on their own.
+- `core.FeatureGroup(spec)`: an inline group for one switchable feature: Enable toggle with its
+  description, then the options. Options without their own `get`/`set` use
+  `spec.settings()[key]` (colors as `{ r, g, b, a }`) and are disabled while the feature is off
+  unless they define `disabled`. `spec.toggled` runs after the switch, `spec.changed` after any
+  other setting.
 
-Declare `## Dependencies: Seamless` in every feature TOC. At file load, obtain the
-core through `LibStub("AceAddon-3.0"):GetAddon("Seamless")`; no new global is needed.
+Always read `app.db.profile` inside accessors (a cached table breaks profile switching). Put shared
+`get`/`set` on the group (`info[#info]` is the key). AceConfigRegistry rejects unknown keys. Use
+`width = "full"` and `descStyle = "inline"` for toggles whose description should show.
 
-- `core:GetEditModeLibrary()`: the suite-owned namespaced LibEditMode instance.
-- `core.logger`: shared logger; its threshold follows the core profile.
-- `core:GetQuestLogSummary()`: a fresh table with `totalQuests`, `completedQuests` (ready to
-  turn in), and `completedQuestXP` (the sum of client-reported XP rewards for those completed
-  quests). Counts all non-header log entries, including quests under collapsed headers, without
-  changing the selected quest or header states. Call again on `QUEST_LOG_UPDATE` to refresh.
-- `core:RegisterOptions(addonName, spec)`: register the addon's panel, from the options module's
-  `OnInitialize` (after its database exists). `spec`: `title` (panel name), `general` (AceConfig
-  args of the General tab), optional `tabs` (AceConfig groups by key, each with `order` and `name`;
-  `type = "group"` is filled in) and `db` (adds the Profiles tab). `addonName` is the AceConfig app name.
-- `core:OpenOptions(addonName, tab)`: open the Settings window on the addon's panel, optionally on
-  a tab key; omit the name for Seamless.
-- `core:RefreshOptions(addonName)`: redraw the panel after a change made elsewhere (a CVar, a
-  slash command); omit for Core. Profile changes redraw automatically.
-- `core.FeatureGroup(spec)`: an inline group for one switchable feature: an Enable toggle with the
-  description under it, then the feature's options. Options without their own `get`/`set` read and
-  write `spec.settings()[key]` (colors as `{ r, g, b, a }`), and are disabled while the feature is
-  off unless they define `disabled`. `spec.toggled` runs after the switch, `spec.changed` after any
-  other setting. Tooltip and Chat build their feature tabs from it.
+## Shared Edit Mode panel (`editmode.lua`)
+
+The panel below the main Edit Mode window, with the native translucent border and the window's
+width. Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
+enabled state or other outside values change; Core refreshes on Edit Mode enter/exit, layout
+changes and combat.
 
 ```lua
-app.core:RegisterOptions(appName, {
-    title = "My Feature",
-    general = {
-        main = {
-            type = "group",
-            inline = true,
-            order = 10,
-            name = "Main",
-            args = {
-                enabled = {
-                    type = "toggle",
-                    order = 10,
-                    name = "Enable",
-                    get = function() return app.db.profile.enabled end,
-                    set = function(_, value)
-                        app.db.profile.enabled = value
-                        app.feature:Refresh()
-                    end,
-                },
-            },
-        },
+core:RegisterEditModeOptions("MyAddon", {
+    section = "frames", -- or "options" (the default): GLOBAL options, only when asked for
+    order = 100,
+    name = L["My frames"], -- optional group heading
+    enabled = function() return addon:IsEnabled() end,
+    options = {
+        { key = "preview", type = "toggle", name = L["Show my frames"],
+          get = function() return showFrames end, set = function(value) showFrames = value end },
+        { key = "reset", type = "button", name = L["Reset my frames"], click = ResetMyFrames },
     },
-    tabs = { advanced = { order = 10, name = "Advanced", args = { ... } } },
-    db = app.db,
 })
 ```
 
-Always read `app.db.profile` inside accessors; caching that table breaks profile switching. Put
-shared `get`/`set` on a group (AceConfig inherits them; `info[#info]` is the option key) rather
-than repeating them per control. AceConfigRegistry rejects unknown keys in option tables.
-Use `width = "full"` and `descStyle = "inline"` for toggles whose description should be visible.
+- `section = "frames"` rows go under the shared **Frames** heading, two checkbox columns like the
+  native window. Register the movable frame itself through `core:GetEditModeLibrary()`.
+- Options always come before Frames. Groups sort by `order` (default 100), then ID; rows by
+  `order`, then array position. IDs are unique; row keys are unique within a group.
+- `hidden`/`disabled` take booleans or functions. Getters always read current state; Core stores
+  nothing. Combat, hidden/disabled features and calls outside Edit Mode are guarded.
+- `type = "header"` with a `name`: a collapsible section title (collapsed state saved like the
+  settings window's headers).
+- `type = "custom"`: `create(parent)` returns an addon-owned frame parented to `parent`, with a
+  height; optional `layout(frame, width, disabled)` returns its measured height and must honor
+  `disabled`. Never reposition, reparent or register the row with Blizzard layout containers.
+- The panel scrolls when it would pass the screen bottom. It owns its UIParent frame; never touch
+  native layout containers.
 
-Features own their AceAddon lifecycle, SavedVariables and profiles. Core never references a
-feature by name or loads disabled features. A disabled addon contributes no options or hooks.
-Core profiles affect only shared settings; each feature exposes its own profiles in its panel.
-New shared API members must be annotated in `src/types.lua` or on their definitions.
+Run `lua src/tests/editmode-panel.lua`.
 
-`/seamless [options]`, `/seamless loglevel <level>`, `/seamless reset` operate on core settings.
+## Selected frame settings (`editmodelib.lua`)
+
+- `lib.SettingType.Header` (via `core:CreateEditModeHeader`): a collapsible header styled like the
+  reputation headers (`name`, optional `key`, `hidden`). It hides every row up to the next
+  header; collapsed sections are saved in `SeamlessDB.global.editModeCollapsed`
+  (`core:Is/SetEditModeSectionCollapsed`). Position sections start collapsed.
+- `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
+- `core:GetEditModePositionSettings(spec)`: the Position header plus Anchor, AnchorParent,
+  AnchorFrame, X, Y and "Quick anchor to frame" (targets `spec.anchorFrames`, resolved by optional
+  `spec.anchorFrame(value)` or the global name; UIParent excluded). Collapse key
+  `core:GetEditModePositionSectionKey()`, shared by every Position header.
+- `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
+  dragging, arrow-key nudges and Reset Position (previews of frames the client places).
+- The settings list scrolls past 400 pixels or 60% of the screen height. The dialog opens
+  16 pixels beside its frame (the side with more room), grows downward only and never changes
+  width.
+
+It asserts on the library internals it relies on: rerun `lua src/tests/editmode-dialog.lua`
+whenever LibEditMode is updated.
+
+## Quick anchor picker (`anchorpicker.lua`)
+
+`core:StartEditModeAnchorPicker(spec)` (also `Stop…`, `IsEditModeAnchorPickerActive`): nine
+markers on the selected frame's anchor points, then on the smallest hovered frame from
+`spec.targets()` (`{ frame, value }`). The second click calls
+`spec.apply(point, value, relativePoint, x, y)`, with a 5-pixel gap where the two points face each
+other. Right-click, Escape, combat, leaving Edit Mode or hiding the frame cancel. Run
+`lua src/tests/anchor-picker.lua`.
+
+## Settings for Blizzard systems (`systemoptions.lua`)
+
+`core:RegisterEditModeSystemOptions(id, spec)` adds a section to a Blizzard Edit Mode system's
+settings: `system` (`Enum.EditModeSystem`), optional `systemIndex`, `name` (collapsible header),
+optional `key` (collapse key `"settings:" .. (key or name)`), `order`, `enabled` and `options`
+(rows with `key`, `type` = `toggle`, `select` with `values = { { text, value } }` or `range` with
+`min`, `max`, `step`, optional `format`; `name`, optional `desc`, `get()`, `set(value)`, `hidden`,
+`disabled`). Core only keeps the registry; SeamlessUI draws the sections, so no feature depends
+on SeamlessUI. `core:RefreshEditModeSystemOptions()` sends
+`core:GetEditModeSystemOptionsMessage()`; `core:GetEditModeSystemOptions(system)` returns the
+enabled sections in order.

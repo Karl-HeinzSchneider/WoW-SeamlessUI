@@ -145,6 +145,41 @@ L["Type /rl in chat to reload the user interface, just like /reload."] = true
 L["Unknown log level: %s"] = true
 L["XP to next level"] = true
 
+-- SeamlessActionBars
+L["Action Bars"] = true
+L["Alt (short)"] = "A"
+L["Backspace (short)"] = "BS"
+L["Caps Lock (short)"] = "Cap"
+L["Color the icon of an action that is out of range of your target."] = true
+L["Color the icon of an action you lack the mana, rage or energy for, instead of the game's light blue shade."] = true
+L["Ctrl (short)"] = "C"
+L["Delete (short)"] = "Del"
+L["Down Arrow (short)"] = "Dn"
+L["End (short)"] = "End"
+L["Enter (short)"] = "Ent"
+L["Escape (short)"] = "Esc"
+L["Home (short)"] = "Hm"
+L["Insert (short)"] = "Ins"
+L["Left Arrow (short)"] = "Lt"
+L["Meta (short)"] = "Cm"
+L["Mouse Button %d (short)"] = "M%d"
+L["Mouse Wheel Down (short)"] = "WD"
+L["Mouse Wheel Up (short)"] = "WU"
+L["Not enough mana color"] = true
+L["Not enough mana"] = true
+L["Num Pad %s (short)"] = "N%s"
+L["Out of range color"] = true
+L["Out of range"] = true
+L["Page Down (short)"] = "PD"
+L["Page Up (short)"] = "PU"
+L["Right Arrow (short)"] = "Rt"
+L["Shift (short)"] = "S"
+L["Short keybind labels"] = true
+L["Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N5 for num pad 5."] = true
+L["Space (short)"] = "Sp"
+L["Tab (short)"] = "Tab"
+L["Up Arrow (short)"] = "Up"
+
 -- SeamlessChat
 L["%d messages match, showing the newest %d."] = true
 L["%d messages, the oldest from %s.\n"] = true

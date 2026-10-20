@@ -249,7 +249,13 @@ local selected = player
 local app = {
     db = { profile = { blizzardEditMode = { frames = { player = { addPosition = true } } } } },
     blizzardEditMode = {},
+    core = {},
 }
+local picker
+function app.core:StartEditModeAnchorPicker(spec)
+    picker = spec
+    return true
+end
 local extraAnchorTargets = {}
 function app.blizzardEditMode:GetAnchorTargets()
     return extraAnchorTargets
@@ -571,4 +577,28 @@ assert(live.offsetX == 30 and live.offsetY == -40)
 pet.systemInfo.isInDefaultPosition = false
 assert(position:Read(pet).relativeTo == "UIParent")
 EditModeManagerFrame.GetActiveLayoutSystemInfo = petLayout
+
+-- "Anchor to a frame" offers the dropdown's frames, minus UIParent and frames that depend on
+-- the selected one, and applies the picked anchor to the live draft.
+selected = player
+view.error = nil
+view:Refresh(player)
+assert(view.AnchorButton.template == "EditModeSystemSettingsDialogButtonTemplate" and view.AnchorButton.enabled)
+view.AnchorButton.click()
+assert(picker and picker.frame == player)
+local offered = {}
+for _, entry in ipairs(picker.targets()) do
+    assert(entry.frame == _G[entry.value])
+    offered[entry.value] = true
+end
+assert(offered.TargetFrame and not offered.UIParent and not offered.PetFrame, "UIParent and dependants are excluded")
+picker.apply("TOPLEFT", "TargetFrame", "BOTTOMRIGHT", 5, -5)
+local picked = position:Read(player)
+assert(picked.point == "TOPLEFT" and picked.relativeTo == "TargetFrame" and picked.relativePoint == "BOTTOMRIGHT")
+assert(picked.offsetX == 5 and picked.offsetY == -5 and not view.error)
+-- A pick that lands after the selection changed is dropped.
+view.AnchorButton.click()
+selected = frame("OtherFrame")
+picker.apply("LEFT", "TargetFrame", "RIGHT", 5, 0)
+assert(position:Read(player).point == "TOPLEFT")
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")

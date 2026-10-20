@@ -321,20 +321,59 @@ function position:Create(parent)
     -- Below the panel's title and Position header.
     view:SetPoint("TOPLEFT", 24, -80)
     view:SetPoint("TOPRIGHT", -24, -80)
-    view:SetHeight(218)
+    view:SetHeight(250)
     view.controls = {}
     view.values = {}
 
     local message = view:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-    message:SetPoint("TOPLEFT", 0, -212)
-    message:SetPoint("TOPRIGHT", 0, -212)
+    message:SetPoint("TOPLEFT", 0, -244)
+    message:SetPoint("TOPRIGHT", 0, -244)
     message:SetJustifyH("LEFT")
     message:SetWordWrap(true)
     message:Hide()
 
+    -- Pick an anchor point on this frame, then on another frame, instead of using the dropdowns.
+    local pick = CreateFrame("Button", nil, view, "EditModeSystemSettingsDialogButtonTemplate")
+    view.AnchorButton = pick
+    pick:SetPoint("TOP", 0, -180)
+    pick:SetText(L["Anchor to a frame"])
+    pick:SetOnClickHandler(function()
+        local system = view.system
+        if not position:CanEdit(system) then
+            return
+        end
+        app.core:StartEditModeAnchorPicker({
+            frame = system,
+            targets = function()
+                local targets = {}
+                for _, entry in ipairs(getAnchorFrames()) do
+                    local target = _G[entry.value]
+                    if entry.value ~= "UIParent" and target and not dependsOn(target, system, {}) then
+                        targets[#targets + 1] = { frame = target, value = entry.value }
+                    end
+                end
+                return targets
+            end,
+            apply = function(point, relativeTo, relativePoint, x, y)
+                if system ~= view.system or system ~= app.blizzardEditMode:GetSelectedFrame() then
+                    return
+                end
+                local ok, err = position:Apply(system, {
+                    point = point,
+                    relativeTo = relativeTo,
+                    relativePoint = relativePoint,
+                    offsetX = x,
+                    offsetY = y,
+                })
+                view.error = not ok and err or nil
+                view:Refresh(system)
+            end,
+        })
+    end)
+
     local revert = CreateFrame("Button", nil, view, "EditModeSystemSettingsDialogButtonTemplate")
     view.RevertButton = revert
-    revert:SetPoint("TOP", 0, -180)
+    revert:SetPoint("TOP", 0, -212)
     revert:SetText(HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
     revert:SetOnClickHandler(function()
         local ok, err = position:Revert(view.system)
@@ -503,11 +542,13 @@ function position:Create(parent)
         if changedSystem then
             self.error = nil
         end
+        pick:SetWidth(self:GetWidth() / 2)
+        pick:SetEnabled(editable and values.point ~= nil)
         revert:SetWidth(self:GetWidth() / 2)
         revert:SetEnabled(editable and position:HasChanges(system))
         message:SetText(self.error or "")
         message:SetShown(self.error ~= nil)
-        self:SetHeight(self.error and 264 or 218)
+        self:SetHeight(self.error and 296 or 250)
         self:GetParent():SetHeight(self:GetHeight() + 100)
     end
 

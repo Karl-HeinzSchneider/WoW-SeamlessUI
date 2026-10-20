@@ -236,6 +236,7 @@ assert(loadfile("Seamless/src/core/editmodelib.lua"))("Seamless", app)
 local lib = app.LibEditMode
 assert(lib.SettingType.Header == "seamless-header")
 assert(lib.internal:GetPool(lib.SettingType.Header), "Header widgets have a pool")
+assert(lib.SettingType.Button == "seamless-button" and lib.internal:GetPool(lib.SettingType.Button))
 
 -- Second load must refuse silently overriding a library-defined Header.
 assert(not pcall(assert(loadfile("Seamless/src/core/editmodelib.lua")), "Seamless", app))
@@ -346,7 +347,12 @@ assert(hiddenHeader:IsShown())
 hiddenHeader:Toggle()
 assert(not after:IsShown())
 assert(app.IsEditModeSectionCollapsed("settings:Hidden section"))
--- The shared Position section: a Position header, then Anchor, AnchorParent, AnchorFrame, X and Y.
+-- The shared Position section: a Position header, then Anchor, AnchorParent, AnchorFrame, X, Y
+-- and the anchor picker button.
+local otherWindow = object("Frame", UIParent)
+otherWindow.IsObjectType = function()
+    return true
+end
 local stored, locked = { point = "TOP", relativePoint = "TOP", relativeTo = "screen", x = 5, y = 6 }, false
 local position = app.addon:GetEditModePositionSettings({
     get = function(key)
@@ -358,9 +364,12 @@ local position = app.addon:GetEditModePositionSettings({
     disabled = function()
         return locked
     end,
-    anchorFrames = { { text = "Screen", value = "screen" } },
+    anchorFrames = { { text = "Screen", value = "screen" }, { text = "Window 2", value = "2" } },
+    anchorFrame = function(value)
+        return value == "2" and otherWindow or nil
+    end,
 })
-assert(#position == 6 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
+assert(#position == 7 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
 assert(app.addon:GetEditModePositionSectionKey() == "settings:position")
 assert(position[2].name == "Anchor" and #position[2].values == 9 and position[4].height == 400)
 assert(position[5].minValue == -1500 and position[5].maxValue == 1500 and position[6].maxValue == 1000)
@@ -372,6 +381,25 @@ assert(stored.x == 42, "Reset To Default leaves the position alone")
 locked = true
 position[2].set(nil, "LEFT")
 assert(stored.point == "TOP" and position[2].disabled(), "a locked position cannot change")
+locked = false
+-- The anchor picker button lists the resolved frames and writes all five values at once.
+local button = position[7]
+assert(button.kind == lib.SettingType.Button and button.name == "Anchor to a frame")
+local picker
+function app.StartAnchorPicker(spec)
+    picker = spec
+    return true
+end
+button.click(frame)
+assert(picker and picker.frame == frame)
+local targets = picker.targets()
+assert(#targets == 1 and targets[1].frame == otherWindow and targets[1].value == "2", "UIParent/screen is not a target")
+picker.apply("TOPLEFT", "2", "BOTTOMRIGHT", 5, -5)
+assert(stored.relativeTo == "2" and stored.point == "TOPLEFT" and stored.relativePoint == "BOTTOMRIGHT")
+assert(stored.x == 5 and stored.y == -5)
+locked = true
+picker.apply("LEFT", "2", "RIGHT", 5, 0)
+assert(stored.point == "TOPLEFT", "a locked position ignores the picker")
 print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dialog and widget refresh")
 
 -- A frame near the right edge gets its settings on its left.

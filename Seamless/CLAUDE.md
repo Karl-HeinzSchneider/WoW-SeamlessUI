@@ -22,7 +22,8 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   gold `GameFontNormalLeft` name, +/- state icon on the right; supports `name`, optional `key`
   and `hidden`), via `app.CreateEditModeHeader`. Clicking it
   hides every row up to the next header; collapsed sections are saved account-wide in
-  `SeamlessDB.global.editModeCollapsed`. It also puts the selected frame's settings list in a
+  `SeamlessDB.global.editModeCollapsed`. The shared Position section starts collapsed: it has no
+  entry until the user opens it, which saves `false`; collapsing it again clears the entry. It also puts the selected frame's settings list in a
   scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
   scrolling past 400 pixels or 60% of the screen height, whichever is smaller. Each layout sizes
   the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. Each layout
@@ -34,9 +35,20 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   edge, so the window never changes width. This is the
   only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
   `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
-  header plus Anchor, AnchorParent, AnchorFrame, X and Y; collapse key
+  header plus Anchor, AnchorParent, AnchorFrame, X, Y and an "Quick anchor to frame" button starting the
+  anchor picker on the selected frame, with `spec.anchorFrames` as targets resolved by the optional
+  `spec.anchorFrame(value)` or the global of that name, UIParent excluded; the button row is
+  `lib.SettingType.Button`, whose `click(frame)` gets the selected frame; collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header). This is the it asserts on what it relies on, so recheck it and run
   `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
+- `anchorpicker.lua`: Edit Mode's quick anchor picker, `core:StartEditModeAnchorPicker(spec)` (also
+  `Stop…`/`IsEditModeAnchorPickerActive`). It covers the screen with a click catcher above Edit Mode,
+  puts nine dark square markers (`common-dropdown-c-button`, sized to a third of the frame's smaller
+  side, 10–22 pixels) on the selected frame's anchor points, then on the smallest hovered frame from
+  `spec.targets()` (`{ frame, value }`). The second click calls `spec.apply(point, value,
+relativePoint, x, y)` with a 5-pixel gap on each axis where the two points face each other (the
+  frames do not overlap) and 0 elsewhere. Right-click, Escape (not passed on, so Edit Mode stays
+  open), combat, leaving Edit Mode or hiding the frame cancel. Run `lua src/tests/anchor-picker.lua`.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
   dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes
   to visible groups/rows. It owns its UIParent frame; never modify native layout containers.

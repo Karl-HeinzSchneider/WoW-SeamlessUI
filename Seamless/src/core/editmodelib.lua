@@ -6,6 +6,7 @@ local _, app = ...
 local lib = app.LibEditMode
 local internal = lib.internal
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
+assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
 assert(type(internal.CreatePool) == "function" and type(internal.CreateDialog) == "function")
 
 -- Collapsed sections are remembered account-wide, by section key.
@@ -18,16 +19,30 @@ local function CollapsedSections()
     return app.db.global.editModeCollapsed
 end
 
+-- Every Position header shares this key, so it collapses in all windows at once.
+local POSITION_SECTION = "settings:position"
+-- Sections that start collapsed until the user opens them; opening one is saved as false.
+local COLLAPSED_BY_DEFAULT = { [POSITION_SECTION] = true }
+
 ---@param key string
 ---@return boolean
 function app.IsEditModeSectionCollapsed(key)
-    return CollapsedSections()[key] == true
+    local collapsed = CollapsedSections()[key]
+    if collapsed == nil then
+        return COLLAPSED_BY_DEFAULT[key] == true
+    end
+    return collapsed
 end
 
 ---@param key string
 ---@param collapsed boolean
 function app.SetEditModeSectionCollapsed(key, collapsed)
-    CollapsedSections()[key] = collapsed or nil
+    collapsed = not not collapsed
+    if collapsed == (COLLAPSED_BY_DEFAULT[key] == true) then
+        CollapsedSections()[key] = nil
+    else
+        CollapsedSections()[key] = collapsed
+    end
 end
 
 local function SetCollapsedState(header, collapsed)
@@ -119,6 +134,48 @@ internal:CreatePool(lib.SettingType.Header, function()
 end, function(_, frame)
     frame:Hide()
     frame:SetHeaderText("")
+    frame.layoutIndex = nil
+end)
+
+-- A full-width button row inside the settings list (the library's own buttons sit below it).
+-- `click(frame)` receives the selected frame; supports `name`, `hidden` and `disabled`.
+lib.SettingType.Button = "seamless-button"
+
+local function Resolve(value)
+    if type(value) == "function" then
+        return value(lib:GetActiveLayoutName())
+    end
+    return value
+end
+
+local buttonMixin = {}
+function buttonMixin:Setup(data)
+    self.setting = data
+    self.Button:SetText(data.name)
+    self:Refresh()
+end
+
+function buttonMixin:Refresh()
+    self:SetShown(not Resolve(self.setting.hidden))
+    self.Button:SetEnabled(not Resolve(self.setting.disabled))
+end
+
+internal:CreatePool(lib.SettingType.Button, function()
+    local frame = Mixin(CreateFrame("Frame", nil, UIParent), buttonMixin)
+    frame:SetSize(330, 32)
+    frame.Button = CreateFrame("Button", nil, frame, "EditModeSystemSettingsDialogButtonTemplate")
+    frame.Button:SetPoint("CENTER")
+    frame.Button:SetWidth(200)
+    frame.Button:SetOnClickHandler(function()
+        local selection = internal.dialog and internal.dialog.selection
+        if selection and frame.setting and frame.setting.click and not InCombatLockdown() then
+            frame.setting.click(selection.parent)
+        end
+    end)
+    return frame
+end, function(_, frame)
+    frame:Hide()
+    frame.setting = nil
     frame.layoutIndex = nil
 end)
 
@@ -282,9 +339,6 @@ function addon:SetEditModeSectionCollapsed(key, collapsed)
     app.SetEditModeSectionCollapsed(key, collapsed)
 end
 
--- Every Position header shares this key, so it collapses in all windows at once.
-local POSITION_SECTION = "settings:position"
-
 ---@return string
 function addon:GetEditModePositionSectionKey()
     return POSITION_SECTION
@@ -303,9 +357,11 @@ local POINT_LABELS = {
     BOTTOMRIGHT = L["Bottom right"],
 }
 
----LibEditMode settings for a collapsible Position section: Anchor, AnchorParent, AnchorFrame, X and Y.
+---LibEditMode settings for a collapsible Position section: Anchor, AnchorParent, AnchorFrame, X, Y
+---and an "Quick anchor to frame" button that starts the anchor picker.
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and y;
----`spec.anchorFrames()` returns `{ text, value }` entries for relativeTo.
+---`spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
+---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
 ---@param spec SeamlessCore.EditModePosition
 ---@return table[] settings
 function addon:GetEditModePositionSettings(spec)
@@ -366,5 +422,43 @@ function addon:GetEditModePositionSettings(spec)
         dropdown(L["AnchorFrame"], "relativeTo", spec.anchorFrames, 400),
         offset(L["X"], "x", UIParent:GetWidth()),
         offset(L["Y"], "y", UIParent:GetHeight()),
+        {
+            name = L["Quick anchor to frame"],
+            kind = lib.SettingType.Button,
+            disabled = disabled,
+            click = function(frame)
+                app.StartAnchorPicker({
+                    frame = frame,
+                    targets = function()
+                        local values = type(spec.anchorFrames) == "function" and spec.anchorFrames()
+                            or spec.anchorFrames
+                        local targets = {}
+                        for _, entry in ipairs(values or {}) do
+                            local target
+                            if spec.anchorFrame then
+                                target = spec.anchorFrame(entry.value)
+                            elseif type(entry.value) == "string" then
+                                target = _G[entry.value]
+                            end
+                            if type(target) == "table" and target ~= UIParent and target.IsObjectType then
+                                targets[#targets + 1] = { frame = target, value = entry.value }
+                            end
+                        end
+                        return targets
+                    end,
+                    apply = function(point, value, relativePoint, x, y)
+                        if disabled() or InCombatLockdown() or not lib:IsInEditMode() then
+                            return
+                        end
+                        spec.set("relativeTo", value)
+                        spec.set("point", point)
+                        spec.set("relativePoint", relativePoint)
+                        spec.set("x", x)
+                        spec.set("y", y)
+                        lib:RefreshFrameSettings(frame)
+                    end,
+                })
+            end,
+        },
     }
 end

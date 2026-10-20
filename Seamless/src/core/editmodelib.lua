@@ -8,10 +8,6 @@ local internal = lib.internal
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
 assert(type(internal.CreatePool) == "function" and type(internal.CreateDialog) == "function")
 
-local PLUS = "Interface\\Buttons\\UI-PlusButton-Up"
-local MINUS = "Interface\\Buttons\\UI-MinusButton-Up"
-local HIGHLIGHT = "Interface\\Buttons\\UI-PlusButton-Hilight"
-
 -- Collapsed sections are remembered account-wide, by section key.
 local collapsedFallback = {}
 local function CollapsedSections()
@@ -34,36 +30,22 @@ function app.SetEditModeSectionCollapsed(key, collapsed)
     CollapsedSections()[key] = collapsed or nil
 end
 
----Style a collapsible section header like Blizzard's quest-log headers: a +/- button and a gold title.
----@param frame table
----@return table button
-function app.CreateEditModeHeaderButton(frame)
-    local button = CreateFrame("Button", nil, frame)
-    button:SetSize(16, 16)
-    button:SetPoint("LEFT")
-    button:SetHighlightTexture(HIGHLIGHT, "ADD")
-    button:SetScript("OnClick", function()
-        frame:Toggle()
+---Create a collapsible section header from Blizzard's own list header template, the one its
+---Settings and key bindings lists use (three-slice bar, title, expand/collapse arrow).
+---@param parent table
+---@param onClick fun()
+---@return table header
+function app.CreateEditModeHeader(parent, onClick)
+    local header = CreateFrame("Button", nil, parent, "ListHeaderThreeSliceTemplate")
+    header:SetHeight(26)
+    header:SetClickHandler(function()
+        PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
+        onClick()
     end)
-    frame.Toggle = frame.Toggle or function() end
-    frame.CollapseButton = button
-    frame:EnableMouse(true)
-    frame:SetScript("OnMouseUp", function()
-        frame:Toggle()
-    end)
-    return button
+    return header
 end
 
----@param button table
----@param collapsed boolean
-function app.SetEditModeHeaderCollapsed(button, collapsed)
-    local texture = collapsed and PLUS or MINUS
-    button:SetNormalTexture(texture)
-    button:SetPushedTexture(texture)
-end
-
--- Collapsible section title, styled like Blizzard's Edit Mode category titles (GameFontNormalLarge,
--- 32 high). Rows after it, up to the next header, hide while it is collapsed.
+-- Collapsible section header. Rows after it, up to the next header, hide while it is collapsed.
 lib.SettingType.Header = "seamless-header"
 
 local function HeaderKey(data)
@@ -73,7 +55,7 @@ end
 local headerMixin = {}
 function headerMixin:Setup(data)
     self.setting = data
-    self.Label:SetText(data.name)
+    self:SetHeaderText(data.name)
     self:Refresh()
 end
 
@@ -84,7 +66,7 @@ function headerMixin:Refresh()
     else
         self:SetShown(not data.hidden)
     end
-    app.SetEditModeHeaderCollapsed(self.CollapseButton, self:IsCollapsed())
+    self:UpdateCollapsedState(self:IsCollapsed())
 end
 
 function headerMixin:IsCollapsed()
@@ -92,23 +74,21 @@ function headerMixin:IsCollapsed()
 end
 
 function headerMixin:Toggle()
-    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     app.SetEditModeSectionCollapsed(HeaderKey(self.setting), not self:IsCollapsed())
     self:GetParent():GetParent():RefreshWidgets()
 end
 
 internal:CreatePool(lib.SettingType.Header, function()
-    local frame = Mixin(CreateFrame("Frame", nil, UIParent), headerMixin)
-    frame:SetSize(330, 32)
-    app.CreateEditModeHeaderButton(frame)
-    local label = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    label:SetPoint("LEFT", frame.CollapseButton, "RIGHT", 4, 0)
-    label:SetJustifyH("LEFT")
-    frame.Label = label
+    local frame
+    frame = app.CreateEditModeHeader(UIParent, function()
+        frame:Toggle()
+    end)
+    Mixin(frame, headerMixin)
+    frame:SetWidth(330)
     return frame
 end, function(_, frame)
     frame:Hide()
-    frame.Label:SetText()
+    frame:SetHeaderText("")
     frame.layoutIndex = nil
 end)
 
@@ -133,6 +113,9 @@ local function AddScrolling(dialog)
     local settings = dialog.Settings
     local scroll = CreateFrame("ScrollFrame", nil, dialog, "ResizeLayoutFrame, ScrollFrameTemplate")
     scroll:SetPoint("TOP", dialog.Title, "BOTTOM", 0, -12)
+    -- LayoutFrame only applies maximumHeight when a minimum is set as well.
+    scroll.minimumHeight = 1
+    scroll:EnableMouseWheel(true)
     scroll.ScrollBar.ignoreInLayout = true
     scroll.ScrollBar:SetHideIfUnscrollable(true)
     -- Widgets refresh through their grandparent, which is the scroll frame now.

@@ -58,6 +58,7 @@ local function EnsurePanel()
     scroll:SetPoint("TOPLEFT", PADDING, -HEADER)
     scroll:SetPoint("TOPRIGHT", -PADDING, -HEADER)
     scroll.ScrollBar:SetHideIfUnscrollable(true)
+    scroll:EnableMouseWheel(true)
     content = CreateFrame("Frame", nil, scroll)
     content:SetSize(1, 1)
     scroll:SetScrollChild(content)
@@ -91,25 +92,19 @@ local function CreateRow(option, spec, id)
             "Custom Edit Mode rows must return a frame parented to the supplied panel"
         )
     else
-        row = CreateFrame("Frame", nil, content)
         if option.type == "header" then
-            -- Collapsible section title, like the frame settings window's headers.
-            function row.Toggle()
+            -- Collapsible section header, the same one the frame settings window uses.
+            row = app.CreateEditModeHeader(content, function()
                 if lib:IsInEditMode() and not InCombatLockdown() then
                     local key = SectionKey(id, row.option)
-                    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
                     app.SetEditModeSectionCollapsed(key, not app.IsEditModeSectionCollapsed(key))
                 end
                 addon:RefreshEditModeOptions()
-            end
-            app.CreateEditModeHeaderButton(row)
-            row.CollapseButton:ClearAllPoints()
-            row.CollapseButton:SetPoint("TOPLEFT", 3, -2)
-            row.Label = row:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-            row.Label:SetPoint("TOPLEFT", 23, 0)
-            row.Label:SetJustifyH("LEFT")
-            row.Label:SetWordWrap(true)
-        elseif option.type == "toggle" then
+            end)
+        else
+            row = CreateFrame("Frame", nil, content)
+        end
+        if option.type == "toggle" then
             row.Button = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
             row.Button:SetSize(28, 28)
             row.Button:SetPoint("TOPLEFT", 0, -2)
@@ -260,10 +255,9 @@ function addon:RefreshEditModeOptions()
                 local disabled = InCombatLockdown() or not not Evaluate(option.disabled)
                 local height
                 if option.type == "header" then
-                    app.SetEditModeHeaderCollapsed(row.CollapseButton, collapsed)
-                    row.Label:SetWidth(math.max(1, width - 23))
-                    row.Label:SetText(option.name)
-                    height = math.max(32, row.Label:GetStringHeight() + GAP) - GAP
+                    row:SetHeaderText(option.name)
+                    row:UpdateCollapsedState(collapsed)
+                    height = 26
                 elseif option.type == "toggle" then
                     row.Label:SetWidth(math.max(1, width - 32))
                     row.Label:SetText(option.name)

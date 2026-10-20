@@ -17,12 +17,14 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
 - `editmodelib.lua`: suite-only additions to the namespaced LibEditMode, loaded before any
-  Edit Mode user. Adds `lib.SettingType.Header`: a collapsible section title (a +/- button and a
-  GameFontNormalLarge title, 32 high; supports `name`, optional `key` and `hidden`). Clicking it
+  Edit Mode user. Adds `lib.SettingType.Header`: a collapsible section header built from Blizzard's
+  `ListHeaderThreeSliceTemplate` (the header its Settings and key binding lists use; supports
+  `name`, optional `key` and `hidden`), via `app.CreateEditModeHeader`. Clicking it
   hides every row up to the next header; collapsed sections are saved account-wide in
   `SeamlessDB.global.editModeCollapsed`. It also puts the selected frame's settings list in a
   scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
-  scrolling past 400 pixels or 60% of the screen height, whichever is smaller. This is the
+  scrolling past 400 pixels or 60% of the screen height, whichever is smaller. LayoutFrame ignores
+  `maximumHeight` without a `minimumHeight`, so the scroll frame sets both. This is the
   only file allowed to use `lib.internal`; it asserts on what it relies on, so recheck it and run
   `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent

@@ -41,6 +41,7 @@ function methods:SetFrameStrata(value)
     self.strata = value
 end
 function methods:EnableMouse() end
+function methods:EnableMouseWheel() end
 function methods:SetPoint(point, ...)
     self.points[point] = { ... }
 end
@@ -180,12 +181,16 @@ local app = {
     SetEditModeSectionCollapsed = function(key, value)
         collapsedSections[key] = value or nil
     end,
-    CreateEditModeHeaderButton = function(frame)
-        frame.CollapseButton = object(frame, "CollapseButton")
-        return frame.CollapseButton
-    end,
-    SetEditModeHeaderCollapsed = function(button, collapsed)
-        button.collapsed = collapsed
+    CreateEditModeHeader = function(parent, onClick)
+        local header = object(parent, "ListHeaderThreeSliceTemplate")
+        header.Toggle = onClick
+        function header:SetHeaderText(text)
+            self.headerText = text
+        end
+        function header:UpdateCollapsedState(collapsed)
+            self.collapsed = collapsed
+        end
+        return header
     end,
     addon = core,
     LibEditMode = {
@@ -336,11 +341,12 @@ for _, frame in ipairs(frames) do
         sectionHeader = frame
     end
 end
-assert(sectionHeader and sectionHeader.Label.text == "Section" and sectionHeader:GetHeight() == 32 - 6)
+assert(sectionHeader and sectionHeader.headerText == "Section" and sectionHeader:GetHeight() == 26)
+assert(sectionHeader.template == "ListHeaderThreeSliceTemplate" and not sectionHeader.collapsed)
 assert(panel:GetHeight() == expanded + 32 + 38)
 -- Clicking a header collapses the rows after it, and clicking again expands them.
 sectionHeader.Toggle()
-assert(collapsedSections["panel:sections:title"] and sectionHeader.CollapseButton.collapsed)
+assert(collapsedSections["panel:sections:title"] and sectionHeader.collapsed)
 assert(panel:GetHeight() == expanded + 32, "Collapsed rows reserve no space")
 sectionHeader.Toggle()
 assert(not collapsedSections["panel:sections:title"] and panel:GetHeight() == expanded + 32 + 38)

@@ -102,6 +102,7 @@ for _, name in ipairs({
     "SetHighlightTexture",
     "SetPushedTexture",
     "SetAllPoints",
+    "EnableMouseWheel",
 }) do
     methods[name] = function() end
 end
@@ -174,6 +175,17 @@ function CreateFrame(kind, name, parent, template)
     if template and template:find("ScrollFrameTemplate", 1, true) then
         frame.ScrollBar = object("EventFrame", frame)
     end
+    if template == "ListHeaderThreeSliceTemplate" then
+        function frame:SetClickHandler(handler)
+            self.click = handler
+        end
+        function frame:SetHeaderText(text)
+            self.headerText = text
+        end
+        function frame:UpdateCollapsedState(collapsed)
+            self.collapsed = collapsed
+        end
+    end
     if template == "UIPanelCloseButton" then
         frame.HookScript = function() end
     end
@@ -204,6 +216,8 @@ local scroll = dialog.SettingsScroll
 assert(scroll and scroll.template == "ResizeLayoutFrame, ScrollFrameTemplate" and scroll.parent == dialog)
 assert(scroll.points.TOP[1] == dialog.Title and scroll.points.TOP[4] == -12)
 assert(scroll.ScrollBar.ignoreInLayout and scroll.ScrollBar.hideIfUnscrollable)
+-- Blizzard's LayoutFrame GetSize ignores maximumHeight unless a minimum is set too.
+assert(scroll.minimumHeight == 1)
 assert(dialog.Settings.parent == scroll and scroll.scrollChild == dialog.Settings)
 assert(next(dialog.Settings.points) == nil, "The scroll frame anchors its scroll child")
 assert(dialog.Buttons.points.TOP[1] == scroll, "Buttons follow the scroll frame")
@@ -240,10 +254,10 @@ assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like B
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
 local widgets = dialog.Settings.widgets
 local header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
-assert(header.Label.text == "Section" and header.Label.font == "GameFontNormalLarge")
-assert(header.height == 32 and header.layoutIndex == 1 and header:IsShown())
+assert(header.template == "ListHeaderThreeSliceTemplate" and header.headerText == "Section")
+assert(header.height == 26 and header.width == 330 and header.layoutIndex == 1 and header:IsShown())
 assert(not hiddenHeader:IsShown() and after:IsShown(), "A hidden header collapses nothing")
-assert(inside:IsShown() and header.CollapseButton.normalTexture:find("MinusButton"))
+assert(inside:IsShown() and header.collapsed == false)
 assert(header:GetParent():GetParent() == scroll)
 
 scroll.verticalScroll = 50
@@ -254,9 +268,9 @@ header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widget
 
 -- Clicking a header collapses its rows and remembers it for the next Update.
 local layouts = dialog.layouts
-header:Toggle()
+header.click()
 assert(not inside:IsShown() and after:IsShown() and header:IsShown())
-assert(header.CollapseButton.normalTexture:find("PlusButton") and dialog.layouts == layouts + 2 and dialog:IsShown())
+assert(header.collapsed and dialog.layouts == layouts + 2 and dialog:IsShown())
 dialog:Update(selection)
 assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")
 widgets[1]:Toggle()

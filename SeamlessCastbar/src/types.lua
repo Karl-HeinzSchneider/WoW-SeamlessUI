@@ -4,7 +4,10 @@
 ---@field addon SeamlessCastbar.Addon
 ---@field db AceDBObject-3.0
 ---@field BarKey fun(bar: StatusBar): string?
+---@field Settings fun(bar: StatusBar): table?
 ---@field Active fun(bar: StatusBar): boolean
+---@field castTimeFormats table<string, string>
+---@field castTimeFormatOrder string[]
 ---@field Known fun(value: any): boolean
 ---@field FormatCastTime fun(elapsed: number, total: number, format: string, decimals: integer): string
 ---@field UpdateCastTime fun(bar: StatusBar)
@@ -19,6 +22,8 @@
 ---@field HideTicks fun(bar: StatusBar)
 ---@field ApplyHold fun(bar: StatusBar)
 ---@field RestoreHold fun(bar: StatusBar)
+---@field EditModeSettings fun(): table[]
+---@field RegisterEditMode fun()
 
 ---@class SeamlessCastbar.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessCastbar.Addon)

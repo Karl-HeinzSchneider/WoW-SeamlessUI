@@ -35,8 +35,8 @@ end
 
 ---@param bar StatusBar
 function app.ApplyHold(bar)
-    local settings = app.db.profile.hold
-    if not (app.Active(bar) and settings.enabled) then
+    local settings = app.Active(bar) and app.Settings(bar).hold
+    if not (settings and settings.enabled) then
         app.RestoreHold(bar)
         return
     end

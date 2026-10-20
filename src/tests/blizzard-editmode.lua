@@ -56,7 +56,7 @@ function IsLoggedIn()
     return true
 end
 local app = { addon = {}, db = { profile = {} } }
-local collapsedSections, header, positionView = {}, nil, nil
+local collapsedSections, header, positionView, dialogPanel = {}, nil, nil, nil
 app.core = {
     CreateEditModeHeader = function(_, _, onClick)
         header = frame()
@@ -77,6 +77,9 @@ app.core = {
     end,
     SetEditModeSectionCollapsed = function(_, key, collapsed)
         collapsedSections[key] = collapsed
+    end,
+    AddEditModeDialogPanel = function(_, panel)
+        dialogPanel = panel
     end,
 }
 app.blizzardPosition = {
@@ -309,4 +312,5 @@ module:OnProfileRefresh()
 assert(panel:IsShown())
 module:OnDisable()
 assert(not panel:IsShown() and next(module.hooks) == nil)
+assert(dialogPanel == panel, "System settings from other addons stack below the panel")
 print("Blizzard Edit Mode extensions OK")

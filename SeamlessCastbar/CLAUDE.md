@@ -3,10 +3,12 @@
 Optional addon requiring Seamless that adds information to the game's own player, target and focus
 cast bars without replacing them: cast time text, the spell rank in the name, channel tick marks,
 the spell icon on the detached player bar and how long a bar stays after a cast.
-Internal until verified in game. Open `/seamlesscastbar` or Seamless > Castbar.
-`SeamlessCastbarDB` holds independent profiles: `bars` (`player`, `target`, `focus`),
-`castTime` (`enabled`, `format`, `decimals`), `rank`, `ticks`, `icon` (`enabled`) and `hold`
-(`enabled`, `success`, `interrupt`). Everything but `hold` is on by default.
+Internal until verified in game. Open `/seamlesscastbar` or Seamless > Castbar: one tab per bar
+(Player, Target, Focus). The player bar's options are also in its Edit Mode settings under a
+collapsible Style header. `SeamlessCastbarDB` holds independent profiles with one table per bar
+(`player`, `target`, `focus`), each with `enabled`, `castTime` (`enabled`, `format`, `decimals`),
+`rank`, `ticks`, `hold` (`enabled`, `success`, `interrupt`) and, for the player only, `icon`.
+Everything but `hold` is on by default.
 
 ## What the client already does (don't duplicate)
 
@@ -22,8 +24,8 @@ system, so they are not part of this addon.
 
 1. `src/core.lua`: AceAddon/AceDB lifecycle. `OnEnable` post-hooks `UpdateCastTimeText`,
    `HandleCastStart`, `HandleChannelUpdateDelayed`, `HandleCastDelayed` and `UpdateIconShown` on
-   `PlayerCastingBarFrame`, `TargetFrameSpellBar` and `FocusFrameSpellBar`. `app.Active(bar)` is
-   the bar's switch in `bars`. `OnDisable` unhooks and restores every bar.
+   `PlayerCastingBarFrame`, `TargetFrameSpellBar` and `FocusFrameSpellBar`. `app.Settings(bar)` is
+   the bar's profile table and `app.Active(bar)` its `enabled` switch. `OnDisable` unhooks and restores every bar.
 2. `src/text.lua`: `app.FormatCastTime` and `app.UpdateCastTime` (reformats the player's own
    text, which Edit Mode shows or hides; creates one font string right of target/focus bars).
    `app.UpdateName` appends `C_Spell.GetSpellSubtext(bar.spellID)` and remembers the original for
@@ -33,8 +35,13 @@ system, so they are not part of this addon.
    `app.UpdateTicks` draw `ui-castingbar-empower-pip` lines on channels and redraw after pushback.
 4. `src/hold.lua`: `app.ApplyHold` changes the start delay of `FadeOutAnim`'s alpha and the
    duration of `HoldFadeOutAnim`'s first alpha, remembering the client's values.
-5. `src/options.lua`: a bar selection group and five `core.FeatureGroup` groups on the General tab.
-6. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
+5. `src/options.lua`: a short General tab and one tab per bar: its Enable switch, then
+   `core.FeatureGroup` groups (greyed out while the bar is off).
+6. `src/editmode.lua`: `app.RegisterEditMode` (from `OnEnable`, once) adds the Style section to
+   the cast bar system with LibEditMode's `AddSystemSettings`, which Core keeps below SeamlessUI's
+   panel. The rows write the player profile and refresh the options; they hide while the addon is
+   disabled because the library cannot remove them.
+7. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules
 
@@ -44,7 +51,8 @@ system, so they are not part of this addon.
 - Target and focus casts can be secret: skip any value `issecretvalue` reports (`app.Known`).
 - New channeled spells go into `intervalsBySpellID` with their tick interval, not a tick count.
 
-`lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks and hold.
+`lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks, hold and the
+Edit Mode rows.
 
 Manual validation: cast and channel with each bar locked and unlocked from the player frame, with
 Edit Mode's Show Cast Time on and off; target and focus a caster (interrupt it, change target

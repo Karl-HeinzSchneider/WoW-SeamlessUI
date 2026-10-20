@@ -133,22 +133,26 @@ end
 load("text.lua")
 load("ticks.lua")
 load("hold.lua")
-app.db = {
-    profile = {
-        bars = { player = true, target = true, focus = true },
+local function barSettings()
+    return {
+        enabled = true,
         castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
         rank = { enabled = true },
         ticks = { enabled = true },
         icon = { enabled = true },
         hold = { enabled = true, success = 0.5, interrupt = 2 },
-    },
-}
+    }
+end
+app.db = { profile = { player = barSettings(), target = barSettings(), focus = barSettings() } }
 local keys = {}
 app.BarKey = function(bar)
     return keys[bar]
 end
+app.Settings = function(bar)
+    return keys[bar] and app.db.profile[keys[bar]]
+end
 app.Active = function(bar)
-    return keys[bar] ~= nil and app.db.profile.bars[keys[bar]]
+    return keys[bar] ~= nil and app.db.profile[keys[bar]].enabled
 end
 
 -- Formats
@@ -169,10 +173,10 @@ target.casting, target.channeling = nil, true
 target:SetValue(2)
 app.UpdateCastTime(target)
 assert(target.ownText:GetText() == "0.5 / 2.5", "channel elapsed")
-app.db.profile.bars.target = false
+app.db.profile.target.enabled = false
 app.UpdateCastTime(target)
 assert(not target.ownText:IsShown(), "hidden when the bar is switched off")
-app.db.profile.bars.target = true
+app.db.profile.target.enabled = true
 
 -- Player: the game's own text is reformatted, nothing created.
 local player = Bar("player", true)
@@ -189,10 +193,10 @@ app.UpdateName(player)
 assert(player.Text:GetText() == "Frostbolt (Rank 3)")
 app.UpdateName(player)
 assert(player.Text:GetText() == "Frostbolt (Rank 3)", "idempotent")
-app.db.profile.rank.enabled = false
+app.db.profile.player.rank.enabled = false
 app.UpdateName(player)
 assert(player.Text:GetText() == "Frostbolt", "restored")
-app.db.profile.rank.enabled = true
+app.db.profile.player.rank.enabled = true
 player.spellID = 133
 app.UpdateName(player)
 assert(player.Text:GetText() == "Frostbolt", "no rank")
@@ -202,7 +206,7 @@ player.look = "CLASSIC"
 player.Icon:Hide()
 app.UpdateIcon(player)
 assert(player.Icon:IsShown())
-app.db.profile.icon.enabled = false
+app.db.profile.player.icon.enabled = false
 app.UpdateIcon(player)
 assert(not player.Icon:IsShown(), "icon restored")
 target.look = "UNITFRAME"
@@ -236,8 +240,56 @@ keys[focus] = "focus"
 app.ApplyHold(focus)
 assert(fade.startDelay == 0.5 and hold.duration == 2)
 app.ApplyHold(focus)
-app.db.profile.hold.enabled = false
+app.db.profile.focus.hold.enabled = false
 app.ApplyHold(focus)
 assert(fade.startDelay == 0.2 and hold.duration == 1, "hold restored")
 
 print("PASS: cast time formats, rank, icon, channel ticks and hold time")
+
+-- Edit Mode: a Style section in the player cast bar's settings, writing the player profile.
+local registered, refreshes, optionRefreshes, enabled = nil, 0, 0, true
+local lib = { SettingType = { Checkbox = 1, Slider = 2, Dropdown = 3, Header = "seamless-header" } }
+function lib:AddSystemSettings(system, rows)
+    registered = { system = system, rows = rows }
+end
+app.core = {
+    GetEditModeLibrary = function()
+        return lib
+    end,
+    RefreshOptions = function()
+        optionRefreshes = optionRefreshes + 1
+    end,
+}
+app.addon = {
+    Refresh = function()
+        refreshes = refreshes + 1
+    end,
+    IsEnabled = function()
+        return enabled
+    end,
+}
+Enum = { EditModeSystem = { CastBar = 11 } }
+load("editmode.lua")
+app.RegisterEditMode()
+app.RegisterEditMode()
+assert(registered and registered.system == 11, "registered once for the cast bar system")
+local rows = {}
+for _, row in ipairs(registered.rows) do
+    rows[row.name] = row
+end
+assert(registered.rows[1].kind == lib.SettingType.Header and registered.rows[1].name == "Style")
+local player = app.db.profile.player
+rows["Spell rank"].set("Modern", false)
+assert(player.rank.enabled == false and refreshes == 1 and optionRefreshes == 1)
+assert(rows["Spell rank"].get() == false)
+rows["Cast time format"].set("Modern", "REMAINING")
+assert(player.castTime.format == "REMAINING" and #rows["Cast time format"].values == 3)
+rows["After a finished cast"].set("Modern", 0.30000000000000004)
+assert(player.hold.success == 0.3 and rows["After a finished cast"].formatter(0.3) == "0.3")
+player.hold.enabled = false
+assert(rows["After a finished cast"].disabled(), "hold sliders follow their switch")
+rows["Enable"].set("Modern", false)
+assert(player.enabled == false and rows["Spell rank"].disabled() and not rows["Enable"].disabled)
+enabled = false
+assert(rows["Style"].hidden() and rows["Enable"].hidden(), "rows hide while the addon is disabled")
+print("PASS: player cast bar Style section in Edit Mode")

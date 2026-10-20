@@ -13,6 +13,14 @@ local function known(value)
 end
 app.Known = known
 
+-- Cast time formats by profile value, and their order in menus.
+app.castTimeFormats = {
+    REMAINING = L["Remaining (1.3)"],
+    REMAINING_TOTAL = L["Remaining / total (1.3 / 2.5)"],
+    ELAPSED_TOTAL = L["Elapsed / total (1.2 / 2.5)"],
+}
+app.castTimeFormatOrder = { "REMAINING", "REMAINING_TOTAL", "ELAPSED_TOTAL" }
+
 ---@param elapsed number seconds since the cast started
 ---@param total number cast or channel length
 ---@param format "REMAINING"|"REMAINING_TOTAL"|"ELAPSED_TOTAL"
@@ -47,9 +55,9 @@ end
 
 ---@param bar StatusBar
 function app.UpdateCastTime(bar)
-    local settings = app.db.profile.castTime
     local own = not bar.CastTimeText
-    if not (app.Active(bar) and settings.enabled) then
+    local settings = app.Active(bar) and app.Settings(bar).castTime
+    if not (settings and settings.enabled) then
         if own and timeTexts[bar] then
             timeTexts[bar]:Hide()
         end
@@ -101,7 +109,7 @@ end
 
 ---@param bar StatusBar
 function app.UpdateName(bar)
-    if not (app.Active(bar) and app.db.profile.rank.enabled) then
+    if not (app.Active(bar) and app.Settings(bar).rank.enabled) then
         app.RestoreName(bar)
         return
     end
@@ -146,7 +154,7 @@ function app.UpdateIcon(bar)
     if app.BarKey(bar) ~= "player" or not bar.Icon then
         return
     end
-    if not (app.Active(bar) and app.db.profile.icon.enabled) then
+    if not (app.Active(bar) and app.Settings(bar).icon.enabled) then
         app.RestoreIcon(bar)
         return
     end

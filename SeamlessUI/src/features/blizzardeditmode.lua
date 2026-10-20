@@ -220,6 +220,8 @@ local function ensurePanel()
     positionHeader:SetPoint("TOPRIGHT", -16, -44)
     positionHeader:SetHeaderText(L["Position"])
     positionHeader:Hide()
+    -- Settings other addons add to this frame's dialog go below this panel.
+    app.core:AddEditModeDialogPanel(panel)
 end
 
 function module:GetSelectedFrame()

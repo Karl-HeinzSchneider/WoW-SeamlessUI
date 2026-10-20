@@ -21,6 +21,7 @@
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
+---@field AddEditModeDialogPanel fun(self: SeamlessCore.Addon, panel: table) A panel below the native settings dialog; LibEditMode system settings go below it.
 ---@field logger SeamlessCore.Logger
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table

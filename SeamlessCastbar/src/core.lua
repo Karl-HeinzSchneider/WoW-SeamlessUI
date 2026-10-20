@@ -21,23 +21,36 @@ function app.BarKey(bar)
     return keys[bar]
 end
 
+-- The bar's settings in the current profile: `enabled` and one table per feature.
+---@param bar StatusBar
+---@return table?
+function app.Settings(bar)
+    local key = keys[bar]
+    return key and app.db.profile[key]
+end
+
 -- Whether the features apply to this bar in the current profile.
 ---@param bar StatusBar
 function app.Active(bar)
-    local key = keys[bar]
-    return key ~= nil and app.db.profile.bars[key] == true
+    local settings = app.Settings(bar)
+    return settings ~= nil and settings.enabled == true
+end
+
+---@param icon boolean whether the bar has the spell icon option
+local function barDefaults(icon)
+    return {
+        enabled = true,
+        castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
+        rank = { enabled = true },
+        ticks = { enabled = true },
+        icon = icon and { enabled = true } or nil,
+        hold = { enabled = false, success = 0.2, interrupt = 1 },
+    }
 end
 
 function app.addon:OnInitialize()
     app.db = LibStub("AceDB-3.0"):New("SeamlessCastbarDB", {
-        profile = {
-            bars = { player = true, target = true, focus = true },
-            castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
-            rank = { enabled = true },
-            ticks = { enabled = true },
-            icon = { enabled = true },
-            hold = { enabled = false, success = 0.2, interrupt = 1 },
-        },
+        profile = { player = barDefaults(true), target = barDefaults(false), focus = barDefaults(false) },
     }, true)
     app.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
     app.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
@@ -66,6 +79,7 @@ function app.addon:OnEnable()
             self:SecureHook(bar, "UpdateIconShown", app.UpdateIcon)
         end
     end
+    app.RegisterEditMode()
     self:Refresh()
 end
 

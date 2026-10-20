@@ -48,16 +48,14 @@ system, so they are not part of this addon.
    anchor frame registered with LibEditMode ("Target cast bar", "Focus cast bar"), with Core's
    Position section and a checkbox each under Edit Mode's Frames heading. The client places these
    bars only in their `AdjustPosition` (unit frame size, Target of Target, aura rows, alternate
-   power bar); `OnEnable` post-hooks it, and `app.UpdateMove` then saves the client's points and
-   anchors the bar's CENTER to ours. The bars are not protected frames, so this works in combat and
+   power bar); `OnEnable` post-hooks it, and `app.UpdateMove` then anchors the bar's CENTER to ours. The bars are not protected frames, so this works in combat and
    taints nothing: no client method is called or replaced, and no protected frame is anchored to
-   ours. Switching off, disabling the addon or a profile without `move` puts the client's latest
-   points back (`app.RestoreMove`; if they hold secret values and cannot be set again, the client's
-   default spot until its next `AdjustPosition`). The first switch-on in a layout starts at the
-   client's default spot under the unit frame (`TOPLEFT` to its `BOTTOMLEFT`), read from the unit
-   frame: once the client anchors a bar to the aura rows, the bar's geometry can stay secret,
-   so never compute with its size or position (the anchor keeps its last known size, ticks the
-   last known width). Layout copy, rename and delete carry the positions along.
+   ours. Switching off, disabling the addon or a profile without `move` puts the bar at the client's
+   spot under the unit frame without aura rows (`app.RestoreMove`, lower with Target of Target)
+   until its next `AdjustPosition`. Once the client anchors a bar to the aura rows, its geometry
+   and even its number of points are secret, so never read the bar's points, size or position to
+   compute with them: the first switch-on in a layout starts at that same spot, stored relative
+   to the unit frame, the anchor keeps its last known size and ticks use the last known width. Layout copy, rename and delete carry the positions along.
 8. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules

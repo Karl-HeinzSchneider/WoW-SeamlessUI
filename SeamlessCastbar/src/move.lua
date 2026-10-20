@@ -26,9 +26,9 @@ local anchorFrames = {
 
 ---@type table<string, Frame>
 local anchors = {}
--- The client's own points of each bar while it is anchored to ours, to put back.
----@type table<StatusBar, table[]>
-local clientPoints = {}
+-- Bars currently anchored to ours.
+---@type table<StatusBar, boolean>
+local attached = {}
 
 local function settings(key)
     return app.db.profile[key].move
@@ -83,32 +83,22 @@ local function capturePosition(key, bar)
     }
 end
 
--- The client's default points, when its saved ones cannot be set again.
-local function defaultPoints(bar)
-    local parent = bar:GetParent()
-    bar:ClearAllPoints()
-    bar:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", parent.smallSize and 38 or 43, parent.smallSize and 3 or 5)
-end
-
----Put the bar back on the client's own points. They can hold secret values (the bar anchored to the
----aura rows); if they cannot be set again, the client's default spot is used until its next
----AdjustPosition.
+---Put the bar back under its unit frame. Its own points cannot be read and saved: once the client
+---anchors it to the aura rows, even their number is secret. So this is the client's spot without
+---aura rows (with Target of Target, lower), until its next AdjustPosition puts it exactly.
 ---@param bar StatusBar
 function app.RestoreMove(bar)
-    local points = clientPoints[bar]
-    if not points then
+    if not attached[bar] then
         return
     end
-    clientPoints[bar] = nil
-    local ok = pcall(function()
-        bar:ClearAllPoints()
-        for _, point in ipairs(points) do
-            bar:SetPoint(unpack(point))
-        end
-    end)
-    if not ok then
-        defaultPoints(bar)
+    attached[bar] = nil
+    local parent = bar:GetParent()
+    local x, y = parent.smallSize and 38 or 43, parent.smallSize and 3 or 5
+    if parent.haveToT then
+        y = parent.smallSize and -48 or -46
     end
+    bar:ClearAllPoints()
+    bar:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", x, y)
 end
 
 -- The bar's size in UIParent's units for the anchor, or nil while it is secret.
@@ -131,23 +121,17 @@ function app.UpdateMove(bar, placed)
         return
     end
     if placed then
-        clientPoints[bar] = nil
+        attached[bar] = nil
     end
     if not moving(key) then
         app.RestoreMove(bar)
         anchor:Hide()
         return
     end
-    if not clientPoints[bar] then
-        if not storedPosition(key) then
-            capturePosition(key, bar)
-        end
-        local points = {}
-        for index = 1, bar:GetNumPoints() do
-            points[index] = { bar:GetPoint(index) }
-        end
-        clientPoints[bar] = points
+    if not storedPosition(key) then
+        capturePosition(key, bar)
     end
+    attached[bar] = true
     local position = currentPosition(key)
     local width, height = barSize(bar)
     if width then

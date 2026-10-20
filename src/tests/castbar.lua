@@ -419,6 +419,12 @@ targetBar.GetWidth = function()
 end
 targetBar:ClearAllPoints()
 targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 18, secret)
+targetBar.GetNumPoints = function()
+    return secret
+end
+targetBar.GetPoint = function()
+    error("the bar's points are never read")
+end
 app.UpdateMove(targetBar, true)
 assert(targetBar.points[1][2] == anchor and anchor.width == 150)
 -- The unit frame places the bar again (Target of Target, auras): it stays on the anchor.
@@ -437,7 +443,8 @@ libCallbacks.rename("Copy", "Renamed")
 assert(move.layouts.Renamed and not move.layouts.Copy)
 libCallbacks.delete("Renamed")
 assert(not move.layouts.Renamed)
+TargetFrame.haveToT = true
 moveOptions[1].set(false)
-assert(targetBar.points[1][2] == TargetFrame and targetBar.points[1][5] == -46, "the client's latest points return")
+assert(targetBar.points[1][2] == TargetFrame and targetBar.points[1][5] == -46, "back under the unit frame")
 assert(not anchor.shown)
 print("PASS: target and focus cast bars move with Edit Mode")

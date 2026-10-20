@@ -16,6 +16,13 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
+- `editmodelib.lua`: suite-only additions to the namespaced LibEditMode, loaded before any
+  Edit Mode user. Adds `lib.SettingType.Header` (a section title like Blizzard's Edit Mode
+  category titles: GameFontNormalLarge, 32 high; supports `name` and `hidden`) and puts the
+  selected frame's settings list in a scroll frame built like Blizzard's settings container
+  (`ResizeLayoutFrame, ScrollFrameTemplate`, maximum 60% of the screen height). This is the
+  only file allowed to use `lib.internal`; it asserts on what it relies on, so recheck it and run
+  `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
   dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes
   to visible groups/rows. It owns its UIParent frame; never modify native layout containers.
@@ -98,8 +105,12 @@ First show and size changes queue a coalesced one-frame refresh on the addon-own
 never discard layout invalidations during measurement or depend on a second Edit Mode entry.
 Unresolved panel width uses the native window width until anchors settle.
 
+Use `type = "header"` with a `name` for a section title inside a group; it matches the Frames
+heading. Rows sit in a scroll child: when the panel would pass the screen bottom, its height
+is capped and the rows scroll.
+
 For another widget or a compound group of frames, register a `type = "custom"` row with
-`create(parent)` returning an addon-owned frame directly parented to the supplied panel.
+`create(parent)` returning an addon-owned frame directly parented to the supplied parent (the scroll child).
 Set its height; Core lays it out at full content width. An optional
 `layout(frame, width, disabled)` callback can update contents/child anchors and return its
 measured height (or leave the row's height in place). It must honor `disabled` for its own

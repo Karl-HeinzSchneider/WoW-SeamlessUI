@@ -256,8 +256,9 @@ Verify default changes propagate only to inherited settings, including fonts and
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.
 
-Edit Mode lists window settings first, then a Style divider, Skin, Modify global style,
-and the appearance controls. It exposes bar height, padding (row spacing), transparency,
+Edit Mode lists a Window section header and the window settings first, then a Style header,
+Skin, Modify global style and the appearance controls. Headers use Core's
+`lib.SettingType.Header` row (see `Seamless/CLAUDE.md`). It exposes bar height, padding (row spacing), transparency,
 background, text size, spec icons, class colors and type selector visibility. Appearance edits
 update the selected shared skin when Modify global style is enabled (the default), refreshing
 all windows using it; otherwise they update only the selected window's local style overrides.

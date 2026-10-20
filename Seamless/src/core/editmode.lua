@@ -6,10 +6,12 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local addon = app.addon
 local lib = app.LibEditMode
 local registrations = {}
-local panel
+local panel, scroll, content
 local framesTitle
 local refreshing = false
 local PADDING, HEADER, BOTTOM, GAP = 24, 44, 16, 6
+-- Minimum gap to the screen bottom and smallest list height before the panel scrolls.
+local SCREEN_MARGIN, MIN_VISIBLE = 8, 96
 
 local function Evaluate(value)
     if type(value) == "function" then
@@ -51,7 +53,15 @@ local function EnsurePanel()
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
     title:SetPoint("TOP", 0, -15)
     title:SetText(L["SeamlessUI"])
-    framesTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    -- Rows live in a scroll child, like Blizzard's own Edit Mode settings container.
+    scroll = CreateFrame("ScrollFrame", nil, panel, "ScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", PADDING, -HEADER)
+    scroll:SetPoint("TOPRIGHT", -PADDING, -HEADER)
+    scroll.ScrollBar:SetHideIfUnscrollable(true)
+    content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(1, 1)
+    scroll:SetScrollChild(content)
+    framesTitle = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     framesTitle:SetJustifyH("LEFT")
     framesTitle:SetWordWrap(true)
     framesTitle:SetText(L["Frames"])
@@ -71,14 +81,20 @@ end
 local function CreateRow(option, spec)
     local row
     if option.type == "custom" then
-        row = option.create(panel)
+        row = option.create(content)
         assert(
-            row and row.GetHeight and row.GetParent and row:GetParent() == panel,
+            row and row.GetHeight and row.GetParent and row:GetParent() == content,
             "Custom Edit Mode rows must return a frame parented to the supplied panel"
         )
     else
-        row = CreateFrame("Frame", nil, panel)
-        if option.type == "toggle" then
+        row = CreateFrame("Frame", nil, content)
+        if option.type == "header" then
+            -- Matches the Frames heading and Blizzard's Edit Mode category titles.
+            row.Label = row:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+            row.Label:SetPoint("TOPLEFT", 5, 0)
+            row.Label:SetJustifyH("LEFT")
+            row.Label:SetWordWrap(true)
+        elseif option.type == "toggle" then
             row.Button = CreateFrame("CheckButton", nil, row, "UICheckButtonTemplate")
             row.Button:SetSize(28, 28)
             row.Button:SetPoint("TOPLEFT", 0, -2)
@@ -157,7 +173,7 @@ function addon:RefreshEditModeOptions()
         panelWidth = EditModeManagerFrame:GetWidth()
     end
     local width = math.max(1, panelWidth - PADDING * 2)
-    local y, count = HEADER, 0
+    local y, count = 0, 0
     local framesStarted = false
     if framesTitle then
         framesTitle:Hide()
@@ -189,20 +205,20 @@ function addon:RefreshEditModeOptions()
                 y = y + GAP
             end
             framesTitle:ClearAllPoints()
-            framesTitle:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING + 5, -y)
+            framesTitle:SetPoint("TOPLEFT", content, "TOPLEFT", 5, -y)
             framesTitle:SetWidth(math.max(1, width - 5))
             framesTitle:Show()
             y = y + math.max(32, framesTitle:GetStringHeight() + GAP)
         end
         if hasRows and spec.name then
             if not registration.title then
-                registration.title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+                registration.title = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
                 registration.title:SetJustifyH("LEFT")
                 registration.title:SetWordWrap(true)
             end
             local title = registration.title
             title:ClearAllPoints()
-            title:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING, -y)
+            title:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
             title:SetWidth(width)
             title:SetText(spec.name)
             title:Show()
@@ -217,11 +233,15 @@ function addon:RefreshEditModeOptions()
                     registration.rows[option.key] = row
                 end
                 row:ClearAllPoints()
-                row:SetPoint("TOPLEFT", panel, "TOPLEFT", PADDING, -y)
+                row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
                 row:SetWidth(width)
                 local disabled = InCombatLockdown() or not not Evaluate(option.disabled)
                 local height
-                if option.type == "toggle" then
+                if option.type == "header" then
+                    row.Label:SetWidth(math.max(1, width - 5))
+                    row.Label:SetText(option.name)
+                    height = math.max(32, row.Label:GetStringHeight() + GAP) - GAP
+                elseif option.type == "toggle" then
                     row.Label:SetWidth(math.max(1, width - 32))
                     row.Label:SetText(option.name)
                     row.Label:Show()
@@ -249,7 +269,16 @@ function addon:RefreshEditModeOptions()
         end
     end
     if panel then
-        panel:SetHeight(y - (count > 0 and GAP or 0) + BOTTOM)
+        local contentHeight = math.max(1, y - (count > 0 and GAP or 0))
+        content:SetSize(width, contentHeight)
+        -- Cap the panel at the screen bottom; the rest scrolls.
+        local visible = contentHeight
+        local top = panel:GetTop()
+        if top then
+            visible = math.min(visible, math.max(MIN_VISIBLE, top - SCREEN_MARGIN - HEADER - BOTTOM))
+        end
+        scroll:SetHeight(visible)
+        panel:SetHeight(HEADER + visible + BOTTOM)
         panel:SetShown(count > 0)
     end
     refreshing = false
@@ -267,14 +296,14 @@ function addon:RegisterEditModeOptions(id, spec)
         assert(type(option.key) == "string" and not keys[option.key], "Edit Mode row keys must be unique")
         keys[option.key] = true
         assert(
-            option.type == "toggle" or option.type == "button" or option.type == "custom",
+            option.type == "toggle" or option.type == "button" or option.type == "custom" or option.type == "header",
             "Unknown Edit Mode row type"
         )
         if option.type == "toggle" then
             assert(type(option.get) == "function" and type(option.set) == "function", "Toggle needs get/set")
         elseif option.type == "button" then
             assert(type(option.click) == "function", "Button needs click")
-        else
+        elseif option.type == "custom" then
             assert(type(option.create) == "function", "Custom row needs create")
         end
         if option.type ~= "custom" then

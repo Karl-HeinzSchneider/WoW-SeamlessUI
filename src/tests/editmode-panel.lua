@@ -77,6 +77,15 @@ end
 function methods:GetHeight()
     return self.height
 end
+function methods:GetTop()
+    return self.top
+end
+function methods:SetScrollChild(child)
+    self.scrollChild = child
+end
+function methods:SetHideIfUnscrollable(value)
+    self.hideIfUnscrollable = value
+end
 function methods:SetSize(width, height)
     self:SetWidth(width)
     self:SetHeight(height)
@@ -140,6 +149,9 @@ function CreateFrame(_, name, parent, template)
     local frame = object(parent or UIParent, template)
     if template == "DialogBorderTranslucentTemplate" then
         frame:SetFrameLevel(500)
+    end
+    if template == "ScrollFrameTemplate" then
+        frame.ScrollBar = object(frame, "ScrollBar")
     end
     if template == "UICheckButtonTemplate" then
         frame.Text = object(frame, "FontString")
@@ -219,6 +231,15 @@ anchorsReady = true
 local pending = panel.scripts.OnUpdate
 pending(panel)
 assert(panel:GetWidth() == 510 and panel:GetHeight() == 124 and panel:IsShown())
+local scroll
+for _, frame in ipairs(frames) do
+    if frame.template == "ScrollFrameTemplate" then
+        scroll = frame
+    end
+end
+assert(scroll and scroll.parent == panel and scroll.ScrollBar.hideIfUnscrollable)
+assert(toggle.parent.parent == scroll.scrollChild, "Rows live in the scroll child")
+assert(scroll.scrollChild:GetHeight() == 124 - 44 - 16 and scroll:GetHeight() == 124 - 44 - 16)
 assert(panel.scripts.OnUpdate == nil, "Settled layout must stop updating")
 assert(panel.points.TOPLEFT[3] == 0 and panel.points.TOPLEFT[4] == -8)
 local foundTitle = false
@@ -273,7 +294,7 @@ for _, frame in ipairs(frames) do
         button = frame
     end
 end
-assert(custom.points.TOPLEFT[4] < 0 and custom.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
+assert(custom.points.TOPLEFT[4] <= 0 and custom.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
 local heading
 for _, frame in ipairs(frames) do
     if frame.text == "Frames" then
@@ -284,6 +305,35 @@ assert(heading and heading:IsShown())
 assert(custom.points.TOPLEFT[4] > heading.points.TOPLEFT[4], "Options must precede Frames regardless of order")
 assert(heading.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
 local expanded = panel:GetHeight()
+-- Headers are section titles inside a group, sized like the Frames heading.
+core:RegisterEditModeOptions("sections", {
+    order = 200,
+    options = {
+        { key = "title", type = "header", name = "Section" },
+        { key = "inside", type = "button", name = "Inside", click = function() end },
+    },
+})
+local sectionHeader
+for _, frame in ipairs(frames) do
+    if frame.option and frame.option.key == "title" then
+        sectionHeader = frame
+    end
+end
+assert(sectionHeader and sectionHeader.Label.text == "Section" and sectionHeader:GetHeight() == 32 - 6)
+assert(panel:GetHeight() == expanded + 32 + 38)
+-- A panel near the screen bottom caps its height and scrolls the rest.
+panel.top = 44 + 16 + 8 + 100
+core:RefreshEditModeOptions()
+assert(scroll:GetHeight() == 100 and panel:GetHeight() == 44 + 100 + 16)
+assert(scroll.scrollChild:GetHeight() == expanded - 44 - 16 + 32 + 38)
+panel.top = nil
+for _, frame in ipairs(frames) do
+    if frame.option and (frame.option.key == "title" or frame.option.key == "inside") then
+        frame.option.hidden = true
+    end
+end
+core:RefreshEditModeOptions()
+assert(panel:GetHeight() == expanded)
 custom:SetHeight(80)
 assert(panel:GetHeight() == expanded + 30, "Custom height changes must resize the panel")
 button.scripts.OnClick(button)

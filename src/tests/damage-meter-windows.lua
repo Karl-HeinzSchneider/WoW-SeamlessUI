@@ -1175,7 +1175,7 @@ end
 function methods:GetChecked()
     return self.checked
 end
-local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider" } }
+local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider", Header = "header" } }
 function lem:AddFrame(frame, callback, defaults, name)
     assert(name == "Seamless Damage " .. frame.windowID)
     assert(defaults.point == "CENTER")
@@ -1252,7 +1252,8 @@ for index, entry in ipairs(controls[meter]) do
 end
 assert(order.Numbers < order.Style and order.Style < order.Skin)
 assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
-assert(setting("Style").kind == lem.SettingType.Divider)
+assert(setting("Style").kind == lem.SettingType.Header)
+assert(controls[meter][1].name == "Window" and controls[meter][1].kind == lem.SettingType.Header)
 assert(setting("Modify global style").default and setting("Modify global style").get())
 local sharedStyle = app.db.profile.skins[meter.config.skin].settings
 local sharedHeight, sharedAlpha, sharedClasses =

@@ -1,6 +1,6 @@
 -- Annotations only; not loaded by the client.
 ---@class SeamlessCore
----@field LibEditMode table Namespaced Edit Mode library instance.
+---@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (SettingType.Header, scrolling dialog).
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema
@@ -34,8 +34,8 @@
 
 ---@class SeamlessCore.EditModeOption
 ---@field key string Unique within the group.
----@field type "toggle"|"button"|"custom"
----@field name string? Label required for built-in controls.
+---@field type "toggle"|"button"|"custom"|"header" A header is a section title like the Frames heading.
+---@field name string? Label required for built-in controls and headers.
 ---@field order number? Defaults to the array index.
 ---@field hidden boolean|fun(): boolean|nil
 ---@field disabled boolean|fun(): boolean|nil

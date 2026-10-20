@@ -100,7 +100,7 @@ load("icons.lua")
 load("hotkeys.lua")
 app.db = {
     profile = {
-        range = { enabled = true, color = { r = 0.8, g = 0.1, b = 0.1 } },
+        range = { enabled = true, color = { r = 0.85, g = 0.4, b = 0.4 } },
         mana = { enabled = true, color = { r = 0.3, g = 0.3, b = 1 } },
         keybinds = { enabled = true },
     },
@@ -124,7 +124,7 @@ assert(app.ShortKeyLabel("Q") == "game:Q")
 slots[1] = { usable = true, noMana = false, inRange = false }
 local button = Button("ACTIONBUTTON1", 1, "s-M4")
 app.PaintIcon(button)
-assert(same(0.8, 0.1, 0.1, button.icon.color()), "out of range")
+assert(same(0.85, 0.4, 0.4, button.icon.color()), "out of range")
 slots[1].inRange = true
 app.PaintIcon(button)
 assert(same(1, 1, 1, button.icon.color()), "back in range")

@@ -157,8 +157,12 @@ after `features.lua`.
   (copy window for `SELECTED_CHAT_FRAME`) and options (Chat settings). Bottom up: options, copy, log,
   chat menu, channels, social, then text to speech and voice. Its settings are on the
   Buttons tab. Every button gets a dark plate (1 px edge + fill,
-  the edge in `accent` on hover); the button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
-  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors and
+  the edge in `accent` on hover) and one icon style (`StyleIcons`): its own normal, pushed,
+  highlight and disabled art hidden (again on `UpdateHighlight`, voice buttons swap it), its icon
+  textures (`icons`, default `Icon`; the chat menu's art includes a frame, so a cropped `glyph`)
+  desaturated and tinted `ICON_COLOR`, `accent` on hover. The social button's friends count is a
+  corner badge shown only above 0 (hook on `UpdateDisplayedFriendCount`). The button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
+  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors, art, icon colors and
   hidden buttons back when disabled.
 
 To add a feature: a new `src/features/<name>.lua` calling `app.features:New` with an `optionsTab`

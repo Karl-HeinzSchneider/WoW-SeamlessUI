@@ -136,6 +136,20 @@ local function dependsOn(frame, target, seen)
     return false
 end
 
+---Anchor targets for SeamlessUI's own frames, leaving out any that depend on `frame`.
+---@param frame table
+---@return { value: string, text: string }[]
+function position:GetAnchorFrames(frame)
+    local entries = {}
+    for _, entry in ipairs(getAnchorFrames()) do
+        local target = _G[entry.value]
+        if target and not dependsOn(target, frame, {}) then
+            entries[#entries + 1] = entry
+        end
+    end
+    return entries
+end
+
 local function pointPosition(frame, point)
     local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
     if not left or not right or not top or not bottom then
@@ -304,8 +318,9 @@ end
 
 function position:Create(parent)
     local view = CreateFrame("Frame", nil, parent)
-    view:SetPoint("TOPLEFT", 24, -48)
-    view:SetPoint("TOPRIGHT", -24, -48)
+    -- Below the panel's title and Position header.
+    view:SetPoint("TOPLEFT", 24, -80)
+    view:SetPoint("TOPRIGHT", -24, -80)
     view:SetHeight(218)
     view.controls = {}
     view.values = {}
@@ -493,7 +508,7 @@ function position:Create(parent)
         message:SetText(self.error or "")
         message:SetShown(self.error ~= nil)
         self:SetHeight(self.error and 264 or 218)
-        self:GetParent():SetHeight(self:GetHeight() + 68)
+        self:GetParent():SetHeight(self:GetHeight() + 100)
     end
 
     -- Native dragging, arrow nudges, scale changes and Revert all update the same

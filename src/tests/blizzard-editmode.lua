@@ -22,8 +22,10 @@ local function frame()
     function f:CreateFontString()
         return frame()
     end
+    function f:SetHeight(height)
+        self.height = height
+    end
     for _, method in ipairs({
-        "SetHeight",
         "SetFrameStrata",
         "EnableMouse",
         "SetPoint",
@@ -54,9 +56,33 @@ function IsLoggedIn()
     return true
 end
 local app = { addon = {}, db = { profile = {} } }
+local collapsedSections, header, positionView = {}, nil, nil
+app.core = {
+    CreateEditModeHeader = function(_, _, onClick)
+        header = frame()
+        header.onClick = onClick
+        function header:SetHeaderText(text)
+            self.text = text
+        end
+        function header:UpdateCollapsedState(collapsed)
+            self.collapsed = collapsed
+        end
+        return header
+    end,
+    GetEditModePositionSectionKey = function()
+        return "settings:position"
+    end,
+    IsEditModeSectionCollapsed = function(_, key)
+        return collapsedSections[key] == true
+    end,
+    SetEditModeSectionCollapsed = function(_, key, collapsed)
+        collapsedSections[key] = collapsed
+    end,
+}
 app.blizzardPosition = {
     Create = function()
         local view = frame()
+        positionView = view
         function view:Refresh(system)
             self.system = system
         end
@@ -128,6 +154,12 @@ for _, key in ipairs({ "player", "target", "pet", "focus" }) do
     group.set({ "addMoreOptions" }, true)
     assert(panel:IsShown() and group.get({ "addPosition" }) and group.get({ "addMoreOptions" }))
 end
+-- Add position appears as an expanded Position header that collapses like every other header.
+assert(header.shown and header.text == "Position" and not header.collapsed and positionView.shown)
+header.onClick()
+assert(header.collapsed and not positionView.shown and panel.height == 92 and panel:IsShown())
+header.onClick()
+assert(not header.collapsed and positionView.shown)
 local originalPanel = panel
 -- Simulate AceDB's per-entry wildcard defaults for newly introduced frame keys.
 setmetatable(app.db.profile.blizzardEditMode.frames, {

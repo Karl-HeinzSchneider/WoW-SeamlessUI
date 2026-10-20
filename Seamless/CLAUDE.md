@@ -16,6 +16,27 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 - `src/core/logger.lua`: shared suite logger.
 - `db.lua`: defaults for `SeamlessDB` (logging, minimap settings and tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless` command, public integration API.
+- `editmodelib.lua`: suite-only additions to the namespaced LibEditMode, loaded before any
+  Edit Mode user. Adds `lib.SettingType.Header`: a collapsible section header remade in our code to
+  look like the character frame's reputation headers (`common-button-list-collapseExpand` bar,
+  gold `GameFontNormalLeft` name, +/- state icon on the right; supports `name`, optional `key`
+  and `hidden`), via `app.CreateEditModeHeader`. Clicking it
+  hides every row up to the next header; collapsed sections are saved account-wide in
+  `SeamlessDB.global.editModeCollapsed`. It also puts the selected frame's settings list in a
+  scroll frame built like Blizzard's settings container (`ResizeLayoutFrame, ScrollFrameTemplate`),
+  scrolling past 400 pixels or 60% of the screen height, whichever is smaller. Each layout sizes
+  the scroll frame from the list's own height (`fixedHeight`), so collapsing always shrinks it. Each layout
+  first pins the dialog's top edge, so it grows and shrinks downward only. A new selection opens the
+  dialog 16 pixels beside its frame (the side with more room, top edges aligned, kept on screen)
+  instead of the library's fixed bottom-right spot; it does not follow the frame afterwards. LayoutFrame ignores
+  `maximumHeight` without a `minimumHeight`, so the scroll frame sets both. The list keeps its
+  fully expanded width while sections collapse, and the scroll bar sits outside the window's right
+  edge, so the window never changes width. This is the
+  only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
+  `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
+  header plus Anchor, AnchorParent, AnchorFrame, X and Y; collapse key
+  `core:GetEditModePositionSectionKey()`, shared by every Position header). This is the it asserts on what it relies on, so recheck it and run
+  `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
   dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes
   to visible groups/rows. It owns its UIParent frame; never modify native layout containers.
@@ -98,8 +119,12 @@ First show and size changes queue a coalesced one-frame refresh on the addon-own
 never discard layout invalidations during measurement or depend on a second Edit Mode entry.
 Unresolved panel width uses the native window width until anchors settle.
 
+Use `type = "header"` with a `name` for a collapsible section title inside a group; clicking it
+hides the group's rows up to its next header, saved like the settings window's headers. Rows sit in a scroll child: when the panel would pass the screen bottom, its height
+is capped and the rows scroll.
+
 For another widget or a compound group of frames, register a `type = "custom"` row with
-`create(parent)` returning an addon-owned frame directly parented to the supplied panel.
+`create(parent)` returning an addon-owned frame directly parented to the supplied parent (the scroll child).
 Set its height; Core lays it out at full content width. An optional
 `layout(frame, width, disabled)` callback can update contents/child anchors and return its
 measured height (or leave the row's height in place). It must honor `disabled` for its own

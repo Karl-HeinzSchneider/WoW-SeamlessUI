@@ -1175,7 +1175,7 @@ end
 function methods:GetChecked()
     return self.checked
 end
-local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider" } }
+local lem = { SettingType = { Slider = 1, Checkbox = 2, Dropdown = 3, Divider = "divider", Header = "header" } }
 function lem:AddFrame(frame, callback, defaults, name)
     assert(name == "Seamless Damage " .. frame.windowID)
     assert(defaults.point == "CENTER")
@@ -1210,6 +1210,11 @@ app.core.RegisterEditModeOptions = function(_, id, spec)
 end
 app.core.GetEditModeLibrary = function()
     return lem
+end
+local positionSpecs = {}
+app.core.GetEditModePositionSettings = function(_, spec)
+    positionSpecs[#positionSpecs + 1] = spec
+    return { { name = "Position", kind = lem.SettingType.Header }, { name = "X", kind = lem.SettingType.Slider } }
 end
 app.db.profiles = { Original = app.db.profile }
 EventRegistry = { TriggerEvent = function() end }
@@ -1250,9 +1255,21 @@ local order = {}
 for index, entry in ipairs(controls[meter]) do
     order[entry.name] = index
 end
-assert(order.Numbers < order.Style and order.Style < order.Skin)
+assert(order.Position == 1 and order["Lock position outside Edit Mode"] == 2 and order.Position < order.X)
+assert(order.X < order.Window and order.Window < order["Lock size"])
+assert(order.Style + 1 == order.Numbers and order.Numbers + 1 == order.Skin, "Numbers opens the Style section")
+local positionSpec = positionSpecs[1]
+assert(positionSpec.get("relativeTo") == (meter.config.anchorTo and tostring(meter.config.anchorTo) or "screen"))
+assert(positionSpec.get("point") == app:GetWindowSetting(meter.config, "point"))
+positionSpec.set("x", 123)
+assert(meter.config.overrides.x == 123, "Position X edits the window offset")
+assert(positionSpec.anchorFrames()[1].value == "screen")
+for _, entry in ipairs(positionSpec.anchorFrames()) do
+    assert(entry.value ~= tostring(meter.config.id), "a window never anchors to itself")
+end
 assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
-assert(setting("Style").kind == lem.SettingType.Divider)
+assert(setting("Style").kind == lem.SettingType.Header)
+assert(setting("Window").kind == lem.SettingType.Header and controls[meter][1].kind == lem.SettingType.Header)
 assert(setting("Modify global style").default and setting("Modify global style").get())
 local sharedStyle = app.db.profile.skins[meter.config.skin].settings
 local sharedHeight, sharedAlpha, sharedClasses =
@@ -1293,12 +1310,14 @@ setting("Lock size").set(nil, true)
 assert(setting("Frame width").disabled())
 setting("Frame width").set(nil, 700)
 assert(app:GetWindowSetting(meter.config, "width") == 615)
-setting("Lock position").set(nil, true)
-local savedX = meter.config.overrides.x
+setting("Lock position outside Edit Mode").set(nil, true)
 meter:SetPoint("CENTER", UIParent, "CENTER", 250, 150)
 moves[meter](meter, "Modern", "CENTER", 250, 150)
-assert(meter.config.overrides.x == savedX, "Locked arrow/reset moves must not persist")
-setting("Lock position").set(nil, false)
+assert(
+    meter.config.overrides.x == 250 or meter.config.anchorTo,
+    "Edit Mode moves persist while locked outside Edit Mode"
+)
+setting("Lock position outside Edit Mode").set(nil, false)
 setting("Bar height").set(nil, 29)
 assert(app:GetWindowSetting(meter.config, "rowHeight") == 29)
 local firstConfig = meter.config

@@ -257,7 +257,8 @@ toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anc
 to each other, deactivate the anchor target, and check the 10-window limit.
 
 Edit Mode lists Core's Position section first (its header, Lock position outside Edit Mode, then
-Anchor, AnchorParent, AnchorFrame = screen or another window, X, Y; edits go to the window's
+Anchor, AnchorParent, AnchorFrame = screen or another window, X, Y and Quick anchor to frame, whose
+picker resolves window IDs to `SeamlessDamageMeterWindow<ID>`; edits go to the window's
 overrides and the active layout record), then the Window header and window settings, then a
 Style header with Numbers, Skin, Modify global style and the appearance controls. Headers use Core's
 collapsible `lib.SettingType.Header` row (see `Seamless/CLAUDE.md`). It exposes bar height, padding (row spacing), transparency,

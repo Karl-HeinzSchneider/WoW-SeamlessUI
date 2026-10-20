@@ -215,6 +215,9 @@ local function RegisterControls(frame)
             end
             app:RebuildWindows()
         end,
+        anchorFrame = function(value)
+            return value ~= "screen" and _G["SeamlessDamageMeterWindow" .. value] or nil
+        end,
         anchorFrames = function()
             local values = { { text = L["Screen (UIParent)"], value = "screen" } }
             for _, candidate in ipairs(app.db.profile.windows) do

@@ -68,6 +68,9 @@ features are ready for public release.
    only that state, preserving unrelated settings and pending edits on other frames. Restore
    targets are revalidated for cycles before any mutation. Recomputes frame/global dirty flags
    after applying, so position-only Revert clears pending state while other edits remain dirty.
+   "Quick anchor to frame" (above Revert, same width) starts Core's anchor picker on the selected
+   system with the AnchorFrame entries as targets (UIParent and dependants excluded) and applies
+   the result through the same validated `Apply`; a pick landing after the selection changed is dropped.
    No persistent helper text; the footer shows errors only when an action fails.
    The Revert button uses half the control area's width and is centered, matching the native
    compact button. All display text uses Core's shared `Seamless` AceLocale catalogue, including

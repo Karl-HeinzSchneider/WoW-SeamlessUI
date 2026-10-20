@@ -3,6 +3,10 @@
 ---@field IsEditModeSectionCollapsed fun(key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(key: string, collapsed: boolean)
 ---@field CreateEditModeHeader fun(parent: table, onClick: fun()): table
+---@field GetAnchorPickerOffset fun(point: string, relativePoint: string): number, number
+---@field StartAnchorPicker fun(spec: SeamlessCore.AnchorPicker): boolean
+---@field StopAnchorPicker fun()
+---@field IsAnchorPickerActive fun(): boolean
 ---@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (SettingType.Header, scrolling dialog).
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessCore.Addon
@@ -26,6 +30,9 @@
 ---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
+---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
+---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
+---@field IsEditModeAnchorPickerActive fun(self: SeamlessCore.Addon): boolean
 ---@field logger SeamlessCore.Logger
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
@@ -34,7 +41,13 @@
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
+---@field anchorFrame? fun(value: any): table? The frame of an anchorFrames entry; defaults to the global named by the value.
 ---@field disabled? fun(): boolean
+
+---@class SeamlessCore.AnchorPicker
+---@field frame table The selected frame, which gets the first overlay.
+---@field targets fun(): { frame: table, value: any }[] Frames it may anchor to; `value` is passed to apply.
+---@field apply fun(point: string, value: any, relativePoint: string, x: number, y: number) The picked anchor, with a 5-pixel gap where the frames face each other.
 
 ---@class SeamlessCore.DB : AceDBObject-3.0
 ---@field profile SeamlessCore.Profile

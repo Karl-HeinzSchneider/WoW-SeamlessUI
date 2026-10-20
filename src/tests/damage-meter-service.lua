@@ -191,6 +191,7 @@ C_DamageMeter = {
 local function Load(character, apiOnly)
     local app = { db = { char = character or {}, profile = { windows = {} } } }
     for _, name in ipairs({ "data", "archive", "live", "service", "breakdowns", "capture" }) do
+        dofile("src/tests/locale-support.lua")
         assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
     end
     if not apiOnly then

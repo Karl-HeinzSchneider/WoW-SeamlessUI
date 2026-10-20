@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 ---@class SeamlessCore.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0
@@ -28,17 +30,17 @@ function addon:OnInitialize()
     self:RegisterChatCommand("seamless", "OnSlashCommand")
 
     self:OnProfileRefresh()
-    log:debug("Initialized (profile: %s)", db:GetCurrentProfile())
+    log:debug(L["Initialized (profile: %s)"], db:GetCurrentProfile())
 end
 
 -- Called after OnInitialize and whenever the addon is re-enabled. Register events here.
 function addon:OnEnable()
-    log:debug("Enabled")
+    log:debug(L["Enabled"])
 end
 
 -- Ace unregisters events/timers/hooks automatically on disable.
 function addon:OnDisable()
-    log:debug("Disabled")
+    log:debug(L["Disabled"])
 end
 
 -- Re-apply everything that depends on profile settings. Modules opt in by defining OnProfileRefresh.
@@ -61,16 +63,16 @@ function addon:OnSlashCommand(input)
     elseif cmd == "loglevel" then
         if arg and log:setLevel(arg) then
             self.db.profile.logLevel = log:getLevelName()
-            log:chat("Log level set to %s", self.db.profile.logLevel)
+            log:chat(L["Log level set to %s"], self.db.profile.logLevel)
             app.options:Refresh()
         else
-            log:chat("Log level is %s", log:getLevelName())
+            log:chat(L["Log level is %s"], log:getLevelName())
         end
     elseif cmd == "reset" then
         self.db:ResetProfile()
-        log:chat("Profile reset")
+        log:chat(L["Profile reset"])
     else
-        log:chat("Commands: /seamless [options], /seamless loglevel <level>, /seamless reset")
+        log:chat(L["Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"])
     end
 end
 

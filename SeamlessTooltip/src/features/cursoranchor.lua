@@ -1,13 +1,14 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Anchors every tooltip that would go to the default spot in the screen corner (units in the
 -- world, most frames) to the mouse cursor instead. Unit frames keep the default spot.
 local feature = app.features:NewFeature("CursorAnchor", {
     category = "all",
-    name = "Anchor to the cursor",
-    desc = "Shows tooltips at the mouse cursor instead of the screen corner. Unit frame tooltips stay in "
-        .. 'the corner; action button tooltips follow "Anchor to action buttons" while that is on.',
+    name = L["Anchor to the cursor"],
+    desc = L['Shows tooltips at the mouse cursor instead of the screen corner. Unit frame tooltips stay in the corner; action button tooltips follow "Anchor to action buttons" while that is on.'],
     order = 10,
     enabled = false,
     defaults = {
@@ -19,18 +20,18 @@ local feature = app.features:NewFeature("CursorAnchor", {
         position = {
             type = "select",
             order = 10,
-            name = "Position",
+            name = L["Position"],
             values = {
-                ANCHOR_CURSOR = "At the cursor",
-                ANCHOR_CURSOR_LEFT = "Left of the cursor",
-                ANCHOR_CURSOR_RIGHT = "Right of the cursor",
+                ANCHOR_CURSOR = L["At the cursor"],
+                ANCHOR_CURSOR_LEFT = L["Left of the cursor"],
+                ANCHOR_CURSOR_RIGHT = L["Right of the cursor"],
             },
             sorting = { "ANCHOR_CURSOR", "ANCHOR_CURSOR_LEFT", "ANCHOR_CURSOR_RIGHT" },
         },
         offsetX = {
             type = "range",
             order = 20,
-            name = "X offset",
+            name = L["X offset"],
             min = -1000,
             max = 1000,
             softMin = -400,
@@ -41,7 +42,7 @@ local feature = app.features:NewFeature("CursorAnchor", {
         offsetY = {
             type = "range",
             order = 30,
-            name = "Y offset",
+            name = L["Y offset"],
             min = -1000,
             max = 1000,
             softMin = -400,

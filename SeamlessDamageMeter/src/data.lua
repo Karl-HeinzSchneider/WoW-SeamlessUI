@@ -1,62 +1,64 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Rendering facade. All combat queries belong to the central service.
 app.statistics = {
     {
         key = "DamageDone",
-        label = DAMAGE_METER_TYPE_DAMAGE_DONE or "Damage done",
+        label = L["Damage done"],
         icon = "Interface\\Icons\\Spell_Fire_FlameBolt",
     },
     {
         key = "Dps",
-        label = DAMAGE_METER_TYPE_DPS or "DPS",
+        label = L["DPS"],
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
         rate = true,
     },
     {
         key = "HealingDone",
-        label = DAMAGE_METER_TYPE_HEALING_DONE or "Healing done",
+        label = L["Healing done"],
         icon = "Interface\\Icons\\Spell_Nature_HealingTouch",
     },
     {
         key = "Hps",
-        label = DAMAGE_METER_TYPE_HPS or "HPS",
+        label = L["HPS"],
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
         rate = true,
     },
     {
         key = "Absorbs",
-        label = DAMAGE_METER_TYPE_ABSORBS or "Absorbs",
+        label = L["Absorbs"],
         icon = "Interface\\Icons\\Spell_Holy_PowerWordShield",
     },
     {
         key = "Interrupts",
-        label = DAMAGE_METER_TYPE_INTERRUPTS or "Interrupts",
+        label = L["Interrupts"],
         icon = "Interface\\Icons\\Ability_Kick",
     },
     {
         key = "Dispels",
-        label = DAMAGE_METER_TYPE_DISPELS or "Dispels",
+        label = L["Dispels"],
         icon = "Interface\\Icons\\Spell_Holy_Renew",
     },
     {
         key = "DamageTaken",
-        label = DAMAGE_METER_TYPE_DAMAGE_TAKEN or "Damage taken",
+        label = L["Damage taken"],
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
     },
     {
         key = "AvoidableDamageTaken",
-        label = DAMAGE_METER_TYPE_AVOIDABLE_DAMAGE_TAKEN or "Avoidable damage taken",
+        label = L["Avoidable damage taken"],
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
     },
     {
         key = "EnemyDamageTaken",
-        label = DAMAGE_METER_TYPE_ENEMY_DAMAGE_TAKEN or "Enemy damage taken",
+        label = L["Enemy damage taken"],
         icon = "Interface\\Icons\\INV_Misc_QuestionMark",
     },
-    { key = "Deaths", label = DAMAGE_METER_TYPE_DEATHS or "Deaths", icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
-    { key = "Threat", label = "Threat", icon = "Interface\\Icons\\INV_Misc_QuestionMark", liveOnly = true },
+    { key = "Deaths", label = L["Deaths"], icon = "Interface\\Icons\\INV_Misc_QuestionMark" },
+    { key = "Threat", label = L["Threat"], icon = "Interface\\Icons\\INV_Misc_QuestionMark", liveOnly = true },
 }
 
 function app:IsAvailable()

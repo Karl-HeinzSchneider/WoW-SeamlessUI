@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local unitTooltip = app.unitTooltip
 
@@ -10,8 +12,8 @@ local unitTooltip = app.unitTooltip
 local feature -- declared first: the options below refer to it
 feature = app.features:NewFeature("PlayerText", {
     category = "units",
-    name = "Player text",
-    desc = "Changes the text of player tooltips.",
+    name = L["Player text"],
+    desc = L["Changes the text of player tooltips."],
     order = 10,
     defaults = {
         classColorName = true,
@@ -29,50 +31,48 @@ feature = app.features:NewFeature("PlayerText", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Name in class color",
+            name = L["Name in class color"],
         },
         classColorClass = {
             type = "toggle",
             order = 20,
             width = "full",
-            name = "Class in class color",
+            name = L["Class in class color"],
         },
         raceReactionColor = {
             type = "toggle",
             order = 30,
             width = "full",
-            name = "Race in reaction color",
-            desc = "Colors the race like the game colors hostile and friendly units: players of the other "
-                .. "faction you can attack are red.",
+            name = L["Race in reaction color"],
+            desc = L["Colors the race like the game colors hostile and friendly units: players of the other faction you can attack are red."],
         },
         shortLevel = {
             type = "toggle",
             order = 40,
             width = "full",
-            name = "Short level line",
-            desc = 'Shows "Level 3 Dwarf (Player)" and the class line as "3 Dwarf Priest", the level in its '
-                .. "difficulty color (red is much higher than you, grey much lower).",
+            name = L["Short level line"],
+            desc = L['Shows "Level 3 Dwarf (Player)" and the class line as "3 Dwarf Priest", the level in its difficulty color (red is much higher than you, grey much lower).'],
         },
         hideClass = {
             type = "toggle",
             order = 50,
             width = "full",
-            name = "Hide the class",
-            desc = 'Leaves the class out; with the short level line, out of that line ("3 Dwarf").',
+            name = L["Hide the class"],
+            desc = L['Leaves the class out; with the short level line, out of that line ("3 Dwarf").'],
         },
         guildLine = {
             type = "toggle",
             order = 60,
             width = "full",
-            name = "Guild as <Guild>",
-            desc = "Shows the guild in brackets, in the player's hostile/friendly color; your own guild in " .. "pink.",
+            name = L["Guild as <Guild>"],
+            desc = L["Shows the guild in brackets, in the player's hostile/friendly color; your own guild in pink."],
         },
         guildRank = {
             type = "toggle",
             order = 70,
             width = "full",
-            name = "Guild rank",
-            desc = 'Adds the player\'s guild rank behind the guild ("<Guild> Officer").',
+            name = L["Guild rank"],
+            desc = L['Adds the player\'s guild rank behind the guild ("<Guild> Officer").'],
             disabled = function()
                 local settings = feature:Settings()
                 return not settings.enabled or not settings.guildLine
@@ -82,8 +82,8 @@ feature = app.features:NewFeature("PlayerText", {
             type = "toggle",
             order = 80,
             width = "full",
-            name = "Guild rank number",
-            desc = 'Adds the rank\'s number behind the guild, 0 being the guild master ("<Guild> Officer (2)").',
+            name = L["Guild rank number"],
+            desc = L['Adds the rank\'s number behind the guild, 0 being the guild master ("<Guild> Officer (2)").'],
             disabled = function()
                 local settings = feature:Settings()
                 return not settings.enabled or not settings.guildLine
@@ -218,7 +218,7 @@ function feature:OnLinePre(tooltip, lineData)
     end
 end
 
--- "Level 3 Dwarf (Player)" → "3 Dwarf Priest". Nil when the race can't be read; the line then
+-- "Level 3 Dwarf (Player)" â†’ "3 Dwarf Priest". Nil when the race can't be read; the line then
 -- stays as it is.
 ---@param unit string
 ---@param text string

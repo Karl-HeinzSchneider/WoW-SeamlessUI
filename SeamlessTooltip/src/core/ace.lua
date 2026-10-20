@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 ---@class SeamlessTooltip.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0
@@ -22,17 +24,17 @@ function addon:OnInitialize()
     self:RegisterChatCommand("seamlesstooltip", "OnSlashCommand")
 
     self:OnProfileRefresh()
-    log:debug("Initialized (profile: %s)", db:GetCurrentProfile())
+    log:debug(L["Initialized (profile: %s)"], db:GetCurrentProfile())
 end
 
 -- Called after OnInitialize and whenever the addon is re-enabled. Register events here.
 function addon:OnEnable()
-    log:debug("Enabled")
+    log:debug(L["Enabled"])
 end
 
 -- Ace unregisters events/timers/hooks automatically on disable.
 function addon:OnDisable()
-    log:debug("Disabled")
+    log:debug(L["Disabled"])
 end
 
 -- Re-apply everything that depends on profile settings. Modules opt in by defining OnProfileRefresh.
@@ -55,8 +57,8 @@ function addon:OnSlashCommand(input)
         app.core:OnSlashCommand(input)
     elseif cmd == "reset" then
         self.db:ResetProfile()
-        log:chat("Profile reset")
+        log:chat(L["Profile reset"])
     else
-        log:chat("Commands: /seamlesstooltip [options], /seamlesstooltip loglevel <level>, /seamlesstooltip reset")
+        log:chat(L["Commands: /seamlesstooltip [options], /seamlesstooltip loglevel <level>, /seamlesstooltip reset"])
     end
 end

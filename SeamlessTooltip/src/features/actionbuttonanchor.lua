@@ -1,12 +1,14 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Anchors the tooltip of an action button (action, pet and stance bars) to that button instead of
 -- the default spot in the screen corner.
 local feature = app.features:NewFeature("ActionButtonAnchor", {
     category = "all",
-    name = "Anchor to action buttons",
-    desc = "Shows the tooltip of an action bar, pet bar or stance bar button next to that button.",
+    name = L["Anchor to action buttons"],
+    desc = L["Shows the tooltip of an action bar, pet bar or stance bar button next to that button."],
     order = 20,
     defaults = {
         position = "ANCHOR_RIGHT",
@@ -15,13 +17,13 @@ local feature = app.features:NewFeature("ActionButtonAnchor", {
         position = {
             type = "select",
             order = 10,
-            name = "Position",
+            name = L["Position"],
             values = {
-                AUTO = "Above or below (toward the screen center)",
-                ANCHOR_TOP = "Above",
-                ANCHOR_BOTTOM = "Below",
-                ANCHOR_LEFT = "Above, to the left",
-                ANCHOR_RIGHT = "Above, to the right",
+                AUTO = L["Above or below (toward the screen center)"],
+                ANCHOR_TOP = L["Above"],
+                ANCHOR_BOTTOM = L["Below"],
+                ANCHOR_LEFT = L["Above, to the left"],
+                ANCHOR_RIGHT = L["Above, to the right"],
             },
             sorting = { "AUTO", "ANCHOR_TOP", "ANCHOR_BOTTOM", "ANCHOR_LEFT", "ANCHOR_RIGHT" },
         },

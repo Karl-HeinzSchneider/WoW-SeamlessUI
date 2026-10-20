@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- The button bar left of the main chat window: the game's chat buttons and ours, one style, stacked
 -- from the bottom without gaps, in a frame of our own (SeamlessChatButtonBar). The game's own button
 -- strip belongs to ChatFrame1 and hides with it whenever another docked tab is selected; ours stays. A button the game hides (voice buttons outside voice chat) or the
@@ -35,8 +37,8 @@ local defaults = {
 local feature = app.features:New(
     "skin",
     module,
-    "Chat buttons",
-    "The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap.",
+    L["Chat buttons"],
+    L["The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."],
     defaults
 ) --[[@as SeamlessChat.Skin]]
 
@@ -66,7 +68,7 @@ local BUTTONS = {
     {
         key = "tts",
         game = true,
-        name = "Text to speech",
+        name = L["Text to speech"],
         frame = function()
             return TextToSpeechButton
         end,
@@ -74,7 +76,7 @@ local BUTTONS = {
     {
         key = "voiceDeafen",
         game = true,
-        name = "Voice: deafen",
+        name = L["Voice: deafen"],
         frame = function()
             return ChatFrameToggleVoiceDeafenButton
         end,
@@ -82,35 +84,35 @@ local BUTTONS = {
     {
         key = "voiceMute",
         game = true,
-        name = "Voice: mute",
+        name = L["Voice: mute"],
         frame = function()
             return ChatFrameToggleVoiceMuteButton
         end,
     },
     {
         key = "social",
-        name = "Social",
+        name = L["Social"],
         frame = function()
             return QuickJoinToastButton
         end,
     },
     {
         key = "channels",
-        name = "Channels",
+        name = L["Channels"],
         frame = function()
             return ChatFrameChannelButton
         end,
     },
     {
         key = "menu",
-        name = "Chat menu",
+        name = L["Chat menu"],
         frame = function()
             return ChatFrameMenuButton
         end,
     },
     {
         key = "log",
-        name = "Chat log",
+        name = L["Chat log"],
         frame = function()
             return SeamlessChatLogButton
         end,
@@ -118,7 +120,7 @@ local BUTTONS = {
     {
         key = "copy",
         own = true,
-        name = "Copy chat",
+        name = L["Copy chat"],
         frame = function()
             return feature.copyButton
         end,
@@ -126,7 +128,7 @@ local BUTTONS = {
     {
         key = "options",
         own = true,
-        name = "Options",
+        name = L["Options"],
         frame = function()
             return feature.optionsButton
         end,
@@ -302,13 +304,13 @@ end
 
 function module:CreateOwnButtons()
     -- Opens the copy window with the selected chat tab's lines.
-    self.copyButton = self:CreateBarButton("Copy chat", COPY_ICON, function()
+    self.copyButton = self:CreateBarButton(L["Copy chat"], COPY_ICON, function()
         local chatFrame = SELECTED_CHAT_FRAME or DEFAULT_CHAT_FRAME
         if chatFrame then
             app.copy:OpenWindow(chatFrame)
         end
     end)
-    self.optionsButton = self:CreateBarButton("Chat options", nil, function()
+    self.optionsButton = self:CreateBarButton(L["Chat options"], nil, function()
         app.options:Open()
     end, OPTIONS_ART)
 end
@@ -464,8 +466,8 @@ function module:GetOptions()
         accent = {
             type = "color",
             order = 10,
-            name = "Accent color",
-            desc = "The edge of a button under the mouse.",
+            name = L["Accent color"],
+            desc = L["The edge of a button under the mouse."],
             get = function()
                 local color = self:Settings().accent
                 return color.r, color.g, color.b
@@ -481,10 +483,10 @@ function module:GetOptions()
             type = "toggle",
             order = 20 + i,
             name = entry.name,
-            desc = entry.key == "log" and "Same as the Chat log setting of the same name."
-                or entry.key == "copy" and "Opens the copy window for the selected chat tab. Needs Copy to be enabled."
-                or entry.key == "options" and "Opens the Chat settings."
-                or "Show this button in the bar.",
+            desc = entry.key == "log" and L["Same as the Chat log setting of the same name."]
+                or entry.key == "copy" and L["Opens the copy window for the selected chat tab. Needs Copy to be enabled."]
+                or entry.key == "options" and L["Opens the Chat settings."]
+                or L["Show this button in the bar."],
             get = function()
                 if entry.key == "log" then
                     return app.chatLog:GetSettings().showButton

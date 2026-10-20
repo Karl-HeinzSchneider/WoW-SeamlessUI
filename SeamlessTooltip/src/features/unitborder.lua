@@ -1,15 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 
 -- Colors the border of unit tooltips: players in their class color, NPCs in their hostile/friendly
 -- color, mobs another player has tapped in grey.
 local feature = app.features:NewFeature("UnitBorder", {
     category = "units",
-    name = "Border color",
-    desc = "Colors the border of unit tooltips by the unit. Works with the game's border and with "
-        .. '"Border and background".',
+    name = L["Border color"],
+    desc = L['Colors the border of unit tooltips by the unit. Works with the game\'s border and with "Border and background".'],
     order = 35,
     defaults = {
         players = true,
@@ -21,21 +22,21 @@ local feature = app.features:NewFeature("UnitBorder", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Players in class color",
+            name = L["Players in class color"],
         },
         npcs = {
             type = "toggle",
             order = 20,
             width = "full",
-            name = "NPCs in reaction color",
-            desc = "Hostile red, neutral yellow, friendly green.",
+            name = L["NPCs in reaction color"],
+            desc = L["Hostile red, neutral yellow, friendly green."],
         },
         tapped = {
             type = "toggle",
             order = 30,
             width = "full",
-            name = "Tapped mobs in grey",
-            desc = "Mobs another player has tapped, which give you no loot or experience.",
+            name = L["Tapped mobs in grey"],
+            desc = L["Mobs another player has tapped, which give you no loot or experience."],
         },
     },
 })

@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 -- Copying chat. The game can't copy text out of a chat window, only out of an edit box, so a line
@@ -28,8 +30,8 @@ local defaults = {
 app.copy = app.features:New(
     "copy",
     module,
-    "Copy chat",
-    "Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C.",
+    L["Copy chat"],
+    L["Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C."],
     defaults
 ) --[[@as SeamlessChat.Copy]]
 
@@ -137,7 +139,7 @@ function module:OnSetItemRef(link, _, _, chatFrame)
     end
     local message = self.lines[id]
     if not message then
-        log:chat("That line is too old to copy.")
+        log:chat(L["That line is too old to copy."])
         return
     end
     self:CopyToChatInput(plainText(message), chatFrame)
@@ -281,22 +283,22 @@ function module:GetOptions()
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Click a timestamp to copy its message",
-            desc = "Needs Timestamps to be enabled.",
+            name = L["Click a timestamp to copy its message"],
+            desc = L["Needs Timestamps to be enabled."],
         },
         showButton = {
             type = "toggle",
             order = 20,
             width = "full",
-            name = "Copy button in the chat windows",
-            desc = "A button in the top right corner of each chat window, shown while the mouse is over the chat. It opens a window with the last messages, selected, ready for Ctrl+C.",
+            name = L["Copy button in the chat windows"],
+            desc = L["A button in the top right corner of each chat window, shown while the mouse is over the chat. It opens a window with the last messages, selected, ready for Ctrl+C."],
         },
         windowLines = {
             type = "range",
             order = 30,
             width = "double",
-            name = "Messages in the copy window",
-            desc = "How many of the last messages the copy window shows, at most as many as the chat window keeps (Chat history).",
+            name = L["Messages in the copy window"],
+            desc = L["How many of the last messages the copy window shows, at most as many as the chat window keeps (Chat history)."],
             min = 10,
             max = 10000,
             softMax = 2000,

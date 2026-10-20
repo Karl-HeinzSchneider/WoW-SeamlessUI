@@ -276,15 +276,19 @@ LibStub = function()
         end,
     }
 end
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/settings.lua"))("SeamlessDamageMeter", app)
 app.db.profile.windowDefaults = app.windowDefaults
 assert(app.windowDefaults.fixedHeight and app.windowDefaults.visibleLines == 7)
 app.db.profile.windowDefaults.fixedHeight = false
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/data.lua"))("SeamlessDamageMeter", app)
 for _, name in ipairs({ "archive", "live", "service", "breakdowns", "capture" }) do
+    dofile("src/tests/locale-support.lua")
     assert(loadfile("SeamlessDamageMeter/src/" .. name .. ".lua"))("SeamlessDamageMeter", app)
 end
 app.combatService:Initialize({})
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/windows.lua"))("SeamlessDamageMeter", app)
 app:RebuildWindows()
 local frame = app.windows[1]
@@ -1217,6 +1221,7 @@ EditModeManagerFrame = {
         callbacks.exit()
     end,
 }
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
 combat = false
 app:RebuildWindows()

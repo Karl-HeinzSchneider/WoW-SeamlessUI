@@ -120,7 +120,7 @@
 					<Anchor point="BOTTOMLEFT" relativeKey="$parent.ResultInset" relativePoint="BOTTOMRIGHT" x="6" y="4"/>
 				</Anchors>
 			</EventFrame>
-			<Button parentKey="CopyButton" inherits="UIPanelButtonTemplate" text="Copy">
+			<Button parentKey="CopyButton" inherits="UIPanelButtonTemplate">
 				<Size x="110" y="22"/>
 				<Anchors>
 					<Anchor point="BOTTOMRIGHT" x="-30" y="12"/>

@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 -- Chat history: every chat window keeps more messages than the game's 128, and, per character,
@@ -26,8 +28,8 @@ local defaults = {
 app.features:New(
     "history",
     module,
-    "Chat history",
-    "Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session.",
+    L["Chat history"],
+    L["Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session."],
     defaults
 )
 
@@ -113,7 +115,7 @@ end
 ---@param saved SeamlessChat.SavedHistory
 ---@return integer
 function module:Restore(saved)
-    local divider = ("-- Restored from your last session (%s) --"):format(date("%Y-%m-%d %H:%M", saved.savedAt))
+    local divider = (L["-- Restored from your last session (%s) --"]):format(date("%Y-%m-%d %H:%M", saved.savedAt))
     self.dividers[divider] = true
 
     local restored = 0
@@ -185,14 +187,14 @@ function module:OnEnable()
         return
     end
     if saved.error then
-        log:warn("Saving the chat at the last logout failed: %s", saved.error)
+        log:warn(L["Saving the chat at the last logout failed: %s"], saved.error)
     end
     if type(saved.windows) == "table" then
         local ok, result = pcall(self.Restore, self, saved)
         if ok then
-            log:debug("Restored %d messages from the last session", result)
+            log:debug(L["Restored %d messages from the last session"], result)
         else
-            log:warn("Restoring the chat of the last session failed: %s", tostring(result))
+            log:warn(L["Restoring the chat of the last session failed: %s"], tostring(result))
         end
     end
 end
@@ -212,8 +214,8 @@ function module:GetOptions()
             type = "range",
             order = 10,
             width = "double",
-            name = "Messages per chat window",
-            desc = "How many messages each chat window keeps. Lowering it drops the oldest ones.",
+            name = L["Messages per chat window"],
+            desc = L["How many messages each chat window keeps. Lowering it drops the oldest ones."],
             min = BLIZZARD_MAX_LINES,
             max = 10000,
             softMax = 5000,
@@ -224,15 +226,15 @@ function module:GetOptions()
             type = "toggle",
             order = 20,
             width = "full",
-            name = "Keep the chat across logins and reloads",
-            desc = "Saves each chat window's messages when you log out or reload and puts them back at the next login of the same character, above a divider line.",
+            name = L["Keep the chat across logins and reloads"],
+            desc = L["Saves each chat window's messages when you log out or reload and puts them back at the next login of the same character, above a divider line."],
         },
         savedLines = {
             type = "range",
             order = 30,
             width = "double",
-            name = "Messages saved per chat window",
-            desc = "How many of the last messages of each chat window are saved. At login, a window takes back as many as fit into Messages per chat window.",
+            name = L["Messages saved per chat window"],
+            desc = L["How many of the last messages of each chat window are saved. At login, a window takes back as many as fit into Messages per chat window."],
             min = 10,
             max = 10000,
             softMax = 5000,

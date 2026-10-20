@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 app.MAX_WINDOWS = 10
 app.windowDefaults = {
     width = 400,
@@ -93,7 +95,7 @@ function app:PrepareWindowSettings()
     local profile = self.db.profile
     profile.skins = profile.skins or {}
     if not profile.skins.default then
-        profile.skins.default = { name = "Default", settings = CopySettings(profile.windowDefaults) }
+        profile.skins.default = { name = L["Default"], settings = CopySettings(profile.windowDefaults) }
     end
     for _, skin in pairs(profile.skins) do
         skin.settings = skin.settings or {}
@@ -182,7 +184,7 @@ function app:PrepareWindowSettings()
             end
             if customized then
                 local key = "legacyWindow" .. config.id
-                profile.skins[key] = { name = "Window " .. config.id .. " (migrated)", settings = settings }
+                profile.skins[key] = { name = L["Window %d (migrated)"]:format(config.id), settings = settings }
                 config.skin = key
             end
         end

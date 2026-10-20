@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds details about an item to its tooltip: how many of it fit in one stack.
 local feature = app.features:NewFeature("ItemDetails", {
     category = "items",
-    name = "Item details",
-    desc = "Adds details about an item to its tooltip.",
+    name = L["Item details"],
+    desc = L["Adds details about an item to its tooltip."],
     order = 20,
     defaults = {
         stackSize = false,
@@ -18,13 +20,13 @@ local feature = app.features:NewFeature("ItemDetails", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Stack size",
-            desc = "How many of the item fit in one stack; only for items that stack.",
+            name = L["Stack size"],
+            desc = L["How many of the item fit in one stack; only for items that stack."],
         },
     },
 })
 
-local STACK_SIZE_LABEL = AUCTION_STACK_SIZE or "Stack Size"
+local STACK_SIZE_LABEL = L["Stack Size"]
 
 function feature:OnInitialize()
     self:AddTooltipPostCall(Enum.TooltipDataType.Item, "OnItemTooltip")

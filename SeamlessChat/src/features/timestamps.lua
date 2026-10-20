@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Puts the time in front of every chat message: [18:14:31] Hello. Unlike the game's own chat
 -- timestamps, it covers every message (loot, system, ...), not just player chat, and its format is
 -- free. The game's timestamps are switched off while it is enabled, or every line would get two.
@@ -24,8 +26,8 @@ local defaults = {
 local timestamps = app.features:New(
     "timestamps",
     module,
-    "Timestamps",
-    "Shows the time in front of every chat message. Replaces the game's own chat timestamps while enabled.",
+    L["Timestamps"],
+    L["Shows the time in front of every chat message. Replaces the game's own chat timestamps while enabled."],
     defaults
 ) --[[@as SeamlessChat.Timestamps]]
 
@@ -182,15 +184,15 @@ function module:GetOptions()
             order = 5,
             fontSize = "medium",
             name = function()
-                return "Preview:  " .. formatStamp(settings(), EXAMPLE_TIME) .. " [Thrall]: Lok'tar!\n"
+                return L["Preview:  %s [Thrall]: Lok'tar!\n"]:format(formatStamp(settings(), EXAMPLE_TIME))
             end,
         },
         format = {
             type = "select",
             order = 10,
-            name = "Format",
+            name = L["Format"],
             values = function()
-                local values = { custom = "Custom" }
+                local values = { custom = L["Custom"] }
                 for _, pattern in ipairs(FORMATS) do
                     values[pattern] = TimeUtil.BetterDate(pattern, EXAMPLE_TIME)
                 end
@@ -201,14 +203,14 @@ function module:GetOptions()
         customFormat = {
             type = "input",
             order = 11,
-            name = "Custom format",
-            desc = "A date() pattern: %H hour (00-23), %I hour (01-12), %M minute, %S second, %p AM/PM, %d day, %m month.",
+            name = L["Custom format"],
+            desc = L["A date() pattern: %H hour (00-23), %I hour (01-12), %M minute, %S second, %p AM/PM, %d day, %m month."],
             hidden = function()
                 return settings().format ~= "custom"
             end,
             validate = function(_, value)
                 if value == "" or not pcall(date, value) then
-                    return "Not a valid time format."
+                    return L["Not a valid time format."]
                 end
                 return true
             end,
@@ -216,7 +218,7 @@ function module:GetOptions()
         brackets = {
             type = "select",
             order = 20,
-            name = "Brackets",
+            name = L["Brackets"],
             values = function()
                 local values = {}
                 for key, brackets in pairs(BRACKETS) do
@@ -229,13 +231,13 @@ function module:GetOptions()
         colored = {
             type = "toggle",
             order = 30,
-            name = "Own color",
-            desc = "Color the timestamp instead of showing it in the message's color.",
+            name = L["Own color"],
+            desc = L["Color the timestamp instead of showing it in the message's color."],
         },
         color = {
             type = "color",
             order = 31,
-            name = "Color",
+            name = L["Color"],
             disabled = function()
                 return not (settings().enabled and settings().colored)
             end,

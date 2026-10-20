@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local media = app.media
 local LSM = media.LSM
 
@@ -8,9 +10,8 @@ local LSM = media.LSM
 -- including the target and focus frames' aura tooltip (through Blizzard's AuraContainerInbound).
 local feature = app.features:NewFeature("Backdrop", {
     category = "all",
-    name = "Border and background",
-    desc = "Draws the tooltips with a border and background of your choice. More textures come with "
-        .. "addons that register them with LibSharedMedia (e.g. SharedMedia).",
+    name = L["Border and background"],
+    desc = L["Draws the tooltips with a border and background of your choice. More textures come with addons that register them with LibSharedMedia (e.g. SharedMedia)."],
     order = 30,
     defaults = {
         background = "Blizzard Collections Background",
@@ -24,31 +25,31 @@ local feature = app.features:NewFeature("Backdrop", {
         background = {
             type = "select",
             order = 10,
-            name = "Background",
+            name = L["Background"],
             values = media.Values(LSM.MediaType.BACKGROUND),
         },
         backgroundColor = {
             type = "color",
             order = 20,
-            name = "Background color",
+            name = L["Background color"],
             hasAlpha = true,
         },
         border = {
             type = "select",
             order = 30,
-            name = "Border",
+            name = L["Border"],
             values = media.Values(LSM.MediaType.BORDER),
         },
         borderColor = {
             type = "color",
             order = 40,
-            name = "Border color",
+            name = L["Border color"],
             hasAlpha = true,
         },
         edgeSize = {
             type = "range",
             order = 50,
-            name = "Border size",
+            name = L["Border size"],
             min = 1,
             max = 32,
             step = 1,
@@ -56,8 +57,8 @@ local feature = app.features:NewFeature("Backdrop", {
         inset = {
             type = "range",
             order = 60,
-            name = "Background inset",
-            desc = "How far the background stays inside the tooltip's edge.",
+            name = L["Background inset"],
+            desc = L["How far the background stays inside the tooltip's edge."],
             min = 0,
             max = 16,
             step = 1,

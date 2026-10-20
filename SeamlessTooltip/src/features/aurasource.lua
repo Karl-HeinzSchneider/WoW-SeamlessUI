@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds who cast a buff or debuff to its tooltip, the name in the caster's class color.
 local feature = app.features:NewFeature("AuraSource", {
     category = "spells",
-    name = "Aura caster",
-    desc = "Adds who cast a buff or debuff to its tooltip. Players are shown in their class color.",
+    name = L["Aura caster"],
+    desc = L["Adds who cast a buff or debuff to its tooltip. Players are shown in their class color."],
     order = 20,
 })
 
@@ -84,6 +86,6 @@ end
 function feature:OnAuraTooltip(tooltip)
     local name, color = sourceOf(tooltip)
     if name then
-        lines.AddValue(tooltip, "Source:", name, color)
+        lines.AddValue(tooltip, L["Source:"], name, color)
     end
 end

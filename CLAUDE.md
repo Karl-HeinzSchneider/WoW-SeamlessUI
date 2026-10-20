@@ -57,6 +57,9 @@ WoW addons are plain Lua/XML files loaded by the game; there is no build step. T
 Static checks also used ad hoc: `lua-language-server --check` (config in `.luarc.json`; `lib/` is
 excluded from LuaLS, StyLua and Prettier).
 
+`npm run locales:sync` synchronizes translation stubs with the English catalogue.
+Run `npx tsx src/tests/sync-locales.ts` and `lua src/tests/locales.lua` for locale regressions.
+
 ## Tooling (`src/`)
 
 ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
@@ -106,6 +109,28 @@ They belong under the shared **Frames** heading. `section = "options"` (the defa
 controls in the main window's GLOBAL options area; use it only for explicitly requested
 global options. See `Seamless/CLAUDE.md` for the APIs, row types and callbacks used by
 the shared panel and selected-frame settings.
+
+## Localization
+
+All addon-authored text displayed to users must come from the suite's AceLocale object:
+`local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")`, then `L["Open"]`.
+This applies to every addon, including options, frame names, menus, tooltips, dialogs,
+Edit Mode controls and chat/log messages. Do not introduce literal English display text.
+Game-provided content (player/item/spell names, chat messages, API error messages), user-entered
+names and library-owned UI remain owned by their source. Technical IDs, slash-command tokens,
+texture/font registry keys, patterns and empty strings are not translated.
+
+Add complete English phrases and format strings to `Seamless/locales/enUS.lua` first.
+Keep generic/shared phrases and frame names together, then addon-specific sections; sort
+within each section. Reuse common keys, preserve format placeholders and avoid concatenating
+sentence fragments so translators can change word order. Use a distinct descriptive key when
+the same English phrase needs different meanings. Never localize SavedVariables keys or API IDs.
+Run `npm run locales:sync` after changing the baseline. It creates guarded client files under
+`Seamless/locales/<locale>/strings.lua`, keeps existing translations, and inserts commented English
+stubs in exactly the baseline order. Uncomment and replace the value to translate it. Use one
+double-quoted key/value assignment per line; resolve obsolete keys explicitly when reported.
+Core loads English first and only the client's `[TextLocale]` file afterward. Untranslated entries
+fall back to English; `enGB` uses AceLocale's English normalization.
 
 ## WoW addon constraints
 

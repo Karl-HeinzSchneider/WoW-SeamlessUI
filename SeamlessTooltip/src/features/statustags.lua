@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local unitTooltip = app.unitTooltip
 
@@ -8,8 +10,8 @@ local unitTooltip = app.unitTooltip
 -- game's own "PvP" line can go.
 local feature = app.features:NewFeature("StatusTags", {
     category = "units",
-    name = "Status tags",
-    desc = "Adds a player's state behind the name, e.g. <AFK> or <Dead>.",
+    name = L["Status tags"],
+    desc = L["Adds a player's state behind the name, e.g. <AFK> or <Dead>."],
     order = 22,
     defaults = {
         afk = true,
@@ -23,44 +25,44 @@ local feature = app.features:NewFeature("StatusTags", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "<AFK> and <DND>",
+            name = L["<AFK> and <DND>"],
         },
         offline = {
             type = "toggle",
             order = 20,
             width = "full",
-            name = "<Offline>",
+            name = L["<Offline>"],
         },
         dead = {
             type = "toggle",
             order = 30,
             width = "full",
-            name = "<Dead> and <Ghost>",
+            name = L["<Dead> and <Ghost>"],
         },
         pvp = {
             type = "toggle",
             order = 40,
             width = "full",
-            name = "<PvP>",
-            desc = "For players flagged for PvP.",
+            name = L["<PvP>"],
+            desc = L["For players flagged for PvP."],
         },
         hidePvpLine = {
             type = "toggle",
             order = 50,
             width = "full",
-            name = 'Hide the "PvP" line',
-            desc = "The line the game adds for players flagged for PvP.",
+            name = L['Hide the "PvP" line'],
+            desc = L["The line the game adds for players flagged for PvP."],
         },
     },
 })
 
 local TAG_COLOR = CreateColor(0.65, 0.65, 0.65)
-local AFK = CHAT_FLAG_AFK or "<AFK>"
-local DND = CHAT_FLAG_DND or "<DND>"
-local OFFLINE = "<" .. (PLAYER_OFFLINE or "Offline") .. ">"
-local DEAD_TAG = "<" .. (DEAD or "Dead") .. ">"
-local GHOST = "<Ghost>"
-local PVP_TAG = "<" .. (PVP or "PvP") .. ">"
+local AFK = L["<AFK>"]
+local DND = L["<DND>"]
+local OFFLINE = L["<Offline>"]
+local DEAD_TAG = L["<Dead>"]
+local GHOST = L["<Ghost>"]
+local PVP_TAG = L["<PvP>"]
 
 function feature:OnInitialize()
     self:AddLinePreCall(TooltipDataProcessor.AllTypes, "OnLinePre")

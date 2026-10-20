@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Fade-out control: whether chat messages fade out after a while, how long they stay, and how long
 -- the fade takes. Applies to every chat window (temporary ones too); the game's values come back
 -- when disabled.
@@ -18,8 +20,8 @@ local defaults = {
 app.features:New(
     "fading",
     module,
-    "Fade-out",
-    "Whether chat messages fade out after a while, how long they stay, and how long the fade takes.",
+    L["Fade-out"],
+    L["Whether chat messages fade out after a while, how long they stay, and how long the fade takes."],
     defaults
 )
 
@@ -76,15 +78,15 @@ function module:GetOptions()
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Fade out old messages",
-            desc = "Off keeps every message visible.",
+            name = L["Fade out old messages"],
+            desc = L["Off keeps every message visible."],
         },
         timeVisible = {
             type = "range",
             order = 20,
             width = "double",
-            name = "Seconds visible",
-            desc = "How long a message stays before it fades out. The game uses 120.",
+            name = L["Seconds visible"],
+            desc = L["How long a message stays before it fades out. The game uses 120."],
             min = 5,
             max = 3600,
             softMax = 600,
@@ -96,8 +98,8 @@ function module:GetOptions()
             type = "range",
             order = 30,
             width = "double",
-            name = "Fade duration",
-            desc = "How many seconds the fade itself takes. The game uses 3.",
+            name = L["Fade duration"],
+            desc = L["How many seconds the fade itself takes. The game uses 3."],
             min = 0,
             max = 10,
             step = 0.5,

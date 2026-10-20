@@ -4,6 +4,11 @@ Required entry point for the Seamless suite. It works with no feature addons ena
 
 ## Ownership and load order
 
+- `locales/enUS.lua` loads after shared libraries and before runtime code. It owns the suite's
+  shared `Seamless` AceLocale catalogue. The TOC then loads only `locales/[TextLocale]/strings.lua`.
+  Every feature addon obtains this same object with `LibStub("AceLocale-3.0"):GetLocale("Seamless")`.
+  Run `npm run locales:sync` to keep guarded translation files aligned with English.
+
 - `embeds.xml` loads all shared vendored libraries from `lib/`, including AceGUI, AceConfig,
   AceDBOptions, LibSharedMedia, LibEditModeOverride and LibEditMode. LibEditMode loads
   `namespaced.lua` before `embed.xml` into Core's private table; never register it with LibStub.

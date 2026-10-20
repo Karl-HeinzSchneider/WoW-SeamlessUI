@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
@@ -8,8 +10,8 @@ local lines = app.lines
 -- pet.
 local feature = app.features:NewFeature("CreatureFamily", {
     category = "units",
-    name = "Creature family",
-    desc = "Adds a beast's family (Wolf, Cat, Spider, ...) to its tooltip.",
+    name = L["Creature family"],
+    desc = L["Adds a beast's family (Wolf, Cat, Spider, ...) to its tooltip."],
     order = 27,
     enabled = false,
 })
@@ -26,6 +28,6 @@ function feature:OnUnitTooltip(tooltip)
     end
     local family = UnitCreatureFamily(unit)
     if family and not anySecret(family) then
-        lines.AddValue(tooltip, "Family", family)
+        lines.AddValue(tooltip, L["Family"], family)
     end
 end

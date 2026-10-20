@@ -1,18 +1,20 @@
 ---@type string, SeamlessUI
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessUI.Options : AceModule
 local module = {}
 app.options = app.addon:NewModule("Options", module) --[[@as SeamlessUI.Options]]
 
 function module:OnInitialize()
     app.core:RegisterOptions(appName, {
-        title = "UI",
+        title = L["UI"],
         general = {
             description = {
                 type = "description",
                 order = 10,
-                name = "General UI improvements for the Seamless suite.",
+                name = L["General UI improvements for the Seamless suite."],
                 fontSize = "medium",
             },
             xpBarTooltip = app.xpBarTooltip:Options(),

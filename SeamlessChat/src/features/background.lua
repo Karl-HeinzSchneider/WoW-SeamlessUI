@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 -- One background color and opacity for every chat window and its tab (temporary ones too),
@@ -21,8 +23,8 @@ local defaults = {
 app.features:New(
     "background",
     module,
-    "Background",
-    "The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect.",
+    L["Background"],
+    L["The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect."],
     defaults
 )
 
@@ -37,7 +39,7 @@ local function paint(chatFrame, r, g, b, a)
     end)
     painting = false
     if not ok then
-        log:debug("Couldn't paint the background of %s: %s", chatFrame:GetName() or "?", tostring(err))
+        log:debug(L["Couldn't paint the background of %s: %s"], chatFrame:GetName() or "?", tostring(err))
     end
 end
 
@@ -99,8 +101,8 @@ function module:GetOptions()
         color = {
             type = "color",
             order = 10,
-            name = "Background",
-            desc = "Color and opacity of every chat window's background. Opacity 0 hides it; the game shows it at least at 25% while the mouse is over the chat.",
+            name = L["Background"],
+            desc = L["Color and opacity of every chat window's background. Opacity 0 hides it; the game shows it at least at 25% while the mouse is over the chat."],
             hasAlpha = true,
             get = function()
                 local color = self:Settings().color
@@ -115,8 +117,8 @@ function module:GetOptions()
         reset = {
             type = "execute",
             order = 20,
-            name = "Black",
-            desc = "Back to black, fully opaque.",
+            name = L["Black"],
+            desc = L["Back to black, fully opaque."],
             func = function()
                 local color = self:Settings().color
                 color.r, color.g, color.b, color.a = 0, 0, 0, 1

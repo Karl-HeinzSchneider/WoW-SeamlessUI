@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local addon = app.addon
 local lib = app.LibEditMode
 local registrations = {}
@@ -48,11 +50,11 @@ local function EnsurePanel()
     border:SetFrameLevel(panel:GetFrameLevel()) -- Keep its background below control labels.
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
     title:SetPoint("TOP", 0, -15)
-    title:SetText("SeamlessUI")
+    title:SetText(L["SeamlessUI"])
     framesTitle = panel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     framesTitle:SetJustifyH("LEFT")
     framesTitle:SetWordWrap(true)
-    framesTitle:SetText(HUD_EDIT_MODE_SETTINGS_CATEGORY_TITLE_FRAMES or "Frames")
+    framesTitle:SetText(L["Frames"])
     framesTitle:Hide()
     panel:SetScript("OnShow", QueueRefresh)
     panel:SetScript("OnSizeChanged", QueueRefresh)

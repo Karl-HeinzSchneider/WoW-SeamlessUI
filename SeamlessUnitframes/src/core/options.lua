@@ -1,22 +1,22 @@
 ---@type string, SeamlessUnitframes
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessUnitframes.Options : AceModule, AceEvent-3.0
 local module = {}
 app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.Options]]
 
 local healthBarColors = {
-    default = "Default",
-    class = "Class",
-    reaction = "Reaction",
-    classReaction = "Class, reaction for NPCs",
+    default = L["Default"],
+    class = L["Class"],
+    reaction = L["Reaction"],
+    classReaction = L["Class, reaction for NPCs"],
 }
 local healthBarColorOrder = { "default", "class", "reaction", "classReaction" }
 
-local healthBarColorDesc = "Default: the game's green."
-    .. "\nClass: players in their class color, NPCs keep the default."
-    .. "\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged."
-    .. "\nClass, reaction for NPCs: both."
+local healthBarColorDesc =
+    L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."]
 
 -- One select per unit frame this client has, stored in profile.unitFrames[key].healthBarColor.
 local function HealthBarColors()
@@ -24,7 +24,7 @@ local function HealthBarColors()
         info = {
             type = "description",
             order = 0,
-            name = "The color of each unit frame's health bar.\n",
+            name = L["The color of each unit frame's health bar.\n"],
         },
     }
     for i, entry in ipairs(app.unitFrames.list) do
@@ -32,7 +32,7 @@ local function HealthBarColors()
             type = "select",
             order = i,
             name = entry.name,
-            desc = entry.key == "pet" and healthBarColorDesc .. "\n\nA pet takes its owner's class color."
+            desc = entry.key == "pet" and healthBarColorDesc .. L["\n\nA pet takes its owner's class color."]
                 or healthBarColorDesc,
             values = healthBarColors,
             sorting = healthBarColorOrder,
@@ -45,7 +45,7 @@ local function HealthBarColors()
         type = "group",
         inline = true,
         order = 10,
-        name = "Health bar colors",
+        name = L["Health bar colors"],
         get = function(info)
             return app.db.profile.unitFrames[info[#info]].healthBarColor
         end,
@@ -66,20 +66,20 @@ local function TargetTab()
     end
     return {
         order = 10,
-        name = "Target",
+        name = L["Target"],
         args = {
             threat = {
                 type = "group",
                 inline = true,
                 order = 10,
-                name = "Threat",
+                name = L["Threat"],
                 args = {
                     threatPercentage = {
                         type = "toggle",
                         order = 10,
                         width = "full",
-                        name = "Threat percentage",
-                        desc = "Shows the game's threat percentage badge above the target frame. This client-wide game setting also affects other frames that support it.",
+                        name = L["Threat percentage"],
+                        desc = L["Shows the game's threat percentage badge above the target frame. This client-wide game setting also affects other frames that support it."],
                         descStyle = "inline",
                         get = function()
                             return GetCVarBool("threatShowNumeric")
@@ -94,7 +94,7 @@ local function TargetTab()
                 type = "group",
                 inline = true,
                 order = 20,
-                name = "Quest icon",
+                name = L["Quest icon"],
                 get = function(info)
                     return app.db.profile.targetQuestIcon[info[#info]]
                 end,
@@ -112,13 +112,13 @@ local function TargetTab()
                         type = "toggle",
                         order = 10,
                         width = "full",
-                        name = "Enable",
-                        desc = "Shows a slay icon on the target frame for unfinished kill objectives, or a loot icon for other unfinished quest objectives the target's tooltip reports.",
+                        name = L["Enable"],
+                        desc = L["Shows a slay icon on the target frame for unfinished kill objectives, or a loot icon for other unfinished quest objectives the target's tooltip reports."],
                         descStyle = "inline",
                     },
-                    scale = slider(20, "Scale", 0.5, 3, 0.1),
-                    x = slider(30, "X offset", -150, 150, 1),
-                    y = slider(40, "Y offset", -100, 100, 1),
+                    scale = slider(20, L["Scale"], 0.5, 3, 0.1),
+                    x = slider(30, L["X offset"], -150, 150, 1),
+                    y = slider(40, L["Y offset"], -100, 100, 1),
                 },
             },
         },
@@ -127,14 +127,14 @@ end
 
 function module:OnInitialize()
     app.core:RegisterOptions(appName, {
-        title = "Unit Frames",
+        title = L["Unit Frames"],
         general = {
             layout = {
                 type = "select",
                 order = 1,
-                name = "Unit frame layout",
-                desc = "Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends.",
-                values = { current = "Current (70425)", legacy = "Legacy (before 70425)" },
+                name = L["Unit frame layout"],
+                desc = L["Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."],
+                values = { current = L["Current (70425)"], legacy = L["Legacy (before 70425)"] },
                 sorting = { "current", "legacy" },
                 get = function()
                     return app.db.profile.layout

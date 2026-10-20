@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local addon = app.addon
 
 -- Every tooltip enhancement is a feature: one self-contained file in src\features\ that declares
@@ -17,10 +19,10 @@ app.features = addon:NewModule("Features", module) --[[@as SeamlessTooltip.Featu
 -- Features for all tooltips go on the General tab.
 ---@type table<SeamlessTooltip.FeatureCategory, { name: string, order: integer }>
 local CATEGORIES = {
-    all = { name = "General", order = 0 },
-    units = { name = "Units", order = 20 },
-    items = { name = "Items", order = 30 },
-    spells = { name = "Spells", order = 40 },
+    all = { name = L["General"], order = 0 },
+    units = { name = L["Units"], order = 20 },
+    items = { name = L["Items"], order = 30 },
+    spells = { name = L["Spells"], order = 40 },
 }
 module.CATEGORIES = CATEGORIES
 

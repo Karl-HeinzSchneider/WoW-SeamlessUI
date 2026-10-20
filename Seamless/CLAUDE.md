@@ -126,7 +126,8 @@ core:RegisterEditModeOptions("MyAddon", {
 Register frame preview/movability checkboxes with `section = "frames"`. This is the
 correct place for every custom frame's Edit Mode checkbox, including Damage Meter and
 future frames. Core adds one shared gold **Frames** heading, hidden when no frame rows
-are visible. The checkbox controls the feature's preview/selection state; register the actual
+are visible. Frames checkboxes fill two columns row by row, across groups, like the native
+Edit Mode window; a group heading or any other row type starts a new full-width line. The checkbox controls the feature's preview/selection state; register the actual
 movable frame through `core:GetEditModeLibrary()` as before.
 
 Custom options belong above Frames, inside the same window. Use the same simple API,

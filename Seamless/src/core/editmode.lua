@@ -10,6 +10,8 @@ local panel, scroll, content
 local framesTitle
 local refreshing = false
 local PADDING, HEADER, BOTTOM, GAP = 24, 44, 16, 6
+-- Frames checkboxes sit in two columns, filled row by row, like the native Edit Mode window.
+local COLUMNS, COLUMN_GAP = 2, 10
 -- Minimum gap to the screen bottom and smallest list height before the panel scrolls.
 local SCREEN_MARGIN, MIN_VISIBLE = 8, 96
 
@@ -185,6 +187,15 @@ function addon:RefreshEditModeOptions()
     local width = math.max(1, panelWidth - PADDING * 2)
     local y, count = 0, 0
     local framesStarted = false
+    local columnWidth = math.max(1, math.floor((width - COLUMN_GAP * (COLUMNS - 1)) / COLUMNS))
+    -- Next free column of the current Frames grid line, its top and its tallest cell so far.
+    local column, lineTop, lineHeight = 0, 0, 0
+    local function EndLine()
+        if column > 0 then
+            y = lineTop + lineHeight + GAP
+            column, lineHeight = 0, 0
+        end
+    end
     if framesTitle then
         framesTitle:Hide()
     end
@@ -208,6 +219,9 @@ function addon:RefreshEditModeOptions()
         end
         if registration.title then
             registration.title:Hide()
+        end
+        if hasRows and spec.name then
+            EndLine()
         end
         if hasRows and spec.section == "frames" and not framesStarted then
             framesStarted = true
@@ -249,9 +263,20 @@ function addon:RefreshEditModeOptions()
                     row = CreateRow(option, spec, group.id)
                     registration.rows[option.key] = row
                 end
+                local cell = spec.section == "frames" and option.type == "toggle"
+                local rowWidth = cell and columnWidth or width
+                if not cell then
+                    EndLine()
+                elseif column == 0 then
+                    lineTop = y
+                end
                 row:ClearAllPoints()
-                row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
-                row:SetWidth(width)
+                if cell then
+                    row:SetPoint("TOPLEFT", content, "TOPLEFT", column * (columnWidth + COLUMN_GAP), -lineTop)
+                else
+                    row:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+                end
+                row:SetWidth(rowWidth)
                 local disabled = InCombatLockdown() or not not Evaluate(option.disabled)
                 local height
                 if option.type == "header" then
@@ -259,7 +284,7 @@ function addon:RefreshEditModeOptions()
                     row:UpdateCollapsedState(collapsed)
                     height = 28
                 elseif option.type == "toggle" then
-                    row.Label:SetWidth(math.max(1, width - 32))
+                    row.Label:SetWidth(math.max(1, rowWidth - 32))
                     row.Label:SetText(option.name)
                     row.Label:Show()
                     row.Label:SetTextColor((disabled and DISABLED_FONT_COLOR or WHITE_FONT_COLOR):GetRGB())
@@ -267,24 +292,33 @@ function addon:RefreshEditModeOptions()
                     row.Button:SetEnabled(not disabled)
                     height = math.max(32, row.Label:GetStringHeight() + 16)
                 elseif option.type == "button" then
-                    row.Button:SetWidth(width)
+                    row.Button:SetWidth(rowWidth)
                     row.Button:SetText(option.name)
                     row.Button:SetEnabled(not disabled)
                     height = 32
                 else
                     -- Custom rows own their widgets; layout may return a measured height.
-                    height = option.layout and option.layout(row, width, disabled) or row:GetHeight()
+                    height = option.layout and option.layout(row, rowWidth, disabled) or row:GetHeight()
                 end
                 height = math.max(1, height)
                 row:SetHeight(height)
                 row:Show()
-                y = y + height + GAP
+                if cell then
+                    lineHeight = math.max(lineHeight, height)
+                    column = column + 1
+                    if column == COLUMNS then
+                        EndLine()
+                    end
+                else
+                    y = y + height + GAP
+                end
                 count = count + 1
             elseif row then
                 row:Hide()
             end
         end
     end
+    EndLine()
     if panel then
         local contentHeight = math.max(1, y - (count > 0 and GAP or 0))
         content:SetSize(width, contentHeight)

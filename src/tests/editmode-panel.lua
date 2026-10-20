@@ -248,7 +248,7 @@ end
 assert(panel and panel.parent == UIParent and panel.strata == "DIALOG")
 assert(border and border.parent == panel and border.allPoints)
 assert(panel.scripts.OnUpdate, "First show must schedule a layout pass after anchors/fonts settle")
-assert(toggle.parent.Label:GetWidth() == 430, "Unresolved panel anchors must use the native window width")
+assert(toggle.parent.Label:GetWidth() == 194, "Unresolved panel anchors must use the native window width")
 anchorsReady = true
 local pending = panel.scripts.OnUpdate
 pending(panel)
@@ -327,6 +327,53 @@ assert(heading and heading:IsShown())
 assert(custom.points.TOPLEFT[4] > heading.points.TOPLEFT[4], "Options must precede Frames regardless of order")
 assert(heading.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
 local expanded = panel:GetHeight()
+-- Frames checkboxes fill two columns row by row, so a second one adds no height.
+local secondShown = true
+core:RegisterEditModeOptions("previews", {
+    section = "frames",
+    order = 30,
+    options = {
+        {
+            key = "second",
+            type = "toggle",
+            name = "Second frame",
+            hidden = function()
+                return not secondShown
+            end,
+            get = function()
+                return false
+            end,
+            set = function() end,
+        },
+        {
+            key = "third",
+            type = "toggle",
+            name = "Third frame",
+            get = function()
+                return false
+            end,
+            set = function() end,
+        },
+    },
+})
+local second, third
+for _, frame in ipairs(frames) do
+    if frame.option and frame.option.key == "second" then
+        second = frame
+    elseif frame.option and frame.option.key == "third" then
+        third = frame
+    end
+end
+assert(second.points.TOPLEFT[3] == 236 and second.points.TOPLEFT[4] == toggle.parent.points.TOPLEFT[4])
+assert(second:GetWidth() == 226 and toggle.parent:GetWidth() == 226)
+assert(third.points.TOPLEFT[3] == 0 and third.points.TOPLEFT[4] == toggle.parent.points.TOPLEFT[4] - 38)
+assert(panel:GetHeight() == expanded + 38, "Three checkboxes take two lines")
+secondShown = false
+core:RefreshEditModeOptions()
+assert(third.points.TOPLEFT[3] == 236 and panel:GetHeight() == expanded, "Hidden cells leave no gap")
+third.option.hidden = true
+core:RefreshEditModeOptions()
+assert(panel:GetHeight() == expanded)
 -- Headers are section titles inside a group, sized like the Frames heading.
 core:RegisterEditModeOptions("sections", {
     order = 200,

@@ -241,11 +241,22 @@ local function AddScrolling(dialog)
         scroll.maximumHeight = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
         -- Measure with every section open, then keep that width so collapsing never resizes the window.
         settings.fixedWidth = nil
+        self.Buttons:Show()
         update(self, selection)
         settings.fixedWidth = settings:GetWidth()
         if selection.parent and fixedFrames[selection.parent] and self.Buttons.ResetPositionButton then
             self.Buttons.ResetPositionButton:Hide()
-            self.Buttons:Layout()
+            -- An empty button list has no valid size and stretched the window across the screen;
+            -- hidden, the window leaves it out.
+            local anyShown = false
+            for _, button in ipairs({ self.Buttons:GetChildren() }) do
+                anyShown = anyShown or button:IsShown()
+            end
+            if anyShown then
+                self.Buttons:Layout()
+            else
+                self.Buttons:Hide()
+            end
         end
         ApplyCollapsed(self)
         LayoutDialog()

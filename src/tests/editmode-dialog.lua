@@ -22,6 +22,15 @@ end
 function methods:GetParent()
     return self.parent
 end
+function methods:GetChildren()
+    local children = {}
+    for _, child in ipairs(frames) do
+        if child.parent == self then
+            children[#children + 1] = child
+        end
+    end
+    return unpack(children)
+end
 function methods:SetPoint(point, ...)
     self.points[point] = { ... }
 end
@@ -402,6 +411,7 @@ assert(not moved, "no arrow-key nudges")
 lib.frameSettings[fixedFrame], lib.frameButtons[fixedFrame] = {}, {}
 dialog:Update({ parent = fixedFrame, system = selection.system })
 assert(not dialog.Buttons.ResetPositionButton:IsShown(), "no Reset Position")
+assert(not dialog.Buttons:IsShown(), "an empty button list is left out of the window")
 dialog:Update({ parent = rightFrame, system = selection.system })
-assert(dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
+assert(dialog.Buttons:IsShown() and dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
 print("PASS: fixed frames are selectable but never move")

@@ -256,7 +256,9 @@ Verify default changes propagate only to inherited settings, including fonts and
 toggle overrides off, drag/resize scaled windows, enter decimal coordinates, anchor windows
 to each other, deactivate the anchor target, and check the 10-window limit.
 
-Edit Mode lists a Window section header and the window settings first, then a Style header,
+Edit Mode lists a Window section header and the window settings first, then Core's Position
+section (Anchor, AnchorParent, AnchorFrame = screen or another window, X, Y; disabled while the
+position is locked; edits go to the window's overrides and the active layout record), then a Style header,
 Skin, Modify global style and the appearance controls. Headers use Core's
 collapsible `lib.SettingType.Header` row (see `Seamless/CLAUDE.md`). It exposes bar height, padding (row spacing), transparency,
 background, text size, spec icons, class colors and type selector visibility. Appearance edits

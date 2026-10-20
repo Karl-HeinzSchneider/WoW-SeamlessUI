@@ -210,3 +210,113 @@ else
         return dialog
     end
 end
+
+-- Public API for feature addons: the same header, collapse state and Position section in every window.
+local addon = app.addon
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
+---@param parent table
+---@param onClick fun()
+---@return table header
+function addon:CreateEditModeHeader(parent, onClick)
+    return app.CreateEditModeHeader(parent, onClick)
+end
+
+---@param key string
+---@return boolean
+function addon:IsEditModeSectionCollapsed(key)
+    return app.IsEditModeSectionCollapsed(key)
+end
+
+---@param key string
+---@param collapsed boolean
+function addon:SetEditModeSectionCollapsed(key, collapsed)
+    app.SetEditModeSectionCollapsed(key, collapsed)
+end
+
+-- Every Position header shares this key, so it collapses in all windows at once.
+local POSITION_SECTION = "settings:position"
+
+---@return string
+function addon:GetEditModePositionSectionKey()
+    return POSITION_SECTION
+end
+
+local POINTS = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
+local POINT_LABELS = {
+    TOPLEFT = L["Top left"],
+    TOP = L["Top"],
+    TOPRIGHT = L["Top right"],
+    LEFT = L["Left"],
+    CENTER = L["Center"],
+    RIGHT = L["Right"],
+    BOTTOMLEFT = L["Bottom left"],
+    BOTTOM = L["Bottom"],
+    BOTTOMRIGHT = L["Bottom right"],
+}
+
+---LibEditMode settings for a collapsible Position section: Anchor, AnchorParent, AnchorFrame, X and Y.
+---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and y;
+---`spec.anchorFrames()` returns `{ text, value }` entries for relativeTo.
+---@param spec SeamlessCore.EditModePosition
+---@return table[] settings
+function addon:GetEditModePositionSettings(spec)
+    local function disabled()
+        return spec.disabled ~= nil and spec.disabled() or false
+    end
+    local function setter(key)
+        return function(_, value, fromReset)
+            -- Reset To Default leaves the position alone; Reset Position restores it.
+            if not fromReset and not disabled() and not InCombatLockdown() then
+                spec.set(key, value)
+            end
+        end
+    end
+    local function getter(key)
+        return function()
+            return spec.get(key)
+        end
+    end
+    local points = {}
+    for _, point in ipairs(POINTS) do
+        points[#points + 1] = { text = POINT_LABELS[point], value = point }
+    end
+    local function offset(name, key, extent)
+        extent = math.max(1, math.ceil(extent))
+        return {
+            name = name,
+            kind = lib.SettingType.Slider,
+            default = 0,
+            minValue = -extent,
+            maxValue = extent,
+            valueStep = 1,
+            get = function()
+                return spec.get(key) or 0
+            end,
+            set = setter(key),
+            disabled = disabled,
+            formatter = function(value)
+                return tostring(math.floor(value + 0.5))
+            end,
+        }
+    end
+    local function dropdown(name, key, values, height)
+        return {
+            name = name,
+            kind = lib.SettingType.Dropdown,
+            get = getter(key),
+            set = setter(key),
+            disabled = disabled,
+            values = values,
+            height = height,
+        }
+    end
+    return {
+        { name = L["Position"], key = "position", kind = lib.SettingType.Header },
+        dropdown(L["Anchor"], "point", points),
+        dropdown(L["AnchorParent"], "relativePoint", points),
+        dropdown(L["AnchorFrame"], "relativeTo", spec.anchorFrames, 400),
+        offset(L["X"], "x", UIParent:GetWidth()),
+        offset(L["Y"], "y", UIParent:GetHeight()),
+    }
+end

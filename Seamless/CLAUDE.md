@@ -28,7 +28,10 @@ Required entry point for the Seamless suite. It works with no feature addons ena
   `maximumHeight` without a `minimumHeight`, so the scroll frame sets both. The list keeps its
   fully expanded width while sections collapse, and the scroll bar sits outside the window's right
   edge, so the window never changes width. This is the
-  only file allowed to use `lib.internal`; it asserts on what it relies on, so recheck it and run
+  only file allowed to use `lib.internal`; it also gives feature addons `core:CreateEditModeHeader`,
+  `core:Is/SetEditModeSectionCollapsed` and `core:GetEditModePositionSettings(spec)` (a Position
+  header plus Anchor, AnchorParent, AnchorFrame, X and Y; collapse key
+  `core:GetEditModePositionSectionKey()`, shared by every Position header). This is the it asserts on what it relies on, so recheck it and run
   `lua src/tests/editmode-dialog.lua` whenever LibEditMode is updated. Vendored files stay unpatched.
 - `editmode.lua`: shared "SeamlessUI" Edit Mode extension panel. It uses the native translucent
   dialog border, sits eight pixels below the Edit Mode window, matches its width, and sizes

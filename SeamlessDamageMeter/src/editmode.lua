@@ -219,6 +219,40 @@ local function RegisterControls(frame)
             { text = L["Complete"], value = "complete" },
         },
     }
+    local position = app.core:GetEditModePositionSettings({
+        get = function(key)
+            if key == "relativeTo" then
+                return frame.config.anchorTo and tostring(frame.config.anchorTo) or "screen"
+            end
+            return app:GetWindowSetting(frame.config, key)
+        end,
+        set = function(key, value)
+            if frame.syncingEditMode or not app:IsEditingWindows() then
+                return
+            end
+            if key == "relativeTo" then
+                frame.config.anchorTo = tonumber(value)
+            else
+                frame.config.overrides[key] = value
+            end
+            app:RebuildWindows()
+        end,
+        disabled = function()
+            return app:GetWindowSetting(frame.config, "lockPosition")
+        end,
+        anchorFrames = function()
+            local values = { { text = L["Screen (UIParent)"], value = "screen" } }
+            for _, candidate in ipairs(app.db.profile.windows) do
+                if app:CanAnchorTo(frame.config, candidate.id) then
+                    values[#values + 1] = { text = L["Window %d"]:format(candidate.id), value = tostring(candidate.id) }
+                end
+            end
+            return values
+        end,
+    })
+    for _, setting in ipairs(position) do
+        settings[#settings + 1] = setting
+    end
     local styleStart = #settings + 1
     settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Header }
     for _, definition in ipairs(appearanceSliders) do
@@ -358,6 +392,8 @@ function app:SyncWindowEditMode(frame)
                     SaveLayout(movedFrame.config, layoutName)
                 end
                 app:PositionWindow(movedFrame)
+                -- Reset Position does not refresh the dialog itself; keep the Position values current.
+                lib:RefreshFrameSettings(movedFrame)
                 app.core:RefreshOptions("SeamlessDamageMeter")
             end,
             { point = app.windowDefaults.point, x = app.windowDefaults.x, y = app.windowDefaults.y },

@@ -1211,6 +1211,11 @@ end
 app.core.GetEditModeLibrary = function()
     return lem
 end
+local positionSpecs = {}
+app.core.GetEditModePositionSettings = function(_, spec)
+    positionSpecs[#positionSpecs + 1] = spec
+    return { { name = "Position", kind = lem.SettingType.Header }, { name = "X", kind = lem.SettingType.Slider } }
+end
 app.db.profiles = { Original = app.db.profile }
 EventRegistry = { TriggerEvent = function() end }
 EditModeManagerFrame = {
@@ -1250,7 +1255,16 @@ local order = {}
 for index, entry in ipairs(controls[meter]) do
     order[entry.name] = index
 end
-assert(order.Numbers < order.Style and order.Style < order.Skin)
+assert(order.Numbers < order.Position and order.Position < order.Style and order.Style < order.Skin)
+local positionSpec = positionSpecs[1]
+assert(positionSpec.get("relativeTo") == (meter.config.anchorTo and tostring(meter.config.anchorTo) or "screen"))
+assert(positionSpec.get("point") == app:GetWindowSetting(meter.config, "point"))
+positionSpec.set("x", 123)
+assert(meter.config.overrides.x == 123, "Position X edits the window offset")
+assert(positionSpec.anchorFrames()[1].value == "screen")
+for _, entry in ipairs(positionSpec.anchorFrames()) do
+    assert(entry.value ~= tostring(meter.config.id), "a window never anchors to itself")
+end
 assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
 assert(setting("Style").kind == lem.SettingType.Header)
 assert(controls[meter][1].name == "Window" and controls[meter][1].kind == lem.SettingType.Header)

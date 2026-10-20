@@ -173,7 +173,10 @@ function module:GetAnchorTargets()
     return targets
 end
 
-local panel, title, positionView
+local panel, title, positionHeader, positionView
+
+-- Panel heights: title only, and title plus a collapsed Position header.
+local TITLE_HEIGHT, COLLAPSED_HEIGHT = 60, 92
 
 local function settings()
     return app.db.profile.blizzardEditMode
@@ -193,7 +196,7 @@ local function ensurePanel()
     -- panel so the recovery switches can remove it without library internals.
     panel = CreateFrame("Frame", nil, UIParent)
     panel:Hide()
-    panel:SetHeight(60)
+    panel:SetHeight(TITLE_HEIGHT)
     panel:SetFrameStrata("DIALOG")
     panel:EnableMouse(true)
     panel:SetPoint("TOPLEFT", EditModeSystemSettingsDialog, "BOTTOMLEFT", 0, -8)
@@ -204,6 +207,19 @@ local function ensurePanel()
     title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     title:SetPoint("TOPLEFT", 24, -20)
     title:SetPoint("TOPRIGHT", -24, -20)
+    -- The same collapsible header as every other Edit Mode window, sharing its collapsed state.
+    positionHeader = app.core:CreateEditModeHeader(panel, function()
+        if InCombatLockdown() then
+            return
+        end
+        local key = app.core:GetEditModePositionSectionKey()
+        app.core:SetEditModeSectionCollapsed(key, not app.core:IsEditModeSectionCollapsed(key))
+        module:RefreshPanel()
+    end)
+    positionHeader:SetPoint("TOPLEFT", 16, -44)
+    positionHeader:SetPoint("TOPRIGHT", -16, -44)
+    positionHeader:SetHeaderText(L["Position"])
+    positionHeader:Hide()
 end
 
 function module:GetSelectedFrame()
@@ -240,7 +256,14 @@ function module:RefreshPanel()
     ensurePanel()
     title:SetText(string.format(L["SeamlessUI - %s"], spec.name))
     panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
+    local collapsed = app.core:IsEditModeSectionCollapsed(app.core:GetEditModePositionSectionKey())
     if settings().frames[spec.key].addPosition then
+        positionHeader:UpdateCollapsedState(collapsed)
+        positionHeader:Show()
+    else
+        positionHeader:Hide()
+    end
+    if settings().frames[spec.key].addPosition and not collapsed then
         positionView = positionView or app.blizzardPosition:Create(panel)
         positionView:Refresh(system)
         positionView:Show()
@@ -248,7 +271,7 @@ function module:RefreshPanel()
         if positionView then
             positionView:Hide()
         end
-        panel:SetHeight(60)
+        panel:SetHeight(settings().frames[spec.key].addPosition and COLLAPSED_HEIGHT or TITLE_HEIGHT)
     end
     panel:Show()
 end

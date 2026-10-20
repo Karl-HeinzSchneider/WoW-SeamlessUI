@@ -16,9 +16,20 @@
 ---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)
+---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
+---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
+---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
+---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
+---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field logger SeamlessCore.Logger
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
+
+---@class SeamlessCore.EditModePosition
+---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
+---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
+---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
+---@field disabled? fun(): boolean
 
 ---@class SeamlessCore.DB : AceDBObject-3.0
 ---@field profile SeamlessCore.Profile

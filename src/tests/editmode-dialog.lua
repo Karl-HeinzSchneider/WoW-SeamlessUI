@@ -199,6 +199,9 @@ local embed = assert(io.open("Seamless/lib/LibEditMode/embed.xml")):read("*a")
 for path in embed:gmatch("file='([^']+)'") do
     assert(loadfile("Seamless/lib/LibEditMode/" .. path:gsub("\\", "/")))("Seamless", app)
 end
+dofile("src/tests/locale-support.lua")
+app.addon = {}
+UIParent.width = 1500
 local toc = assert(io.open("Seamless/Seamless.toc")):read("*a")
 local tocAce = assert(toc:find("src\\core\\ace.lua", 1, true))
 local tocExtension = assert(toc:find("src\\core\\editmodelib.lua", 1, true))
@@ -294,4 +297,30 @@ assert(hiddenHeader:IsShown())
 hiddenHeader:Toggle()
 assert(not after:IsShown())
 assert(app.IsEditModeSectionCollapsed("settings:Hidden section"))
+-- The shared Position section: a Position header, then Anchor, AnchorParent, AnchorFrame, X and Y.
+local stored, locked = { point = "TOP", relativePoint = "TOP", relativeTo = "screen", x = 5, y = 6 }, false
+local position = app.addon:GetEditModePositionSettings({
+    get = function(key)
+        return stored[key]
+    end,
+    set = function(key, value)
+        stored[key] = value
+    end,
+    disabled = function()
+        return locked
+    end,
+    anchorFrames = { { text = "Screen", value = "screen" } },
+})
+assert(#position == 6 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
+assert(app.addon:GetEditModePositionSectionKey() == "settings:position")
+assert(position[2].name == "Anchor" and #position[2].values == 9 and position[4].height == 400)
+assert(position[5].minValue == -1500 and position[5].maxValue == 1500 and position[6].maxValue == 1000)
+assert(position[5].get() == 5 and position[5].formatter(4.6) == "5")
+position[5].set(nil, 42)
+assert(stored.x == 42)
+position[5].set(nil, 0, true)
+assert(stored.x == 42, "Reset To Default leaves the position alone")
+locked = true
+position[2].set(nil, "LEFT")
+assert(stored.point == "TOP" and position[2].disabled(), "a locked position cannot change")
 print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dialog and widget refresh")

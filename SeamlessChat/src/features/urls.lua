@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Clickable URLs: web addresses in chat lines become links; clicking one puts the address into the
 -- chat input, selected, ready for Ctrl+C (the game can't open a browser). The address is the link's
 -- own data (|Haddon:SeamlessChat:url:<address>|h), so links in restored chat history keep working.
@@ -16,8 +18,8 @@ local defaults = {
 app.urls = app.features:New(
     "urls",
     module,
-    "Clickable URLs",
-    "Web addresses in the chat become links. Clicking one puts it into the chat input, selected, ready for Ctrl+C.",
+    L["Clickable URLs"],
+    L["Web addresses in the chat become links. Clicking one puts it into the chat input, selected, ready for Ctrl+C."],
     defaults
 ) --[[@as SeamlessChat.Urls]]
 
@@ -100,7 +102,7 @@ function module:GetOptions()
         color = {
             type = "color",
             order = 10,
-            name = "Link color",
+            name = L["Link color"],
             get = function()
                 local color = self:Settings().color
                 return color.r, color.g, color.b

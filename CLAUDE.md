@@ -57,6 +57,9 @@ WoW addons are plain Lua/XML files loaded by the game; there is no build step. T
 Static checks also used ad hoc: `lua-language-server --check` (config in `.luarc.json`; `lib/` is
 excluded from LuaLS, StyLua and Prettier).
 
+`npm run locales:sync` synchronizes translation stubs with the English catalogue.
+Run `npx tsx src/tests/sync-locales.ts` and `lua src/tests/locales.lua` for locale regressions.
+
 ## Tooling (`src/`)
 
 ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
@@ -85,10 +88,49 @@ repository secrets `CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN` and the proj
 
 ## Shared Edit Mode controls
 
-Register custom frame preview/movability checkboxes in Core's shared Edit Mode panel with
+These terms and placement rules apply to every Edit Mode request:
+
+- **Main Edit Mode window** means Seamless's shared window anchored to Blizzard's main
+  Edit Mode window in the middle of the screen. It contains **GLOBAL options** and a
+  **Frames** list where users activate or deactivate Edit Mode for individual frames.
+- **GLOBAL options** are suite-wide controls in that main window. Add an option there
+  only when the user explicitly requests a global option. Frame-specific settings belong
+  in the selected frame's settings window.
+- **Frames** is the heading for the main window's frame activation/deactivation list.
+  Entries here control whether a frame participates in Edit Mode; they are not the
+  frame's individual settings.
+- **Edit Mode settings** or a request to **add an option to Edit Mode** means the settings
+  window shown when the user selects the relevant frame in Edit Mode. Put the requested
+  option in that frame's settings window unless the user explicitly specifies otherwise.
+
+Register frame activation/deactivation (preview/movability) checkboxes in the main window with
 `core:RegisterEditModeOptions(id, { section = "frames", options = { ... } })`.
-They belong under the shared **Frames** heading. Register custom options above it with
-`section = "options"` (the default). See `Seamless/CLAUDE.md` for row types and callbacks.
+They belong under the shared **Frames** heading. `section = "options"` (the default) places
+controls in the main window's GLOBAL options area; use it only for explicitly requested
+global options. See `Seamless/CLAUDE.md` for the APIs, row types and callbacks used by
+the shared panel and selected-frame settings.
+
+## Localization
+
+All addon-authored text displayed to users must come from the suite's AceLocale object:
+`local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")`, then `L["Open"]`.
+This applies to every addon, including options, frame names, menus, tooltips, dialogs,
+Edit Mode controls and chat/log messages. Do not introduce literal English display text.
+Game-provided content (player/item/spell names, chat messages, API error messages), user-entered
+names and library-owned UI remain owned by their source. Technical IDs, slash-command tokens,
+texture/font registry keys, patterns and empty strings are not translated.
+
+Add complete English phrases and format strings to `Seamless/locales/enUS.lua` first.
+Keep generic/shared phrases and frame names together, then addon-specific sections; sort
+within each section. Reuse common keys, preserve format placeholders and avoid concatenating
+sentence fragments so translators can change word order. Use a distinct descriptive key when
+the same English phrase needs different meanings. Never localize SavedVariables keys or API IDs.
+Run `npm run locales:sync` after changing the baseline. It creates guarded client files under
+`Seamless/locales/<locale>/strings.lua`, keeps existing translations, and inserts commented English
+stubs in exactly the baseline order. Uncomment and replace the value to translate it. Use one
+double-quoted key/value assignment per line; resolve obsolete keys explicitly when reported.
+Core loads English first and only the client's `[TextLocale]` file afterward. Untranslated entries
+fall back to English; `enGB` uses AceLocale's English normalization.
 
 ## WoW addon constraints
 

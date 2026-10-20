@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 
 -- Adds the unit's target to unit tooltips: "T: Name", the name in class or hostile/friendly color,
 -- ">>YOU<<" when it targets you. Kept up to date while the tooltip is shown.
 local feature = app.features:NewFeature("TargetLine", {
     category = "units",
-    name = "Target",
-    desc = 'Adds what the unit is targeting as "T: Name" to its tooltip.',
+    name = L["Target"],
+    desc = L['Adds what the unit is targeting as "T: Name" to its tooltip.'],
     order = 25,
     defaults = {
         you = true,
@@ -18,13 +20,13 @@ local feature = app.features:NewFeature("TargetLine", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = ">>YOU<< for you",
-            desc = 'Shows "T: >>YOU<<" when the unit targets you.',
+            name = L[">>YOU<< for you"],
+            desc = L['Shows "T: >>YOU<<" when the unit targets you.'],
         },
     },
 })
 
-local LABEL = NORMAL_FONT_COLOR:WrapTextInColorCode("T:")
+local LABEL = NORMAL_FONT_COLOR:WrapTextInColorCode(L["T:"])
 local YOU_COLOR = CreateColor(1, 0.25, 0.25)
 local NO_TARGET = GRAY_FONT_COLOR:WrapTextInColorCode("-")
 -- How often the shown line is checked for a new target, in seconds.
@@ -65,7 +67,7 @@ function feature:TargetText(unit)
         return
     end
     if isYou and self:Settings().you then
-        return LABEL .. " " .. YOU_COLOR:WrapTextInColorCode(">>YOU<<")
+        return LABEL .. " " .. YOU_COLOR:WrapTextInColorCode(L[">>YOU<<"])
     end
 
     -- First name and surname, as the game shows them.

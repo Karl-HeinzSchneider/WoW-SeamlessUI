@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Lists the members of your group or raid that target the unit: "Targeted by (2)  Name, Name".
 local feature = app.features:NewFeature("TargetedBy", {
     category = "units",
-    name = "Targeted by",
-    desc = "Lists the members of your group or raid that target the unit.",
+    name = L["Targeted by"],
+    desc = L["Lists the members of your group or raid that target the unit."],
     order = 26,
     defaults = {
         names = true,
@@ -19,19 +21,19 @@ local feature = app.features:NewFeature("TargetedBy", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Names",
-            desc = "Lists who targets the unit, in class color; off shows only how many.",
+            name = L["Names"],
+            desc = L["Lists who targets the unit, in class color; off shows only how many."],
         },
         you = {
             type = "toggle",
             order = 20,
             width = "full",
-            name = "Count yourself",
+            name = L["Count yourself"],
         },
     },
 })
 
-local LABEL = "Targeted by"
+local LABEL = L["Targeted by"]
 -- More names than this are cut off with "...".
 local MAX_NAMES = 6
 
@@ -102,6 +104,6 @@ function feature:OnUnitTooltip(tooltip)
     if count > #names then
         names[#names + 1] = "..."
     end
-    local label = NORMAL_FONT_COLOR:WrapTextInColorCode(("%s (%d):"):format(LABEL, count))
+    local label = NORMAL_FONT_COLOR:WrapTextInColorCode((L["%s (%d):"]):format(LABEL, count))
     tooltip:AddLine(label .. " " .. table.concat(names, ", "), 1, 1, 1, true)
 end

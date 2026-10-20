@@ -10,6 +10,9 @@ local profile = {
     -- Reserved for settings of future UI improvements.
     ---@type table<string, table>
     features = {},
+    fpsDisplay = {
+        layouts = {},
+    },
     xpBarTooltip = {
         enabled = true,
         completedQuests = true,

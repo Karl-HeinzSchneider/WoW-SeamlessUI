@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
@@ -8,8 +10,8 @@ local lines = app.lines
 -- game's own sell price line (and where the game shows none).
 local feature = app.features:NewFeature("VendorPrice", {
     category = "items",
-    name = "Vendor price",
-    desc = "Shows what an item sells for at a vendor; for a stack, also what one of it sells for.",
+    name = L["Vendor price"],
+    desc = L["Shows what an item sells for at a vendor; for a stack, also what one of it sells for."],
     order = 25,
     defaults = {
         perItem = true,
@@ -19,13 +21,13 @@ local feature = app.features:NewFeature("VendorPrice", {
             type = "toggle",
             order = 10,
             width = "full",
-            name = "Price per item",
-            desc = 'Adds the price of one item behind a stack\'s price ("1s 20c (6c each)").',
+            name = L["Price per item"],
+            desc = L['Adds the price of one item behind a stack\'s price ("1s 20c (6c each)").'],
         },
     },
 })
 
-local LABEL = SELL_PRICE or "Sell Price"
+local LABEL = L["Sell Price"]
 
 -- Per tooltip whose lines are being processed: the stack's price from the game's sell price line
 -- when it was dropped for ours, false when the game's line stays.
@@ -108,7 +110,7 @@ function feature:OnItemTooltip(tooltip, tooltipData)
     local count = countOf(tooltip, gamePrice, sellPrice)
     local text = money(sellPrice * count)
     if count > 1 and self:Settings().perItem then
-        text = text .. GRAY_FONT_COLOR:WrapTextInColorCode(" (" .. money(sellPrice) .. " each)")
+        text = text .. GRAY_FONT_COLOR:WrapTextInColorCode((L[" (%s each)"]):format(money(sellPrice)))
     end
     lines.AddValue(tooltip, LABEL, text)
 end

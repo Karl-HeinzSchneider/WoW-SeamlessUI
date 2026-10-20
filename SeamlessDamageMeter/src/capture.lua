@@ -1,5 +1,7 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
+
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local service, archive = app.combatService, app.archive
 local RETRY_SECONDS, MAX_ATTEMPTS = 2, 30
 
@@ -146,7 +148,7 @@ end
 function service:StartSnapshot(job)
     local entry = job.entry
     job.snapshot = {
-        name = entry.name ~= "" and entry.name or ("Combat " .. entry.sessionID),
+        name = entry.name ~= "" and entry.name or (L["Combat %s"]:format(entry.sessionID)),
         clientSessionID = entry.sessionID,
         generation = self.generation,
         capturedAt = entry.firstSeen,

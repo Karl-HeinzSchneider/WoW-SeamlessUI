@@ -1,26 +1,49 @@
 ---@type string, SeamlessUI
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessUI.BlizzardPosition
 local position = {}
 app.blizzardPosition = position
 
 local anchors = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
+local anchorLabels = {
+    TOPLEFT = L["Top left"],
+    TOP = L["Top"],
+    TOPRIGHT = L["Top right"],
+    LEFT = L["Left"],
+    CENTER = L["Center"],
+    RIGHT = L["Right"],
+    BOTTOMLEFT = L["Bottom left"],
+    BOTTOM = L["Bottom"],
+    BOTTOMRIGHT = L["Bottom right"],
+}
 local validAnchors = {}
 for _, point in ipairs(anchors) do
     validAnchors[point] = true
 end
 local keys = { "point", "relativePoint", "relativeTo", "offsetX", "offsetY" }
-local labels = { "Anchor", "AnchorParent", "AnchorFrame", "X", "Y" }
+local labels = { L["Anchor"], L["AnchorParent"], L["AnchorFrame"], L["X"], L["Y"] }
 -- These objects are created by the default client even when their unit is absent.
 -- UIParent stays first; the remaining display names are alphabetical.
 local anchorFrames = {
-    { value = "UIParent", text = "UIParent" },
-    { value = "FocusFrame", text = "Focus frame" },
-    { value = "Minimap", text = "Minimap" },
-    { value = "PlayerFrame", text = "Player frame" },
-    { value = "TargetFrame", text = "Target frame" },
+    { value = "UIParent", text = L["UIParent"] },
+    { value = "FocusFrame", text = L["Focus frame"] },
+    { value = "Minimap", text = L["Minimap"] },
+    { value = "PlayerFrame", text = L["Player frame"] },
+    { value = "TargetFrame", text = L["Target frame"] },
 }
+
+table.sort(anchorFrames, function(a, b)
+    if a.value == "UIParent" then
+        return b.value ~= "UIParent"
+    end
+    if b.value == "UIParent" then
+        return false
+    end
+    return a.text < b.text
+end)
 
 local function anchorFrameLabel(name)
     for _, entry in ipairs(anchorFrames) do
@@ -29,7 +52,7 @@ local function anchorFrameLabel(name)
         end
     end
     -- Reflect existing layouts without adding arbitrary frames to the selector.
-    return name or "Unknown"
+    return name or L["Unknown"]
 end
 
 local function finite(value)
@@ -113,14 +136,14 @@ end
 
 function position:Apply(system, values, restoreState)
     if not self:CanEdit(system) then
-        return false, "Position editing is unavailable. Select an enabled frame in a custom layout."
+        return false, L["Position editing is unavailable. Select an enabled frame in a custom layout."]
     end
     if not validAnchors[values.point] or not validAnchors[values.relativePoint] then
-        return false, "Choose a valid anchor point."
+        return false, L["Choose a valid anchor point."]
     end
     local x, y = tonumber(values.offsetX), tonumber(values.offsetY)
     if not finite(x) or not finite(y) then
-        return false, "X and Y must be finite numbers."
+        return false, L["X and Y must be finite numbers."]
     end
     local relativeTo = type(values.relativeTo) == "string" and _G[values.relativeTo]
     if
@@ -129,22 +152,22 @@ function position:Apply(system, values, restoreState)
         or not relativeTo.IsObjectType
         or not relativeTo:IsObjectType("Frame")
     then
-        return false, "AnchorFrame must name an existing frame, such as UIParent."
+        return false, L["AnchorFrame must name an existing frame, such as UIParent."]
     end
     if dependsOn(relativeTo, system, {}) then
-        return false, "AnchorFrame would create an anchor cycle."
+        return false, L["AnchorFrame would create an anchor cycle."]
     end
     if restoreState and restoreState.anchorInfo2 then
         local second = restoreState.anchorInfo2
         local target = _G[second.relativeTo]
         if not target or dependsOn(target, system, {}) then
-            return false, "The previous secondary anchor is unavailable or would create a cycle."
+            return false, L["The previous secondary anchor is unavailable or would create a cycle."]
         end
     end
     local manager = EditModeManagerFrame
     local info = manager:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
     if not info or not info.anchorInfo then
-        return false, "This frame has no anchor in the active layout."
+        return false, L["This frame has no anchor in the active layout."]
     end
     local override = LibStub("LibEditModeOverride-1.0")
     local ok, err = pcall(function()
@@ -154,7 +177,7 @@ function position:Apply(system, values, restoreState)
         override:ReanchorFrame(system, values.point, relativeTo, values.relativePoint, x, y)
     end)
     if not ok then
-        return false, "Could not set the anchor: " .. tostring(err)
+        return false, string.format(L["Could not set the anchor: %s"], tostring(err))
     end
     -- ReanchorFrame operates on the library's saved-layout copy. Mirror the same
     -- anchor into the live draft so native Save/Revert include all pending edits.
@@ -211,9 +234,8 @@ function position:Create(parent)
 
     local revert = CreateFrame("Button", nil, view, "EditModeSystemSettingsDialogButtonTemplate")
     view.RevertButton = revert
-    revert:SetPoint("TOPLEFT", 0, -180)
-    revert:SetPoint("TOPRIGHT", 0, -180)
-    revert:SetText(HUD_EDIT_MODE_REVERT_CHANGES or "Revert changes")
+    revert:SetPoint("TOP", 0, -180)
+    revert:SetText(HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
     revert:SetOnClickHandler(function()
         local ok, err = position:Revert(view.system)
         view.error = not ok and err or nil
@@ -260,7 +282,7 @@ function position:Create(parent)
                     end
                 else
                     for _, anchor in ipairs(anchors) do
-                        root:CreateRadio(anchor, function()
+                        root:CreateRadio(anchorLabels[anchor], function()
                             return view.values[key] == anchor
                         end, function()
                             view:Commit(key, anchor, system)
@@ -350,7 +372,7 @@ function position:Create(parent)
                 if changedSystem or row.value ~= values[key] then
                     row.value = values[key]
                     row.Dropdown:SetDefaultText(
-                        index == 3 and anchorFrameLabel(values[key]) or values[key] or "Unknown"
+                        index == 3 and anchorFrameLabel(values[key]) or anchorLabels[values[key]] or L["Unknown"]
                     )
                     row.Dropdown:GenerateMenu()
                 end
@@ -380,6 +402,7 @@ function position:Create(parent)
         if changedSystem then
             self.error = nil
         end
+        revert:SetWidth(self:GetWidth() / 2)
         revert:SetEnabled(editable and position:HasChanges(system))
         message:SetText(self.error or "")
         message:SetShown(self.error ~= nil)

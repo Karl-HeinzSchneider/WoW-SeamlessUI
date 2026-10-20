@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 app.windows = {}
 app.windowFrames = {}
 local HEADER_HEIGHT = 32
@@ -182,7 +184,7 @@ function app:AddWindow()
     self:PrepareWindowSettings()
     local id = self:GetUnusedWindowSlot()
     if not id then
-        self.core.logger:chat("All " .. self.MAX_WINDOWS .. " meter windows are already active.")
+        self.core.logger:chat(L["All %d meter windows are already active."]:format(self.MAX_WINDOWS))
         return
     end
     self:SetWindowEnabled(profile.windows[id], true)
@@ -201,12 +203,12 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
     MenuUtil.CreateContextMenu(owner or frame.statistic, function(_, root)
         local categories = {
             {
-                DAMAGE_METER_CATEGORY_DAMAGE or "Damage",
+                L["Damage"],
                 { "DamageDone", "Dps", "DamageTaken", "AvoidableDamageTaken", "EnemyDamageTaken" },
             },
-            { DAMAGE_METER_CATEGORY_HEALING or "Healing", { "HealingDone", "Hps", "Absorbs" } },
-            { DAMAGE_METER_CATEGORY_ACTIONS or "Actions", { "Interrupts", "Dispels", "Deaths" } },
-            { "Threat", { "Threat" } },
+            { L["Healing"], { "HealingDone", "Hps", "Absorbs" } },
+            { L["Actions"], { "Interrupts", "Dispels", "Deaths" } },
+            { L["Threat"], { "Threat" } },
         }
         for _, category in ipairs(categories) do
             local menu = root:CreateButton(category[1])
@@ -240,7 +242,7 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
         end
         if favoriteSlot and self.db.profile.favorites[favoriteSlot] then
             root:CreateDivider()
-            root:CreateButton("Clear favorite", function()
+            root:CreateButton(L["Clear favorite"], function()
                 if frame.config == config then
                     self.db.profile.favorites[favoriteSlot] = nil
                     self:UpdateFavorites(frame)
@@ -315,7 +317,7 @@ function app:UpdateFavorites(frame)
         row.entry:SetPoint("RIGHT", 0, 0)
         row.entry:SetShown(slot > (frame.favoriteOffset or 0))
         self:StyleWindowLabel(row.name, frame.config)
-        row.name:SetText(isSelector and "Select type" or key and self:GetStatistic(key).label or "+ Set favorite")
+        row.name:SetText(isSelector and L["Select type"] or key and self:GetStatistic(key).label or L["+ Set favorite"])
         local color = self:GetWindowSetting(frame.config, "barColor")
         row:SetStatusBarColor(color[1], color[2], color[3], key and color[4] or 0.25)
     end
@@ -390,7 +392,7 @@ function app:ShowSessionMenu(frame)
             local sessions = self.combatService:ListSessions()
             for _, session in ipairs(sessions) do
                 local name = session.name ~= "" and session.name
-                    or ("Combat " .. (session.archiveID or session.sessionID))
+                    or (L["Combat %s"]:format(session.archiveID or session.sessionID))
                 local label = self.combatService:Describe(session, true)
                 local description = root:CreateRadio(label, function()
                     return session.archiveID and frame.config.archiveID == session.archiveID
@@ -413,8 +415,7 @@ function app:ShowSessionMenu(frame)
             end
         end
         for _, key in ipairs({ "Current", "Overall" }) do
-            local label = key == "Current" and (DAMAGE_METER_CURRENT_SESSION or key)
-                or (DAMAGE_METER_OVERALL_SESSION or key)
+            local label = key == "Current" and L["Current"] or L["Overall"]
             root:CreateRadio(label, function()
                 return not frame.config.archiveID and not frame.config.sessionID and frame.config.session == key
             end, function()
@@ -427,21 +428,21 @@ function app:ShowSessionMenu(frame)
         local fight = self.combatService:GetMetadata(frame.config)
         if fight then
             root:CreateDivider()
-            root:CreateButton(fight.pinned and "Unpin selected fight" or "Pin selected fight", function()
+            root:CreateButton(fight.pinned and L["Unpin selected fight"] or L["Pin selected fight"], function()
                 self.combatService:Pin(fight.id)
             end)
-            local delete = root:CreateButton("Delete selected saved fight")
-            delete:CreateButton("Confirm deletion", function()
+            local delete = root:CreateButton(L["Delete selected saved fight"])
+            delete:CreateButton(L["Confirm deletion"], function()
                 self.combatService:Delete(fight.id)
             end)
-            local older = root:CreateButton("Delete segments older than selected")
-            older:CreateButton("Confirm deletion (including pinned segments)", function()
+            local older = root:CreateButton(L["Delete segments older than selected"])
+            older:CreateButton(L["Confirm deletion (including pinned segments)"], function()
                 self.combatService:DeleteOlderSegments(fight.id)
             end)
         end
         if not (self.IsEditingWindows and self:IsEditingWindows()) then
-            local clear = root:CreateButton("Clear saved segments")
-            clear:CreateButton("Confirm deletion (including pinned segments)", function()
+            local clear = root:CreateButton(L["Clear saved segments"])
+            clear:CreateButton(L["Confirm deletion (including pinned segments)"], function()
                 self.combatService:ClearHistory()
             end)
         end
@@ -503,7 +504,11 @@ local function SetRowValues(row, config, amount, rate, percentage, enemyPercenta
     app:StyleWindowLabel(percentageMeasure, config)
     local percentageWidth = math.ceil(percentageMeasure:GetStringWidth()) + 4
     local widths = { percentageWidth, fontSize * 3, fontSize * 3, percentageWidth }
-    local shown = { showEnemy, true, showRate, true }
+    local numbers = app:GetWindowSetting(config, "numbers")
+    local complete = numbers ~= "minimal" and numbers ~= "compact"
+    local showPercentage = complete or (numbers == "compact" and not showRate)
+    showEnemy = showEnemy and complete
+    local shown = { showEnemy, true, showRate and numbers ~= "minimal", showPercentage }
     local total, count, reserved = 0, 0, 0
     for index = 1, 4 do
         -- Reserve the target share even when hidden so shared numeric columns stay aligned.
@@ -600,7 +605,7 @@ local function UpdateDetailRow(bar, spell, index, config, details, source, targe
         local spellID = spell.spellID or spell.spellId
         name = (spellID and C_Spell.GetSpellName(spellID)) or UNKNOWN
         if details.deathEvents and spell.event == "SWING_DAMAGE" then
-            name = ACTION_SWING or "Melee"
+            name = L["Melee"]
         elseif details.deathEvents and spell.event == "ENVIRONMENTAL_DAMAGE" and spell.environmentalType then
             name = _G["ACTION_ENVIRONMENTAL_DAMAGE_" .. string.upper(spell.environmentalType)] or name
         end
@@ -613,7 +618,7 @@ local function UpdateDetailRow(bar, spell, index, config, details, source, targe
         end
     end
     if not inCombat and (not IsPublic(unit) or (unit ~= nil and unit ~= "")) then
-        bar.name:SetFormattedText("%s (%s)", name, unit)
+        bar.name:SetFormattedText(L["%s (%s)"], name, unit)
     else
         bar.name:SetText(name)
     end
@@ -713,13 +718,13 @@ local function ShowRowTooltip(row, frame)
                 entries[#entries + 1] = contributor
             end
             if not targetDetails.complete then
-                targetReason = "Available contributions only; totals do not fully reconcile."
+                targetReason = L["Available contributions only; totals do not fully reconcile."]
                 entries[#entries + 1] = { isTargetMessage = true }
             end
         end
     end
     if #entries == 0 then
-        targetReason = detailReason or "No details available."
+        targetReason = detailReason or L["No details available."]
         entries[1] = { isTargetMessage = true }
     end
     local poolKey = inCombat and "combatSpellTooltip" or "postCombatTooltip"
@@ -773,8 +778,8 @@ local function ShowRowTooltip(row, frame)
             label:SetPoint("TOPLEFT", 2, -(index - 1) * (rowHeight + spacing))
             label:SetPoint("RIGHT", -2, 0)
             label:SetHeight(rowHeight)
-            local heading = frame.config.statistic == "EnemyDamageTaken" and "Contributors (% of enemy)"
-                or "Targets (% of enemy; % of yours)"
+            local heading = frame.config.statistic == "EnemyDamageTaken" and L["Contributors (% of enemy)"]
+                or L["Targets (% of enemy; % of yours)"]
             label:SetText(spell.isTargetHeading and heading or targetReason)
             label:Show()
             bar:Hide()
@@ -902,7 +907,7 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     row.icon:SetSize(rowHeight, rowHeight)
     app:StyleWindowLabel(row.name, config)
     app:StyleWindowLabel(row.value, config)
-    row.name:SetFormattedText(DAMAGE_METER_SOURCE_NAME or "%d. %s", sourceIndex, source.name)
+    row.name:SetFormattedText(L["%d. %s"], sourceIndex, source.name)
     if statistic.key == "Threat" and source.isPet then
         row.icon:SetTexture(nil)
     elseif source.specIconID and source.specIconID ~= 0 then
@@ -1007,25 +1012,22 @@ function app:RefreshWindow(frame, session, message)
     then
         frame.detail, detail, frame.offset = nil, nil, 0
     end
-    frame.statistic.text:SetText(frame.favorites:IsShown() and "Favorites" or statistic.label)
+    frame.statistic.text:SetText(frame.favorites:IsShown() and L["Favorites"] or statistic.label)
     if detail and not frame.favorites:IsShown() then
-        frame.statistic.text:SetFormattedText("Back: %s", detail.source.name)
+        frame.statistic.text:SetFormattedText(L["Back: %s"], detail.source.name)
     end
     if statistic.key == "Threat" and not frame.favorites:IsShown() and session then
         local targetName = session.targetName
         if not IsPublic(targetName) or targetName ~= nil then
-            frame.statistic.text:SetFormattedText("Threat: %s", targetName)
+            frame.statistic.text:SetFormattedText(L["Threat: %s"], targetName)
         end
     end
     frame.session.text:SetText(
-        preview and "Preview"
+        preview and L["Preview"]
             or (statistic.key == "Threat" and "")
             or (config.archiveID and ("S" .. config.archiveID))
             or config.sessionID
-            or (
-                config.session == "Overall" and DAMAGE_METER_OVERALL_SESSION_SHORT
-                or DAMAGE_METER_CURRENT_SESSION_SHORT
-            )
+            or (config.session == "Overall" and L["Overall (short)"] or L["Current (short)"])
     )
     frame.session:SetWidth(preview and 60 or (statistic.key == "Threat" and 1 or frame.session.normalWidth))
     frame.session:SetShown(statistic.key ~= "Threat")
@@ -1067,12 +1069,12 @@ function app:RefreshWindow(frame, session, message)
                 detail.source = source
                 details, message = self:GetSourceDetails(config, source)
             else
-                message = "This source is no longer available."
+                message = L["This source is no longer available."]
             end
         end
         sources = details and (details.deathEvents or details.combatSpells) or {}
         if #sources == 0 then
-            message = message or "No details available."
+            message = message or L["No details available."]
         end
     end
     local localIndex
@@ -1257,10 +1259,10 @@ function app:CreateWindow(id)
     )
     local menu = Button(frame, "", 27, function(button)
         local dropdown = OpenMenuAbove(button, function(_, root)
-            root:CreateButton("Settings", function()
+            root:CreateButton(L["Settings"], function()
                 self.core:OpenOptions("SeamlessDamageMeter", "windows")
             end)
-            local editmode = root:CreateButton("Editmode", function()
+            local editmode = root:CreateButton(L["Editmode"], function()
                 if not InCombatLockdown() then
                     SettingsPanel:Close(true)
                     ShowUIPanel(EditModeManagerFrame)
@@ -1269,29 +1271,32 @@ function app:CreateWindow(id)
             editmode:SetEnabled(not InCombatLockdown())
             root:CreateSpacer()
             root:CreateButton(
-                self:GetWindowSetting(frame.config, "lockPosition") and "Unlock Position" or "Lock Position",
+                self:GetWindowSetting(frame.config, "lockPosition") and L["Unlock Position"] or L["Lock Position"],
                 function()
                     frame.config.overrides.lockPosition = not self:GetWindowSetting(frame.config, "lockPosition")
                     self:RebuildWindows()
                 end
             )
-            root:CreateButton(frame.config.noninteractive and "Make Interactive" or "Make Noninteractive", function()
-                frame.config.noninteractive = not frame.config.noninteractive
-                frame.favorites:Hide()
-                if self.detailTooltip then
-                    self.detailTooltip:Hide()
+            root:CreateButton(
+                frame.config.noninteractive and L["Make Interactive"] or L["Make Noninteractive"],
+                function()
+                    frame.config.noninteractive = not frame.config.noninteractive
+                    frame.favorites:Hide()
+                    if self.detailTooltip then
+                        self.detailTooltip:Hide()
+                    end
+                    self:RefreshWindows()
                 end
-                self:RefreshWindows()
-            end)
-            local reset = root:CreateButton("Reset Data", function()
+            )
+            local reset = root:CreateButton(L["Reset Data"], function()
                 self.live:ResetData()
             end)
             reset:SetEnabled(C_DamageMeter and C_DamageMeter.ResetAllCombatSessions ~= nil)
-            root:CreateButton("Delete Window", function()
+            root:CreateButton(L["Delete Window"], function()
                 self:SetWindowEnabled(frame.config, false)
             end)
             root:CreateSpacer()
-            local create = root:CreateButton("Create New Window", function()
+            local create = root:CreateButton(L["Create New Window"], function()
                 self:AddWindow()
             end)
             create:SetEnabled(self:GetUnusedWindowSlot() ~= nil)
@@ -1318,20 +1323,25 @@ function app:CreateWindow(id)
             frame.offset = frame.sourceOffset or 0
             self:RefreshWindows()
         else
-            self:ShowStatisticMenu(frame)
+            local manager = Menu.GetManager()
+            local menu = manager:GetOpenMenu()
+            if menu and menu:GetOwnerRegion() == frame.statistic then
+                manager:CloseMenu(menu)
+            else
+                self:ShowStatisticMenu(frame)
+            end
         end
     end)
+    -- Toggle on mouse down before the menu manager dismisses outside clicks.
+    frame.statistic:RegisterForClicks("LeftButtonDown")
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()
-    frame.statistic.arrow:SetPoint("CENTER", frame.statistic, "CENTER", 0, -2)
+    -- Match the settings button's center; both use the same dropdown atlas family.
+    frame.statistic.arrow:SetPoint("CENTER", frame.statistic, "CENTER", 0, -4)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end, true)
-    frame.session:SetSize(
-        math.max(#(DAMAGE_METER_OVERALL_SESSION_SHORT or "O"), #(DAMAGE_METER_CURRENT_SESSION_SHORT or "C")) > 1 and 32
-            or 18,
-        18
-    )
+    frame.session:SetSize(math.max(#L["O"], #L["C"]) > 1 and 32 or 18, 18)
     frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
     frame.session.normalWidth = frame.session:GetWidth()
     frame.statistic:SetPoint("TOPLEFT", frame, "TOPLEFT", 3, 0)

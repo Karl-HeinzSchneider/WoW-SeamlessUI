@@ -49,6 +49,9 @@ local function frame(name, parent)
     function f:SetEnabled(value)
         self.enabled = value
     end
+    function f:SetWidth(value)
+        self.width = value
+    end
     function f:SetDefaultText(text)
         self.text = text
     end
@@ -92,7 +95,6 @@ local function frame(name, parent)
     end
     for _, key in ipairs({
         "SetHeight",
-        "SetWidth",
         "SetSize",
         "SetWordWrap",
         "SetJustifyH",
@@ -224,6 +226,7 @@ function EditModeManagerFrame:SetHasActiveChanges(value)
 end
 EditModeSystemSettingsDialog = { UpdateDialog = function() end }
 assert(loadfile("Seamless/lib/LibEditModeOverride/LibEditModeOverride.lua"))()
+dofile("src/tests/locale-support.lua")
 local player = frame("PlayerFrame", UIParent)
 player.system, player.systemIndex = 1, 1
 player.systemInfo = draft.systems[1]
@@ -320,12 +323,12 @@ function menu:CreateRadio(text, get, set)
     return entry
 end
 view.controls.point.Dropdown.menu(nil, menu)
-assert(menu.entries.BOTTOM.get())
-menu.entries.TOPRIGHT.set()
+assert(menu.entries.Bottom.get())
+menu.entries["Top right"].set()
 assert(position:Read(player).point == "TOPRIGHT")
 local parentMenu = { entries = {}, CreateRadio = menu.CreateRadio }
 view.controls.relativePoint.Dropdown.menu(nil, parentMenu)
-parentMenu.entries.BOTTOMLEFT.set()
+parentMenu.entries["Bottom left"].set()
 assert(position:Read(player).relativePoint == "BOTTOMLEFT" and position:Read(player).point == "TOPRIGHT")
 local frameMenu = { entries = {}, CreateRadio = menu.CreateRadio }
 view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
@@ -385,6 +388,7 @@ player.systemInfo = draft.systems[1]
 view:Refresh(player)
 assert(x.Slider.value == 120 and saves == 0)
 assert(view.RevertButton.template == "EditModeSystemSettingsDialogButtonTemplate")
+assert(view.RevertButton.width == view:GetWidth() / 2)
 assert(not view.RevertButton.enabled)
 -- Detect watched fields changed by native dragging, and preserve unrelated data.
 draft.systems[1].anchorInfo.offsetX = 350
@@ -468,4 +472,26 @@ assert(not view.RevertButton.enabled)
 view.RevertButton.click()
 assert(position:Read(player).offsetX == 999)
 preset = false
+-- A translated catalogue changes labels/order, but never the frame/anchor IDs.
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+L["Focus frame"], L["Target frame"] = "Z Focus", "A Target"
+L["Anchor"], L["Top right"], L["Revert changes"] = "Translated anchor", "Translated top right", "Translated revert"
+L["X and Y must be finite numbers."] = "Translated numeric error"
+assert(loadfile("SeamlessUI/src/features/blizzardposition.lua"))("SeamlessUI", app)
+local localizedPosition = app.blizzardPosition
+local localizedView = localizedPosition:Create(frame())
+localizedView:Refresh(player)
+assert(localizedView.controls.point.Label.text == "Translated anchor")
+assert(localizedView.RevertButton.text == "Translated revert")
+local localizedMenu = { entries = {}, CreateRadio = menu.CreateRadio }
+localizedView.controls.relativeTo.Dropdown.menu(nil, localizedMenu)
+assert(table.concat(localizedMenu.order, ",") == "UIParent,A Target,Minimap,Player frame,Z Focus")
+local localizedAnchors = { entries = {}, CreateRadio = menu.CreateRadio }
+localizedView.controls.point.Dropdown.menu(nil, localizedAnchors)
+localizedAnchors.entries["Translated top right"].set()
+assert(localizedPosition:Read(player).point == "TOPRIGHT")
+local invalid = localizedPosition:Read(player)
+invalid.offsetX = "invalid"
+local ok, err = localizedPosition:Apply(player, invalid)
+assert(not ok and err == "Translated numeric error")
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")

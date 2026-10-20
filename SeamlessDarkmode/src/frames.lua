@@ -1,6 +1,8 @@
 ---@type string, SeamlessDarkmode
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- One function per Blizzard frame. Each names the exact textures of that frame (and its
 -- subframes) that are decoration, and passes them to `paint`. `paint` either tints a texture or
 -- restores the color it had before it was first tinted, so the same function applies and undoes
@@ -163,16 +165,16 @@ end
 app.groups = {
     {
         key = "unitframes",
-        name = "Unit frames",
+        name = L["Unit frames"],
         frames = { PlayerFrame, TargetFrame, FocusFrame, PetFrame, PartyFrame, BossFrames },
     },
     {
         key = "minimap",
-        name = "Minimap",
+        name = L["Minimap"],
         frames = { Minimap, AddonCompartmentButton, MinimapButtons },
     },
-    { key = "actionbars", name = "Action bar slot borders", frames = { ActionBars } },
-    { key = "endcaps", name = "Action bar gryphons", frames = { EndCaps } },
-    { key = "experience", name = "XP bar border", frames = {} },
-    { key = "reputation", name = "Reputation bar border", frames = {} },
+    { key = "actionbars", name = L["Action bar slot borders"], frames = { ActionBars } },
+    { key = "endcaps", name = L["Action bar gryphons"], frames = { EndCaps } },
+    { key = "experience", name = L["XP bar border"], frames = {} },
+    { key = "reputation", name = L["Reputation bar border"], frames = {} },
 }

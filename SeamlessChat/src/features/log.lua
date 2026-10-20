@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Chat log: a searchable database of every chat message this character receives or sends. It
 -- records the game's chat events themselves (CHAT_MSG_*), before any chat window formats them, so a
 -- message is one record with its fields (time, type, channel, sender, ...), stored once no matter
@@ -26,8 +28,8 @@ local defaults = {
 app.chatLog = app.features:New(
     "log",
     module,
-    "Chat log",
-    "Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character.",
+    L["Chat log"],
+    L["Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character."],
     defaults
 ) --[[@as SeamlessChat.ChatLog]]
 
@@ -226,7 +228,7 @@ end
 local GROUPS = {
     {
         key = "whisper",
-        name = "Whispers",
+        name = L["Whispers"],
         types = {
             WHISPER = true,
             WHISPER_INFORM = true,
@@ -238,7 +240,7 @@ local GROUPS = {
     },
     {
         key = "guild",
-        name = "Guild",
+        name = L["Guild"],
         types = {
             GUILD = true,
             OFFICER = true,
@@ -247,17 +249,21 @@ local GROUPS = {
             GUILD_DISCORD = true,
         },
     },
-    { key = "party", name = "Party", types = { PARTY = true, PARTY_LEADER = true } },
-    { key = "raid", name = "Raid", types = { RAID = true, RAID_LEADER = true, RAID_WARNING = true } },
-    { key = "instance", name = "Instance", types = { INSTANCE_CHAT = true, INSTANCE_CHAT_LEADER = true } },
-    { key = "say", name = "Say, yell & emotes", types = { SAY = true, YELL = true, EMOTE = true, TEXT_EMOTE = true } },
-    { key = "community", name = "Communities", types = { COMMUNITIES_CHANNEL = true } },
-    { key = "channel", name = "Channels" },
-    { key = "bnet", name = "Battle.net" },
-    { key = "npc", name = "NPCs" },
+    { key = "party", name = L["Party"], types = { PARTY = true, PARTY_LEADER = true } },
+    { key = "raid", name = L["Raid"], types = { RAID = true, RAID_LEADER = true, RAID_WARNING = true } },
+    { key = "instance", name = L["Instance"], types = { INSTANCE_CHAT = true, INSTANCE_CHAT_LEADER = true } },
+    {
+        key = "say",
+        name = L["Say, yell & emotes"],
+        types = { SAY = true, YELL = true, EMOTE = true, TEXT_EMOTE = true },
+    },
+    { key = "community", name = L["Communities"], types = { COMMUNITIES_CHANNEL = true } },
+    { key = "channel", name = L["Channels"] },
+    { key = "bnet", name = L["Battle.net"] },
+    { key = "npc", name = L["NPCs"] },
     {
         key = "loot",
-        name = "Loot & rewards",
+        name = L["Loot & rewards"],
         types = {
             LOOT = true,
             MONEY = true,
@@ -273,7 +279,7 @@ local GROUPS = {
             ACHIEVEMENT = true,
         },
     },
-    { key = "system", name = "System & other" },
+    { key = "system", name = L["System & other"] },
 }
 module.GROUPS = GROUPS
 
@@ -382,10 +388,10 @@ end
 
 -- How FormatRecord names chat types that read badly as they are.
 local TYPE_LABELS = {
-    WHISPER = "Whisper from",
-    WHISPER_INFORM = "Whisper to",
-    BN_WHISPER = "Whisper from",
-    BN_WHISPER_INFORM = "Whisper to",
+    WHISPER = L["Whisper from"],
+    WHISPER_INFORM = L["Whisper to"],
+    BN_WHISPER = L["Whisper from"],
+    BN_WHISPER_INFORM = L["Whisper to"],
 }
 
 ---@param record SeamlessChat.LogRecord
@@ -399,7 +405,7 @@ end
 -- A record as one plain line: "2026-09-27 18:14:31 [2. Trade] Thrall: WTS [Hearthstone]".
 ---@param record SeamlessChat.LogRecord
 function module:FormatRecord(record)
-    local line = ("%s [%s] "):format(date("%Y-%m-%d %H:%M:%S", record.time), whereOf(record))
+    local line = (L["%s [%s] "]):format(date("%Y-%m-%d %H:%M:%S", record.time), whereOf(record))
     if record.sender then
         line = line .. record.sender .. ": "
     end
@@ -414,7 +420,7 @@ end
 ---@return number g
 ---@return number b
 function module:FormatColored(record)
-    local line = ("|cff808080%s|r [%s] "):format(date("%Y-%m-%d %H:%M:%S", record.time), whereOf(record))
+    local line = (L["|cff808080%s|r [%s] "]):format(date("%Y-%m-%d %H:%M:%S", record.time), whereOf(record))
     if record.sender then
         local classColor = record.class and GetClassColorObj(record.class)
         local sender = classColor and classColor:WrapTextInColorCode(record.sender) or record.sender
@@ -515,17 +521,17 @@ function module:GetOptions()
             name = function()
                 local count = self:Count()
                 if count == 0 then
-                    return "The log is empty.\n"
+                    return L["The log is empty.\n"]
                 end
                 local oldest = self.db.records[self.first].time
-                return ("%d messages, the oldest from %s.\n"):format(count, date("%Y-%m-%d %H:%M", oldest))
+                return (L["%d messages, the oldest from %s.\n"]):format(count, date("%Y-%m-%d %H:%M", oldest))
             end,
         },
         open = {
             type = "execute",
             order = 6,
-            name = "Open the chat log",
-            desc = "Search and filter the logged messages. Same as /seamlesschat log.",
+            name = L["Open the chat log"],
+            desc = L["Search and filter the logged messages. Same as /seamlesschat log."],
             func = function()
                 SeamlessChatLogWindow:Open()
             end,
@@ -534,15 +540,15 @@ function module:GetOptions()
             type = "toggle",
             order = 7,
             width = "full",
-            name = "Chat log button beside the chat",
-            desc = "A button in the main chat window's button column, above the chat menu button, that opens the chat log.",
+            name = L["Chat log button beside the chat"],
+            desc = L["A button in the main chat window's button column, above the chat menu button, that opens the chat log."],
         },
         maxMessages = {
             type = "range",
             order = 10,
             width = "double",
-            name = "Messages kept",
-            desc = "The oldest messages are dropped past this many. A big log makes the login a little slower.",
+            name = L["Messages kept"],
+            desc = L["The oldest messages are dropped past this many. A big log makes the login a little slower."],
             min = 1000,
             max = 200000,
             softMax = 100000,
@@ -553,8 +559,8 @@ function module:GetOptions()
             type = "range",
             order = 20,
             width = "double",
-            name = "Days kept",
-            desc = "Messages older than this are dropped.",
+            name = L["Days kept"],
+            desc = L["Messages older than this are dropped."],
             min = 1,
             max = 365,
             step = 1,
@@ -562,10 +568,10 @@ function module:GetOptions()
         clear = {
             type = "execute",
             order = 30,
-            name = "Delete the log",
-            desc = "Deletes every logged message of this character.",
+            name = L["Delete the log"],
+            desc = L["Deletes every logged message of this character."],
             confirm = true,
-            confirmText = "Delete every logged chat message of this character?",
+            confirmText = L["Delete every logged chat message of this character?"],
             func = function()
                 self:Clear()
             end,

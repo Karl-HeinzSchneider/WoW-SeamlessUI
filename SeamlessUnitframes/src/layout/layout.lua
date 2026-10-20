@@ -1,6 +1,10 @@
 ---@type string, SeamlessUnitframes
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessUnitframes.LegacyLayout : AceModule, AceEvent-3.0
 local module = {}
 local layout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
@@ -23,7 +27,7 @@ function module:Warn(context, reason)
     local message = context .. ": " .. reason
     if not warnings[message] then
         warnings[message] = true
-        app.logger:warn("Legacy unit frames: %s; skipping this operation", message)
+        app.logger:warn(L["Legacy unit frames: %s; skipping this operation"], message)
     end
 end
 

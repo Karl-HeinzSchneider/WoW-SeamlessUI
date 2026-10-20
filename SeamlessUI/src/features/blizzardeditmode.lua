@@ -1,16 +1,18 @@
 ---@type string, SeamlessUI
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessUI.BlizzardEditMode : AceModule, AceEvent-3.0, AceHook-3.0
 local module = app.addon:NewModule("BlizzardEditMode", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessUI.BlizzardEditMode]]
 app.blizzardEditMode = module
 module:SetEnabledState(false)
 
 local frames = {
-    { key = "player", name = "Player frame", index = "Player" },
-    { key = "target", name = "Target frame", index = "Target" },
-    { key = "pet", name = "Pet frame", index = "Pet" },
-    { key = "focus", name = "Focus frame", index = "Focus" },
+    { key = "player", name = L["Player frame"], index = "Player" },
+    { key = "target", name = L["Target frame"], index = "Target" },
+    { key = "pet", name = L["Pet frame"], index = "Pet" },
+    { key = "focus", name = L["Focus frame"], index = "Focus" },
 }
 local panel, title, positionView
 
@@ -78,7 +80,7 @@ function module:RefreshPanel()
         return
     end
     ensurePanel()
-    title:SetText("SeamlessUI - " .. spec.name)
+    title:SetText(string.format(L["SeamlessUI - %s"], spec.name))
     panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
     if settings().frames[spec.key].addPosition then
         positionView = positionView or app.blizzardPosition:Create(panel)
@@ -135,8 +137,8 @@ function module:Options()
             type = "toggle",
             order = 1,
             width = "full",
-            name = "Enable Blizzard Edit Mode extensions",
-            desc = "Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions.",
+            name = L["Enable Blizzard Edit Mode extensions"],
+            desc = L["Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."],
             descStyle = "inline",
             get = function()
                 return settings().enabled
@@ -169,14 +171,14 @@ function module:Options()
                     type = "toggle",
                     order = 1,
                     width = "full",
-                    name = "Extend Edit Mode",
-                    desc = "Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues.",
+                    name = L["Extend Edit Mode"],
+                    desc = L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."],
                 },
                 addPosition = {
                     type = "toggle",
                     order = 2,
-                    name = "Add position",
-                    desc = "Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to this frame's Edit Mode extension.",
+                    name = L["Add position"],
+                    desc = L["Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to this frame's Edit Mode extension."],
                     disabled = function()
                         return not settings().enabled or not settings().frames[key].enabled
                     end,
@@ -184,8 +186,8 @@ function module:Options()
                 addMoreOptions = {
                     type = "toggle",
                     order = 3,
-                    name = "Add more options",
-                    desc = "Reserved for future frame options. This setting has no effect yet.",
+                    name = L["Add more options"],
+                    desc = L["Reserved for future frame options. This setting has no effect yet."],
                     disabled = function()
                         return not settings().enabled or not settings().frames[key].enabled
                     end,
@@ -193,5 +195,5 @@ function module:Options()
             },
         }
     end
-    return { order = 30, name = "Blizzard Edit Mode Extensions", args = args }
+    return { order = 30, name = L["Blizzard Edit Mode Extensions"], args = args }
 end

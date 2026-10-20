@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 
 -- Shared by the features that change the text lines of unit tooltips (Player text, NPC text): which
@@ -185,12 +187,12 @@ function unitTooltip.FactionOption(order)
     return {
         type = "select",
         order = order,
-        name = "Faction line",
-        desc = 'The "Alliance" / "Horde" line.',
+        name = L["Faction line"],
+        desc = L['The "Alliance" / "Horde" line.'],
         values = {
-            SHOW = "Show",
-            OWN = "Hide if it is your own faction",
-            HIDE = "Hide",
+            SHOW = L["Show"],
+            OWN = L["Hide if it is your own faction"],
+            HIDE = L["Hide"],
         },
         sorting = { "SHOW", "OWN", "HIDE" },
     }
@@ -205,7 +207,7 @@ function unitTooltip.ColorLevel(level)
     return ("|cff%02x%02x%02x%s|r"):format(color.r * 255, color.g * 255, color.b * 255, level)
 end
 
--- "Level 10 (Elite)" → "", "10" (colored), " (Elite)": the level line split around the level,
+-- "Level 10 (Elite)" â†’ "", "10" (colored), " (Elite)": the level line split around the level,
 -- the word "Level" dropped. Nil without a level.
 ---@param text string
 ---@return string? head

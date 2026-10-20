@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessCore.QuestLog : AceModule, AceEvent-3.0
 ---@field text? FontString
 ---@field active? boolean
@@ -33,7 +35,7 @@ function module:Refresh()
 
     local summary = app.addon:GetQuestLogSummary()
     self.text:SetFormattedText(
-        "Completed: %d  |  %s XP",
+        L["Completed: %d  |  %s XP"],
         summary.completedQuests,
         BreakUpLargeNumbers(summary.completedQuestXP)
     )

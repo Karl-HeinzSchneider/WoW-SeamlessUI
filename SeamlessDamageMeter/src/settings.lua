@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 app.MAX_WINDOWS = 10
 app.windowDefaults = {
     width = 400,
@@ -10,6 +12,7 @@ app.windowDefaults = {
     showResizeHandle = true,
     lockSize = false,
     lockPosition = false,
+    numbers = "complete",
     scale = 1,
     point = "CENTER",
     relativePoint = "CENTER",
@@ -41,6 +44,10 @@ function app:GetWindowSetting(config, key)
         return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
     end
     if self.skinDefaults[key] ~= nil then
+        local override = config.styleOverrides and config.styleOverrides[key]
+        if config.modifyGlobalStyle == false and override ~= nil then
+            return override
+        end
         local skins = self.db.profile.skins
         local skin = skins and (skins[config.skin or "default"] or skins.default)
         local value = skin and skin.settings[key]
@@ -88,7 +95,7 @@ function app:PrepareWindowSettings()
     local profile = self.db.profile
     profile.skins = profile.skins or {}
     if not profile.skins.default then
-        profile.skins.default = { name = "Default", settings = CopySettings(profile.windowDefaults) }
+        profile.skins.default = { name = L["Default"], settings = CopySettings(profile.windowDefaults) }
     end
     for _, skin in pairs(profile.skins) do
         skin.settings = skin.settings or {}
@@ -177,7 +184,7 @@ function app:PrepareWindowSettings()
             end
             if customized then
                 local key = "legacyWindow" .. config.id
-                profile.skins[key] = { name = "Window " .. config.id .. " (migrated)", settings = settings }
+                profile.skins[key] = { name = L["Window %d (migrated)"]:format(config.id), settings = settings }
                 config.skin = key
             end
         end

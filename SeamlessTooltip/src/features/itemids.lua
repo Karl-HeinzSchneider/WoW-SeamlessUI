@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds the item ID, and its icon's file ID, to item tooltips.
 local feature = app.features:NewFeature("ItemIDs", {
     category = "items",
-    name = "Item IDs",
-    desc = "Adds the item's ID, and its icon's ID, to item tooltips.",
+    name = L["Item IDs"],
+    desc = L["Adds the item's ID, and its icon's ID, to item tooltips."],
     order = 10,
     defaults = {
         item = true,
@@ -18,13 +20,13 @@ local feature = app.features:NewFeature("ItemIDs", {
         item = {
             type = "toggle",
             order = 10,
-            name = "Item ID",
+            name = L["Item ID"],
         },
         icon = {
             type = "toggle",
             order = 20,
-            name = "Icon ID",
-            desc = "The file ID of the item's icon.",
+            name = L["Icon ID"],
+            desc = L["The file ID of the item's icon."],
         },
     },
 })
@@ -40,12 +42,12 @@ function feature:OnItemTooltip(tooltip, tooltipData)
     end
     local settings = self:Settings()
     if settings.item then
-        lines.AddValue(tooltip, "Item ID", id)
+        lines.AddValue(tooltip, L["Item ID"], id)
     end
     if settings.icon then
         local icon = C_Item.GetItemIconByID(id)
         if icon and not anySecret(icon) then
-            lines.AddValue(tooltip, "Icon ID", icon)
+            lines.AddValue(tooltip, L["Icon ID"], icon)
         end
     end
 end

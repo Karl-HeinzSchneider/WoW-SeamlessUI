@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Class colored names: every player name in the chat in its class color, for all chat types at
 -- once. The game has this per chat type (chat settings) plus an overriding CVar,
 -- chatClassColorOverride: "0" colors every name, "1" none, anything else leaves it to the types.
@@ -16,8 +18,8 @@ local defaults = {
 app.features:New(
     "classColors",
     module,
-    "Class colored names",
-    "Shows every player name in the chat in its class color, in all chat types and channels.",
+    L["Class colored names"],
+    L["Shows every player name in the chat in its class color, in all chat types and channels."],
     defaults
 )
 

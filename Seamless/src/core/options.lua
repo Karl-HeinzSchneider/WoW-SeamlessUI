@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceDBOptions = LibStub("AceDBOptions-3.0")
@@ -35,7 +37,7 @@ app.options = app.addon:NewModule("Options", module) --[[@as SeamlessCore.Option
 function module:Register(name, spec, parent)
     assert(not self.panels[name], "Duplicate Seamless options: " .. name)
     local args = {
-        general = { type = "group", name = "General", order = GENERAL_ORDER, args = spec.general },
+        general = { type = "group", name = L["General"], order = GENERAL_ORDER, args = spec.general },
     }
     for key, tab in pairs(spec.tabs or {}) do
         assert(not args[key] and key ~= "profiles", "Reserved Seamless options tab: " .. key)
@@ -103,7 +105,7 @@ function module.FeatureGroup(spec)
             type = "toggle",
             order = 0,
             width = "full",
-            name = "Enable",
+            name = L["Enable"],
             desc = spec.desc,
             descStyle = "inline",
         },
@@ -154,7 +156,7 @@ app.addon.FeatureGroup = module.FeatureGroup
 local function LogLevels()
     local values, sorting = {}, {}
     for name in pairs(app.logger.level) do
-        values[name] = name:sub(1, 1) .. name:sub(2):lower()
+        values[name] = L[name:sub(1, 1) .. name:sub(2):lower()]
         sorting[#sorting + 1] = name
     end
     table.sort(sorting, function(a, b)
@@ -170,24 +172,24 @@ function module:OnInitialize()
         info = {
             type = "description",
             order = 0,
-            name = "The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n",
+            name = L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"],
         },
     }
     local levels, levelOrder = LogLevels()
     self:Register(appName, {
-        title = "Seamless",
+        title = L["Seamless"],
         general = {
             interface = {
                 type = "group",
                 inline = true,
                 order = 10,
-                name = "Interface",
+                name = L["Interface"],
                 args = {
                     minimap = {
                         type = "toggle",
                         order = 10,
-                        name = "Minimap button",
-                        desc = "Open the Seamless settings from the minimap.",
+                        name = L["Minimap button"],
+                        desc = L["Open the Seamless settings from the minimap."],
                         get = function()
                             return not app.db.profile.minimap.hide
                         end,
@@ -199,8 +201,8 @@ function module:OnInitialize()
                     compartment = {
                         type = "toggle",
                         order = 15,
-                        name = "Addon compartment entry",
-                        desc = "Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button.",
+                        name = L["Addon compartment entry"],
+                        desc = L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."],
                         disabled = function()
                             return not LibStub("LibDBIcon-1.0"):IsButtonCompartmentAvailable()
                         end,
@@ -215,8 +217,8 @@ function module:OnInitialize()
                     logLevel = {
                         type = "select",
                         order = 20,
-                        name = "Log level",
-                        desc = "How much Seamless writes to chat. Also /seamless loglevel <level>.",
+                        name = L["Log level"],
+                        desc = L["How much Seamless writes to chat. Also /seamless loglevel <level>."],
                         values = levels,
                         sorting = levelOrder,
                         get = function()
@@ -235,12 +237,12 @@ function module:OnInitialize()
                 type = "group",
                 inline = true,
                 order = 20,
-                name = "Addons",
+                name = L["Addons"],
                 args = {
                     info = {
                         type = "description",
                         order = 0,
-                        name = "The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n",
+                        name = L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"],
                     },
                 },
             },
@@ -248,13 +250,13 @@ function module:OnInitialize()
         db = app.db,
     })
     self:Register(appName .. "Tweaks", {
-        title = "Tweaks",
+        title = L["Tweaks"],
         general = {
             tweaks = {
                 type = "group",
                 inline = true,
                 order = 10,
-                name = "Tweaks",
+                name = L["Tweaks"],
                 get = function(info)
                     return app.db.profile.tweaks[info[#info]]
                 end,
@@ -267,31 +269,23 @@ function module:OnInitialize()
                         type = "toggle",
                         order = 10,
                         width = "full",
-                        name = "/rl reloads the interface",
-                        desc = "Type /rl in chat to reload the user interface, just like /reload.",
-                        descStyle = "inline",
-                    },
-                    showFramerateOnStartup = {
-                        type = "toggle",
-                        order = 20,
-                        width = "full",
-                        name = "Show the framerate on startup",
-                        desc = "Shows the FPS counter at login and after a reload. Takes effect at the next login or reload; Ctrl+R still toggles it.",
+                        name = L["/rl reloads the interface"],
+                        desc = L["Type /rl in chat to reload the user interface, just like /reload."],
                         descStyle = "inline",
                     },
                     enhancedXPTooltip = {
                         type = "toggle",
                         order = 40,
                         width = "full",
-                        name = "Enhance the XP tooltip",
-                        desc = "Shows XP to the next level, rested XP as a percentage of a level, and estimated time to the configured rested cap while resting in an inn or city. Takes effect on the next hover.",
+                        name = L["Enhance the XP tooltip"],
+                        desc = L["Shows XP to the next level, rested XP as a percentage of a level, and estimated time to the configured rested cap while resting in an inn or city. Takes effect on the next hover."],
                         descStyle = "inline",
                     },
                     restedXPCap = {
                         type = "range",
                         order = 41,
-                        name = "Rested XP cap (%)",
-                        desc = "Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly.",
+                        name = L["Rested XP cap (%)"],
+                        desc = L["Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly."],
                         min = 1,
                         max = 500,
                         step = 1,
@@ -302,8 +296,8 @@ function module:OnInitialize()
                     restedXPRate = {
                         type = "range",
                         order = 42,
-                        name = "Rested XP per 8 hours (%)",
-                        desc = "Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent.",
+                        name = L["Rested XP per 8 hours (%)"],
+                        desc = L["Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent."],
                         min = 0.1,
                         max = 100,
                         step = 0.1,

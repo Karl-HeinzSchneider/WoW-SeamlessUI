@@ -1,11 +1,13 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Sizes the tooltips on their own, apart from the UI scale.
 local feature = app.features:NewFeature("Scale", {
     category = "all",
-    name = "Scale",
-    desc = "Makes the tooltips bigger or smaller, apart from the rest of the interface.",
+    name = L["Scale"],
+    desc = L["Makes the tooltips bigger or smaller, apart from the rest of the interface."],
     order = 40,
     enabled = false,
     defaults = {
@@ -15,7 +17,7 @@ local feature = app.features:NewFeature("Scale", {
         scale = {
             type = "range",
             order = 10,
-            name = "Scale",
+            name = L["Scale"],
             min = 0.5,
             max = 2,
             step = 0.05,

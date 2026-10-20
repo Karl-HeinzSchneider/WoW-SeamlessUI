@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Short channel names: "[2. Trade - City]" -> "[2]", "[Guild]" -> "[G]". Rewrites the channel link
 -- at the start of a chat line (|Hchannel:...|h[...]|h); the link stays, so clicking it still
 -- switches the chat input to that channel.
@@ -28,8 +30,8 @@ local defaults = {
 local channels = app.features:New(
     "channels",
     module,
-    "Short channel names",
-    'Shortens the channel names in front of chat messages: "[2. Trade - City]" to "[2]", "[Guild]" to "[G]".',
+    L["Short channel names"],
+    L['Shortens the channel names in front of chat messages: "[2. Trade - City]" to "[2]", "[Guild]" to "[G]".'],
     defaults
 ) --[[@as SeamlessChat.Channels]]
 
@@ -54,7 +56,8 @@ local NUMBERED_STYLES = {
     end,
 }
 local NUMBERED_ORDER = { "number", "name", "numberName", "full" }
-local NUMBERED_LABELS = { number = "[2]", name = "[Trade]", numberName = "[2. Trade]", full = "[2. Trade - City]" }
+local NUMBERED_LABELS =
+    { number = "[2]", name = L["[Trade]"], numberName = L["[2. Trade]"], full = L["[2. Trade - City]"] }
 
 -- The group channels in the options' order, with what they are called there.
 local GROUP_ORDER = {
@@ -69,15 +72,15 @@ local GROUP_ORDER = {
     "INSTANCE_CHAT_LEADER",
 }
 local GROUP_LABELS = {
-    GUILD = "Guild",
-    OFFICER = "Officer",
-    PARTY = "Party",
-    PARTY_LEADER = "Party leader",
-    PARTY_GUIDE = "Dungeon guide",
-    RAID = "Raid",
-    RAID_LEADER = "Raid leader",
-    INSTANCE_CHAT = "Instance",
-    INSTANCE_CHAT_LEADER = "Instance leader",
+    GUILD = L["Guild"],
+    OFFICER = L["Officer"],
+    PARTY = L["Party"],
+    PARTY_LEADER = L["Party leader"],
+    PARTY_GUIDE = L["Dungeon guide"],
+    RAID = L["Raid"],
+    RAID_LEADER = L["Raid leader"],
+    INSTANCE_CHAT = L["Instance"],
+    INSTANCE_CHAT_LEADER = L["Instance leader"],
 }
 
 -- The short name for one channel link, or nil to keep it.
@@ -124,8 +127,8 @@ function module:GetOptions()
         numbered = {
             type = "select",
             order = 10,
-            name = "Numbered channels",
-            desc = "How General, Trade and the other numbered channels are shown.",
+            name = L["Numbered channels"],
+            desc = L["How General, Trade and the other numbered channels are shown."],
             values = NUMBERED_LABELS,
             sorting = NUMBERED_ORDER,
         },
@@ -133,12 +136,12 @@ function module:GetOptions()
             type = "toggle",
             order = 20,
             width = "full",
-            name = "Shorten guild, party, raid and instance",
+            name = L["Shorten guild, party, raid and instance"],
         },
         shortHeader = {
             type = "header",
             order = 30,
-            name = "Short names",
+            name = L["Short names"],
         },
     }
     for i, chatType in ipairs(GROUP_ORDER) do
@@ -147,7 +150,7 @@ function module:GetOptions()
             order = 30 + i,
             width = "half",
             name = GROUP_LABELS[chatType],
-            desc = "Empty keeps the game's name.",
+            desc = L["Empty keeps the game's name."],
             disabled = function()
                 local settings = self:Settings()
                 return not (settings.enabled and settings.groups)

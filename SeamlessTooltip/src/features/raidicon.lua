@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local unitTooltip = app.unitTooltip
 
@@ -8,8 +10,8 @@ local unitTooltip = app.unitTooltip
 -- while the tooltip is shown.
 local feature = app.features:NewFeature("RaidIcon", {
     category = "units",
-    name = "Raid target icon",
-    desc = "Shows the unit's raid target marker (skull, cross, ...) in front of its name.",
+    name = L["Raid target icon"],
+    desc = L["Shows the unit's raid target marker (skull, cross, ...) in front of its name."],
     order = 23,
 })
 

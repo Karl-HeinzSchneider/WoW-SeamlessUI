@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local lib = app.core:GetEditModeLibrary()
 local activeLayout
 local layoutKeys = { "point", "relativePoint", "x", "y", "width", "height", "scale" }
@@ -54,7 +56,7 @@ app.core:RegisterEditModeOptions("SeamlessDamageMeter", {
         {
             key = "windows",
             type = "toggle",
-            name = "Seamless Damage Meter",
+            name = L["Seamless Damage Meter"],
             get = function()
                 return showUsedWindows
             end,
@@ -108,17 +110,17 @@ local function SetWindowOption(frame, key, value)
     app:RebuildWindows()
 end
 
--- Appearance edits intentionally update the selected shared skin.
+-- Appearance edits target either the selected skin or this window's style overrides.
 local appearanceSliders = {
-    { "Bar height", "rowHeight", 16, 40, 1 },
-    { "Padding", "rowSpacing", 0, 12, 1 },
-    { "Transparency", "windowAlpha", 50, 100, 1, 100 },
-    { "Background", "backgroundColor", 0, 100, 1, 100 },
-    { "Text size", "fontSize", 50, 150, 10, 100 / 15 },
+    { L["Bar height"], "rowHeight", 16, 40, 1 },
+    { L["Padding"], "rowSpacing", 0, 12, 1 },
+    { L["Transparency"], "windowAlpha", 50, 100, 1, 100 },
+    { L["Background"], "backgroundColor", 0, 100, 1, 100 },
+    { L["Text size"], "fontSize", 50, 150, 10, 100 / 15 },
 }
 local appearanceChecks = {
-    { "Show spec icon", "showIcons" },
-    { "Show class color", "classColors" },
+    { L["Show spec icon"], "showIcons" },
+    { L["Show class color"], "classColors" },
 }
 
 local function SetSkinOption(frame, key, value)
@@ -126,6 +128,10 @@ local function SetSkinOption(frame, key, value)
         return
     end
     local settings = app.db.profile.skins[frame.config.skin].settings
+    if frame.config.modifyGlobalStyle == false then
+        frame.config.styleOverrides = frame.config.styleOverrides or {}
+        settings = frame.config.styleOverrides
+    end
     if key == "backgroundColor" then
         local color = app:GetWindowSetting(frame.config, key)
         settings[key] = { color[1], color[2], color[3], value }
@@ -190,13 +196,31 @@ local function RegisterControls(frame)
             end,
         }
     end
-    add("Frame scale", "scale", lib.SettingType.Slider, 50, 200, 5, 100)
-    add("Frame width", "width", lib.SettingType.Slider, 200, 800, 1)
-    add("Frame height", "height", lib.SettingType.Slider, 120, 900, 1)
-    add("Fixed height by row count", "fixedHeight", lib.SettingType.Checkbox)
-    add("Row count", "visibleLines", lib.SettingType.Slider, 1, 30, 1)
-    add("Lock size", "lockSize", lib.SettingType.Checkbox)
-    add("Lock position", "lockPosition", lib.SettingType.Checkbox)
+    add(L["Lock size"], "lockSize", lib.SettingType.Checkbox)
+    add(L["Lock position"], "lockPosition", lib.SettingType.Checkbox)
+    add(L["Frame scale"], "scale", lib.SettingType.Slider, 50, 200, 5, 100)
+    add(L["Frame width"], "width", lib.SettingType.Slider, 200, 800, 1)
+    add(L["Frame height"], "height", lib.SettingType.Slider, 120, 900, 1)
+    add(L["Fixed height by row count"], "fixedHeight", lib.SettingType.Checkbox)
+    add(L["Row count"], "visibleLines", lib.SettingType.Slider, 1, 30, 1)
+    settings[#settings + 1] = {
+        name = L["Numbers"],
+        kind = lib.SettingType.Dropdown,
+        default = "complete",
+        get = function()
+            return app:GetWindowSetting(frame.config, "numbers")
+        end,
+        set = function(_, value)
+            SetWindowOption(frame, "numbers", value)
+        end,
+        values = {
+            { text = L["Minimal"], value = "minimal" },
+            { text = L["Compact"], value = "compact" },
+            { text = L["Complete"], value = "complete" },
+        },
+    }
+    local styleStart = #settings + 1
+    settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Divider }
     for _, definition in ipairs(appearanceSliders) do
         add(
             definition[1],
@@ -212,15 +236,26 @@ local function RegisterControls(frame)
     for _, definition in ipairs(appearanceChecks) do
         add(definition[1], definition[2], lib.SettingType.Checkbox, nil, nil, nil, nil, true)
     end
+    settings[#settings + 1] = {
+        name = L["Show type selector"],
+        kind = lib.SettingType.Checkbox,
+        default = not app.skinDefaults.hideTypeSelector,
+        get = function()
+            return not app:GetWindowSetting(frame.config, "hideTypeSelector")
+        end,
+        set = function(_, value)
+            SetSkinOption(frame, "hideTypeSelector", not value)
+        end,
+    }
     local skinSetting = {
-        name = "Skin",
+        name = L["Skin"],
         kind = lib.SettingType.Dropdown,
         default = "default",
         get = function()
             return frame.config.skin
         end,
         set = function(_, value)
-            if app:IsEditingWindows() and not InCombatLockdown() then
+            if not frame.syncingEditMode and app:IsEditingWindows() and not InCombatLockdown() then
                 frame.config.skin = value
                 app:RebuildWindows()
                 lib:RefreshFrameSettings(frame)
@@ -241,11 +276,31 @@ local function RegisterControls(frame)
             return values
         end,
     }
-    table.insert(settings, 1, skinSetting) -- Reset selects Default before resetting its appearance.
+    -- Reset selects Default and shared editing before resetting appearance controls.
+    table.insert(settings, styleStart + 1, skinSetting)
+    table.insert(settings, styleStart + 2, {
+        name = L["Modify global style"],
+        kind = lib.SettingType.Checkbox,
+        default = true,
+        desc = L["On: Edit the shared skin.\nOff: Edit only this window.\nLocal overrides are kept when switching."],
+        get = function()
+            return frame.config.modifyGlobalStyle ~= false
+        end,
+        set = function(_, value, fromReset)
+            if frame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
+                return
+            end
+            frame.config.modifyGlobalStyle = value
+            if fromReset then
+                frame.config.styleOverrides = nil
+            end
+            app:RebuildWindows()
+        end,
+    })
     lib:AddFrameSettings(frame, settings)
     lib:AddFrameSettingsButtons(frame, {
         {
-            text = "Edit selected skin",
+            text = L["Edit selected skin"],
             click = function()
                 if not InCombatLockdown() then
                     app.core:OpenOptions("SeamlessDamageMeter", "skin")
@@ -254,7 +309,7 @@ local function RegisterControls(frame)
             end,
         },
         {
-            text = "Create new window",
+            text = L["Create new window"],
             click = function()
                 if app:IsEditingWindows() and not InCombatLockdown() then
                     app:AddWindow()
@@ -262,7 +317,7 @@ local function RegisterControls(frame)
             end,
         },
         {
-            text = "Remove window",
+            text = L["Remove window"],
             click = function()
                 if app:IsEditingWindows() and not InCombatLockdown() then
                     EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
@@ -306,7 +361,7 @@ function app:SyncWindowEditMode(frame)
                 app.core:RefreshOptions("SeamlessDamageMeter")
             end,
             { point = app.windowDefaults.point, x = app.windowDefaults.x, y = app.windowDefaults.y },
-            "Seamless Damage " .. frame.windowID
+            L["Seamless Damage %d"]:format(frame.windowID)
         )
         RegisterControls(frame)
     end

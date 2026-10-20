@@ -168,6 +168,7 @@ local app = {
         end,
     },
 }
+dofile("src/tests/locale-support.lua")
 assert(loadfile("Seamless/src/core/editmode.lua"))("Seamless", app)
 local enabled, hidden, value, clicked = true, false, true, 0
 core:RegisterEditModeOptions("meter", {

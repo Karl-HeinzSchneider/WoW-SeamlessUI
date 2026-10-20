@@ -15,7 +15,14 @@ features are ready for public release.
    completed quests and their XP from `core:GetQuestLogSummary()`. Profile `xpBarTooltip`
    (`enabled`, `completedQuests`, both on). `OnInitialize` migrates Core's former
    `tweaks.questXPTooltip = false` into the same-named UI profile and clears it from Core.
-5. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
+5. `src/features/fpsdisplay.lua`: custom FPS anchor registered with shared Edit Mode. The
+   Frames checkbox "FPS display" controls anchor selection and the temporary counter preview.
+   Hiding the preview restores normal counter visibility. The frame's own settings contain
+   "Show FPS on startup" (Core's existing preference, default off); changing it also updates
+   visibility when the preview is hidden or Edit Mode exits. Ctrl+R still controls the native
+   counter outside Edit Mode. Positions are stored per native layout in the current UI profile, including layout
+   copy/rename/delete handling. Disabling restores the counter's original anchors.
+6. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
    unit frame. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft;
    Anchor/AnchorParent dropdowns expose nine anchor points. AnchorFrame offers only UIParent
    first, then Focus frame (`FocusFrame`), Minimap (`Minimap`), Player frame (`PlayerFrame`),
@@ -40,7 +47,12 @@ features are ready for public release.
    targets are revalidated for cycles before any mutation. Recomputes frame/global dirty flags
    after applying, so position-only Revert clears pending state while other edits remain dirty.
    No persistent helper text; the footer shows errors only when an action fails.
-6. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extension for Player,
+   The Revert button uses half the control area's width and is centered, matching the native
+   compact button. All display text uses Core's shared `Seamless` AceLocale catalogue, including
+   anchor labels and errors; frame/anchor IDs stay unchanged. AnchorFrame sorts translated
+   display names alphabetically after UIParent. Add new English keys under shared/Frames or
+   SeamlessUI in `Seamless/locales/enUS.lua`, then run `npm run locales:sync`.
+7. `src/features/blizzardeditmode.lua`: optional per-frame Edit Mode extension for Player,
    Target, Pet and Focus. Profile `blizzardEditMode` has a global `enabled` switch and per-frame
    `enabled`, `addPosition`, `addMoreOptions` switches. Add position displays the position
    widgets; Add more options only stores a preference for future controls. All extension
@@ -51,7 +63,7 @@ features are ready for public release.
    the recovery switches effective immediately. Disabling globally removes hooks/events; disabling
    a frame hides its panel. Hides on dialog close, Edit Mode exit and combat; profile changes apply
    immediately. Supports Blizzard_EditMode loading after this addon.
-7. `src/core/options.lua`: UI child panel under Seamless, with General, Blizzard Edit Mode
+8. `src/core/options.lua`: UI child panel under Seamless, with General, Blizzard Edit Mode
    Extensions and Profiles tabs. Extensions uses a global switch followed by one inline group
    per frame, each with Extend Edit Mode, Add position and Add more options.
 

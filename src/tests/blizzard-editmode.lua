@@ -1,4 +1,5 @@
 -- Run from the repository root: lua src/tests/blizzard-editmode.lua
+dofile("src/tests/locale-support.lua")
 local module, panel
 local combat, active = false, true
 local function frame()

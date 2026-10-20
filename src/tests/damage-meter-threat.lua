@@ -86,8 +86,11 @@ function UnitDetailedThreatSituation(unit, target)
     end
     return false, 0, 50, 60, unit == "player" and 10 or 20
 end
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/live.lua"))("test", app)
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/data.lua"))("test", app)
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/service.lua"))("test", app)
 local service = app.combatService
 local config = { statistic = "Threat", archiveID = 123, session = "Overall" }
@@ -163,6 +166,7 @@ end
 function addon:ScheduleRepeatingTimer(callback, interval)
     timers[interval] = callback
 end
+dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/core.lua"))("test", app)
 function addon:RefreshProfile() end
 function app:IsAvailable()

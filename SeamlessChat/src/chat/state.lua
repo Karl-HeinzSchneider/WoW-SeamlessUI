@@ -1,6 +1,8 @@
 ---@type string, SeamlessChat
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 
 -- Reads and writes the chat setup the game keeps per character: the chat windows (tabs) with the
@@ -660,7 +662,7 @@ function state.ApplyChatFrame(stored)
         editMode:ApplyChanges()
     end)
     if not ok then
-        log:debug("Couldn't place the chat window: %s", tostring(result))
+        log:debug(L["Couldn't place the chat window: %s"], tostring(result))
         return false, "failed"
     end
     if result then

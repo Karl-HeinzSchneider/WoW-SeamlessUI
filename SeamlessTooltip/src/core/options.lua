@@ -1,6 +1,8 @@
 ---@type string, SeamlessTooltip
 local appName, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 ---@class SeamlessTooltip.Options : AceModule, AceEvent-3.0
 local module = {}
 app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessTooltip.Options]]
@@ -8,13 +10,13 @@ app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as Sea
 local gameSettings = {
     {
         cvar = "tooltipShowAuraSpellIDs",
-        name = "Spell IDs on buffs and debuffs",
-        description = "The game's own spell ID line, also on target and focus buffs. Where the Spell IDs feature shows its line, it replaces the game's.",
+        name = L["Spell IDs on buffs and debuffs"],
+        description = L["The game's own spell ID line, also on target and focus buffs. Where the Spell IDs feature shows its line, it replaces the game's."],
     },
     {
         cvar = "tooltipShowAuraCasterNames",
-        name = "Caster names on buffs and debuffs",
-        description = "The game's own caster line, also on target and focus buffs. Where the Aura caster feature shows its line, it replaces the game's.",
+        name = L["Caster names on buffs and debuffs"],
+        description = L["The game's own caster line, also on target and focus buffs. Where the Aura caster feature shows its line, it replaces the game's."],
     },
 }
 
@@ -28,7 +30,7 @@ local function GameSettings()
             order = i,
             width = "full",
             name = entry.name,
-            desc = entry.description .. " A game setting; it also works without the addon.",
+            desc = entry.description .. L[" A game setting; it also works without the addon."],
             descStyle = "inline",
             hidden = C_CVar.GetCVar(cvar) == nil,
             get = function()
@@ -39,7 +41,7 @@ local function GameSettings()
             end,
         }
     end
-    return { type = "group", inline = true, order = 1000, name = "Game settings", args = args }
+    return { type = "group", inline = true, order = 1000, name = L["Game settings"], args = args }
 end
 
 function module:OnInitialize()
@@ -52,7 +54,7 @@ function module:OnInitialize()
             tabs[category] = { order = categories[category].order, name = categories[category].name, args = args }
         end
     end
-    app.core:RegisterOptions(appName, { title = "Tooltip", general = sections.all, tabs = tabs, db = app.db })
+    app.core:RegisterOptions(appName, { title = L["Tooltip"], general = sections.all, tabs = tabs, db = app.db })
 end
 
 function module:OnEnable()

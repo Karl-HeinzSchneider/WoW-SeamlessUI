@@ -1,6 +1,8 @@
 ---@type string, SeamlessUI
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- Replaces the player XP bar's tooltip (the bar and its rested tick share one builder) with a
 -- detailed layout: rest state, XP, XP left, rested XP and time to the rested cap, then the
 -- completed quests in the log and their XP.
@@ -18,7 +20,7 @@ local function durationText(seconds)
     local minutes = math.ceil(seconds / 60)
     local days = math.floor(minutes / 1440)
     local hours = math.floor(minutes / 60) % 24
-    return string.format("%dd %dh %dm", days, hours, minutes % 60)
+    return string.format(L["%dd %dh %dm"], days, hours, minutes % 60)
 end
 
 ---@param tooltip GameTooltip
@@ -39,7 +41,7 @@ end
 ---@param value number
 ---@param of number
 local function amountText(value, of)
-    return string.format("%s (%.2f%%)", BreakUpLargeNumbers(value), of > 0 and value / of * 100 or 0)
+    return string.format(L["%s (%.2f%%)"], BreakUpLargeNumbers(value), of > 0 and value / of * 100 or 0)
 end
 
 ---@param tooltip GameTooltip
@@ -58,14 +60,19 @@ local function addXPLines(tooltip)
     addSpacer(tooltip)
     addValue(
         tooltip,
-        "XP:",
-        string.format("%s / %s (%.2f%%)", BreakUpLargeNumbers(currXP), BreakUpLargeNumbers(maxXP), currXP / maxXP * 100)
+        L["XP:"],
+        string.format(
+            L["%s / %s (%.2f%%)"],
+            BreakUpLargeNumbers(currXP),
+            BreakUpLargeNumbers(maxXP),
+            currXP / maxXP * 100
+        )
     )
-    addValue(tooltip, "XP left:", amountText(math.max(0, maxXP - currXP), maxXP))
-    addValue(tooltip, "Rested:", amountText(rested, restedMax))
+    addValue(tooltip, L["XP left:"], amountText(math.max(0, maxXP - currXP), maxXP))
+    addValue(tooltip, L["Rested:"], amountText(rested, restedMax))
     if rested < restedMax and tweaks.restedXPRate > 0 then
         local levels = (restedMax - rested) / maxXP * 100
-        addValue(tooltip, "Time to max rested:", durationText(levels / tweaks.restedXPRate * 8 * 60 * 60))
+        addValue(tooltip, L["Time to max rested:"], durationText(levels / tweaks.restedXPRate * 8 * 60 * 60))
     end
 end
 
@@ -73,8 +80,8 @@ end
 local function addQuestLines(tooltip)
     local summary = app.core:GetQuestLogSummary()
     addSpacer(tooltip)
-    addValue(tooltip, "Completed quests:", string.format("%d / %d", summary.completedQuests, summary.totalQuests))
-    addValue(tooltip, "Completed quests XP:", BreakUpLargeNumbers(summary.completedQuestXP) .. " XP")
+    addValue(tooltip, L["Completed quests:"], string.format(L["%d / %d"], summary.completedQuests, summary.totalQuests))
+    addValue(tooltip, L["Completed quests XP:"], L["%s XP"]:format(BreakUpLargeNumbers(summary.completedQuestXP)))
 end
 
 -- Runs after ExhaustionTickMixin:ExhaustionToolTipText, which both the bar's and the tick's
@@ -154,16 +161,16 @@ end
 ---@return table
 function module:Options()
     return app.core.FeatureGroup({
-        name = "XP bar tooltip",
-        desc = "Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks.",
+        name = L["XP bar tooltip"],
+        desc = L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."],
         order = 20,
         options = {
             completedQuests = {
                 type = "toggle",
                 order = 10,
                 width = "full",
-                name = "Show completed quests",
-                desc = "Adds the number of completed quests in your log and their total XP reward.",
+                name = L["Show completed quests"],
+                desc = L["Adds the number of completed quests in your log and their total XP reward."],
                 descStyle = "inline",
             },
         },

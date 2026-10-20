@@ -1,6 +1,8 @@
 ---@type string, SeamlessUnitframes
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local log = app.logger
 local addon = app.addon
 local unitFrames = app.unitFrames
@@ -206,7 +208,7 @@ function module:Refresh()
     end
     -- Party frames are pooled and may have been swapped; recolor every bar ever seen as well.
     ApplyAll()
-    log:debug("Health bar colors refreshed")
+    log:debug(L["Health bar colors refreshed"])
 end
 
 function module:OnProfileRefresh()

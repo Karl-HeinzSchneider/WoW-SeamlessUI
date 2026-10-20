@@ -1,14 +1,16 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds the spell ID, and its icon's file ID, to spell and aura (buff/debuff) tooltips.
 local feature = app.features:NewFeature("SpellIDs", {
     category = "spells",
-    name = "Spell IDs",
-    desc = "Adds the spell's ID, and its icon's ID, to spell tooltips and to buffs and debuffs.",
+    name = L["Spell IDs"],
+    desc = L["Adds the spell's ID, and its icon's ID, to spell tooltips and to buffs and debuffs."],
     order = 10,
     defaults = {
         spell = true,
@@ -18,13 +20,13 @@ local feature = app.features:NewFeature("SpellIDs", {
         spell = {
             type = "toggle",
             order = 10,
-            name = "Spell ID",
+            name = L["Spell ID"],
         },
         icon = {
             type = "toggle",
             order = 20,
-            name = "Icon ID",
-            desc = "The file ID of the spell's icon.",
+            name = L["Icon ID"],
+            desc = L["The file ID of the spell's icon."],
         },
     },
 })
@@ -79,12 +81,12 @@ function feature:OnSpellTooltip(tooltip, tooltipData)
     end
     local settings = self:Settings()
     if settings.spell then
-        lines.AddValue(tooltip, "Spell ID", id)
+        lines.AddValue(tooltip, L["Spell ID"], id)
     end
     if settings.icon then
         local icon = C_Spell.GetSpellTexture(id)
         if icon and not anySecret(icon) then
-            lines.AddValue(tooltip, "Icon ID", icon)
+            lines.AddValue(tooltip, L["Icon ID"], icon)
         end
     end
 end

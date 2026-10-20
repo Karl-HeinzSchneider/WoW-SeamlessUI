@@ -1,6 +1,8 @@
 ---@type string, SeamlessUnitframes
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 -- The game's unit frames this addon changes. The options have a health bar color per entry and the
 -- settings live in profile.unitFrames[key]; a feature finds its frames through here.
 ---@class SeamlessUnitframes.UnitFrames
@@ -19,13 +21,13 @@ app.unitFrames = unitFrames
 -- In the order of the options.
 ---@type SeamlessUnitframes.UnitFrame[]
 unitFrames.list = {
-    { key = "player", name = "Player", frameName = "PlayerFrame" },
-    { key = "pet", name = "Pet", frameName = "PetFrame" },
-    { key = "target", name = "Target", frameName = "TargetFrame" },
-    { key = "targettarget", name = "Target of Target", frameName = "TargetFrameToT" },
-    { key = "focus", name = "Focus", frameName = "FocusFrame" },
-    { key = "focustarget", name = "Target of Focus", frameName = "FocusFrameToT" },
-    { key = "party", name = "Party" },
+    { key = "player", name = L["Player"], frameName = "PlayerFrame" },
+    { key = "pet", name = L["Pet"], frameName = "PetFrame" },
+    { key = "target", name = L["Target"], frameName = "TargetFrame" },
+    { key = "targettarget", name = L["Target of Target"], frameName = "TargetFrameToT" },
+    { key = "focus", name = L["Focus"], frameName = "FocusFrame" },
+    { key = "focustarget", name = L["Target of Focus"], frameName = "FocusFrameToT" },
+    { key = "party", name = L["Party"] },
 }
 
 -- Whether this client has the frame (the party frames always count).

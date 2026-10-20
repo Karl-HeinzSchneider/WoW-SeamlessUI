@@ -1,6 +1,8 @@
 ---@type string, SeamlessDamageMeter
 local _, app = ...
 
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
 app.combatService = { cache = {}, listeners = {}, runtime = {}, revision = 0, saveSessions = false }
 local service = app.combatService
 
@@ -101,7 +103,7 @@ function service:GetSession(config, key)
     end
     local fight, state = self:Resolve(config)
     if state == "expired" then
-        return nil, "This live selection expired. Select a saved fight.", state
+        return nil, L["This live selection expired. Select a saved fight."], state
     end
     if state == "archived" then
         local category = fight and fight.categories[key]
@@ -109,7 +111,7 @@ function service:GetSession(config, key)
             return category.session, nil, fight.complete and state or "incomplete"
         end
         return nil,
-            fight and "This statistic was not captured for this fight." or "This saved fight was deleted.",
+            fight and L["This statistic was not captured for this fight."] or L["This saved fight was deleted."],
             "unavailable"
     end
     local cacheKey = self:CacheKey(config, key)
@@ -138,13 +140,13 @@ function service:GetDetails(config, source, key)
     end
     local index = SourceIndex(session, source)
     if not index then
-        return nil, "This row is no longer current."
+        return nil, L["This row is no longer current."]
     end
     local fight, state = self:Resolve(config)
     if state == "archived" then
         local category = fight and fight.categories[key]
         local details = category and category.details[index]
-        return details, not details and "Details were not captured for this source." or nil
+        return details, not details and L["Details were not captured for this source."] or nil
     end
     local cacheKey = self:CacheKey(config, key) .. ":s:" .. index
     if not self.cache[cacheKey] then
@@ -203,7 +205,7 @@ function service:ListSessions()
 end
 
 function service:Describe(entry, menu)
-    local text = entry.name ~= "" and entry.name or ("Combat " .. (entry.archiveID or entry.sessionID))
+    local text = entry.name ~= "" and entry.name or (L["Combat %s"]:format(entry.archiveID or entry.sessionID))
     if menu then
         text = text .. " (" .. entry.state .. ")"
     end
@@ -214,7 +216,7 @@ function service:Describe(entry, menu)
         text = text .. " [" .. SecondsToClock(entry.durationSeconds) .. "]"
     end
     if entry.encounter and entry.encounter.success ~= nil then
-        text = text .. (entry.encounter.success and " - Kill" or " - Wipe")
+        text = text .. (entry.encounter.success and L[" - Kill"] or L[" - Wipe"])
     end
     if entry.pinned then
         text = "* " .. text

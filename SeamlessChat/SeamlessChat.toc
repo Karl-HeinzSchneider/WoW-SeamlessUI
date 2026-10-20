@@ -35,6 +35,7 @@ src\features\channels.lua
 src\features\classcolors.lua
 src\features\fading.lua
 src\features\background.lua
+src\features\unread.lua
 src\features\skin.lua
 
 SeamlessChat.lua

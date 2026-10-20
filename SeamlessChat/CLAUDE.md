@@ -61,7 +61,7 @@ colors via `ChangeChatColor`, channels via `GetChannelList`). The profile holds 
 secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argument (so
   PARTY_LEADER, not PARTY), nil for print(). Each transform runs in pcall and checks its own
   feature's switch; secret lines only reach `secretSafe` transforms, which may only concatenate.
-  Orders: URLs 10, channel names 20, timestamps 1000 (last, so its copy link holds the final line).
+  Orders: unread counts 1 (only counts), URLs 10, channel names 20, timestamps 1000 (last, so its copy link holds the final line).
   Never wrap AddMessage anywhere else.
 - `input.lua` — `app.input`: plain arrow keys browse the chat input's sent lines (not secure slash
   commands, no consecutive repeats; Down past the newest empties the input), `inputHistoryLines`
@@ -148,6 +148,11 @@ after `features.lua`.
   window, display only: `FCF_SetWindowColor` / `FCF_SetWindowAlpha` with `doNotSave`, so the
   windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
   hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
+- `unread.lua` — line transform 1 (`secretSafe`, returns the line unchanged): counts chat lines (a
+  `chatType`; numbered channels per `channels`) reaching a docked window that isn't the selected one
+  (`FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)`), shown as a badge (`color`) at its tab's top right
+  corner. The badge is on UIParent, anchored to the tab, so it stays while the game fades idle tabs;
+  it hides with the tab. Cleared by hooks on `FCFDock_SelectWindow`, `FCF_UnDockFrame`, `FCF_Close`.
 - `skin.lua` — the button bar left of the main chat window (feature key `skin`, "Chat buttons").
   `BUTTONS` lists the game's chat buttons and ours top to bottom; `Arrange` reparents the shown ones
   into `SeamlessChatButtonBar` (on UIParent where the game puts ChatFrame1's strip, so it stays while

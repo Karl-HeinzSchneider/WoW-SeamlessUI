@@ -688,6 +688,7 @@ end
 
 -- SeamlessUI
 -- L["%d / %d"] = "%d / %d"
+-- L["%d / %d ms"] = "%d / %d ms"
 -- L["%s (%.2f%%)"] = "%s (%.2f%%)"
 -- L["%s / %s (%.2f%%)"] = "%s / %s (%.2f%%)"
 -- L["%s XP"] = "%s XP"
@@ -717,6 +718,7 @@ end
 -- L["SeamlessUI - %s"] = "SeamlessUI - %s"
 -- L["Show FPS on startup"] = "Show FPS on startup"
 -- L["Show completed quests"] = "Show completed quests"
+-- L["Show latency"] = "Show latency"
 -- L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."] = "Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."
 -- L["The previous secondary anchor is unavailable or would create a cycle."] = "The previous secondary anchor is unavailable or would create a cycle."
 -- L["This frame has no anchor in the active layout."] = "This frame has no anchor in the active layout."

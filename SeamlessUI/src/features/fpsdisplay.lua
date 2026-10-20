@@ -13,6 +13,44 @@ local originalPoints
 local showAnchor = true
 local visibilityBeforeEditMode
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
+local latency
+local LATENCY_INTERVAL = 1
+
+local function UpdateLatency()
+    local _, _, home, world = GetNetStats()
+    home, world = home or 0, world or 0
+    local worst = math.max(home, world)
+    if worst < 100 then
+        latency.Text:SetTextColor(0.1, 1, 0.1)
+    elseif worst < 250 then
+        latency.Text:SetTextColor(1, 0.82, 0)
+    else
+        latency.Text:SetTextColor(1, 0.1, 0.1)
+    end
+    latency.Text:SetFormattedText(L["%d / %d ms"], home, world)
+end
+
+-- Home/world latency left of the counter. Parented to the counter so it shares its
+-- visibility; OnUpdate only runs while shown.
+local function CreateLatency()
+    latency = CreateFrame("Frame", nil, FramerateFrame)
+    latency:SetSize(80, 16)
+    latency.Text = latency:CreateFontString(nil, "OVERLAY")
+    local counterText = FramerateFrame.FramerateText or FramerateText
+    latency.Text:SetFontObject(counterText and counterText:GetFontObject() or GameFontHighlightSmall)
+    latency.Text:SetPoint("RIGHT")
+    local label = FramerateFrame.Label or FramerateLabel
+    latency:SetPoint("RIGHT", label or FramerateFrame, "LEFT", -8, 0)
+    local elapsedTotal = LATENCY_INTERVAL
+    latency:SetScript("OnUpdate", function(_, elapsed)
+        elapsedTotal = elapsedTotal + elapsed
+        if elapsedTotal >= LATENCY_INTERVAL then
+            elapsedTotal = 0
+            UpdateLatency()
+        end
+    end)
+    latency:SetScript("OnShow", UpdateLatency)
+end
 
 function module:Refresh()
     if not anchor or not self:IsEnabled() then
@@ -23,6 +61,7 @@ function module:Refresh()
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, UIParent, position.point, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
+    latency:SetShown(app.db.profile.fpsDisplay.showLatency)
     if lib:IsInEditMode() then
         if visibilityBeforeEditMode == nil then
             visibilityBeforeEditMode = FramerateFrame:IsShown()
@@ -66,7 +105,20 @@ function module:OnEnable()
                     module:Refresh()
                 end,
             },
+            {
+                name = L["Show latency"],
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.showLatency
+                end,
+                set = function(_, value)
+                    app.db.profile.fpsDisplay.showLatency = value
+                    module:Refresh()
+                end,
+            },
         })
+        CreateLatency()
     end
     FramerateFrame:ClearAllPoints()
     FramerateFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
@@ -80,6 +132,7 @@ function module:OnDisable()
     end
     if anchor then
         anchor:Hide()
+        latency:Hide()
     end
     if originalPoints then
         FramerateFrame:ClearAllPoints()

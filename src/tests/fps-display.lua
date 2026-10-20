@@ -1,6 +1,7 @@
 -- Run from the repository root: lua src/tests/fps-display.lua
 unpack = unpack or table.unpack
-local callbacks, move, spec, frame
+local callbacks, move, spec, frame, latency
+local frames = {}
 local frameSettings
 callbacks = {}
 local layout = "Modern"
@@ -54,17 +55,38 @@ local function newFrame()
         GetPoint = function(self, index)
             return unpack(self.points[index])
         end,
+        SetScript = function(self, name, script)
+            self[name] = script
+        end,
+        CreateFontString = function()
+            return {
+                SetFontObject = function() end,
+                SetPoint = function() end,
+                SetTextColor = function(self, r, g, b)
+                    self.color = { r, g, b }
+                end,
+                SetFormattedText = function(self, pattern, ...)
+                    self.text = string.format(pattern, ...)
+                end,
+            }
+        end,
     }
 end
 UIParent = {}
 FramerateFrame = newFrame()
 FramerateFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2)
 CreateFrame = function()
-    frame = newFrame()
-    return frame
+    local created = newFrame()
+    table.insert(frames, created)
+    frame, latency = frames[1], frames[2]
+    return created
+end
+local netHome, netWorld = 40, 60
+GetNetStats = function()
+    return 0, 0, netHome, netWorld
 end
 EventRegistry = { TriggerEvent = function() end }
-local profile = { fpsDisplay = { layouts = {} } }
+local profile = { fpsDisplay = { layouts = {}, showLatency = false } }
 local app = {
     addon = {
         NewModule = function()
@@ -96,6 +118,17 @@ callbacks.enter()
 assert(frame.shown and spec.options[1].name == "FPS display")
 assert(FramerateFrame.shown, "showing Edit Mode frame must show FPS")
 assert(frameSettings[1].default == false and not frameSettings[1].get())
+assert(frameSettings[2].default == false and not frameSettings[2].get())
+assert(not latency.shown, "latency must be off by default")
+frameSettings[2].set(nil, true)
+assert(profile.fpsDisplay.showLatency and latency.shown, "latency option must show latency")
+latency.OnShow()
+assert(latency.Text.text == "40 / 60 ms" and latency.Text.color[1] < latency.Text.color[2])
+netWorld = 300
+latency.OnUpdate(latency, 1)
+assert(latency.Text.text == "40 / 300 ms" and latency.Text.color[1] == 1 and latency.Text.color[2] < 1)
+frameSettings[2].set(nil, false)
+assert(not latency.shown, "turning latency off must hide it")
 move(frame, layout, "CENTER", 100, 200)
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "CENTER" and frame.points[1][4] == 100)
@@ -132,6 +165,6 @@ layout = "Modern"
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "BOTTOMRIGHT", "profiles must have independent positions")
 module:OnDisable()
-assert(not frame.shown and FramerateFrame.points[1][2] == UIParent)
+assert(not frame.shown and not latency.shown and FramerateFrame.points[1][2] == UIParent)
 assert(FramerateFrame.points[1][4] == -2, "disable must restore original anchor")
 print("FPS display tests passed")

@@ -1,0 +1,14 @@
+-- Annotations only; not loaded by the TOC.
+---@class SeamlessActionBars
+---@field core SeamlessCore.Addon
+---@field addon SeamlessActionBars.Addon
+---@field db AceDBObject-3.0
+---@field Buttons fun(): CheckButton[]
+---@field PaintIcon fun(button: CheckButton)
+---@field RestoreIcon fun(button: CheckButton)
+---@field ShortKeyLabel fun(key: string): string
+---@field UpdateHotkey fun(button: CheckButton)
+---@field RestoreHotkey fun(button: CheckButton)
+
+---@class SeamlessActionBars.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
+---@field Refresh fun(self: SeamlessActionBars.Addon)

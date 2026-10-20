@@ -14,6 +14,7 @@ ignore:
   - SeamlessDamageMeter
   - SeamlessUI
   - SeamlessDarkmode
+  - SeamlessActionBars
   # Root tooling (the root src/ would also collide with SeamlessUnitframes/src/ when the addon is moved).
   - docs
   - screenshots
@@ -35,3 +36,4 @@ ignore:
   - SeamlessDamageMeter/src/types.lua
   - SeamlessUI/src/types.lua
   - SeamlessDarkmode/src/types.lua
+  - SeamlessActionBars/src/types.lua

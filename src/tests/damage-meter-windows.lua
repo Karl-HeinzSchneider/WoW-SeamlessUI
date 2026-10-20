@@ -390,6 +390,14 @@ assert(
     "Nested bars pass restricted amounts directly to widgets"
 )
 assert(frame.statistic.text.args[1] == secret, "Nested names go directly to the header")
+local arrowAnchor = frame.statistic.arrow.points.CENTER
+assert(
+    frame.statistic:GetWidth() > 25
+        and arrowAnchor[2] == frame.statistic
+        and arrowAnchor[3] == "LEFT"
+        and arrowAnchor[4] == 12.5,
+    "Nested view keeps the type arrow in its left slot while the selector widens"
+)
 app.db.profile.skins.default.settings.hideTypeSelector = true
 app:RefreshWindows()
 assert(

@@ -1,6 +1,9 @@
 -- Annotations only; not loaded by the client.
 ---@class SeamlessCore
----@field LibEditMode table Namespaced Edit Mode library instance.
+---@field IsEditModeSectionCollapsed fun(key: string): boolean
+---@field SetEditModeSectionCollapsed fun(key: string, collapsed: boolean)
+---@field CreateEditModeHeader fun(parent: table, onClick: fun()): table
+---@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (SettingType.Header, scrolling dialog).
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema
@@ -13,9 +16,20 @@
 ---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)
+---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
+---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
+---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
+---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
+---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field logger SeamlessCore.Logger
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
+
+---@class SeamlessCore.EditModePosition
+---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
+---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
+---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
+---@field disabled? fun(): boolean
 
 ---@class SeamlessCore.DB : AceDBObject-3.0
 ---@field profile SeamlessCore.Profile
@@ -34,8 +48,8 @@
 
 ---@class SeamlessCore.EditModeOption
 ---@field key string Unique within the group.
----@field type "toggle"|"button"|"custom"
----@field name string? Label required for built-in controls.
+---@field type "toggle"|"button"|"custom"|"header" A header is a section title like the Frames heading.
+---@field name string? Label required for built-in controls and headers.
 ---@field order number? Defaults to the array index.
 ---@field hidden boolean|fun(): boolean|nil
 ---@field disabled boolean|fun(): boolean|nil

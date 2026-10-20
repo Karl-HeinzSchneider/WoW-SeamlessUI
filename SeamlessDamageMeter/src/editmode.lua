@@ -196,13 +196,49 @@ local function RegisterControls(frame)
             end,
         }
     end
+    -- Position comes first, with its outside-Edit-Mode lock right under the header.
+    local position = app.core:GetEditModePositionSettings({
+        get = function(key)
+            if key == "relativeTo" then
+                return frame.config.anchorTo and tostring(frame.config.anchorTo) or "screen"
+            end
+            return app:GetWindowSetting(frame.config, key)
+        end,
+        set = function(key, value)
+            if frame.syncingEditMode or not app:IsEditingWindows() then
+                return
+            end
+            if key == "relativeTo" then
+                frame.config.anchorTo = tonumber(value)
+            else
+                frame.config.overrides[key] = value
+            end
+            app:RebuildWindows()
+        end,
+        anchorFrames = function()
+            local values = { { text = L["Screen (UIParent)"], value = "screen" } }
+            for _, candidate in ipairs(app.db.profile.windows) do
+                if app:CanAnchorTo(frame.config, candidate.id) then
+                    values[#values + 1] = { text = L["Window %d"]:format(candidate.id), value = tostring(candidate.id) }
+                end
+            end
+            return values
+        end,
+    })
+    settings[1] = table.remove(position, 1)
+    add(L["Lock position outside Edit Mode"], "lockPosition", lib.SettingType.Checkbox)
+    for _, setting in ipairs(position) do
+        settings[#settings + 1] = setting
+    end
+    settings[#settings + 1] = { name = L["Window"], kind = lib.SettingType.Header }
     add(L["Lock size"], "lockSize", lib.SettingType.Checkbox)
-    add(L["Lock position"], "lockPosition", lib.SettingType.Checkbox)
     add(L["Frame scale"], "scale", lib.SettingType.Slider, 50, 200, 5, 100)
     add(L["Frame width"], "width", lib.SettingType.Slider, 200, 800, 1)
     add(L["Frame height"], "height", lib.SettingType.Slider, 120, 900, 1)
     add(L["Fixed height by row count"], "fixedHeight", lib.SettingType.Checkbox)
     add(L["Row count"], "visibleLines", lib.SettingType.Slider, 1, 30, 1)
+    local styleStart = #settings + 1
+    settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Header }
     settings[#settings + 1] = {
         name = L["Numbers"],
         kind = lib.SettingType.Dropdown,
@@ -219,8 +255,6 @@ local function RegisterControls(frame)
             { text = L["Complete"], value = "complete" },
         },
     }
-    local styleStart = #settings + 1
-    settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Divider }
     for _, definition in ipairs(appearanceSliders) do
         add(
             definition[1],
@@ -277,8 +311,9 @@ local function RegisterControls(frame)
         end,
     }
     -- Reset selects Default and shared editing before resetting appearance controls.
-    table.insert(settings, styleStart + 1, skinSetting)
-    table.insert(settings, styleStart + 2, {
+    -- Numbers stays first under Style.
+    table.insert(settings, styleStart + 2, skinSetting)
+    table.insert(settings, styleStart + 3, {
         name = L["Modify global style"],
         kind = lib.SettingType.Checkbox,
         default = true,
@@ -346,18 +381,19 @@ function app:SyncWindowEditMode(frame)
                 if movedFrame.syncingEditMode or InCombatLockdown() or not app:IsEditingWindows() then
                     return
                 end
-                if not app:GetWindowSetting(movedFrame.config, "lockPosition") then
-                    if movedFrame.config.anchorTo then
-                        -- Linked anchors use independent points: convert the resulting screen position.
-                        app:SaveWindowPosition(movedFrame, true)
-                    else
-                        local overrides = movedFrame.config.overrides
-                        overrides.point, overrides.relativePoint = point, point
-                        overrides.x, overrides.y = x, y
-                    end
-                    SaveLayout(movedFrame.config, layoutName)
+                -- Lock position applies outside Edit Mode only; Edit Mode moves always persist.
+                if movedFrame.config.anchorTo then
+                    -- Linked anchors use independent points: convert the resulting screen position.
+                    app:SaveWindowPosition(movedFrame, true)
+                else
+                    local overrides = movedFrame.config.overrides
+                    overrides.point, overrides.relativePoint = point, point
+                    overrides.x, overrides.y = x, y
                 end
+                SaveLayout(movedFrame.config, layoutName)
                 app:PositionWindow(movedFrame)
+                -- Reset Position does not refresh the dialog itself; keep the Position values current.
+                lib:RefreshFrameSettings(movedFrame)
                 app.core:RefreshOptions("SeamlessDamageMeter")
             end,
             { point = app.windowDefaults.point, x = app.windowDefaults.x, y = app.windowDefaults.y },

@@ -48,9 +48,9 @@ local settings = {
     },
     {
         key = "lockPosition",
-        name = L["Lock position"],
+        name = L["Lock position outside Edit Mode"],
         type = "toggle",
-        desc = L["Prevent dragging and Edit Mode arrow-key movement without locking size."],
+        desc = L["Prevent dragging the window outside Edit Mode. Edit Mode can still move it."],
     },
     { key = "scale", name = L["Scale"], type = "range", min = 0.5, max = 2, step = 0.01 },
     {

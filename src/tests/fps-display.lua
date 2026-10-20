@@ -1,7 +1,7 @@
 -- Run from the repository root: lua src/tests/fps-display.lua
 unpack = unpack or table.unpack
 local callbacks, move, spec, frame
-local frameSettings
+local frameSettings, positionSpec
 callbacks = {}
 local layout = "Modern"
 local editing = false
@@ -27,6 +27,7 @@ local lib = {
     AddFrame = function(_, _, callback)
         move = callback
     end,
+    RefreshFrameSettings = function() end,
 }
 local function newFrame()
     return {
@@ -75,12 +76,21 @@ local app = {
         end,
     },
     db = { profile = profile, profiles = { Default = profile } },
+    blizzardPosition = {
+        GetAnchorFrames = function()
+            return { { value = "UIParent", text = "UIParent" }, { value = "PlayerFrame", text = "Player frame" } }
+        end,
+    },
     core = {
         db = { profile = { tweaks = { showFramerateOnStartup = false } } },
         GetEditModeLibrary = function()
             return lib
         end,
         RefreshEditModeOptions = function() end,
+        GetEditModePositionSettings = function(_, value)
+            positionSpec = value
+            return { { name = "Position", kind = "header" } }
+        end,
         RegisterEditModeOptions = function(_, _, value)
             spec = value
         end,
@@ -96,9 +106,22 @@ callbacks.enter()
 assert(frame.shown and spec.options[1].name == "FPS display")
 assert(FramerateFrame.shown, "showing Edit Mode frame must show FPS")
 assert(frameSettings[1].default == false and not frameSettings[1].get())
+assert(frameSettings[2].name == "Position", "the Position section follows the frame's settings")
+PlayerFrame = newFrame()
+PlayerFrame.IsObjectType = function(_, kind)
+    return kind == "Frame"
+end
+positionSpec.set("relativeTo", "PlayerFrame")
+positionSpec.set("relativePoint", "TOPLEFT")
+positionSpec.set("x", 40)
+assert(frame.points[1][1] == "BOTTOMRIGHT" and frame.points[1][2] == PlayerFrame and frame.points[1][3] == "TOPLEFT")
+assert(frame.points[1][4] == 40 and positionSpec.get("y") == 2)
+positionSpec.set("relativeTo", "MissingFrame")
+assert(frame.points[1][2] == UIParent, "unknown anchor frames fall back to UIParent")
 move(frame, layout, "CENTER", 100, 200)
 module:OnProfileRefresh()
 assert(frame.points[1][1] == "CENTER" and frame.points[1][4] == 100)
+assert(frame.points[1][2] == UIParent and frame.points[1][3] == "CENTER", "dragging anchors to UIParent again")
 spec.options[1].set(false)
 assert(not frame.shown and FramerateFrame.points[1][2] == frame)
 assert(not FramerateFrame.shown, "hiding preview must hide normally hidden FPS")

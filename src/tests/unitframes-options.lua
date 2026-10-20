@@ -354,6 +354,12 @@ TargetFrame.GetPvPIndicatorElements = function()
     return { pvpIcon = targetIcon }
 end
 member.PartyMemberOverlay = { PVPIcon = partyIcon }
+local legacyCircle = Icon()
+app.legacyLayout = {
+    PvPBackground = function(_, icon)
+        return icon == playerIcon and legacyCircle or nil
+    end,
+}
 app.db.profile.unitFrames.player.hidePvPIcon = true
 app.db.profile.unitFrames.party.hidePvPIcon = true
 app.db.profile.unitFrames.target.hidePvPIcon = false
@@ -361,9 +367,10 @@ loadfile("SeamlessUnitframes/src/pvpicon/pvpicon.lua")("SeamlessUnitframes", app
 modules.PvPIcon.RegisterEvent = function() end
 modules.PvPIcon:OnEnable()
 assert(playerIcon.alpha == 0 and partyIcon.alpha == 0 and targetIcon.alpha == 1)
+assert(legacyCircle.alpha == 0, "the Legacy layout's circle hides with its icon")
 app.db.profile.unitFrames.player.hidePvPIcon = false
 modules.PvPIcon:Refresh()
-assert(playerIcon.alpha == 1)
+assert(playerIcon.alpha == 1 and legacyCircle.alpha == 1)
 enabled = false
 modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")

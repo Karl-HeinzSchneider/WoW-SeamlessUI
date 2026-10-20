@@ -21,7 +21,8 @@ local function Readable(value)
     return (not canaccessvalue or canaccessvalue(value)) and value ~= nil
 end
 
--- The PvP icons of a frame: the regions the game's own PvP indicator update uses.
+-- The PvP icons of a frame: the regions the game's own PvP indicator update uses, and the circle
+-- the Legacy layout draws behind one.
 ---@param frame table
 ---@param key string
 ---@return Texture[]
@@ -39,6 +40,10 @@ local function Icons(frame, key)
     for _, region in pairs(elements or {}) do
         if Readable(region) and region and region.SetAlpha then
             icons[#icons + 1] = region
+            local background = app.legacyLayout:PvPBackground(region)
+            if background then
+                icons[#icons + 1] = background
+            end
         end
     end
     return icons

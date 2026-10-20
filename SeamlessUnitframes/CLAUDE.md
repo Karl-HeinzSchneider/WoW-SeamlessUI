@@ -47,8 +47,9 @@ Existing `SeamlessUnitframesDB` settings and profiles are retained.
    `UnitFrame_ShouldReplacePortrait` CVars show a class icon there.
    `src/pvpicon/pvpicon.lua`: `app.pvpIcon`, per `hidePvPIcon` sets alpha 0 on the regions the
    game's PvP indicator uses (`PlayerFrame_GetPvPIndicatorElements`, the target/focus
-   `GetPvPIndicatorElements`, the party `PartyMemberOverlay.PVPIcon`); the game never changes their
-   alpha, so no hook is needed. Refreshes on `GROUP_ROSTER_UPDATE` for pooled party frames.
+   `GetPvPIndicatorElements`, the party `PartyMemberOverlay.PVPIcon`) and on the circle the Legacy
+   layout draws behind an icon (`legacyLayout:PvPBackground(icon)`; a newly created circle refreshes
+   this module); the game never changes their alpha, so no hook is needed. Refreshes on `GROUP_ROSTER_UPDATE` for pooled party frames.
    `src/core/questicons.lua` reads unfinished Blizzard tooltip objectives and matches quest-log
    objective types; `src/questicon/targetquesticon.lua` manages the optional target icon and events.
    The `targetQuestIcon` profile settings control enablement, scale and offsets (disabled by default).

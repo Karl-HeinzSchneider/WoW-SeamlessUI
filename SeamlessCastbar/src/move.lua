@@ -64,23 +64,35 @@ local function relativeFrame(name)
     return UIParent
 end
 
--- Where the client shows the bar now, in UIParent's units, so moving it starts there.
+-- Where the client's AdjustPosition places the bar without Target of Target or aura rows, as a
+-- start position. Read from the unit frame, never from the bar: once the client anchors the bar
+-- to the aura rows, its geometry is secret.
 local function capturePosition(key, bar)
     local name = lib:GetActiveLayoutName()
-    local x, y = bar:GetCenter()
-    if not name or not x then
+    local parent = bar:GetParent()
+    local parentName = parent and parent:GetName()
+    if not name or not parentName then
         return
     end
-    local ratio = bar:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    local centerX, centerY = UIParent:GetCenter()
     settings(key).layouts[name] = {
-        point = "CENTER",
-        x = math.floor(x * ratio - centerX + 0.5),
-        y = math.floor(y * ratio - centerY + 0.5),
+        point = "TOPLEFT",
+        relativeTo = parentName,
+        relativePoint = "BOTTOMLEFT",
+        x = parent.smallSize and 38 or 43,
+        y = parent.smallSize and 3 or 5,
     }
 end
 
----Put the bar back on the client's own points.
+-- The client's default points, when its saved ones cannot be set again.
+local function defaultPoints(bar)
+    local parent = bar:GetParent()
+    bar:ClearAllPoints()
+    bar:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", parent.smallSize and 38 or 43, parent.smallSize and 3 or 5)
+end
+
+---Put the bar back on the client's own points. They can hold secret values (the bar anchored to the
+---aura rows); if they cannot be set again, the client's default spot is used until its next
+---AdjustPosition.
 ---@param bar StatusBar
 function app.RestoreMove(bar)
     local points = clientPoints[bar]
@@ -88,10 +100,25 @@ function app.RestoreMove(bar)
         return
     end
     clientPoints[bar] = nil
-    bar:ClearAllPoints()
-    for _, point in ipairs(points) do
-        bar:SetPoint(unpack(point))
+    local ok = pcall(function()
+        bar:ClearAllPoints()
+        for _, point in ipairs(points) do
+            bar:SetPoint(unpack(point))
+        end
+    end)
+    if not ok then
+        defaultPoints(bar)
     end
+end
+
+-- The bar's size in UIParent's units for the anchor, or nil while it is secret.
+local function barSize(bar)
+    local width, height, scale = bar:GetWidth(), bar:GetHeight(), bar:GetEffectiveScale()
+    if not (app.Known(width) and app.Known(height) and app.Known(scale)) then
+        return
+    end
+    local ratio = scale / UIParent:GetEffectiveScale()
+    return math.max(width * ratio, 20), math.max(height * ratio, 8)
 end
 
 ---Anchor the bar to its Edit Mode frame while moving is on, or restore the client's points.
@@ -122,8 +149,10 @@ function app.UpdateMove(bar, placed)
         clientPoints[bar] = points
     end
     local position = currentPosition(key)
-    local ratio = bar:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    anchor:SetSize(math.max(bar:GetWidth() * ratio, 20), math.max(bar:GetHeight() * ratio, 8))
+    local width, height = barSize(bar)
+    if width then
+        anchor:SetSize(width, height)
+    end
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, relativeFrame(position.relativeTo), position.relativePoint, position.x, position.y)
     bar:ClearAllPoints()

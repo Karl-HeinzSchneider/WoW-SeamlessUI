@@ -52,8 +52,12 @@ system, so they are not part of this addon.
    anchors the bar's CENTER to ours. The bars are not protected frames, so this works in combat and
    taints nothing: no client method is called or replaced, and no protected frame is anchored to
    ours. Switching off, disabling the addon or a profile without `move` puts the client's latest
-   points back (`app.RestoreMove`). The first switch-on in a layout stores where the client showed
-   the bar, so it does not jump. Layout copy, rename and delete carry the positions along.
+   points back (`app.RestoreMove`; if they hold secret values and cannot be set again, the client's
+   default spot until its next `AdjustPosition`). The first switch-on in a layout starts at the
+   client's default spot under the unit frame (`TOPLEFT` to its `BOTTOMLEFT`), read from the unit
+   frame: once the client anchors a bar to the aura rows, the bar's geometry can stay secret,
+   so never compute with its size or position (the anchor keeps its last known size, ticks the
+   last known width). Layout copy, rename and delete carry the positions along.
 8. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules
@@ -61,7 +65,8 @@ system, so they are not part of this addon.
 - Never call the bars' own methods (`UpdateCastTimeText`, `UpdateIconShown`, `SetLook`); only
   post-hook them and set text, textures and animation timings. Nothing is stored on the bars:
   our regions and saved values live in local tables keyed by bar.
-- Target and focus casts can be secret: skip any value `issecretvalue` reports (`app.Known`).
+- Target and focus casts and the bars' geometry can be secret: skip any value `issecretvalue`
+  reports (`app.Known`).
 - New channeled spells go into `intervalsBySpellID` with their tick interval, not a tick count.
 
 `lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks, hold and the

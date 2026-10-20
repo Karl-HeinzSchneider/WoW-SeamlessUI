@@ -59,6 +59,9 @@ local TICK_ATLAS = "ui-castingbar-empower-pip"
 
 ---@type table<StatusBar, Texture[]>
 local pools = {}
+-- The last width read from each bar that was not secret.
+---@type table<StatusBar, number>
+local widths = {}
 
 ---@param bar StatusBar
 function app.HideTicks(bar)
@@ -82,7 +85,17 @@ function app.UpdateTicks(bar)
     if not interval or not app.Known(total) or total <= 0 then
         return
     end
+    -- Anchored to the target frame's aura rows, the bar's geometry is secret; its width does not
+    -- change, so the last one read is used.
     local width = bar:GetWidth()
+    if app.Known(width) then
+        widths[bar] = width
+    else
+        width = widths[bar]
+        if not width then
+            return
+        end
+    end
     local pool = pools[bar] or {}
     pools[bar] = pool
     for i, time in ipairs(app.TickTimes(interval, total)) do

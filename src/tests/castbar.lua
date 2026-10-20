@@ -356,6 +356,9 @@ UIParent.GetCenter = function()
     return 500, 400
 end
 TargetFrame = Region()
+TargetFrame.GetName = function()
+    return "TargetFrame"
+end
 function CreateFrame()
     return Region()
 end
@@ -373,6 +376,9 @@ targetBar.GetCenter = function()
 end
 targetBar.GetEffectiveScale = function()
     return 1
+end
+targetBar.GetParent = function()
+    return TargetFrame
 end
 targetBar.GetWidth = function()
     return 150
@@ -399,9 +405,22 @@ app.UpdateMove(targetBar, true)
 assert(targetBar.points[1][2] == TargetFrame, "off: the client keeps the bar")
 moveOptions[1].set(true)
 local move = app.db.profile.target.move
-assert(move.layouts.Modern.x == 100 and move.layouts.Modern.y == -100, "starts where the client showed it")
+local start = move.layouts.Modern
+assert(start.relativeTo == "TargetFrame" and start.x == 43 and start.y == 5, "starts where the client puts it")
 assert(targetBar.points[1][2] == anchor and #targetBar.points == 1 and not anchor.shown)
-assert(anchor.width == 150 and anchor.points[1][4] == 100)
+assert(anchor.width == 150 and anchor.points[1][2] == TargetFrame and anchor.points[1][4] == 43)
+-- Anchored to the aura rows, the bar's geometry is secret: the anchor keeps its last size.
+local secret = {}
+issecretvalue = function(value)
+    return value == secret
+end
+targetBar.GetWidth = function()
+    return secret
+end
+targetBar:ClearAllPoints()
+targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 18, secret)
+app.UpdateMove(targetBar, true)
+assert(targetBar.points[1][2] == anchor and anchor.width == 150)
 -- The unit frame places the bar again (Target of Target, auras): it stays on the anchor.
 targetBar:ClearAllPoints()
 targetBar:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 43, -46)

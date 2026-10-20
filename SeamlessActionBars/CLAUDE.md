@@ -2,7 +2,7 @@
 
 Optional addon requiring Seamless that changes how the game's own action buttons look, without
 replacing them: icon colors for actions out of range or lacking mana, and short keybind labels.
-Internal until verified in game. Open `/seamlessactionbars` or Seamless > Action Bars.
+Ships in releases; still being verified in game. Open `/seamlessactionbars` or Seamless > Action Bars.
 `SeamlessActionBarsDB` holds independent profiles: `range` and `mana` (`enabled`, `color`) and
 `keybinds` (`enabled`), all on by default.
 

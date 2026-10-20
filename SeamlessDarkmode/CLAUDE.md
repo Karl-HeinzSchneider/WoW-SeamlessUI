@@ -2,7 +2,7 @@
 
 Optional addon requiring Seamless that tints the borders of specific game frames with one shared
 color, switchable per group (unit frames, minimap, action bar slots, gryphons, XP border,
-reputation border). Internal until verified in game.
+reputation border). Ships in releases; still being verified in game.
 Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmode.
 
 - `src/frames.lua`: one function per frame naming the exact textures of that frame and its

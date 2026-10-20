@@ -1,7 +1,7 @@
 # SeamlessUI
 
-Optional addon for general UI improvements. Requires Seamless and remains internal until
-features are ready for public release.
+Optional addon for general UI improvements. Requires Seamless and ships in releases;
+no improvements are implemented yet.
 
 ## Load order and ownership
 

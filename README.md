@@ -43,10 +43,10 @@ When replacing standalone SeamlessTooltip, replace its existing AddOns folder wi
 and install Core. Keep its SavedVariables file to retain profiles. A development junction pointing to
 the old repository must be replaced with one pointing to this repo; `dev:link` refuses to overwrite it.
 
-## Internal development modules
+## More feature addons
 
-SeamlessChat, SeamlessDamageMeter, SeamlessUI, SeamlessDarkmode, SeamlessActionBars and SeamlessCastbar are unfinished and excluded from public release archives.
-Their source remains in this repository for internal development and testing.
+SeamlessChat, SeamlessDamageMeter, SeamlessUI, SeamlessDarkmode, SeamlessActionBars and SeamlessCastbar
+are included in release archives. They are newer and still being validated in game.
 
 - **SeamlessDarkmode** (optional): tints the borders of the unit frames, the minimap and its
   addon buttons with one shared color, with a switch per group. Install beside Core and use `/seamlessdarkmode`. Includes independent `SeamlessDarkmodeDB` profiles.
@@ -104,11 +104,11 @@ into a client; rerun it after this upgrade to link Core too. `/reload` picks up 
 `npm run format` formats the repo; `npm run check` validates it (Lua 5.1 `luac` required).
 `npm run package:addons` creates a source zip of the public addons in `dist/`; it leaves version
 tokens unchanged. `npm run package:local` uses the release packager and replaces version tokens.
-Both include only Core, Tooltip and Unitframes as listed in `.pkgmeta`. Use the release packager
+Both include every addon listed in `.pkgmeta` move-folders. Use the release packager
 for distributable archives.
 
 To add a feature, create `SeamlessFeature/SeamlessFeature.toc` with `## Dependencies: Seamless`,
-list its runtime files, and, once ready for public release, add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
+list its runtime files, and add `Seamless/SeamlessFeature: SeamlessFeature` to `.pkgmeta` move-folders.
 Use the core API documented in [Seamless/CLAUDE.md](Seamless/CLAUDE.md) for shared options
 and logging. Keep feature state in its private addon table and its own SavedVariables.
 No core code change is needed to register another feature.

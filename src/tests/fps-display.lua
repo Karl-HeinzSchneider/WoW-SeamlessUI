@@ -108,10 +108,28 @@ local function newFrame()
         end,
     }
 end
+hooksecurefunc = function(object, method, hook)
+    local original = object[method]
+    object[method] = function(...)
+        original(...)
+        hook(...)
+    end
+end
 UIParent = {}
 WorldFrame = {}
 FramerateFrame = newFrame()
 FramerateFrame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -2, 2)
+FramerateFrame.FramerateText = {
+    SetFormattedText = function(self, pattern, ...)
+        self.text = string.format(pattern, ...)
+    end,
+    SetText = function(self, text)
+        self.text = text
+    end,
+    GetText = function(self)
+        return self.text
+    end,
+}
 CreateFrame = function(_, _, parent)
     local created = newFrame()
     created.parent = parent
@@ -193,6 +211,22 @@ local r, g, b = unpack(display.LatencyText.color)
 assert(profile.fpsDisplay.whiteLatency and r == 1 and g == 1 and b == 1, "white latency option must use white")
 frameSettings[3].set(nil, false)
 assert(display.LatencyText.color[2] < 1, "latency colors must return")
+GetFramerate = function()
+    return 119.6
+end
+assert(frameSettings[4].default == false and not frameSettings[4].get())
+display.OnUpdate(display, 1)
+assert(display.FramerateText.text == "119.6")
+FramerateFrame.FramerateText:SetFormattedText("%.1f", 119.6)
+assert(FramerateFrame.FramerateText.text == "119.6", "native counter must keep decimals by default")
+frameSettings[4].set(nil, true)
+assert(profile.fpsDisplay.roundFramerate and display.FramerateText.text == "120", "display must round FPS")
+FramerateFrame.FramerateText:SetFormattedText("%.1f", 119.6)
+assert(FramerateFrame.FramerateText.text == "120", "native counter must round FPS")
+FramerateFrame.FramerateText:SetFormattedText("%.1f (CPU)", 59.4)
+assert(FramerateFrame.FramerateText.text == "59 (CPU)", "rounding must keep the counter's suffix")
+frameSettings[4].set(nil, false)
+assert(display.FramerateText.text == "119.6")
 FramerateFrame:SetShown(false)
 assert(not display.shown, "display must hide with the counter")
 FramerateFrame:SetShown(true)
@@ -200,7 +234,7 @@ assert(display.shown, "display must show with the counter")
 frameSettings[2].set(nil, false)
 assert(not display.shown and FramerateFrame.alpha == 1, "turning latency off must restore the counter")
 assert(frame.width == 120, "anchor must return to its normal size")
-assert(frameSettings[4].name == "Position", "the Position section follows the frame's settings")
+assert(frameSettings[5].name == "Position", "the Position section follows the frame's settings")
 PlayerFrame = newFrame()
 PlayerFrame.IsObjectType = function(_, kind)
     return kind == "Frame"

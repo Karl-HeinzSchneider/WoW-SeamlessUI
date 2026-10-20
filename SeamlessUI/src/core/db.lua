@@ -14,6 +14,7 @@ local profile = {
         layouts = {},
         showLatency = false,
         whiteLatency = false,
+        roundFramerate = false,
     },
     xpBarTooltip = {
         enabled = true,

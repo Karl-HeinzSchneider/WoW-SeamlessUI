@@ -31,7 +31,29 @@ local function UpdateDisplay()
         display.LatencyText:SetTextColor(1, 0.1, 0.1)
     end
     display.LatencyText:SetFormattedText("%d", world)
-    display.FramerateText:SetFormattedText("%.1f", math.min(GetFramerate(), 999.9))
+    local framerate = math.min(GetFramerate(), 999.9)
+    if app.db.profile.fpsDisplay.roundFramerate then
+        display.FramerateText:SetFormattedText("%d", math.floor(framerate + 0.5))
+    else
+        display.FramerateText:SetFormattedText("%.1f", framerate)
+    end
+end
+
+-- The native counter formats "%.1f" itself (Blizzard_FramerateFrame); rewrite it right after.
+-- Its Layout() runs after this hook, so the counter still resizes to the rounded text.
+local function HookNativeFramerate()
+    local text = FramerateFrame.FramerateText or FramerateText
+    if not text then
+        return
+    end
+    hooksecurefunc(text, "SetFormattedText", function(self)
+        if module:IsEnabled() and app.db.profile.fpsDisplay.roundFramerate then
+            local rounded = (self:GetText() or ""):gsub("%d+%.%d+", function(value)
+                return tostring(math.floor(tonumber(value) + 0.5))
+            end, 1)
+            self:SetText(rounded)
+        end
+    end)
 end
 
 -- With latency on, the native counter is faded out and this two-row display takes its place:
@@ -193,6 +215,18 @@ function module:OnEnable()
                     UpdateDisplay()
                 end,
             },
+            {
+                name = L["Round FPS"],
+                kind = lib.SettingType.Checkbox,
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.roundFramerate
+                end,
+                set = function(_, value)
+                    app.db.profile.fpsDisplay.roundFramerate = value
+                    UpdateDisplay()
+                end,
+            },
         }
         local position = app.core:GetEditModePositionSettings({
             get = function(key)
@@ -217,6 +251,7 @@ function module:OnEnable()
         end
         lib:AddFrameSettings(anchor, settings)
         CreateDisplay()
+        HookNativeFramerate()
     end
     FramerateFrame:ClearAllPoints()
     FramerateFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")

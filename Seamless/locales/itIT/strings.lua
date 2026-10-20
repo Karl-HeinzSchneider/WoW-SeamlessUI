@@ -717,6 +717,7 @@ end
 -- L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."] = "Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."
 -- L["Reserved for future frame options. This setting has no effect yet."] = "Reserved for future frame options. This setting has no effect yet."
 -- L["Rested:"] = "Rested:"
+-- L["Round FPS"] = "Round FPS"
 -- L["SeamlessUI - %s"] = "SeamlessUI - %s"
 -- L["Show FPS on startup"] = "Show FPS on startup"
 -- L["Show completed quests"] = "Show completed quests"

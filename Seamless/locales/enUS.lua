@@ -714,6 +714,7 @@ L["Position editing is unavailable. Select an enabled frame in a custom layout."
 L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."] = true
 L["Reserved for future frame options. This setting has no effect yet."] = true
 L["Rested:"] = true
+L["Round FPS"] = true
 L["SeamlessUI - %s"] = true
 L["Show FPS on startup"] = true
 L["Show completed quests"] = true

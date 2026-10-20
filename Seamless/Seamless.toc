@@ -18,6 +18,7 @@ locales\[TextLocale]\strings.lua
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
+src\core\editmodelib.lua
 src\core\editmode.lua
 src\core\quests.lua
 src\core\questlog.lua

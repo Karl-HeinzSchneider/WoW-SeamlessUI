@@ -142,7 +142,7 @@ local function SetSkinOption(frame, key, value)
 end
 
 local function RegisterControls(frame)
-    local settings = {}
+    local settings = { { name = L["Window"], kind = lib.SettingType.Header } }
     local function add(name, key, kind, minimum, maximum, step, multiplier, skin)
         multiplier = multiplier or 1
         local function get()
@@ -220,7 +220,7 @@ local function RegisterControls(frame)
         },
     }
     local styleStart = #settings + 1
-    settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Divider }
+    settings[#settings + 1] = { name = L["Style"], kind = lib.SettingType.Header }
     for _, definition in ipairs(appearanceSliders) do
         add(
             definition[1],

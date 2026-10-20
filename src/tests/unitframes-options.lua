@@ -24,7 +24,8 @@ end
 PlayerFrame, PetFrame, TargetFrame, TargetFrameToT, FocusFrame = {}, {}, {}, {}, {}
 -- FocusFrameToT is missing: its rows and tab are hidden.
 
-local counts = { optionRefreshes = 0, systemRefreshes = 0, healthColor = 0, questLayout = 0, questRefresh = 0 }
+local counts =
+    { optionRefreshes = 0, systemRefreshes = 0, healthColor = 0, names = 0, questLayout = 0, questRefresh = 0 }
 local registeredOptions, systemOptions, enabled = nil, {}, true
 local modules = {}
 local app = {
@@ -33,7 +34,7 @@ local app = {
             layout = "current",
             unitFrames = setmetatable({}, {
                 __index = function(self, key)
-                    local frame = { healthBarColor = "classReaction" }
+                    local frame = { healthBarColor = "classReaction", nameDisplay = "full" }
                     rawset(self, key, frame)
                     return frame
                 end,
@@ -69,6 +70,11 @@ local app = {
     healthColor = {
         Refresh = function()
             counts.healthColor = counts.healthColor + 1
+        end,
+    },
+    nameDisplay = {
+        Refresh = function()
+            counts.names = counts.names + 1
         end,
     },
     targetQuestIcon = {
@@ -114,6 +120,10 @@ assert(app.db.profile.unitFrames.player.healthBarColor == "reaction" and playerC
 assert(counts.healthColor == 1 and counts.optionRefreshes == 1 and counts.systemRefreshes == 1)
 assert(not find(tabs.player, "threatPercentage"), "threat is a target option")
 assert(find(tabs.pet, "pet_healthBarColor").desc:find("owner's class color"), "pet hint")
+local partyName = find(tabs.party, "party_nameDisplay")
+assert(partyName.values.first == "First name only" and partyName.sorting[1] == "full")
+partyName.set(nil, "first")
+assert(app.db.profile.unitFrames.party.nameDisplay == "first" and counts.names == 1)
 
 local threat = find(tabs.target, "threatPercentage")
 threat.set(nil, true)
@@ -151,9 +161,12 @@ local targetSpec, targetRows = rows("target")
 assert(targetSpec.systemIndex == 2)
 assert(targetRows["targettarget.healthBarColor"].name == "Target of Target health bar color")
 assert(not targetRows["targettarget.healthBarColor"].hidden())
+assert(targetRows["targettarget.nameDisplay"].name == "Target of Target name display")
+assert(targetRows["target.nameDisplay"].name == "Name display")
 assert(targetRows.threatPercentage and targetRows["questIcon.x"])
 local _, focusRows = rows("focus")
 assert(focusRows["focustarget.healthBarColor"].hidden(), "missing linked frame hides its row")
+assert(focusRows["focustarget.nameDisplay"].hidden())
 local _, petRows = rows("pet")
 assert(rows("party") and petRows["pet.healthBarColor"].values[1].value == "default")
 
@@ -165,4 +178,67 @@ assert(playerColor.get() == "class")
 assert(targetRows["questIcon.scale"].format(2.3) == "2.3")
 enabled = false
 assert(not playerSpec.enabled(), "the section leaves while the addon is disabled")
+targetRows["targettarget.nameDisplay"].set("last")
+assert(find(tabs.targettarget, "targettarget_nameDisplay").get() == "last")
 print("PASS: unit frame Style sections in Edit Mode")
+
+-- Name display: first name or surname on the game's frames, the game's text back for full.
+local names = { player = { "Anna", "Weber" }, target = { "Hogger" }, party1 = { "Bob-Smith" } }
+UnitName = function(unit)
+    return unpack(names[unit])
+end
+Constants = { CharacterNameSeparatorConsts = { CHARACTERNAME_SURNAME_SEPARATOR = "-" } }
+local function FontString(text)
+    return {
+        GetText = function()
+            return text
+        end,
+        SetText = function(_, value)
+            text = value
+        end,
+    }
+end
+local hooked
+hooksecurefunc = function(name, fn)
+    assert(name == "UnitFrame_Update")
+    hooked = fn
+end
+enabled = true
+PlayerFrame.unit, PlayerFrame.name = "player", FontString("Anna Weber")
+TargetFrame.unit, TargetFrame.name = "target", FontString("Hogger")
+local member = { unit = "party1", name = FontString("Bob-Smith") }
+PartyFrame = { MemberFrame1 = member }
+app.nameDisplay = nil
+app.db.profile.unitFrames.player.nameDisplay = "first"
+app.db.profile.unitFrames.target.nameDisplay = "last"
+app.db.profile.unitFrames.party.nameDisplay = "last"
+loadfile("SeamlessUnitframes/src/name/namedisplay.lua")("SeamlessUnitframes", app)
+local nameDisplay = modules.NameDisplay
+nameDisplay:OnInitialize()
+hooked(PlayerFrame)
+assert(PlayerFrame.name:GetText() == "Anna", "first name")
+hooked(TargetFrame)
+assert(TargetFrame.name:GetText() == "Hogger", "no surname keeps the name")
+hooked(member)
+assert(member.name:GetText() == "Smith", "joined surname")
+app.db.profile.unitFrames.player.nameDisplay = "last"
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "Weber")
+app.db.profile.unitFrames.player.nameDisplay = "full"
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "Anna Weber", "the game's text restored")
+PlayerFrame.name:SetText("Anna Weber")
+hooked(PlayerFrame)
+assert(PlayerFrame.name:GetText() == "Anna Weber")
+canaccessvalue = function(value)
+    return value ~= "secret"
+end
+names.player = { "secret" }
+app.db.profile.unitFrames.player.nameDisplay = "first"
+hooked(PlayerFrame)
+assert(PlayerFrame.name:GetText() == "Anna Weber", "secret names are left alone")
+canaccessvalue = nil
+enabled = false
+nameDisplay:OnDisable()
+assert(member.name:GetText() == "Bob-Smith", "disabled restores the game's text")
+print("PASS: name display")

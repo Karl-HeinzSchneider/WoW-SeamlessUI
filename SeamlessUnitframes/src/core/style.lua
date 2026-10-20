@@ -42,13 +42,12 @@ local function changed()
 end
 
 ---@param key string
----@param name? string  # the label; "Health bar color" by default
 ---@return SeamlessCore.EditModeSystemOption
-local function HealthBarColor(key, name)
+local function HealthBarColor(key)
     return {
         key = key .. ".healthBarColor",
         type = "select",
-        name = name or L["Health bar color"],
+        name = L["Health bar color"],
         desc = key == "pet" and healthBarColorDesc .. L["\n\nA pet takes its owner's class color."]
             or healthBarColorDesc,
         values = healthBarColors,
@@ -58,6 +57,32 @@ local function HealthBarColor(key, name)
         set = function(value)
             app.db.profile.unitFrames[key].healthBarColor = value
             app.healthColor:Refresh()
+            changed()
+        end,
+    }
+end
+
+local nameDisplays = {
+    { text = L["Full name"], value = "full" },
+    { text = L["First name only"], value = "first" },
+    { text = L["Surname only"], value = "last" },
+}
+
+---@param key string
+---@return SeamlessCore.EditModeSystemOption
+local function NameDisplay(key)
+    return {
+        key = key .. ".nameDisplay",
+        type = "select",
+        name = L["Name display"],
+        desc = L["Full name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the name of a unit without one, such as an NPC."],
+        values = nameDisplays,
+        get = function()
+            return app.db.profile.unitFrames[key].nameDisplay
+        end,
+        set = function(value)
+            app.db.profile.unitFrames[key].nameDisplay = value
+            app.nameDisplay:Refresh()
             changed()
         end,
     }
@@ -138,15 +163,24 @@ end
 -- Frames without an Edit Mode system of their own show their rows in this frame's Style section,
 -- under these labels.
 local linkedNames = {
-    targettarget = L["Target of Target health bar color"],
-    focustarget = L["Target of Focus health bar color"],
+    targettarget = {
+        nameDisplay = L["Target of Target name display"],
+        healthBarColor = L["Target of Target health bar color"],
+    },
+    focustarget = {
+        nameDisplay = L["Target of Focus name display"],
+        healthBarColor = L["Target of Focus health bar color"],
+    },
 }
 
 ---The style groups of one unit frame (a key of app.unitFrames.list).
 ---@param key string
 ---@return SeamlessUnitframes.StyleGroup[]
 function app.StyleGroups(key)
-    local groups = { { name = L["Health bar"], rows = { HealthBarColor(key) } } }
+    local groups = {
+        { name = L["Name"], rows = { NameDisplay(key) } },
+        { name = L["Health bar"], rows = { HealthBarColor(key) } },
+    }
     if key == "target" then
         for _, group in ipairs(TargetGroups()) do
             groups[#groups + 1] = group
@@ -168,11 +202,15 @@ function app.StyleOptions(entry)
     end
     for _, linked in ipairs(app.unitFrames.list) do
         if linked.linkedTo == entry.key then
-            local row = HealthBarColor(linked.key, linkedNames[linked.key] or linked.name)
-            row.hidden = function()
-                return not app.unitFrames:Exists(linked)
+            local linkedRows = { NameDisplay(linked.key), HealthBarColor(linked.key) }
+            linkedRows[1].name = linkedNames[linked.key].nameDisplay
+            linkedRows[2].name = linkedNames[linked.key].healthBarColor
+            for _, row in ipairs(linkedRows) do
+                row.hidden = function()
+                    return not app.unitFrames:Exists(linked)
+                end
+                rows[#rows + 1] = row
             end
-            rows[#rows + 1] = row
         end
     end
     return rows

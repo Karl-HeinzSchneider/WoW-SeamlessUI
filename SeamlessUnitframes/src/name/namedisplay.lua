@@ -1,0 +1,116 @@
+---@type string, SeamlessUnitframes
+local _, app = ...
+
+local addon = app.addon
+local unitFrames = app.unitFrames
+
+-- Shortens the name on the game's unit frames to the first name or the surname, chosen per unit
+-- frame (profile.unitFrames[key].nameDisplay). The client gives characters a first name and an
+-- optional surname (UnitName returns both); the game shows both. Units without a surname, such as
+-- NPCs, keep their name.
+---@class SeamlessUnitframes.NameDisplay : AceModule
+local module = {}
+app.nameDisplay = addon:NewModule("NameDisplay", module) --[[@as SeamlessUnitframes.NameDisplay]]
+
+-- The choices of profile.unitFrames[key].nameDisplay; the labels are in style.lua.
+---@alias SeamlessUnitframes.NameDisplayMode "full"|"first"|"last"
+
+-- The game's own text of each name we changed, keyed by frame, to put back for "full".
+---@type table<Frame, string>
+local native = {}
+
+-- False for nil and for a secret value (the client hides a unit's identity in some situations).
+local function Readable(value)
+    return (not canaccessvalue or canaccessvalue(value)) and value ~= nil
+end
+
+-- The first name and surname of a unit. With regional unique names the client can return both in
+-- the first value, joined by its surname separator.
+---@param unit string
+---@return string?, string?
+local function NameParts(unit)
+    local name, surname = UnitName(unit)
+    if not Readable(name) or (surname ~= nil and not Readable(surname)) then
+        return nil
+    end
+    if surname == nil or surname == "" then
+        local separators = Constants and Constants.CharacterNameSeparatorConsts
+        local separator = separators and separators.CHARACTERNAME_SURNAME_SEPARATOR
+        if type(separator) == "string" and separator ~= "" then
+            local first, rest = name:match("^(.-)" .. separator:gsub("%p", "%%%0") .. "(.+)$")
+            if first and first ~= "" then
+                return first, rest
+            end
+        end
+        return name, nil
+    end
+    return name, surname
+end
+
+---@param frame Frame
+---@param key string
+local function Apply(frame, key)
+    local fontString, unit = frame.name, frame.unit
+    if not (Readable(fontString) and fontString and Readable(unit) and unit) then
+        return
+    end
+    ---@type SeamlessUnitframes.NameDisplayMode
+    local mode = app.db.profile.unitFrames[key].nameDisplay
+    if mode == "full" or not addon:IsEnabled() then
+        if native[frame] then
+            fontString:SetText(native[frame])
+            native[frame] = nil
+        end
+        return
+    end
+    local first, surname = NameParts(unit)
+    local text = mode == "first" and first or surname
+    if not text then
+        return
+    end
+    if native[frame] == nil then
+        local current = fontString:GetText()
+        if not Readable(current) then
+            return
+        end
+        native[frame] = current
+    end
+    fontString:SetText(text)
+end
+
+---@param frame Frame
+local function Update(frame)
+    local key = unitFrames:KeyOf(frame)
+    if key then
+        -- The game just set its own text; that is the one to put back.
+        native[frame] = nil
+        Apply(frame, key)
+    end
+end
+
+function module:OnInitialize()
+    -- Every unit frame sets its name here: on a unit change, a name update and party updates.
+    hooksecurefunc("UnitFrame_Update", Update)
+end
+
+function module:OnEnable()
+    self:Refresh()
+end
+
+function module:OnDisable()
+    self:Refresh()
+end
+
+-- Reapplies every name, after a setting changed.
+function module:Refresh()
+    for _, frame in ipairs(unitFrames:All()) do
+        local key = unitFrames:KeyOf(frame)
+        if key then
+            Apply(frame, key)
+        end
+    end
+end
+
+function module:OnProfileRefresh()
+    self:Refresh()
+end

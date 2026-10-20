@@ -17,6 +17,7 @@
 ---@field StyleOptions fun(entry: SeamlessUnitframes.UnitFrame): SeamlessCore.EditModeSystemOption[]
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
+---@field nameDisplay SeamlessUnitframes.NameDisplay
 ---@field legacyLayout SeamlessUnitframes.LegacyLayout
 ---@field legacyAtlases table<string, table>
 ---@field questIcons SeamlessUnitframes.QuestIcons

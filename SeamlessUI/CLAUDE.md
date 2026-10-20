@@ -23,7 +23,11 @@ features are ready for public release.
    counter outside Edit Mode. Positions are stored per native layout in the current UI profile, including layout
    copy/rename/delete handling. Disabling restores the counter's original anchors.
 6. `src/features/blizzardposition.lua`: position adapter and widgets for the selected Blizzard
-   system. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft;
+   system. Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft, except
+   in default position: managed frames (Pet frame, cast bar, ...) and default action bars are
+   placed by client layout code and their anchorInfo is a placeholder (CENTER of UIParent), so it
+   reads the live `GetPoint(1)`, follows unnamed/managed containers to the named frame placing
+   them (Pet frame shows PlayerFrame) and converts offsets to Edit Mode's units;
    Anchor/AnchorParent dropdowns expose nine anchor points. AnchorFrame keeps UIParent first
    and the original Focus/Minimap/Player/Target choices, then includes named frames from the
    extension registry through `GetAnchorTargets`. Uses actual `GetName()`/global resolution,

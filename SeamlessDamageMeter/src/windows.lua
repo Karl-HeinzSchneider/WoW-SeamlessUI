@@ -1337,7 +1337,8 @@ function app:CreateWindow(id)
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()
     -- Match the settings button's center; both use the same dropdown atlas family.
-    frame.statistic.arrow:SetPoint("CENTER", frame.statistic, "CENTER", 0, -4)
+    -- Anchor to the left arrow slot: nested views widen the button over the label.
+    frame.statistic.arrow:SetPoint("CENTER", frame.statistic, "LEFT", 12.5, -4)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end, true)

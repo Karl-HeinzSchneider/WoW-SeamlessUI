@@ -5,6 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = app.config
 local NAVIGATION_PANE_WIDTH, SCROLLBAR_GUTTER = 199, 24
 local NAVIGATION_WIDTH = NAVIGATION_PANE_WIDTH - SCROLLBAR_GUTTER
+local NAVIGATION_ROW_GAP = 1
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -242,6 +243,9 @@ function config:Refresh()
     local y, headerIndex = 0, 0
     local visible = self:GetVisibleCategories()
     for index, entry in ipairs(visible) do
+        if index > 1 then
+            y = y + NAVIGATION_ROW_GAP
+        end
         local category, depth = entry.category, entry.depth
         local row = self.rows[index] or self:CreateRow(index)
         row.id = category.id

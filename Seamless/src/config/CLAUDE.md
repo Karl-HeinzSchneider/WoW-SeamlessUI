@@ -84,7 +84,8 @@ art and footer button. It retains the title, page scrolling, red Close button
 and dragging. Mode survives closing/reopening for the session. Category collapse
 buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
 Header labels retain the native left inset, with the collapse button at the right
-edge. Navigation rows and their artwork are 175 pixels wide, reserving a dedicated
+edge. Navigation rows and their artwork are 175 pixels wide, with a
+1-pixel vertical gap between items. The navigation pane reserves a
 24-pixel scrollbar gutter between the headers and the fixed inner-frame divider.
 The scrollbar uses TOP/BOTTOM center anchors at the midpoint of that gap, with
 8-pixel top/bottom insets. Its full 17-pixel arrow width fits inside the gap;

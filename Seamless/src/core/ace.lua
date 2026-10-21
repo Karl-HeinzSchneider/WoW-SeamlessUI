@@ -58,7 +58,7 @@ function addon:OnSlashCommand(input)
     cmd = cmd and cmd:lower() or ""
 
     if cmd == "" or cmd == "options" then
-        app.options:Open()
+        self:ToggleConfig()
     elseif cmd == "loglevel" then
         if arg and log:setLevel(arg) then
             self.db.profile.logLevel = log:getLevelName()

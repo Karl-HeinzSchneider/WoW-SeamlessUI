@@ -4,6 +4,7 @@ local L = LibStub("AceLocale-3.0"):NewLocale("Seamless", "enUS", true)
 -- Common / shared
 L["%dd %dh %dm"] = true
 L["Accept"] = true
+L["Apply this change?"] = true
 L["Background"] = true
 L["Bottom left"] = true
 L["Bottom right"] = true
@@ -26,6 +27,7 @@ L["General"] = true
 L["Height"] = true
 L["Info"] = true
 L["Initialized (profile: %s)"] = true
+L["Invalid value"] = true
 L["Left"] = true
 L["None"] = true
 L["Open"] = true

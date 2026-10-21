@@ -7,6 +7,11 @@
 ---@field frame? table
 ---@field selected? string
 ---@field minimized? boolean
+---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
+---@field ControlRow table Base class for Settings-style control rows.
+---@field controlCreators table<string, fun(page: table): table> Extensible control factories.
+---@field CreateOptionsPage fun(self: SeamlessCore.Config, page: table, root: table, key: string, name: string)
+---@field RefreshOptionsPage fun(self: SeamlessCore.Config, page: table)
 
 ---@class SeamlessCore.ConfigCategory
 ---@field id? string Assigned by the registry.
@@ -14,6 +19,7 @@
 ---@field parent? string Previously registered parent ID; omitted for a root category.
 ---@field order? number Defaults to 100; ties sort by ID.
 ---@field header? boolean Styled heading; clicking it collapses its children.
+---@field hidden? boolean|fun(): boolean Omit unavailable pages from navigation.
 ---@field create? fun(page: table) Called once with an owned content frame; set its height for scrolling.
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
 

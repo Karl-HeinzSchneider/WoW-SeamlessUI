@@ -30,6 +30,53 @@ local PROFILE_EVENTS = { "OnProfileChanged", "OnProfileCopied", "OnProfileReset"
 local module = {}
 app.options = app.addon:NewModule("Options", module) --[[@as SeamlessCore.Options]]
 
+-- Keep the original option paths: inherited accessors and AceDBOptions handlers
+-- must receive exactly the same info tables in either window.
+local function RegisterConfigPages(name, title, args)
+    local isTweaks = name == appName .. "Tweaks"
+    local parent = isTweaks and appName or name
+    if name ~= appName and not isTweaks then
+        app.addon:RegisterConfigCategory(name, { name = title, header = true })
+    end
+    for key, tab in pairs(args) do
+        local id = name .. ":" .. key
+        local spec = {
+            name = isTweaks and title or tab.name,
+            parent = parent,
+            order = isTweaks and 500 or tab.order,
+            hidden = tab.hidden,
+            create = function(page)
+                local root = AceConfigRegistry:GetOptionsTable(name, "dialog", "SeamlessConfig")
+                app.config:CreateOptionsPage(page, root, key, name)
+                -- NotifyChange may arrive inside a widget callback. Rebuild on the
+                -- next frame so that callback finishes before its widget is released.
+                local dirty = false
+                AceConfigRegistry.RegisterCallback(page, "ConfigTableChange", function(_, changed)
+                    if changed == name then
+                        dirty = true
+                    end
+                end)
+                page:SetScript("OnUpdate", function()
+                    if dirty then
+                        dirty = false
+                        app.config:RefreshOptionsPage(page)
+                    end
+                end)
+            end,
+            refresh = function(page)
+                app.config:RefreshOptionsPage(page)
+            end,
+        }
+        if app.config.categories[id] then
+            -- Core's initial General placeholder is selected before initialization.
+            app.config.categories[id] = spec
+            spec.id = id
+        else
+            app.addon:RegisterConfigCategory(id, spec)
+        end
+    end
+end
+
 ---@param name string AceConfig app name: the addon's folder name.
 ---@param spec SeamlessCore.OptionsSpec
 ---@param parent? any Settings category ID of the parent panel.
@@ -61,9 +108,10 @@ function module:Register(name, spec, parent)
     )
     local _, id = AceConfigDialog:AddToBlizOptions(name, spec.title, parent)
     self.panels[name] = { title = spec.title, id = id }
+    RegisterConfigPages(name, spec.title, args)
 end
 
--- Opens the native Settings window on `name`'s panel (Core's when nil), on one of its tabs if given.
+-- Opens the shared config window on the addon's General page or requested tab.
 ---@param name? string
 ---@param tab? string
 function module:Open(name, tab)
@@ -72,10 +120,7 @@ function module:Open(name, tab)
     if not panel then
         return
     end
-    if tab then
-        AceConfigDialog:SelectGroup(name, tab)
-    end
-    Settings.OpenToCategory(panel.id)
+    app.addon:OpenConfig(name .. ":" .. (tab or "general"))
 end
 
 -- Redraws `name`'s panel (Core's when nil) after a change made outside of it.

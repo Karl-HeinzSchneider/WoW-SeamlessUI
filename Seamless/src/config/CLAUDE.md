@@ -2,7 +2,8 @@
 
 This folder owns the standalone SettingsPanel-style shell inside the core addon.
 `registry.lua` loads after `core/ace.lua`; `window.lua` owns rendering. Keep this
-separate from `core/options.lua`, which still owns the existing AceConfig panels.
+separate from `core/options.lua`, which owns the shared option declarations and
+retains the existing Settings > AddOns panels as a fallback.
 
 The shell uses the client's SharedXML primitives and Settings artwork, with its
 own window, category tree and page lifecycle. It does not inherit SettingsPanel
@@ -42,7 +43,34 @@ the supplied page. All categories currently belong to the single Config tab.
 
 `SeamlessConfigWindow` is the public frame name used by Escape handling.
 `/seamless [options]` and minimap right-click toggle this shell (`core:ToggleConfig()`). Minimap left-click
-and `core:OpenOptions` still open the existing panels until option migration.
+opens General in this window. `core:OpenOptions(addonName, tab)` opens the corresponding
+addon subview here as well.
+
+## Settings rows
+
+`core/options.lua` registers one category header per addon and one child page per
+existing tab, including General. Only Core has Profiles. Unavailable tabs stay
+hidden. The initial Core General placeholder receives its real page callbacks
+when the Options module initializes.
+
+`model.lua` adapts existing option declarations without rendering AceConfig UI.
+It preserves original paths and inherited getters, setters, disabled predicates,
+validation, confirmation and AceDBOptions handler methods. Read settings at use
+time so profile switching continues to work.
+
+`controls.lua` owns `config.ControlRow` (base class) and `config.controlCreators`
+(factories keyed by option type). Extend these instead of patching Blizzard or
+vendored libraries. Rows follow Settings' left label/right control alignment,
+37-pixel label inset, 45-pixel section headers and hover treatment. They reuse
+SharedXML's MinimalSliderWithSteppers, WowStyle2Dropdown, InputBox, ColorSwatch
+and button templates and the Settings checkbox atlases. No SettingsPanel mixins,
+global setting registration, AceGUI or AceConfigDialog rendering is involved.
+Groups become section headings; controls are pooled per page and type. The page
+owns its height and the shell scrolls it. Registry notifications refresh visible
+controls on the next frame, after the originating callback has finished.
+
+`StaticPopupDialogs.SeamlessConfigConfirm` is the owned confirmation dialog key.
+Run `lua src/tests/config-options.lua` and `lua src/tests/config-controls.lua`.
 
 The red minimize/restore button beside Close switches between 920x724 and a
 705x600 compact view. Compact mode retains the selected page and its width,

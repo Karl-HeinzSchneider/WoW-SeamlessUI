@@ -7,6 +7,7 @@ end
 -- Common / shared
 -- L["%dd %dh %dm"] = "%dd %dh %dm"
 -- L["Accept"] = "Accept"
+-- L["Apply this change?"] = "Apply this change?"
 -- L["Background"] = "Background"
 -- L["Bottom left"] = "Bottom left"
 -- L["Bottom right"] = "Bottom right"
@@ -29,6 +30,7 @@ end
 -- L["Height"] = "Height"
 -- L["Info"] = "Info"
 -- L["Initialized (profile: %s)"] = "Initialized (profile: %s)"
+-- L["Invalid value"] = "Invalid value"
 -- L["Left"] = "Left"
 -- L["None"] = "None"
 -- L["Open"] = "Open"

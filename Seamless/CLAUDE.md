@@ -34,7 +34,7 @@ Required entry point of the suite; works with no feature addon enabled.
   compartment entry (off by default, disabled where the client lacks it).
 - `src/config/`: the standalone draggable configuration shell and public category/page API.
   See `src/config/CLAUDE.md`. `/seamless` and minimap right-click open it; existing options
-  remain available through minimap left-click pending migration.
+  are also rendered there with Settings-style rows; native AddOns panels remain as a fallback.
 - `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
 
 ## Public API
@@ -55,14 +55,17 @@ the suite profile.
 
 ## Options: one panel per addon, tabs inside
 
-Every addon has one AceConfig panel in Settings > AddOns; Core's "Seamless" panel is the parent.
+Every addon has a category header in the custom config window, with its tabs as
+child subviews rendered using our Settings-style controls. The shared AceConfig
+declarations also retain one fallback panel per addon in Settings > AddOns;
+Core's "Seamless" panel is the parent.
 Tabs are always **General**, then the addon's own tabs (`order` 1–999; few and broad, related
 controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 
 - `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
   `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
   `type = "group"` is filled in).
-- `core:OpenOptions(addonName, tab)`: opens the panel, optionally on a tab; no name opens Seamless.
+- `core:OpenOptions(addonName, tab)`: opens the custom config subview, optionally on a tab; no name opens Seamless General.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.
 - `core.FeatureGroup(spec)`: an inline group for one switchable feature: Enable toggle with its

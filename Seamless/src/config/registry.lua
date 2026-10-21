@@ -23,6 +23,7 @@ function app.addon:RegisterConfigCategory(id, spec)
         header = spec.header,
         create = spec.create,
         refresh = spec.refresh,
+        hidden = spec.hidden,
     }
     if config.frame then
         config:Refresh()
@@ -32,7 +33,11 @@ end
 function config:GetChildren(parent)
     local children = {}
     for _, category in pairs(self.categories) do
-        if category.parent == parent then
+        local hidden = category.hidden
+        if type(hidden) == "function" then
+            hidden = hidden()
+        end
+        if category.parent == parent and not hidden then
             children[#children + 1] = category
         end
     end

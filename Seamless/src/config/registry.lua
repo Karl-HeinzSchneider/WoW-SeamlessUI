@@ -1,7 +1,6 @@
 ---@type string, SeamlessCore
 local _, app = ...
 
-local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = { categories = {}, collapsed = {}, pages = {}, rows = {} }
 app.config = config
 
@@ -23,10 +22,25 @@ function app.addon:RegisterConfigCategory(id, spec)
         header = spec.header,
         create = spec.create,
         refresh = spec.refresh,
+        hidden = spec.hidden,
     }
     if config.frame then
         config:Refresh()
     end
+end
+
+function config:IsCategoryHidden(category)
+    while category do
+        local hidden = category.hidden
+        if type(hidden) == "function" then
+            hidden = hidden()
+        end
+        if hidden then
+            return true
+        end
+        category = self.categories[category.parent]
+    end
+    return false
 end
 
 function config:GetChildren(parent)
@@ -49,9 +63,11 @@ function config:GetVisibleCategories()
     local result = {}
     local function visit(parent, depth)
         for _, category in ipairs(self:GetChildren(parent)) do
-            result[#result + 1] = { category = category, depth = depth }
-            if not self.collapsed[category.id] then
-                visit(category.id, depth + 1)
+            if not self:IsCategoryHidden(category) then
+                result[#result + 1] = { category = category, depth = depth }
+                if not self.collapsed[category.id] then
+                    visit(category.id, depth + 1)
+                end
             end
         end
     end
@@ -89,7 +105,4 @@ function app.addon:ToggleConfig()
     end
 end
 
--- A small real tree for reviewing the shell; addon options are migrated separately.
-app.addon:RegisterConfigCategory("Seamless", { name = L["Seamless"], header = true, order = 0 })
-app.addon:RegisterConfigCategory("Seamless:general", { name = L["General"], parent = "Seamless", order = 0 })
 config.selected = "Seamless:general"

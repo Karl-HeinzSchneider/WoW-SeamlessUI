@@ -33,8 +33,8 @@ Required entry point of the suite; works with no feature addon enabled.
 - `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
   compartment entry (off by default, disabled where the client lacks it).
 - `src/config/`: the standalone draggable configuration shell and public category/page API.
-  See `src/config/CLAUDE.md`. `/seamless` and minimap right-click open it; existing options
-  remain available through minimap left-click pending migration.
+  See `src/config/CLAUDE.md`. `/seamless` and minimap right-click toggle it. Existing option
+  registrations populate addon headers and child pages here as well as the Blizzard panels.
 - `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
 
 ## Public API
@@ -63,6 +63,8 @@ controls in inline groups), then **Profiles** (added by Core).
 - `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
   `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
   `type = "group"` is filled in) and `db` (adds Profiles).
+  The same registration adds a custom-window header with separate General, addon-tab and
+  Profiles pages, preserving the original option callbacks and tab visibility conditions.
 - `core:OpenOptions(addonName, tab)`: opens the panel, optionally on a tab; no name opens Seamless.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.

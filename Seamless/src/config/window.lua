@@ -3,7 +3,7 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = app.config
-local NAVIGATION_WIDTH = 183
+local NAVIGATION_WIDTH = 175
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -25,6 +25,7 @@ local function scroll(parent, x, width)
     bar:SetPoint("TOPLEFT", frame, "TOPRIGHT", 0, 2)
     bar:SetPoint("BOTTOMLEFT", frame, "BOTTOMRIGHT", -1, 7)
     bar:Init(1, 0.1)
+    bar:SetHideIfUnscrollable(false)
     bar:RegisterCallback("OnScroll", function(_, percentage)
         frame:SetVerticalScroll(percentage * math.max(0, child:GetHeight() - frame:GetHeight()))
     end, frame)
@@ -36,7 +37,9 @@ local function scroll(parent, x, width)
         end
         bar:SetVisibleExtentPercentage(math.min(1, frame:GetHeight() / height))
         bar:SetScrollAllowed(range > 0)
-        bar:SetShown(range > 0 and not (frame == config.navigation and config.minimized))
+        bar:SetShown(not (frame == config.navigation and config.minimized))
+        bar:DesaturateHierarchy(range > 0 and 0 or 1)
+        bar:SetAlpha(range > 0 and 1 or 0.45)
         bar:SetScrollPercentage(range > 0 and math.min(1, frame:GetVerticalScroll() / range) or 0, true)
     end
     child:SetScript("OnSizeChanged", update)
@@ -131,8 +134,8 @@ function config:CreateWindow()
     self.navigation, self.list, self.navigationBar = scroll(frame, 18, NAVIGATION_WIDTH)
     -- Reserve a gutter inside the navigation pane, including the wider arrows.
     self.navigationBar:ClearAllPoints()
-    self.navigationBar:SetPoint("TOPLEFT", self.navigation, "TOPRIGHT", 6, -8)
-    self.navigationBar:SetPoint("BOTTOMLEFT", self.navigation, "BOTTOMRIGHT", 6, 8)
+    self.navigationBar:SetPoint("TOPLEFT", self.navigation, "TOPRIGHT", 12, -8)
+    self.navigationBar:SetPoint("BOTTOMLEFT", self.navigation, "BOTTOMRIGHT", 12, 8)
     self.contentScroll, self.content = scroll(frame, 233, 643)
     self.contentScroll:SetPoint("TOPLEFT", 233, -137)
     self.title = label(frame, "GameFontHighlightHuge", "", "TOPLEFT", frame, "TOPLEFT", 240, -98)
@@ -158,7 +161,7 @@ function config:SetMinimized(minimized)
     frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
     frame:SetSize(minimized and 705 or 920, minimized and 600 or 724)
     self.navigation:SetShown(not minimized)
-    self.navigationBar:SetShown(not minimized and self.list:GetHeight() > self.navigation:GetHeight())
+    self.navigationBar:SetShown(not minimized)
     self.tab:SetShown(not minimized)
     self.inner:SetShown(not minimized)
     self.done:SetShown(not minimized)

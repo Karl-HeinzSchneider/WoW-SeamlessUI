@@ -184,6 +184,8 @@ for _, name in ipairs({
     "Init",
     "SetVisibleExtentPercentage",
     "SetScrollAllowed",
+    "SetHideIfUnscrollable",
+    "DesaturateHierarchy",
     "EnableMouseWheel",
     "SetSelected",
     "SetNormalAtlas",
@@ -240,11 +242,11 @@ core:RegisterConfigCategory("Page", {
     end,
 })
 core:OpenConfig("Page")
-assert(config.navigation:GetWidth() == 183)
-assert(config.navigationBar.points.TOPLEFT[4] == 6 and config.navigationBar.points.TOPLEFT[5] == -8)
-assert(config.navigationBar.points.BOTTOMLEFT[4] == 6 and config.navigationBar.points.BOTTOMLEFT[5] == 8)
+assert(config.navigation:GetWidth() == 175)
+assert(config.navigationBar.points.TOPLEFT[4] == 12 and config.navigationBar.points.TOPLEFT[5] == -8)
+assert(config.navigationBar.points.BOTTOMLEFT[4] == 12 and config.navigationBar.points.BOTTOMLEFT[5] == 8)
 for _, row in ipairs(config.rows) do
-    assert(row:GetWidth() == 183 and row.active:GetWidth() == 183)
+    assert(row:GetWidth() == 175 and row.active:GetWidth() == 175)
 end
 assert(config.minimize:GetFrameLevel() == 510)
 assert(config.minimize.template == "UIPanelCloseButtonNoScripts")
@@ -297,3 +299,21 @@ assert(not config.minimized and config.frame:GetWidth() == 920 and config.frame:
 assert(config.navigation.shown and config.tab.shown and config.inner.shown and config.done.shown)
 assert(config.pages.Page == selectedPage and created == 1)
 print("Config toggle and compact mode OK")
+
+-- A fitting category list retains its disabled scrollbar, including after restore.
+function methods:SetScrollAllowed(value)
+    self.scrollAllowed = value
+end
+function methods:SetAlpha(value)
+    self.alpha = value
+end
+config.navigation:SetHeight(10000)
+assert(config.navigationBar:IsShown() and not config.navigationBar.scrollAllowed)
+assert(config.navigationBar.alpha == 0.45)
+config:SetMinimized(true)
+assert(not config.navigationBar:IsShown())
+config:SetMinimized(false)
+assert(config.navigationBar:IsShown() and config.navigationBar.alpha == 0.45)
+config.navigation:SetHeight(100)
+assert(config.navigationBar.scrollAllowed and config.navigationBar.alpha == 1)
+print("Persistent navigation scrollbar OK")

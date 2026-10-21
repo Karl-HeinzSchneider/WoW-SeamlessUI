@@ -84,11 +84,14 @@ art and footer button. It retains the title, page scrolling, red Close button
 and dragging. Mode survives closing/reopening for the session. Category collapse
 buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
 Header labels retain the native left inset, with the collapse button at the right
-edge. Navigation rows and their artwork are 183 pixels wide, reserving a dedicated
-scrollbar gutter with 6 pixels of separation and 8-pixel top/bottom insets so the
+edge. Navigation rows and their artwork are 175 pixels wide, reserving a dedicated
+scrollbar gutter with 12 pixels of separation and 8-pixel top/bottom insets so the
 thumb and wider arrow buttons stay inside the navigation pane.
 The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
 Close button's frame level so the title border cannot cover it.
 
 Run `lua src/tests/config-window.lua` and `npm run check`. Review the visual
 match, dragging, scrolling and Escape in the WoW Forever client.
+
+Scrollbars stay visible when their contents fit; scrolling is disabled and the bar
+is desaturated and dimmed. Compact mode still hides the navigation scrollbar.

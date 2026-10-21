@@ -7,7 +7,6 @@
 ---@field frame? table
 ---@field selected? string
 ---@field minimized? boolean
----@field refreshPending? boolean
 
 ---@class SeamlessCore.ConfigCategory
 ---@field id? string Assigned by the registry.
@@ -15,7 +14,6 @@
 ---@field parent? string Previously registered parent ID; omitted for a root category.
 ---@field order? number Defaults to 100; ties sort by ID.
 ---@field header? boolean Styled heading; clicking it collapses its children.
----@field hidden? boolean|fun(): boolean Hides this category and its descendants.
 ---@field create? fun(page: table) Called once with an owned content frame; set its height for scrolling.
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
 

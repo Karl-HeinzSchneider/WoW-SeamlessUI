@@ -62,7 +62,6 @@ function module:Register(name, spec, parent)
     )
     local _, id = AceConfigDialog:AddToBlizOptions(name, spec.title, parent)
     self.panels[name] = { title = spec.title, id = id }
-    app.config:RegisterOptions(name, spec, args)
 end
 
 -- Opens the native Settings window on `name`'s panel (Core's when nil), on one of its tabs if given.

@@ -13,8 +13,6 @@ function LibStub()
 end
 assert(loadfile("Seamless/src/config/registry.lua"))("Seamless", app)
 local core, config = app.addon, app.config
-core:RegisterConfigCategory("Seamless", { name = "Seamless", header = true, order = 0 })
-core:RegisterConfigCategory("Seamless:general", { name = "General", parent = "Seamless", order = 0 })
 local function rejects(callback)
     assert(not pcall(callback))
 end
@@ -289,17 +287,3 @@ assert(not config.minimized and config.frame:GetWidth() == 920 and config.frame:
 assert(config.navigation.shown and config.tab.shown and config.inner.shown and config.done.shown)
 assert(config.pages.Page == selectedPage and created == 1)
 print("Config toggle and compact mode OK")
-local hidden = false
-core:RegisterConfigCategory("Conditional", {
-    name = "Conditional",
-    hidden = function()
-        return hidden
-    end,
-})
-core:RegisterConfigCategory("Conditional:child", { name = "Child", parent = "Conditional" })
-core:OpenConfig("Conditional:child")
-assert(config.selected == "Conditional:child")
-hidden = true
-core:RefreshConfig()
-assert(config.selected ~= "Conditional:child" and not config.pages["Conditional:child"].shown)
-print("Config hidden page fallback OK")

@@ -226,17 +226,6 @@ end
 function config:Refresh()
     local y, headerIndex = 0, 0
     local visible = self:GetVisibleCategories()
-    local selected = self.categories[self.selected]
-    if not selected or self:IsCategoryHidden(selected) then
-        self.selected = nil
-        for _, entry in ipairs(visible) do
-            if not entry.category.header then
-                self.selected = entry.category.id
-                self.contentScroll:SetVerticalScroll(0)
-                break
-            end
-        end
-    end
     for index, entry in ipairs(visible) do
         local category, depth = entry.category, entry.depth
         local row = self.rows[index] or self:CreateRow(index)

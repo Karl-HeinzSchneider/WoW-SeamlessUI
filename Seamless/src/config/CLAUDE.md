@@ -1,9 +1,8 @@
 # Custom configuration window
 
 This folder owns the standalone SettingsPanel-style shell inside the core addon.
-`registry.lua` loads after `core/ace.lua`; `window.lua` owns rendering.
-`options.lua` embeds existing option definitions. `core/options.lua` still owns
-the existing AceConfig tables/panels and mirrors registrations into this tree.
+`registry.lua` loads after `core/ace.lua`; `window.lua` owns rendering. Keep this
+separate from `core/options.lua`, which still owns the existing AceConfig panels.
 
 The shell uses the client's SharedXML primitives and Settings artwork, with its
 own window, category tree and page lifecycle. It does not inherit SettingsPanel
@@ -43,34 +42,7 @@ the supplied page. All categories currently belong to the single Config tab.
 
 `SeamlessConfigWindow` is the public frame name used by Escape handling.
 `/seamless [options]` and minimap right-click toggle this shell (`core:ToggleConfig()`). Minimap left-click
-and `core:OpenOptions` still open the existing Blizzard panels. Those panels and
-the custom window share the same settings and callbacks.
-
-## Addon option pages
-
-Every `core:RegisterOptions` registration also adds a collapsible addon header.
-General, each addon tab (including individual unit frames/cast bars), and Profiles
-become separate child pages. Core's legacy Tweaks panel becomes a page under
-Seamless. Only loaded addons register; Core does not discover or load features.
-
-The adapter feeds the original table and tab path into `AceConfigDialog:Open`
-with an owned AceGUI SimpleGroup. Do not duplicate accessors, copy option trees
-or modify vendored code. This retains inherited get/set, disabled conditions,
-confirmation dialogs, dynamic groups and AceDB profile controls. Existing control
-styles are retained inside the new shell for now. Each page is created lazily;
-its measured widget height drives the shell's native scrollbar. The page width
-is the same in full and compact modes.
-
-`hidden` categories (boolean or function) hide their descendants too. The adapter
-uses the original tab's hidden condition with its original AceConfig path info,
-so unavailable unit frames stay out of the sidebar. If the selected category
-becomes hidden, the window selects the first visible page. Collapsing a header
-does not change the selected page.
-
-AceConfig `ConfigTableChange` notifications refresh a visible custom window on
-the next tick, coalescing multiple notifications and allowing widget callbacks
-to finish. Profile events already notify through the original registration.
-Reopening refreshes a window that was hidden during an external change.
+and `core:OpenOptions` still open the existing panels until option migration.
 
 The red minimize/restore button beside Close switches between 920x724 and a
 705x600 compact view. Compact mode retains the selected page and its width,
@@ -82,5 +54,5 @@ Header labels retain the native left inset, with the collapse button at the righ
 edge. The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
 Close button's frame level so the title border cannot cover it.
 
-Run `lua src/tests/config-window.lua`, `lua src/tests/config-options.lua` and `npm run check`. Review the visual
+Run `lua src/tests/config-window.lua` and `npm run check`. Review the visual
 match, dragging, scrolling and Escape in the WoW Forever client.

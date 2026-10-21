@@ -1,5 +1,23 @@
 -- Annotations only; not loaded by the client.
+---@class SeamlessCore.Config
+---@field categories table<string, SeamlessCore.ConfigCategory>
+---@field collapsed table<string, boolean>
+---@field pages table<string, table>
+---@field rows table[]
+---@field frame? table
+---@field selected? string
+
+---@class SeamlessCore.ConfigCategory
+---@field id? string Assigned by the registry.
+---@field name string Localized category label.
+---@field parent? string Previously registered parent ID; omitted for a root category.
+---@field order? number Defaults to 100; ties sort by ID.
+---@field header? boolean Styled heading; clicking it collapses its children.
+---@field create? fun(page: table) Called once with an owned content frame; set its height for scrolling.
+---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
+
 ---@class SeamlessCore
+---@field config SeamlessCore.Config
 ---@field IsEditModeSectionCollapsed fun(key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(key: string, collapsed: boolean)
 ---@field CreateEditModeHeader fun(parent: table, onClick: fun()): table
@@ -17,6 +35,9 @@
 ---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
+---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
+---@field OpenConfig fun(self: SeamlessCore.Addon, id?: string)
+---@field RefreshConfig fun(self: SeamlessCore.Addon)
 ---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)

@@ -34,6 +34,7 @@ function module:OnInitialize()
             GameTooltip:SetOwner(frame, "ANCHOR_LEFT")
             GameTooltip:AddLine(L["Seamless"])
             GameTooltip:AddLine(L["Left-click: options"], 1, 1, 1)
+            GameTooltip:AddLine(L["Right-click: config"], 1, 1, 1)
             GameTooltip:Show()
         end,
         OnLeave = function(frame)
@@ -66,6 +67,8 @@ end
 function module:OnClick(button)
     if button == "LeftButton" then
         app.options:Open()
+    elseif button == "RightButton" then
+        addon:OpenConfig()
     else
         log:debug(L["Minimap button clicked (%s)"], button)
     end

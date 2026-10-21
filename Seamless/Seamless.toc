@@ -18,6 +18,8 @@ locales\[TextLocale]\strings.lua
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
+src\config\registry.lua
+src\config\window.lua
 src\core\editmodelib.lua
 src\core\anchorpicker.lua
 src\core\editmode.lua

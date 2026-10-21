@@ -32,6 +32,9 @@ Required entry point of the suite; works with no feature addon enabled.
   and its "Tweaks" child.
 - `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
   compartment entry (off by default, disabled where the client lacks it).
+- `src/config/`: the standalone draggable configuration shell and public category/page API.
+  See `src/config/CLAUDE.md`. `/seamless` and minimap right-click open it; existing options
+  remain available through minimap left-click pending migration.
 - `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
 
 ## Public API

@@ -12,10 +12,12 @@ here without a migration.
    `loglevel` delegated to Core).
 4. `src/features/xpbartooltip.lua`: replaces the player XP bar tooltip (bar and rested tick) through
    a secure post-hook on each `ExhaustionTick:ExhaustionToolTipText`, never replacing the method:
-   rest state, XP, XP left, rested XP, time to max rested (Core's `tweaks.restedXPCap`/
+   rest state, XP, XP left, rested XP, time to max rested (the feature's `restedXPCap`/
    `restedXPRate`), then completed quests and their XP (`core:GetQuestLogSummary()`). Profile
-   `xpBarTooltip` (`enabled`, `completedQuests`). `OnInitialize` migrates Core's former
-   `tweaks.questXPTooltip = false`.
+   `xpBarTooltip` (`enabled`, `completedQuests`, `restedXPCap`, `restedXPRate`). Cap and rate
+   controls live in this feature's options. `OnInitialize` migrates Core's former cap/rate
+   overrides and `tweaks.questXPTooltip = false`, preserving existing UI settings and
+   removing the obsolete Core tooltip keys. Core no longer hooks the XP tooltip.
 5. `src/features/blizzardposition.lua`: position widgets for the selected Blizzard system (below).
 6. `src/features/systemoptions.lua`: draws the sections other addons register with Core's
    `RegisterEditModeSystemOptions` (the Style sections of Castbar and Unitframes) under Core's
@@ -27,6 +29,8 @@ here without a migration.
    group per frame with Extend Edit Mode, Add position and Add more options).
 
 `src/types.lua`: annotations only, not in the TOC; add a field for every new `app` member.
+
+Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and legacy settings migration.
 
 ## Blizzard Edit Mode extensions (`blizzardeditmode.lua`)
 

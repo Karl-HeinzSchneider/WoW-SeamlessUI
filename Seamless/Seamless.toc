@@ -29,7 +29,6 @@ src\core\editmode.lua
 src\core\systemoptions.lua
 src\core\quests.lua
 src\core\questlog.lua
-src\core\xptooltip.lua
 src\core\tweaks.lua
 src\core\options.lua
 src\core\minimapbutton.lua

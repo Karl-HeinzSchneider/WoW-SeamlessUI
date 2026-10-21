@@ -84,7 +84,7 @@
 ---@class SeamlessCore.Profile
 ---@field logLevel string
 ---@field minimap table
----@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
+---@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean }
 
 ---@class SeamlessCore.EditModeOptions
 ---@field section "options"|"frames"|nil Defaults to options, above the shared Frames heading.

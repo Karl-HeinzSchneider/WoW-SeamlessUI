@@ -21,10 +21,6 @@ Required entry point of the suite; works with no feature addon enabled.
   system (see below).
 - `quests.lua`: `core:GetQuestLogSummary()`. `questlog.lua`: completed quest count and XP in the
   quest log header.
-- `xptooltip.lua`: `tweaks.enhancedXPTooltip` (on by default) adds XP left and rested XP to the
-  player XP bar tooltip. SeamlessUI's XP bar tooltip replaces it while enabled. Time to max rested
-  uses `restedXPCap` (150%) and `restedXPRate` (5% per eight hours), because the client exposes
-  neither.
 - `tweaks.lua`: `/rl` (on by default) and showing the framerate once on startup (off; its toggle is
   in the FPS display's Edit Mode settings, owned by SeamlessUI).
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's panels:

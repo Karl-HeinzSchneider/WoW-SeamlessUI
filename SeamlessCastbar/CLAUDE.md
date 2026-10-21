@@ -36,7 +36,9 @@ system, so they are not part of this addon.
 4. `src/hold.lua`: `app.ApplyHold` changes the start delay of `FadeOutAnim`'s alpha and the
    duration of `HoldFadeOutAnim`'s first alpha, remembering the client's values.
 5. `src/options.lua`: a short General tab and one tab per bar: its Enable switch, then
-   `core.FeatureGroup` groups (greyed out while the bar is off).
+   standalone Spell rank, Channel ticks and Spell icon switches, plus `core.FeatureGroup`
+   sections for Cast time and Hold time (greyed out while the bar is off). The same declarations
+   drive the custom and native options windows.
 6. `src/editmode.lua`: `app.StyleOptions(key)` builds a bar's Style rows (Core system-option rows
    with defaults) writing its profile and refreshing the options. `app.RegisterEditMode` (from
    `OnEnable`, once) registers the player's for the cast bar system with Core's

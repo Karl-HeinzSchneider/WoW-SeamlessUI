@@ -69,7 +69,9 @@ controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.
 - `core.FeatureGroup(spec)`: an inline group for one switchable feature: Enable toggle with its
-  description, then the options. Options without their own `get`/`set` use
+  description, then the options. Features without subordinate options instead return a standalone
+  toggle named after the feature, in both the custom and native options windows. Features with
+  subordinate controls retain their section and Enable toggle. Options without their own `get`/`set` use
   `spec.settings()[key]` (colors as `{ r, g, b, a }`) and are disabled while the feature is off
   unless they define `disabled`. `spec.toggled` runs after the switch, `spec.changed` after any
   other setting.

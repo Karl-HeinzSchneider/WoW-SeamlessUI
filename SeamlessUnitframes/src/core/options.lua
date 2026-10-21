@@ -40,18 +40,22 @@ local function Option(row, order)
     return option
 end
 
--- One tab per unit frame, hidden when this client lacks the frame, with an inline group per
--- style group.
+-- Standalone style rows need no heading; keep groups for related controls.
 ---@param entry SeamlessUnitframes.UnitFrame
 ---@param order number
 local function FrameTab(entry, order)
     local args = {}
     for i, group in ipairs(app.StyleGroups(entry.key)) do
-        local groupArgs = {}
-        for j, row in ipairs(group.rows) do
-            groupArgs[row.key:gsub("%.", "_")] = Option(row, j * 10)
+        if #group.rows == 1 then
+            local row = group.rows[1]
+            args[row.key:gsub("%.", "_")] = Option(row, i * 10)
+        else
+            local groupArgs = {}
+            for j, row in ipairs(group.rows) do
+                groupArgs[row.key:gsub("%.", "_")] = Option(row, j * 10)
+            end
+            args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
         end
-        args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
     end
     return {
         order = order,

@@ -123,3 +123,53 @@ assert(app.addon.opened == "Unitframes:target")
 options:Open("Unitframes")
 assert(app.addon.opened == "Unitframes:general")
 print("Config options OK")
+
+-- The shared declaration must be simple in both the custom and native panels.
+local settings, toggles = { enabled = true }, 0
+local switch = options.FeatureGroup({
+    name = "Short keybind labels",
+    settings = function()
+        return settings
+    end,
+    toggled = function()
+        toggles = toggles + 1
+    end,
+})
+assert(switch.type == "toggle" and switch.name == "Short keybind labels" and not switch.args)
+switch.set({ "general", "keybinds" }, false)
+assert(not settings.enabled and toggles == 1 and not switch.disabled())
+settings = { enabled = true }
+assert(switch.get())
+local castOptions, castSpec
+local cast = {
+    core = {
+        FeatureGroup = options.FeatureGroup,
+        RegisterOptions = function(_, _, spec)
+            castSpec = spec
+        end,
+    },
+    addon = {
+        NewModule = function()
+            castOptions = {}
+            return castOptions
+        end,
+        Refresh = function()
+            toggles = toggles + 1
+        end,
+    },
+    db = { profile = { player = { enabled = true, rank = { enabled = true } } } },
+}
+assert(loadfile("SeamlessCastbar/src/options.lua"))("SeamlessCastbar", cast)
+castOptions:OnInitialize()
+for _, key in ipairs({ "rank", "ticks", "icon" }) do
+    local option = castSpec.tabs.player.args[key]
+    assert(option.type == "toggle" and option.name ~= "Enable" and not option.args)
+end
+assert(castSpec.tabs.player.args.castTime.type == "group")
+assert(castSpec.tabs.player.args.hold.type == "group")
+local rank = castSpec.tabs.player.args.rank
+rank.set(nil, false)
+assert(not cast.db.profile.player.rank.enabled and not rank.disabled({ "player", "rank" }))
+cast.db.profile.player.enabled = false
+assert(rank.disabled({ "player", "rank" }))
+print("Standalone feature options OK")

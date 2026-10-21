@@ -144,6 +144,27 @@ end
 ---@param spec SeamlessCore.FeatureSpec
 ---@return table
 function module.FeatureGroup(spec)
+    -- A feature with no subordinate settings needs only a clearly named switch.
+    if not spec.options or not next(spec.options) then
+        return {
+            type = "toggle",
+            order = spec.order,
+            width = "full",
+            name = spec.name,
+            desc = spec.desc,
+            descStyle = "inline",
+            get = function()
+                return spec.settings().enabled
+            end,
+            set = function(_, value)
+                spec.settings().enabled = value
+                spec.toggled()
+            end,
+            disabled = function()
+                return false
+            end,
+        }
+    end
     local args = {
         enabled = {
             type = "toggle",

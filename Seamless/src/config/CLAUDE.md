@@ -85,8 +85,10 @@ and dragging. Mode survives closing/reopening for the session. Category collapse
 buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
 Header labels retain the native left inset, with the collapse button at the right
 edge. Navigation rows and their artwork are 175 pixels wide, reserving a dedicated
-scrollbar gutter with 12 pixels of separation and 8-pixel top/bottom insets so the
-thumb and wider arrow buttons stay inside the navigation pane.
+24-pixel scrollbar gutter between the headers and the fixed inner-frame divider.
+The scrollbar uses TOP/BOTTOM center anchors at the midpoint of that gap, with
+8-pixel top/bottom insets. Its full 17-pixel arrow width fits inside the gap;
+left-edge anchors would incorrectly shift the scrollbar toward the divider.
 The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
 Close button's frame level so the title border cannot cover it.
 

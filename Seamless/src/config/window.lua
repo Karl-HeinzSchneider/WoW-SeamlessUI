@@ -3,7 +3,8 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = app.config
-local NAVIGATION_WIDTH = 175
+local NAVIGATION_PANE_WIDTH, SCROLLBAR_GUTTER = 199, 24
+local NAVIGATION_WIDTH = NAVIGATION_PANE_WIDTH - SCROLLBAR_GUTTER
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -132,10 +133,12 @@ function config:CreateWindow()
     end)
 
     self.navigation, self.list, self.navigationBar = scroll(frame, 18, NAVIGATION_WIDTH)
-    -- Reserve a gutter inside the navigation pane, including the wider arrows.
+    -- The native inner-frame divider is at the right of the 199-pixel pane.
+    -- Center the entire scrollbar (17-pixel arrows, 8-pixel track) in its gutter.
+    -- TOP/BOTTOM anchor its center; TOPLEFT would push half the track to the right.
     self.navigationBar:ClearAllPoints()
-    self.navigationBar:SetPoint("TOPLEFT", self.navigation, "TOPRIGHT", 12, -8)
-    self.navigationBar:SetPoint("BOTTOMLEFT", self.navigation, "BOTTOMRIGHT", 12, 8)
+    self.navigationBar:SetPoint("TOP", self.navigation, "TOPRIGHT", SCROLLBAR_GUTTER / 2, -8)
+    self.navigationBar:SetPoint("BOTTOM", self.navigation, "BOTTOMRIGHT", SCROLLBAR_GUTTER / 2, 8)
     self.contentScroll, self.content = scroll(frame, 233, 643)
     self.contentScroll:SetPoint("TOPLEFT", 233, -137)
     self.title = label(frame, "GameFontHighlightHuge", "", "TOPLEFT", frame, "TOPLEFT", 240, -98)

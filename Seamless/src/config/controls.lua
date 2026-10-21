@@ -313,6 +313,15 @@ function creators.group(page)
     row.Toggle:SetPoint("RIGHT", -6, 0)
     row.Toggle.Icon = row.Toggle:CreateTexture(nil, "ARTWORK")
     row.Toggle.Icon:SetPoint("CENTER")
+    -- These buttons cover the row, so forward hover to its background as well.
+    for _, button in ipairs({ row.HeaderButton, row.Toggle }) do
+        button:HookScript("OnEnter", function()
+            row.Hover:Show()
+        end)
+        button:HookScript("OnLeave", function()
+            row.Hover:Hide()
+        end)
+    end
     row.Toggle:SetScript("OnMouseDown", function()
         row.Toggle.Icon:SetPoint("CENTER", 1, -1)
     end)

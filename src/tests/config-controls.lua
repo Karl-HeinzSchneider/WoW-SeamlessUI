@@ -262,6 +262,14 @@ root.args.general.args.section = {
 }
 app.config:RefreshOptionsPage(page)
 local section = page.controlPools.group[2]
+section.HeaderButton.scripts.OnEnter()
+assert(section.Hover:IsShown())
+section.HeaderButton.scripts.OnLeave()
+assert(not section.Hover:IsShown())
+section.Toggle.scripts.OnEnter()
+assert(section.Hover:IsShown())
+section.Toggle.scripts.OnLeave()
+assert(not section.Hover:IsShown())
 local expandedHeight = page:GetHeight()
 assert(page.controlPools.description[1]:IsShown())
 section.Toggle.scripts.OnClick()

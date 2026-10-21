@@ -243,8 +243,14 @@ core:RegisterConfigCategory("Page", {
 })
 core:OpenConfig("Page")
 assert(config.navigation:GetWidth() == 175)
-assert(config.navigationBar.points.TOPLEFT[4] == 12 and config.navigationBar.points.TOPLEFT[5] == -8)
-assert(config.navigationBar.points.BOTTOMLEFT[4] == 12 and config.navigationBar.points.BOTTOMLEFT[5] == 8)
+local headerRight, dividerX = 18 + config.navigation:GetWidth(), 18 + 199
+local scrollbarCenter = headerRight + config.navigationBar.points.TOP[4]
+assert(scrollbarCenter - headerRight == dividerX - scrollbarCenter)
+assert(scrollbarCenter - 17 / 2 > headerRight and scrollbarCenter + 17 / 2 < dividerX)
+assert(config.navigationBar.points.TOP[1] == "TOP")
+assert(config.navigationBar.points.BOTTOM[1] == "BOTTOM")
+assert(config.navigationBar.points.TOP[4] == 12 and config.navigationBar.points.TOP[5] == -8)
+assert(config.navigationBar.points.BOTTOM[4] == 12 and config.navigationBar.points.BOTTOM[5] == 8)
 for _, row in ipairs(config.rows) do
     assert(row:GetWidth() == 175 and row.active:GetWidth() == 175)
 end

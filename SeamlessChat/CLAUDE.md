@@ -1,6 +1,6 @@
 # SeamlessChat
 
-Optional chat addon. `SeamlessChatDB` holds profiles (with the synced chat snapshot) and
+Optional chat addon. The `SeamlessChat` namespace in `SeamlessDB` holds shared suite profiles (with the synced chat snapshot) and
 per-character input history; `SeamlessChatHistoryDB` and `SeamlessChatLogDB` are per-character
 saved lines and the chat log.
 
@@ -8,7 +8,7 @@ saved lines and the chat log.
 
 1. `src/core/bootstrap.lua`: obtains Core through AceAddon and shares its logger.
 2. `db.lua`, `ace.lua`: defaults, AceDB/AceAddon lifecycle and `/seamlesschat`.
-3. `options.lua`: the Chat panel: General (sync, chat input), Messages, Windows, Buttons, Log, Profiles.
+3. `options.lua`: the Chat panel: General (sync, chat input), Messages, Windows, Buttons, Log.
 4. `src/chat/`: state, sync, line transforms and input history.
 5. `src/features/features.lua`, followed by features in TOC order. Window mixins load before their XML.
 6. `SeamlessChat.lua`: load diagnostic.
@@ -67,10 +67,9 @@ secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argum
 Everything the user can switch on and off is a feature: one file per feature, listed in the TOC
 after `features.lua`.
 
-- `features.lua` — `app.features`. `app.features:New(key, prototype, name, desc, defaults, ...libs)`
+- `features.lua` — `app.features`. `app.features:New(key, prototype, name, desc, ...libs)`
   makes an Ace module whose prototype inherits the feature methods: `GetSettings()`
-  (`profile.features[key]`, where `enabled` is the switch; `defaults` are registered as AceDB
-  defaults), `GetOptions()` (AceConfig args for its own settings), `Refresh()` (re-apply after a
+  (`profile.features[key]`, where `enabled` is the switch; defaults live in `src/core/db.lua`), `GetOptions()` (AceConfig args for its own settings), `Refresh()` (re-apply after a
   setting changed) and `OnProfileRefresh()` (enable/disable to match the profile). `options.lua`
   gives every feature a section on its `optionsTab`: the Enable toggle with its description, then `GetOptions()`, with get/set
   defaulting to the feature's settings and everything grayed out while it is off.
@@ -175,11 +174,20 @@ on its prototype, its TOC line, a README entry. Nothing else needs registering.
 
 ## Conventions
 
-- Feature keys and SavedVariables names are persistent compatibility contracts; do not rename them.
-- New feature settings belong in their defaults and `GetOptions()` definitions; no central registration needed.
+- Feature keys are persistent compatibility contracts; retain old SavedVariables names for migration.
+- New feature settings belong in `src/core/db.lua` and their `GetOptions()` definitions.
 - New private-table members need annotations in `src/types.lua`.
 - Keep the single AddMessage wrapper in `src/chat/lines.lua`; transforms must preserve secret-value handling.
 - Logout code reading settings registers AceDB `OnDatabaseShutdown`, never `PLAYER_LOGOUT`, because
   AceDB removes defaults when serializing its SavedVariables.
 - Preserve combat, Edit Mode readiness and preset-layout guards in chat synchronization.
 - The custom copy/log windows stay native Lua/XML UI; the options panel does not replace them.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessChat` namespace of Core's `SeamlessDB`.
+`src/core/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessChatDB` once and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

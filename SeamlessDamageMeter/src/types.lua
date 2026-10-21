@@ -3,6 +3,7 @@
 ---@field RefreshThreatWindows fun(self: SeamlessDamageMeter) Refresh visible threat windows immediately from client events.
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0
+---@field dbDefaults AceDB.Schema
 ---@field db AceDBObject-3.0
 ---@field archive table Public snapshot storage and schema validation.
 ---@field live table Client combat API provider.

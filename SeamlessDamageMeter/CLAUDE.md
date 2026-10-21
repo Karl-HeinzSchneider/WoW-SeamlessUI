@@ -1,7 +1,7 @@
 # SeamlessDamageMeter
 
 Optional damage and threat meter: up to ten windows on top of the client's `C_DamageMeter`.
-`SeamlessDamageMeterDB` holds AceDB profiles (window layouts, skins, selections);
+The `SeamlessDamageMeter` namespace in `SeamlessDB` holds shared suite profiles (window layouts, skins, selections);
 `db.char.combatHistory` holds saved fights per character, independently of profiles.
 
 **Saving fights is switched off for now** (`combatService.saveSessions = false` in `service.lua`):
@@ -16,7 +16,7 @@ The archive and capture rules below apply when it is switched back on.
 `service.lua` (`app.combatService`: shared queries and cache), `breakdowns.lua` (enemy
 relationships), `capture.lua` (bounded capture after restrictions clear), `blizzard.lua` (native
 meter visibility), `settings.lua` (defaults, overrides, migrations), `editmode.lua`,
-`windows.lua` (frames and menus), `options.lua` (General, Windows, Skin, History, Profiles).
+`windows.lua` (frames and menus), `options.lua` (General, Windows, Skin, History).
 `src/types.lua` is annotations only. `docs/damage-meter-history.md` describes the archive's
 architecture, limits and in-game acceptance checks.
 
@@ -123,3 +123,12 @@ In game: tracking on, a second window with another statistic, current/overall se
 scrolling in a group, drag/resize/hide/show, deactivating every window, reload and profile
 switch/reset, restricted combat values in and out of combat, inherited versus overridden settings,
 windows anchored to each other, Edit Mode dragging, arrow keys, sliders, layouts and reload.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessDamageMeter` namespace of Core's `SeamlessDB`.
+`src/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessDamageMeterDB` once and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

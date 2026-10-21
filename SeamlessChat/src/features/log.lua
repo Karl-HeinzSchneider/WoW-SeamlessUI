@@ -18,19 +18,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "log" }
 
 ---@class SeamlessChat.LogSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    maxMessages = 25000,
-    maxDays = 30,
-    showButton = true, -- the chat log button beside the chat
-}
-
 app.chatLog = app.features:New(
     "log",
     module,
     L["Chat log"],
-    L["Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character."],
-    defaults
+    L["Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character."]
 ) --[[@as SeamlessChat.ChatLog]]
 
 ---@class SeamlessChat.LogDB

@@ -12,9 +12,6 @@ local feature = app.features:NewFeature("ItemLevel", {
     name = L["Item level"],
     desc = L["Adds the item level to weapons and armor."],
     order = 15,
-    defaults = {
-        qualityColor = true,
-    },
     options = {
         qualityColor = {
             type = "toggle",

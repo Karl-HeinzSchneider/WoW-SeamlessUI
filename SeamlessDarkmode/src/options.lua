@@ -72,7 +72,6 @@ function options:OnInitialize()
                 args = groups,
             },
         },
-        db = app.db,
     })
 end
 

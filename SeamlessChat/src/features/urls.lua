@@ -10,17 +10,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.UrlSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    color = { r = 0.25, g = 0.66, b = 0.96 },
-}
-
 app.urls = app.features:New(
     "urls",
     module,
     L["Clickable URLs"],
-    L["Web addresses in the chat become links. Clicking one puts it into the chat input, selected, ready for Ctrl+C."],
-    defaults
+    L["Web addresses in the chat become links. Clicking one puts it into the chat input, selected, ready for Ctrl+C."]
 ) --[[@as SeamlessChat.Urls]]
 
 local LINK_PREFIX = "addon:" .. appName .. ":url:"

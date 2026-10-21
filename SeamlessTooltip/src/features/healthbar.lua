@@ -16,14 +16,6 @@ feature = app.features:NewFeature("HealthBar", {
     name = L["Health bar"],
     desc = L["Restyles the health bar of unit tooltips and can show it inside the tooltip, with a health text like on unit frames."],
     order = 30,
-    defaults = {
-        inside = true,
-        inset = 6,
-        height = 10,
-        texture = "Blizzard",
-        backgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
-        text = "VALUE_MAX",
-    },
     options = {
         inside = {
             type = "toggle",

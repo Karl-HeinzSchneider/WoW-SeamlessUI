@@ -12,9 +12,6 @@ local feature = app.features:NewFeature("ItemDetails", {
     name = L["Item details"],
     desc = L["Adds details about an item to its tooltip."],
     order = 20,
-    defaults = {
-        stackSize = false,
-    },
     options = {
         stackSize = {
             type = "toggle",

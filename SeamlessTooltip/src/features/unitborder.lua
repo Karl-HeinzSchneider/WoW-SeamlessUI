@@ -12,11 +12,6 @@ local feature = app.features:NewFeature("UnitBorder", {
     name = L["Border color"],
     desc = L['Colors the border of unit tooltips by the unit. Works with the game\'s border and with "Border and background".'],
     order = 35,
-    defaults = {
-        players = true,
-        npcs = true,
-        tapped = true,
-    },
     options = {
         players = {
             type = "toggle",

@@ -15,17 +15,11 @@ local log = app.logger
 local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.BackgroundSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    color = { r = 0, g = 0, b = 0, a = 1 }, -- black, fully opaque
-}
-
 app.features:New(
     "background",
     module,
     L["Background"],
-    L["The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect."],
-    defaults
+    L["The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect."]
 )
 
 -- Set while painting, so the hooks don't answer our own calls.

@@ -22,7 +22,6 @@ function module:OnInitialize()
         tabs = {
             blizzardEditMode = app.blizzardEditMode:Options(),
         },
-        db = app.db,
     })
 end
 

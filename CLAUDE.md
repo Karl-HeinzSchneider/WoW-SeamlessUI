@@ -27,8 +27,7 @@ selectable addon:
 Also at the root: `src/` (Node 20+ / TypeScript tooling, never shipped), `docs/`, `.github/`
 (release workflows).
 
-Every feature addon declares `## Dependencies: Seamless` and keeps its own SavedVariables and
-AceDB profiles. Core works without any feature addon enabled; users enable or disable features
+Every feature addon declares `## Dependencies: Seamless` and stores settings in a namespace of Core's `SeamlessDB`, sharing its AceDB profiles. Core works without any feature addon enabled; users enable or disable features
 in the game's AddOns screen and reload. Tooling discovers addons automatically, but every addon
 must be added to `.pkgmeta` `move-folders` (or its `ignore` list, to keep it out of releases).
 

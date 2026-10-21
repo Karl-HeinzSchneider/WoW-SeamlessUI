@@ -13,14 +13,6 @@ local feature = app.features:NewFeature("Backdrop", {
     name = L["Border and background"],
     desc = L["Draws the tooltips with a border and background of your choice. More textures come with addons that register them with LibSharedMedia (e.g. SharedMedia)."],
     order = 30,
-    defaults = {
-        background = "Blizzard Collections Background",
-        backgroundColor = { r = 0.09, g = 0.09, b = 0.19, a = 1 },
-        border = "Blizzard Tooltip",
-        borderColor = { r = 1, g = 1, b = 1, a = 1 },
-        edgeSize = 16,
-        inset = 4,
-    },
     options = {
         background = {
             type = "select",

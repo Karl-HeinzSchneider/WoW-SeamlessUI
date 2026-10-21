@@ -12,12 +12,6 @@ local feature = app.features:NewFeature("HideUnits", {
     name = L["Hide in combat"],
     desc = L["Hides unit tooltips in combat, so they don't cover what you are fighting. Hold the modifier key to see them anyway."],
     order = 60,
-    enabled = false,
-    defaults = {
-        when = "COMBAT",
-        modifier = "SHIFT",
-        unitFrames = false,
-    },
     options = {
         when = {
             type = "select",

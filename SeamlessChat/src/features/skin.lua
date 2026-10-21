@@ -17,29 +17,12 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "buttons" }
 
 ---@class SeamlessChat.SkinSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    accent = { r = 1, g = 0.82, b = 0 }, -- the game's gold
-    -- Which buttons the bar shows, by BUTTONS key (the log button's switch is the log feature's).
-    show = {
-        social = true,
-        channels = true,
-        tts = true,
-        voiceDeafen = true,
-        voiceMute = true,
-        copy = true,
-        menu = true,
-        options = true,
-    },
-}
-
 -- The running module; `module` is only its prototype, so the buttons it makes live here.
 local feature = app.features:New(
     "skin",
     module,
     L["Chat buttons"],
-    L["The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."],
-    defaults
+    L["The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."]
 ) --[[@as SeamlessChat.Skin]]
 
 local PLATE = { 0.04, 0.04, 0.05, 0.72 }

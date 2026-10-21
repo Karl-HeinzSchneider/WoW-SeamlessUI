@@ -18,19 +18,11 @@ local log = app.logger
 local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.HistorySettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    maxLines = 1000, -- messages each chat window keeps
-    persist = true, -- save the chat at logout and put it back at login
-    savedLines = 1000, -- messages saved per chat window
-}
-
 app.features:New(
     "history",
     module,
     L["Chat history"],
-    L["Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session."],
-    defaults
+    L["Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session."]
 )
 
 ---@class SeamlessChat.SavedHistory

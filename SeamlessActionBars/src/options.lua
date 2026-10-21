@@ -48,6 +48,5 @@ function options:OnInitialize()
                 toggled = refresh,
             }),
         },
-        db = app.db,
     })
 end

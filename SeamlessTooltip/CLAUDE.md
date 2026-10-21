@@ -1,7 +1,7 @@
 # SeamlessTooltip
 
 Optional tooltip addon: switchable enhancements of the game's tooltips. Settings and profiles
-live in `SeamlessTooltipDB`; feature keys there are persistent (see Features and conventions).
+live in the `SeamlessTooltip` namespace in `SeamlessDB`; feature keys there are persistent (see Features and conventions).
 
 ## Load order and ownership
 
@@ -153,7 +153,7 @@ live in `SeamlessTooltipDB`; feature keys there are persistent (see Features and
 A feature is one file in `src/features/` plus its TOC entry. It declares itself through
 `app.features:NewFeature(key, info)`, where `key` is the persistent key in `profile.features`.
 Never rename an existing key without migration. `info` declares category (`all`, `units`, `items`,
-`spells`), name, description (`desc`), order, optional `enabled` (default true), defaults and options.
+`spells`), name, description (`desc`), order, options; define enabled and setting defaults in `src/core/db.lua`.
 
 Options are AceConfig args; each key maps to the same key in the feature's settings, read and
 written by `core.FeatureGroup` (colors as `{ r, g, b, a }` tables) unless the option has its own
@@ -162,7 +162,7 @@ under it, then its options, disabled while the feature is off.
 
 Features are sorted by `order` within their tab. An option's own `disabled` replaces the
 feature-off check, so include `not settings.enabled` in it.
-Feature options need no manual edits in `options.lua` or `db.lua`.
+Feature options need no manual edits in `options.lua`; define defaults in `src/core/db.lua`.
 
 Features are nested Ace modules with AceEvent/AceHook. Register hooks/events in `OnEnable` and
 undo frame changes in `OnDisable`. TooltipDataProcessor wrappers register once from `OnInitialize`
@@ -173,3 +173,12 @@ Read settings through `self:Settings()` at use time. `ApplySettings()` reapplies
 when enabled settings or profiles change; `OnEnable` applies settings on activation.
 New private-table members belong in `src/types.lua`. Update this map and the suite README when
 adding features.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessTooltip` namespace of Core's `SeamlessDB`.
+`src/core/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessTooltipDB` once and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

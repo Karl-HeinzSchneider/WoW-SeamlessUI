@@ -14,21 +14,13 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.TimestampSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    format = "%H:%M:%S", -- one of FORMATS, or "custom" for customFormat
-    customFormat = "%H:%M:%S",
-    brackets = "square", -- key of BRACKETS
-    colored = false, -- own color instead of the message's
-    color = { r = 0.6, g = 0.6, b = 0.6 },
-}
+local defaults = app.dbDefaults.profile.features.timestamps
 
 local timestamps = app.features:New(
     "timestamps",
     module,
     L["Timestamps"],
-    L["Shows the time in front of every chat message. Replaces the game's own chat timestamps while enabled."],
-    defaults
+    L["Shows the time in front of every chat message. Replaces the game's own chat timestamps while enabled."]
 ) --[[@as SeamlessChat.Timestamps]]
 
 -- Where the game's chat timestamp setting was before this feature switched it off (account-wide,

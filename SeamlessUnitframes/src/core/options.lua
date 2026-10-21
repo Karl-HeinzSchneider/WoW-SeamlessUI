@@ -88,7 +88,6 @@ function module:OnInitialize()
             },
         },
         tabs = tabs,
-        db = app.db,
     })
 end
 

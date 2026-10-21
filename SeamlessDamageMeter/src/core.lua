@@ -8,18 +8,7 @@ app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEven
 local addon = app.addon
 
 function addon:OnInitialize()
-    app.db = LibStub("AceDB-3.0"):New("SeamlessDamageMeterDB", {
-        char = {},
-        profile = {
-            windows = {},
-            initialized = false,
-            locked = false,
-            hideBlizzard = true,
-            windowDefaults = app.windowDefaults,
-            favorites = {},
-            maxVisibleFavorites = 6,
-        },
-    }, true)
+    app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "RefreshProfile", "SeamlessDamageMeterDB")
     app.combatService:Initialize(app.db.char)
     app.combatService:Subscribe(app, function(owner, historyChanged)
         owner:RefreshWindows()
@@ -27,9 +16,6 @@ function addon:OnInitialize()
             owner.core:RefreshOptions(appName)
         end
     end)
-    app.db.RegisterCallback(self, "OnProfileChanged", "RefreshProfile")
-    app.db.RegisterCallback(self, "OnProfileCopied", "RefreshProfile")
-    app.db.RegisterCallback(self, "OnProfileReset", "RefreshProfile")
     self:RegisterChatCommand("seamlessdamagemeter", "SlashCommand")
     self:RegisterChatCommand("sdm", "SlashCommand")
     app:RegisterOptions()

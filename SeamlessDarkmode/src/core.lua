@@ -32,14 +32,7 @@ local function restore(texture)
 end
 
 function app.addon:OnInitialize()
-    local defaults = { enabled = true, color = { r = 0.22, g = 0.22, b = 0.22 }, groups = {} }
-    for _, group in ipairs(app.groups) do
-        defaults.groups[group.key] = true
-    end
-    app.db = LibStub("AceDB-3.0"):New("SeamlessDarkmodeDB", { profile = defaults }, true)
-    app.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
-    app.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
-    app.db.RegisterCallback(self, "OnProfileReset", "Refresh")
+    app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "Refresh", "SeamlessDarkmodeDB")
     self:RegisterChatCommand("seamlessdarkmode", function()
         app.core:OpenOptions(appName)
     end)

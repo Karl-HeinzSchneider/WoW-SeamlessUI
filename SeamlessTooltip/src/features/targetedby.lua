@@ -12,10 +12,6 @@ local feature = app.features:NewFeature("TargetedBy", {
     name = L["Targeted by"],
     desc = L["Lists the members of your group or raid that target the unit."],
     order = 26,
-    defaults = {
-        names = true,
-        you = true,
-    },
     options = {
         names = {
             type = "toggle",

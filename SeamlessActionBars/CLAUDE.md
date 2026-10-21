@@ -21,7 +21,7 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
    (modifier letters, `M4`, `N5`, `WU`, ...), falling back to `GetBindingText(base, 1)`.
    `app.UpdateHotkey` uses the same key lookup as the client, skips the range dot and gamepad
    bindings and remembers the client's text for `app.RestoreHotkey`.
-4. `src/options.lua`: three `core.FeatureGroup` groups on the General tab, plus Profiles.
+4. `src/options.lua`: three `core.FeatureGroup` groups on the General tab.
 5. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules
@@ -42,6 +42,6 @@ mouse button, wheel and num pad bindings, toggling each option and switching pro
 Settings now live in the `SeamlessActionBars` namespace of Core's `SeamlessDB`.
 `src/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessActionBarsDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

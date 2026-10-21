@@ -16,7 +16,7 @@ The archive and capture rules below apply when it is switched back on.
 `service.lua` (`app.combatService`: shared queries and cache), `breakdowns.lua` (enemy
 relationships), `capture.lua` (bounded capture after restrictions clear), `blizzard.lua` (native
 meter visibility), `settings.lua` (defaults, overrides, migrations), `editmode.lua`,
-`windows.lua` (frames and menus), `options.lua` (General, Windows, Skin, History, Profiles).
+`windows.lua` (frames and menus), `options.lua` (General, Windows, Skin, History).
 `src/types.lua` is annotations only. `docs/damage-meter-history.md` describes the archive's
 architecture, limits and in-game acceptance checks.
 
@@ -129,6 +129,6 @@ windows anchored to each other, Edit Mode dragging, arrow keys, sliders, layouts
 Settings now live in the `SeamlessDamageMeter` namespace of Core's `SeamlessDB`.
 `src/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessDamageMeterDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

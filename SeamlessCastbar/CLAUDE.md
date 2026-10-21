@@ -78,6 +78,6 @@ options; check `/console taintLog 1` stays clean.
 Settings now live in the `SeamlessCastbar` namespace of Core's `SeamlessDB`.
 `src/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessCastbarDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

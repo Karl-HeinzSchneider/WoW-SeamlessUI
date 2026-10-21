@@ -160,7 +160,6 @@ function module:OnInitialize()
         title = L["Chat"],
         general = { sync = SyncGroup(), input = InputGroup() },
         tabs = FeatureTabs(),
-        db = app.db,
     })
 end
 

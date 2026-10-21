@@ -668,6 +668,5 @@ function app:RegisterOptions()
                 },
             },
         },
-        db = self.db,
     })
 end

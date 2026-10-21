@@ -135,6 +135,5 @@ function options:OnInitialize()
             },
         },
         tabs = tabs,
-        db = app.db,
     })
 end

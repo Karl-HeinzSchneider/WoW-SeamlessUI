@@ -24,7 +24,7 @@ here without a migration.
    settings dialog (below).
 8. `src/features/fpsdisplay.lua`: the FPS display (below).
 9. `src/core/options.lua`: General, Blizzard Edit Mode Extensions (a global switch, then one inline
-   group per frame with Extend Edit Mode, Add position and Add more options) and Profiles.
+   group per frame with Extend Edit Mode, Add position and Add more options).
 
 `src/types.lua`: annotations only, not in the TOC; add a field for every new `app` member.
 
@@ -95,6 +95,6 @@ implement `OnProfileRefresh` for profile-dependent behavior.
 Settings now live in the `SeamlessUI` namespace of Core's `SeamlessDB`.
 `src/core/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessUIDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

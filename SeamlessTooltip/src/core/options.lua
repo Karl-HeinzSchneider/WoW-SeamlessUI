@@ -54,7 +54,7 @@ function module:OnInitialize()
             tabs[category] = { order = categories[category].order, name = categories[category].name, args = args }
         end
     end
-    app.core:RegisterOptions(appName, { title = L["Tooltip"], general = sections.all, tabs = tabs, db = app.db })
+    app.core:RegisterOptions(appName, { title = L["Tooltip"], general = sections.all, tabs = tabs })
 end
 
 function module:OnEnable()

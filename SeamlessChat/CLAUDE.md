@@ -8,7 +8,7 @@ saved lines and the chat log.
 
 1. `src/core/bootstrap.lua`: obtains Core through AceAddon and shares its logger.
 2. `db.lua`, `ace.lua`: defaults, AceDB/AceAddon lifecycle and `/seamlesschat`.
-3. `options.lua`: the Chat panel: General (sync, chat input), Messages, Windows, Buttons, Log, Profiles.
+3. `options.lua`: the Chat panel: General (sync, chat input), Messages, Windows, Buttons, Log.
 4. `src/chat/`: state, sync, line transforms and input history.
 5. `src/features/features.lua`, followed by features in TOC order. Window mixins load before their XML.
 6. `SeamlessChat.lua`: load diagnostic.
@@ -188,6 +188,6 @@ on its prototype, its TOC line, a README entry. Nothing else needs registering.
 Settings now live in the `SeamlessChat` namespace of Core's `SeamlessDB`.
 `src/core/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessChatDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

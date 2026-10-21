@@ -42,8 +42,8 @@ and choose the other addons in the game's AddOns screen, then reload. Every addo
 Seamless works on its own.
 
 Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
-addon's own sections, then Profiles, where its profiles are selected, created, copied, deleted
-and reset. All addons share Core's profiles; selecting, copying or resetting a profile applies to
+addon's own sections. The core panel's Profiles tab selects, creates, copies, deletes
+and resets the shared suite profile. All addons share Core's profiles; selecting, copying or resetting a profile applies to
 the whole suite. Feature settings are stored in separate namespaces of `SeamlessDB`, with
 editable defaults in each addon's `src/db.lua` or `src/core/db.lua`. Existing standalone settings
 are imported automatically the first time each addon loads.

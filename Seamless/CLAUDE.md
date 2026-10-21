@@ -57,11 +57,11 @@ the suite profile.
 
 Every addon has one AceConfig panel in Settings > AddOns; Core's "Seamless" panel is the parent.
 Tabs are always **General**, then the addon's own tabs (`order` 1–999; few and broad, related
-controls in inline groups), then **Profiles** (added by Core).
+controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 
 - `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
   `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
-  `type = "group"` is filled in) and `db` (adds the shared suite Profiles tab).
+  `type = "group"` is filled in).
 - `core:OpenOptions(addonName, tab)`: opens the panel, optionally on a tab; no name opens Seamless.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.
@@ -159,7 +159,7 @@ enabled sections in order.
 from each feature addon's `OnInitialize`. It returns an AceDB namespace under `SeamlessDB`
 and registers the owner's refresh method on the parent profile changed/copied/reset events,
 after every namespace has been updated. Read `app.db.profile` at use time. Namespaces do not
-expose `GetCurrentProfile`/`SetProfile`; use `core.db` for profile management. Every Profiles tab
+expose `GetCurrentProfile`/`SetProfile`; use `core.db` for profile management. Core's Profiles tab
 and every slash-command profile reset controls the whole suite.
 
 `src/core/profiles.lua` owns registration and one-time import. Legacy feature SavedVariables

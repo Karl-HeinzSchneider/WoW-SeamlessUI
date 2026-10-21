@@ -21,7 +21,7 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
    write the profile (or the `threatShowNumeric` CVar), apply and refresh. `app.StyleOptions(entry)`
    flattens a frame's rows plus its linked frames'.
 7. `options.lua`: General (the global layout), one tab per unit frame built from `StyleGroups`
-   (hidden when the client lacks the frame), Profiles. `CVAR_UPDATE` refreshes threat changes.
+   (hidden when the client lacks the frame). `CVAR_UPDATE` refreshes threat changes.
 8. `editmode.lua`: on enable, registers a collapsible Style section (key `unitframe-style`) per
    frame with `RegisterEditModeSystemOptions`. SeamlessUI draws it below the frame's own settings.
 9. `src/layout/`: optional legacy layout (below).
@@ -95,6 +95,6 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 Settings now live in the `SeamlessUnitframes` namespace of Core's `SeamlessDB`.
 `src/core/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessUnitframesDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

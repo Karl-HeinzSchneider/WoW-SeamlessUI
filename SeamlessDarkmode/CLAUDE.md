@@ -24,7 +24,7 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
 - `src/core.lua`: AceAddon/AceDB lifecycle, shared suite profiles and the
   `tint`/`restore` painters passed to the frame functions. Hooks `ApplyPendingBarToShow` on
   both status containers; retries hook installation on addon load and entering the world.
-- `src/options.lua`: master switch, shared color, one toggle per group, plus Profiles. Also
+- `src/options.lua`: master switch, shared color, one toggle per group. Also
   registers the master switch as a GLOBAL option in the shared Edit Mode window.
 - `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
@@ -52,6 +52,6 @@ the main and secondary containers (including a switch to honor with its original
 Settings now live in the `SeamlessDarkmode` namespace of Core's `SeamlessDB`.
 `src/db.lua` is the editable source of defaults (including feature defaults).
 Core's `RegisterAddonDatabase` imports the legacy `SeamlessDarkmodeDB` once and
-subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
 slash-command profile resets operate on the whole suite. Character/global data stay in the
 namespace; the old standalone database is retained only for migration.

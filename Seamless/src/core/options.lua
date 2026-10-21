@@ -8,7 +8,7 @@ local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 local AceDBOptions = LibStub("AceDBOptions-3.0")
 
 -- Every Seamless addon's panel is an AceConfig table of tabs: General first, the addon's own tabs
--- in between, Profiles last. Core's panel is the suite's entry in Settings > AddOns; the feature
+-- in between. Only the core panel has Profiles last. Core's panel is the suite's entry in Settings > AddOns; the feature
 -- addons' panels are its children.
 local GENERAL_ORDER, PROFILES_ORDER = 0, 1000
 
@@ -18,7 +18,6 @@ local PROFILE_EVENTS = { "OnProfileChanged", "OnProfileCopied", "OnProfileReset"
 ---@field title string The panel's name in the AddOns list and its heading.
 ---@field general table<string, table> AceConfig args of the General tab.
 ---@field tabs? table<string, table> The addon's own tabs: AceConfig groups by key, `order` 1 to 999.
----@field db? AceDBObject-3.0 Adds the shared suite Profiles tab (accepts a feature namespace).
 
 ---@class SeamlessCore.OptionsPanel
 ---@field title string
@@ -45,16 +44,16 @@ function module:Register(name, spec, parent)
         tab.type = "group"
         args[key] = tab
     end
-    if spec.db then
+    if name == appName then
         local profiles = AceDBOptions:GetOptionsTable(app.db)
         profiles.order = PROFILES_ORDER
         args.profiles = profiles
-        -- Covers profile changes from slash commands and other panels too.
-        for _, event in ipairs(PROFILE_EVENTS) do
-            app.db.RegisterCallback(args, event, function()
-                self:Refresh(name)
-            end)
-        end
+    end
+    -- All panels redraw when the shared profile changes, including those without a Profiles tab.
+    for _, event in ipairs(PROFILE_EVENTS) do
+        app.db.RegisterCallback(args, event, function()
+            self:Refresh(name)
+        end)
     end
     AceConfigRegistry:RegisterOptionsTable(
         name,
@@ -247,7 +246,6 @@ function module:OnInitialize()
                 },
             },
         },
-        db = app.db,
     })
     self:Register(appName .. "Tweaks", {
         title = L["Tweaks"],
@@ -308,7 +306,6 @@ function module:OnInitialize()
                 },
             },
         },
-        db = app.db,
     }, self.panels[appName].id)
 end
 

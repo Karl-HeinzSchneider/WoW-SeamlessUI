@@ -162,6 +162,7 @@ local root = {
             name = "General",
             get = function(info)
                 assert(info[0] == "Test" and info[1] == "general" and info.type == info.option.type)
+                assert(info.uiName == "SeamlessConfig-1.0")
                 return profile[info[#info]]
             end,
             set = function(info, value)

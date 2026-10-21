@@ -1,4 +1,8 @@
 -- Shared options keep their original AceConfig paths inside the custom shell.
+dofile("Seamless/lib/LibStub/LibStub.lua")
+dofile("Seamless/lib/CallbackHandler-1.0/CallbackHandler-1.0.lua")
+dofile("Seamless/lib/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
+local realRegistry = LibStub("AceConfigRegistry-3.0")
 local callbacks, tables, opens = {}, {}, {}
 local registry = {
     RegisterCallback = function(owner, _, callback)
@@ -6,6 +10,7 @@ local registry = {
     end,
     RegisterOptionsTable = function(_, name, options)
         tables[name] = options
+        realRegistry:RegisterOptionsTable(name, options)
     end,
     NotifyChange = function(_, name)
         for _, callback in pairs(callbacks) do
@@ -21,8 +26,8 @@ local dialog = {
         error("Custom config must not use AceConfigDialog rendering")
     end,
 }
-function registry:GetOptionsTable(name)
-    return tables[name]
+function registry:GetOptionsTable(name, uiType, uiName)
+    return realRegistry:GetOptionsTable(name, uiType, uiName)
 end
 local libraries = {
     ["AceLocale-3.0"] = {

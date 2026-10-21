@@ -27,7 +27,7 @@ function Option:Read(member, ...)
     if inherited[member] then
         value = group[member]
     end
-    local info = { [0] = self.appName, options = self.root, uiType = "dialog", uiName = "SeamlessConfig" }
+    local info = { [0] = self.appName, options = self.root, uiType = "dialog", uiName = "SeamlessConfig-1.0" }
     for index, key in ipairs(self.path) do
         group = assert(group.args[key], "Missing config option: " .. key)
         info[index] = key

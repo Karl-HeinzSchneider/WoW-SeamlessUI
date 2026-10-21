@@ -46,7 +46,7 @@ local function RegisterConfigPages(name, title, args)
             order = isTweaks and 500 or tab.order,
             hidden = tab.hidden,
             create = function(page)
-                local root = AceConfigRegistry:GetOptionsTable(name, "dialog", "SeamlessConfig")
+                local root = AceConfigRegistry:GetOptionsTable(name, "dialog", "SeamlessConfig-1.0")
                 app.config:CreateOptionsPage(page, root, key, name)
                 -- NotifyChange may arrive inside a widget callback. Rebuild on the
                 -- next frame so that callback finishes before its widget is released.

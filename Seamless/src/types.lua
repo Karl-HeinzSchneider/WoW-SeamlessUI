@@ -7,6 +7,7 @@
 ---@field frame? table
 ---@field selected? string
 ---@field minimized? boolean
+---@field optionInfo table<string, fun(path: string[]): any, boolean?>
 ---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
 ---@field ControlRow table Base class for Settings-style control rows.
 ---@field controlCreators table<string, fun(page: table): table> Extensible control factories.
@@ -43,6 +44,8 @@
 
 ---@class SeamlessCore.Addon
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
+---@field GetOptionDefault fun(self: SeamlessCore.Addon, defaults: table?, path: string[], first?: number): any
+---@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean
 ---@field OpenConfig fun(self: SeamlessCore.Addon, id?: string)
 ---@field ToggleConfig fun(self: SeamlessCore.Addon)
 ---@field RefreshConfig fun(self: SeamlessCore.Addon)

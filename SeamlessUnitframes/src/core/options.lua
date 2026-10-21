@@ -73,6 +73,26 @@ function module:OnInitialize()
         tabs[entry.key] = FrameTab(entry, i * 10)
     end
     app.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            local key = path[#path]
+            local defaults = app.dbDefaults.profile
+            if path[1] == "general" then
+                return defaults[key]
+            end
+            if key == "threatPercentage" then
+                return app.core:GetCVarOptionInfo("threatShowNumeric")
+            end
+            local questKey = key:match("^questIcon_(.+)$")
+            if questKey then
+                return defaults.targetQuestIcon[questKey]
+            end
+            local field = key:match("^[^_]+_(.+)$")
+            local frame = defaults.unitFrames[path[1]] or {}
+            if frame[field] ~= nil then
+                return frame[field]
+            end
+            return defaults.unitFrames["**"][field]
+        end,
         title = L["Unit Frames"],
         general = {
             layout = {

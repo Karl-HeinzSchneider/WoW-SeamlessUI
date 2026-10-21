@@ -2,7 +2,7 @@
 local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
-local config = { categories = {}, collapsed = {}, pages = {}, rows = {} }
+local config = { categories = {}, collapsed = {}, pages = {}, rows = {}, optionInfo = {} }
 app.config = config
 
 -- IDs belong to the registering addon (prefer an AddonName:category prefix).

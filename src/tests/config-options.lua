@@ -56,6 +56,22 @@ function app.addon:NewModule(_, module)
 end
 assert(loadfile("Seamless/src/config/registry.lua"))("Seamless", app)
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
+assert(
+    app.addon:GetOptionDefault({ frames = { ["*"] = { enabled = false } } }, { "frames", "player", "enabled" }) == false
+)
+C_CVar = {
+    GetCVarInfo = function()
+        return "0", "1", false, true
+    end,
+}
+assert(
+    app.addon:GetOptionDefault(
+        { frames = { ["**"] = { enabled = false }, player = { color = "class" } } },
+        { "frames", "player", "enabled" }
+    ) == false
+)
+local cvarDefault, character = app.addon:GetCVarOptionInfo("test")
+assert(cvarDefault == true and character == true)
 function app.config:CreateOptionsPage(page, root, key, name)
     page.option = self.Option:New(root, { key }, name)
 end
@@ -143,6 +159,7 @@ assert(switch.get())
 local castOptions, castSpec
 local cast = {
     core = {
+        GetOptionDefault = app.addon.GetOptionDefault,
         FeatureGroup = options.FeatureGroup,
         RegisterOptions = function(_, _, spec)
             castSpec = spec
@@ -160,6 +177,7 @@ local cast = {
     db = { profile = { player = { enabled = true, rank = { enabled = true } } } },
 }
 assert(loadfile("SeamlessCastbar/src/options.lua"))("SeamlessCastbar", cast)
+assert(loadfile("SeamlessCastbar/src/db.lua"))("SeamlessCastbar", cast)
 castOptions:OnInitialize()
 for _, key in ipairs({ "rank", "ticks", "icon" }) do
     local option = castSpec.tabs.player.args[key]
@@ -167,6 +185,9 @@ for _, key in ipairs({ "rank", "ticks", "icon" }) do
 end
 assert(castSpec.tabs.player.args.castTime.type == "group")
 assert(castSpec.tabs.player.args.hold.type == "group")
+assert(castSpec.tooltip({ "player", "rank" }) == true)
+assert(castSpec.tooltip({ "player", "hold", "enabled" }) == false)
+assert(castSpec.tooltip({ "player", "hold", "success" }) == 0.2)
 local rank = castSpec.tabs.player.args.rank
 rank.set(nil, false)
 assert(not cast.db.profile.player.rank.enabled and not rank.disabled({ "player", "rank" }))

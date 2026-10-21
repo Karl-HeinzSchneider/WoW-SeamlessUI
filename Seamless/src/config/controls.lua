@@ -18,13 +18,33 @@ local function text(parent, font)
     return region
 end
 
+local function anchorTooltip(row)
+    GameTooltip:SetOwner(row, "ANCHOR_NONE")
+    GameTooltip:ClearAllPoints()
+    GameTooltip:SetPoint("BOTTOMLEFT", row.Label, "TOPRIGHT", 12, 8)
+end
+
 local function tooltip(frame, row)
+    if frame.SetMotionScriptsWhileDisabled then
+        frame:SetMotionScriptsWhileDisabled(true)
+    end
     frame:HookScript("OnEnter", function()
         local desc = row.option:Read("desc")
-        if desc and desc ~= "" then
-            GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+        local kind = row.option:Read("type")
+        local setting = kind ~= "group" and kind ~= "header" and kind ~= "description"
+        if setting or (desc and desc ~= "") then
+            anchorTooltip(row)
             GameTooltip:SetText(row.option:Read("name") or "", 1, 1, 1)
-            GameTooltip:AddLine(desc, nil, nil, nil, true)
+            if desc and desc ~= "" then
+                GameTooltip:AddLine(desc, nil, nil, nil, true)
+            end
+            if setting then
+                local default, perCharacter = row.option:TooltipDetails()
+                GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], default), nil, nil, nil, true)
+                if perCharacter then
+                    GameTooltip:AddLine(L["\n\n|cff8080ff[Per-character setting]|r"], nil, nil, nil, true)
+                end
+            end
             GameTooltip:Show()
         end
     end)
@@ -92,7 +112,7 @@ function Row:Commit(...)
     local option, values = self.option, { ... }
     local valid = option:Read("validate", unpack(values))
     if valid == false or type(valid) == "string" then
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        anchorTooltip(self)
         GameTooltip:SetText(type(valid) == "string" and valid or L["Invalid value"], 1, 0.2, 0.2)
         GameTooltip:Show()
         return

@@ -22,6 +22,9 @@ function options:OnInitialize()
         }
     end
     app.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
+        end,
         title = L["Darkmode"],
         general = {
             enabled = {

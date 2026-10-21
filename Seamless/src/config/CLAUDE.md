@@ -74,6 +74,18 @@ Controls are pooled per page and type. The page
 owns its height and the shell scrolls it. Registry notifications refresh visible
 controls on the next frame, after the originating callback has finished.
 
+Tooltips use one anchor for both the row and its control: tooltip BOTTOMLEFT to
+label TOPRIGHT, padded 12 pixels right and 8 up. Every setting gets the localized
+`\n(Default: |cff8080ff%s|r)` line; per-character settings also get
+`\n\n|cff8080ff[Per-character setting]|r`. `RegisterOptions` accepts a `tooltip(path)`
+resolver returning the declared default and a per-character boolean. Keep this
+metadata outside AceConfig tables. Resolve defaults from addon schemas or CVar
+defaults, never from the current value. Profile settings that control per-character
+data remain profile settings. Actions and transient selections with no stored
+default display Not applicable. Select defaults use their localized choice labels;
+colors use RGBA hex. `GetOptionDefault` reads schemas with AceDB wildcard support;
+`GetCVarOptionInfo` reads the client default and server-character flag.
+
 `StaticPopupDialogs.SeamlessConfigConfirm` is the owned confirmation dialog key.
 Run `lua src/tests/config-options.lua` and `lua src/tests/config-controls.lua`.
 

@@ -156,8 +156,34 @@ function CreateFrame(_, _, parent, template)
     return object
 end
 MinimalSliderWithSteppersMixin = { Event = { OnValueChanged = "changed" }, Label = { Right = 1 } }
-GameTooltip = { SetOwner = function() end, SetText = function() end, Show = function() end, Hide = function() end }
-local app = { config = {} }
+GameTooltip = {
+    SetOwner = function(self, owner, anchor)
+        self.owner, self.anchor = owner, anchor
+    end,
+    ClearAllPoints = function() end,
+    SetPoint = function(self, ...)
+        self.point = { ... }
+    end,
+    SetText = function(self, title)
+        self.title, self.lines = title, {}
+    end,
+    AddLine = function(self, line)
+        self.lines[#self.lines + 1] = line
+    end,
+    Show = function() end,
+    Hide = function() end,
+}
+local app = {
+    addon = {},
+    config = {
+        optionInfo = {
+            Test = function(path)
+                local defaults = { enabled = false, amount = 3, choice = "a", input = "" }
+                return defaults[path[#path]], path[#path] == "amount"
+            end,
+        },
+    },
+}
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
 assert(loadfile("Seamless/src/config/controls.lua"))("Seamless", app)
 local profile = { enabled = true, amount = 5, choice = "b", input = "old" }
@@ -227,6 +253,18 @@ local slider = page.controlPools.range[1]
 slider.Control.callback(slider.Control.owner, 7)
 assert(profile.amount == 7 and changes == 1)
 local toggle = page.controlPools.toggle[1]
+toggle.scripts.OnEnter()
+assert(GameTooltip.owner == toggle and GameTooltip.anchor == "ANCHOR_NONE")
+assert(GameTooltip.point[1] == "BOTTOMLEFT" and GameTooltip.point[2] == toggle.Label)
+assert(GameTooltip.point[3] == "TOPRIGHT" and GameTooltip.point[4] == 12 and GameTooltip.point[5] == 8)
+assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffDisabled|r)")
+toggle.Control.scripts.OnEnter()
+assert(GameTooltip.point[2] == toggle.Label and GameTooltip.owner == toggle)
+slider.scripts.OnEnter()
+assert(GameTooltip.lines[1] == "\n(Default: |cff8080ff3|r)")
+assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
+page.controlPools.select[1].scripts.OnEnter()
+assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffA|r)")
 toggle:Commit(false)
 app.config:RefreshOptionsPage(page)
 assert(not profile.enabled and not slider.Control.enabled)

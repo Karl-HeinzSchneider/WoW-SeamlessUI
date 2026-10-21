@@ -1,5 +1,42 @@
 ---@type string, SeamlessCore
 local _, app = ...
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+
+-- Read declared defaults without touching live profiles. Honor AceDB wildcard defaults.
+function app.addon:GetOptionDefault(defaults, path, first)
+    local function read(value, index)
+        if index > #path then
+            return value
+        end
+        if type(value) ~= "table" then
+            return nil
+        end
+        local nextValue = value[path[index]]
+        if nextValue == nil then
+            nextValue = value["*"]
+        end
+        if nextValue == nil then
+            nextValue = value["**"]
+        end
+        local result = read(nextValue, index + 1)
+        if result == nil and value["**"] ~= nil and nextValue ~= value["**"] then
+            return read(value["**"], index + 1)
+        end
+        return result
+    end
+    return read(defaults, first or 1)
+end
+
+function app.addon:GetCVarOptionInfo(name)
+    local _, default, _, character = C_CVar.GetCVarInfo(name)
+    if default == "0" then
+        return false, character
+    end
+    if default == "1" then
+        return true, character
+    end
+    return default, character
+end
 
 -- Compatibility with existing option declarations is data-only. The custom
 -- window never creates AceGUI widgets or asks AceConfigDialog to render a page.
@@ -20,6 +57,42 @@ local methods = {
 
 function Option:New(root, path, name)
     return setmetatable({ root = root, path = path, appName = name }, { __index = self })
+end
+
+function Option:TooltipDetails()
+    local resolver = app.config.optionInfo and app.config.optionInfo[self.appName]
+    local value, perCharacter
+    if resolver then
+        value, perCharacter = resolver(self.path)
+    end
+    if value == nil then
+        return L["Not applicable"], perCharacter
+    end
+    if type(value) == "boolean" then
+        return value and L["Enabled"] or L["Disabled"], perCharacter
+    end
+    if self:Read("type") == "select" then
+        for _, choice in ipairs(self:Choices()) do
+            if choice.value == value then
+                return choice.text, perCharacter
+            end
+        end
+    end
+    if type(value) == "table" then
+        local r, g, b, a = value.r or value[1], value.g or value[2], value.b or value[3], value.a or value[4] or 1
+        if r and g and b then
+            return string.format(
+                "#%02X%02X%02X%02X",
+                math.floor(r * 255 + 0.5),
+                math.floor(g * 255 + 0.5),
+                math.floor(b * 255 + 0.5),
+                math.floor(a * 255 + 0.5)
+            ),
+                perCharacter
+        end
+        return L["Not applicable"], perCharacter
+    end
+    return value == "" and L["None"] or tostring(value), perCharacter
 end
 
 function Option:Read(member, ...)

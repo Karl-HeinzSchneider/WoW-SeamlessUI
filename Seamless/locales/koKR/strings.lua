@@ -5,6 +5,8 @@ if not L then
 end
 
 -- Common / shared
+-- L["\n(Default: |cff8080ff%s|r)"] = "\n(Default: |cff8080ff%s|r)"
+-- L["\n\n|cff8080ff[Per-character setting]|r"] = "\n\n|cff8080ff[Per-character setting]|r"
 -- L["%dd %dh %dm"] = "%dd %dh %dm"
 -- L["Accept"] = "Accept"
 -- L["Apply this change?"] = "Apply this change?"
@@ -33,6 +35,7 @@ end
 -- L["Invalid value"] = "Invalid value"
 -- L["Left"] = "Left"
 -- L["None"] = "None"
+-- L["Not applicable"] = "Not applicable"
 -- L["Open"] = "Open"
 -- L["Options"] = "Options"
 -- L["Profile reset"] = "Profile reset"

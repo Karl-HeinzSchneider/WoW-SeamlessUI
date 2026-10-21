@@ -18,6 +18,7 @@ local PROFILE_EVENTS = { "OnProfileChanged", "OnProfileCopied", "OnProfileReset"
 ---@field title string The panel's name in the AddOns list and its heading.
 ---@field general table<string, table> AceConfig args of the General tab.
 ---@field tabs? table<string, table> The addon's own tabs: AceConfig groups by key, `order` 1 to 999.
+---@field tooltip? fun(path: string[]): any, boolean? Default value and whether the setting is per-character.
 
 ---@class SeamlessCore.OptionsPanel
 ---@field title string
@@ -82,6 +83,7 @@ end
 ---@param parent? any Settings category ID of the parent panel.
 function module:Register(name, spec, parent)
     assert(not self.panels[name], "Duplicate Seamless options: " .. name)
+    app.config.optionInfo[name] = spec.tooltip
     local args = {
         general = { type = "group", name = L["General"], order = GENERAL_ORDER, args = spec.general },
     }
@@ -242,6 +244,23 @@ function module:OnInitialize()
     }
     local levels, levelOrder = LogLevels()
     self:Register(appName, {
+        tooltip = function(path)
+            local key = path[#path]
+            local defaults = app.dbDefaults.profile
+            if path[1] == "profiles" then
+                if key == "choose" then
+                    return "Default", true
+                end
+                return nil
+            end
+            if key == "minimap" then
+                return not defaults.minimap.hide
+            end
+            if key == "compartment" then
+                return defaults.minimap.showInCompartment
+            end
+            return defaults[key]
+        end,
         title = L["Seamless"],
         general = {
             interface = {
@@ -314,6 +333,9 @@ function module:OnInitialize()
         },
     })
     self:Register(appName .. "Tweaks", {
+        tooltip = function(path)
+            return app.dbDefaults.profile.tweaks[path[#path]]
+        end,
         title = L["Tweaks"],
         general = {
             tweaks = {

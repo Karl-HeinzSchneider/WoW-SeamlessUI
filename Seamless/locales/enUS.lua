@@ -2,6 +2,8 @@
 local L = LibStub("AceLocale-3.0"):NewLocale("Seamless", "enUS", true)
 
 -- Common / shared
+L["\n(Default: |cff8080ff%s|r)"] = true
+L["\n\n|cff8080ff[Per-character setting]|r"] = true
 L["%dd %dh %dm"] = true
 L["Accept"] = true
 L["Apply this change?"] = true
@@ -30,6 +32,7 @@ L["Initialized (profile: %s)"] = true
 L["Invalid value"] = true
 L["Left"] = true
 L["None"] = true
+L["Not applicable"] = true
 L["Open"] = true
 L["Options"] = true
 L["Profile reset"] = true

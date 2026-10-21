@@ -61,6 +61,9 @@ controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 - `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
   `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
   `type = "group"` is filled in).
+  `tooltip(path)` optionally returns the declared default and a per-character boolean for
+  the custom window's info tooltip. Use `core:GetOptionDefault(schema, path, first)` for
+  schema lookup or `core:GetCVarOptionInfo(name)` for CVar defaults and scope.
 - `core:OpenOptions(addonName, tab)`: opens the custom config subview, optionally on a tab; no name opens Seamless General.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.

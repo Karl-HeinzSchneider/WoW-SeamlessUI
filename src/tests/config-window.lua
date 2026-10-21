@@ -197,6 +197,8 @@ end
 function CreateFrame(_, name, parent, template)
     local frame = object()
     frame.parent, frame.template = parent, template
+    frame.level = (template == "UIPanelCloseButtonNoScripts" or template == "UIPanelCloseButtonDefaultAnchors") and 510
+        or ((parent and parent:GetFrameLevel() or 0) + 1)
     if template == "MinimalTabTemplate" then
         frame.Text = object()
     end
@@ -204,6 +206,20 @@ function CreateFrame(_, name, parent, template)
         _G[name] = frame
     end
     return frame
+end
+function methods:GetFrameLevel()
+    return self.level or 1
+end
+function methods:SetFrameLevel(level)
+    self.level = level
+end
+function methods:SetPoint(...)
+    self.points = self.points or {}
+    local point = { ... }
+    self.points[point[1]] = point
+end
+function methods:ClearAllPoints()
+    self.points = {}
 end
 UIParent = object()
 UIParent:SetSize(1920, 1080)
@@ -224,6 +240,14 @@ core:RegisterConfigCategory("Page", {
     end,
 })
 core:OpenConfig("Page")
+assert(config.minimize:GetFrameLevel() == 510)
+assert(config.minimize.template == "UIPanelCloseButtonNoScripts")
+for _, row in ipairs(config.rows) do
+    if row.id == "Seamless" then
+        assert(row.toggle.points.RIGHT[2] == -6)
+        assert(row.text.points.LEFT[2] == 20 and row.text.points.RIGHT[2] == -30)
+    end
+end
 assert(created == 1 and refreshedPage == 1)
 assert(config.content:GetHeight() == 1500)
 assert(config.pages.Page.parent == config.pageHost)

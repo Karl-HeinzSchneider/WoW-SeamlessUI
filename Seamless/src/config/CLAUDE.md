@@ -50,6 +50,9 @@ but hides navigation (including its scrollbar), the big Config tab, inner-frame
 art and footer button. It retains the title, page scrolling, red Close button
 and dragging. Mode survives closing/reopening for the session. Category collapse
 buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
+Header labels retain the native left inset, with the collapse button at the right
+edge. The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
+Close button's frame level so the title border cannot cover it.
 
 Run `lua src/tests/config-window.lua` and `npm run check`. Review the visual
 match, dragging, scrolling and Escape in the WoW Forever client.

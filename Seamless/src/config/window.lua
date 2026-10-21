@@ -92,8 +92,11 @@ function config:CreateWindow()
     close:SetScript("OnClick", function()
         frame:Hide()
     end)
-    local minimize = CreateFrame("Button", nil, frame)
+    -- Match the close button's explicit textures and high frame level so the
+    -- title-border artwork cannot cover this control.
+    local minimize = CreateFrame("Button", nil, frame, "UIPanelCloseButtonNoScripts")
     self.minimize = minimize
+    minimize:SetFrameLevel(close:GetFrameLevel())
     minimize:SetSize(28, 28)
     minimize:SetPoint("RIGHT", close, "LEFT", 0, 0)
     minimize:SetNormalAtlas("RedButton-Condense")
@@ -236,8 +239,8 @@ function config:Refresh()
                 or (category.id == self.selected and "GameFontHighlight" or "GameFontNormal")
         )
         row.text:ClearAllPoints()
-        row.text:SetPoint("LEFT", 36 + depth * 12, category.header and -1 or 1)
-        row.text:SetPoint("RIGHT", -4, 0)
+        row.text:SetPoint("LEFT", (category.header and 20 or 36) + depth * 12, category.header and -1 or 1)
+        row.text:SetPoint("RIGHT", category.header and -30 or -4, 0)
         row.background:SetShown(category.header == true)
         if category.header then
             headerIndex = headerIndex + 1
@@ -248,7 +251,11 @@ function config:Refresh()
         local hasChildren = #self:GetChildren(category.id) > 0
         row.toggle:SetShown(hasChildren)
         row.toggle:ClearAllPoints()
-        row.toggle:SetPoint("LEFT", 9 + depth * 12, 0)
+        if category.header then
+            row.toggle:SetPoint("RIGHT", -6, 0)
+        else
+            row.toggle:SetPoint("LEFT", 9 + depth * 12, 0)
+        end
         local atlas = self.collapsed[category.id] and "common-button-list-plus" or "common-button-list-minus"
         row.toggle.icon:SetAtlas(atlas, true)
         row.toggle:SetHighlightAtlas(atlas, "ADD")

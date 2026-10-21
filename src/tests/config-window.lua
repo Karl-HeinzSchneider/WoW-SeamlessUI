@@ -240,6 +240,12 @@ core:RegisterConfigCategory("Page", {
     end,
 })
 core:OpenConfig("Page")
+assert(config.navigation:GetWidth() == 183)
+assert(config.navigationBar.points.TOPLEFT[4] == 6 and config.navigationBar.points.TOPLEFT[5] == -8)
+assert(config.navigationBar.points.BOTTOMLEFT[4] == 6 and config.navigationBar.points.BOTTOMLEFT[5] == 8)
+for _, row in ipairs(config.rows) do
+    assert(row:GetWidth() == 183 and row.active:GetWidth() == 183)
+end
 assert(config.minimize:GetFrameLevel() == 510)
 assert(config.minimize.template == "UIPanelCloseButtonNoScripts")
 for _, row in ipairs(config.rows) do
@@ -253,6 +259,10 @@ assert(config.content:GetHeight() == 1500)
 assert(config.pages.Page.parent == config.pageHost)
 config.contentScroll.scripts.OnMouseWheel(config.contentScroll, -1)
 assert(config.contentScroll:GetVerticalScroll() == 30)
+config.contentScroll:SetVerticalScroll(1400)
+config.pages.Page:SetHeight(120) -- Collapsing sections must not leave an empty scrolled page.
+assert(config.contentScroll:GetVerticalScroll() <= math.max(0, 120 - config.contentScroll:GetHeight()))
+config.pages.Page:SetHeight(1500)
 config:Select("Seamless:general")
 assert(not config.pages.Page.shown and config.contentScroll:GetVerticalScroll() == 0)
 core:OpenConfig("Page")

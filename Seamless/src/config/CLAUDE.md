@@ -65,7 +65,12 @@ vendored libraries. Rows follow Settings' left label/right control alignment,
 SharedXML's MinimalSliderWithSteppers, WowStyle2Dropdown, InputBox, ColorSwatch
 and button templates and the Settings checkbox atlases. No SettingsPanel mixins,
 global setting registration, AceGUI or AceConfigDialog rendering is involved.
-Groups become section headings; controls are pooled per page and type. The page
+Groups become collapsible section headings using the category headers' same
+`common-button-list-plus/minus` art. Clicking either the label or button toggles
+the section. Collapse state is kept per page and full option path for the session,
+including across refreshes and profile switches. Nested groups retain their own
+state; standalone header rows control following siblings until the next header.
+Controls are pooled per page and type. The page
 owns its height and the shell scrolls it. Registry notifications refresh visible
 controls on the next frame, after the originating callback has finished.
 
@@ -79,7 +84,10 @@ art and footer button. It retains the title, page scrolling, red Close button
 and dragging. Mode survives closing/reopening for the session. Category collapse
 buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
 Header labels retain the native left inset, with the collapse button at the right
-edge. The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
+edge. Navigation rows and their artwork are 183 pixels wide, reserving a dedicated
+scrollbar gutter with 6 pixels of separation and 8-pixel top/bottom insets so the
+thumb and wider arrow buttons stay inside the navigation pane.
+The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
 Close button's frame level so the title border cannot cover it.
 
 Run `lua src/tests/config-window.lua` and `npm run check`. Review the visual

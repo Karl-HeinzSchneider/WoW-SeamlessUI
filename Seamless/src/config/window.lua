@@ -3,6 +3,7 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = app.config
+local NAVIGATION_WIDTH = 183
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -30,6 +31,9 @@ local function scroll(parent, x, width)
     local function update()
         local height = math.max(1, child:GetHeight())
         local range = math.max(0, height - frame:GetHeight())
+        if frame:GetVerticalScroll() > range then
+            frame:SetVerticalScroll(range)
+        end
         bar:SetVisibleExtentPercentage(math.min(1, frame:GetHeight() / height))
         bar:SetScrollAllowed(range > 0)
         bar:SetShown(range > 0 and not (frame == config.navigation and config.minimized))
@@ -124,7 +128,11 @@ function config:CreateWindow()
         tab:SetSelected(true)
     end)
 
-    self.navigation, self.list, self.navigationBar = scroll(frame, 18, 199)
+    self.navigation, self.list, self.navigationBar = scroll(frame, 18, NAVIGATION_WIDTH)
+    -- Reserve a gutter inside the navigation pane, including the wider arrows.
+    self.navigationBar:ClearAllPoints()
+    self.navigationBar:SetPoint("TOPLEFT", self.navigation, "TOPRIGHT", 6, -8)
+    self.navigationBar:SetPoint("BOTTOMLEFT", self.navigation, "BOTTOMRIGHT", 6, 8)
     self.contentScroll, self.content = scroll(frame, 233, 643)
     self.contentScroll:SetPoint("TOPLEFT", 233, -137)
     self.title = label(frame, "GameFontHighlightHuge", "", "TOPLEFT", frame, "TOPLEFT", 240, -98)
@@ -182,7 +190,7 @@ end
 function config:CreateRow(index)
     local row = CreateFrame("Button", nil, self.list)
     self.rows[index] = row
-    row:SetWidth(199)
+    row:SetWidth(NAVIGATION_WIDTH)
     row.background = row:CreateTexture(nil, "BACKGROUND")
     row.background:SetPoint("TOPLEFT")
     row.active = row:CreateTexture(nil, "ARTWORK")
@@ -214,6 +222,7 @@ function config:CreateRow(index)
     row:SetScript("OnEnter", function()
         if row.id ~= self.selected then
             row.active:SetAtlas("Options_List_Hover", true)
+            row.active:SetWidth(NAVIGATION_WIDTH)
             row.active:Show()
         end
     end)
@@ -245,8 +254,10 @@ function config:Refresh()
         if category.header then
             headerIndex = headerIndex + 1
             row.background:SetAtlas("Options_CategoryHeader_" .. ((headerIndex - 1) % 2 + 1), true)
+            row.background:SetWidth(NAVIGATION_WIDTH)
         end
         row.active:SetAtlas("Options_List_Active", true)
+        row.active:SetWidth(NAVIGATION_WIDTH)
         row.active:SetShown(category.id == self.selected)
         local hasChildren = #self:GetChildren(category.id) > 0
         row.toggle:SetShown(hasChildren)

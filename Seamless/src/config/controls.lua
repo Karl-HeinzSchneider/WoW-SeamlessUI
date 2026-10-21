@@ -304,10 +304,40 @@ function creators.group(page)
     row.rowHeight = 45
     row.Label:ClearAllPoints()
     row.Label:SetPoint("TOPLEFT", 7, -16)
-    row.Label:SetWidth(page:GetWidth() - 20)
+    row.Label:SetWidth(page:GetWidth() - 50)
     row.Label:SetFontObject("GameFontHighlightLarge")
+    row.HeaderButton = CreateFrame("Button", nil, row)
+    row.HeaderButton:SetAllPoints()
+    row.Toggle = CreateFrame("Button", nil, row.HeaderButton)
+    row.Toggle:SetSize(20, 20)
+    row.Toggle:SetPoint("RIGHT", -6, 0)
+    row.Toggle.Icon = row.Toggle:CreateTexture(nil, "ARTWORK")
+    row.Toggle.Icon:SetPoint("CENTER")
+    row.Toggle:SetScript("OnMouseDown", function()
+        row.Toggle.Icon:SetPoint("CENTER", 1, -1)
+    end)
+    row.Toggle:SetScript("OnMouseUp", function()
+        row.Toggle.Icon:SetPoint("CENTER", 0, 0)
+    end)
+    local function toggle()
+        page.collapsedSections[row.sectionKey] = not page.collapsedSections[row.sectionKey]
+        config:RefreshOptionsPage(page)
+    end
+    row.HeaderButton:SetScript("OnClick", toggle)
+    row.Toggle:SetScript("OnClick", toggle)
     function row:Update()
         self.Label:SetTextColor(1, 1, 1)
+        local key = ""
+        for _, part in ipairs(self.option.path) do
+            key = key .. #part .. ":" .. part
+        end
+        self.sectionKey = key
+        self.collapsed = page.collapsedSections[key]
+        local atlas = self.collapsed and "common-button-list-plus" or "common-button-list-minus"
+        self.Toggle.Icon:SetAtlas(atlas, true)
+        self.Toggle:SetHighlightAtlas(atlas, "ADD")
+        self.Toggle:GetHighlightTexture():SetAlpha(0.4)
+        self.Toggle:GetHighlightTexture():SetAllPoints(self.Toggle.Icon)
     end
     return row
 end
@@ -316,6 +346,7 @@ creators.header = creators.group
 function config:CreateOptionsPage(page, root, key, name)
     page.option = self.Option:New(root, { key }, name)
     page.controlPools = {}
+    page.collapsedSections = {}
 end
 
 function config:RefreshOptionsPage(page)
@@ -323,6 +354,7 @@ function config:RefreshOptionsPage(page)
         pool.used = 0
     end
     local y = 0
+    local renderChildren
     local function render(option)
         local kind = option:Read("type")
         local create = assert(creators[kind], "Unsupported config control: " .. tostring(kind))
@@ -336,15 +368,22 @@ function config:RefreshOptionsPage(page)
         row:SetPoint("TOPLEFT", 0, -y)
         row:Show()
         y = y + row:GetHeight()
-        if kind == "group" then
-            for _, child in ipairs(option:Children()) do
+        if kind == "group" and not row.collapsed then
+            renderChildren(option)
+        end
+        return row.collapsed
+    end
+    renderChildren = function(parent)
+        local hiddenByHeader = false
+        for _, child in ipairs(parent:Children()) do
+            if child:Read("type") == "header" then
+                hiddenByHeader = render(child)
+            elseif not hiddenByHeader then
                 render(child)
             end
         end
     end
-    for _, child in ipairs(page.option:Children()) do
-        render(child)
-    end
+    renderChildren(page.option)
     for _, pool in pairs(page.controlPools) do
         for index = pool.used + 1, #pool do
             pool[index]:Hide()

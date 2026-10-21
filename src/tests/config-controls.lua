@@ -34,6 +34,12 @@ local methods = {}
 local function frame()
     return setmetatable({ scripts = {}, height = 32, shown = true }, { __index = methods })
 end
+function methods:GetHighlightTexture()
+    self.highlight = self.highlight or frame()
+    return self.highlight
+end
+function methods:SetHighlightAtlas() end
+function methods:SetAlpha() end
 function methods:SetScript(event, callback)
     self.scripts[event] = callback
 end
@@ -248,6 +254,24 @@ assert(page.controlPools.description.used == 1)
 root.args.general.args.extra = nil
 app.config:RefreshOptionsPage(page)
 assert(not page.controlPools.description[1]:IsShown())
+root.args.general.args.section = {
+    type = "group",
+    name = "Section",
+    order = 20,
+    args = { nested = { type = "description", name = "Nested" } },
+}
+app.config:RefreshOptionsPage(page)
+local section = page.controlPools.group[2]
+local expandedHeight = page:GetHeight()
+assert(page.controlPools.description[1]:IsShown())
+section.Toggle.scripts.OnClick()
+assert(section.collapsed and page:GetHeight() < expandedHeight)
+assert(not page.controlPools.description[1]:IsShown())
+app.config:RefreshOptionsPage(page)
+assert(section.collapsed) -- Changes and profile refreshes retain the section state.
+section.HeaderButton.scripts.OnClick()
+assert(not section.collapsed and page:GetHeight() == expandedHeight)
+assert(page.controlPools.description[1]:IsShown())
 local color = { 0.1, 0.2, 0.3, 0.4 }
 root.args.general.args.color = {
     type = "color",

@@ -6,6 +6,7 @@
 ---@field rows table[]
 ---@field frame? table
 ---@field selected? string
+---@field minimized? boolean
 
 ---@class SeamlessCore.ConfigCategory
 ---@field id? string Assigned by the registry.
@@ -37,6 +38,7 @@
 ---@class SeamlessCore.Addon
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
 ---@field OpenConfig fun(self: SeamlessCore.Addon, id?: string)
+---@field ToggleConfig fun(self: SeamlessCore.Addon)
 ---@field RefreshConfig fun(self: SeamlessCore.Addon)
 ---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)

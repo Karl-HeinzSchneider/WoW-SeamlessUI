@@ -68,7 +68,7 @@ function module:OnClick(button)
     if button == "LeftButton" then
         app.options:Open()
     elseif button == "RightButton" then
-        addon:OpenConfig()
+        addon:ToggleConfig()
     else
         log:debug(L["Minimap button clicked (%s)"], button)
     end

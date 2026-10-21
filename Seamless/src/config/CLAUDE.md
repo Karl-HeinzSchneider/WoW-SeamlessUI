@@ -41,8 +41,15 @@ the selected page is refreshed. Callbacks own their controls, never reparent
 the supplied page. All categories currently belong to the single Config tab.
 
 `SeamlessConfigWindow` is the public frame name used by Escape handling.
-`/seamless [options]` and minimap right-click open this shell. Minimap left-click
+`/seamless [options]` and minimap right-click toggle this shell (`core:ToggleConfig()`). Minimap left-click
 and `core:OpenOptions` still open the existing panels until option migration.
+
+The red minimize/restore button beside Close switches between 920x724 and a
+705x600 compact view. Compact mode retains the selected page and its width,
+but hides navigation (including its scrollbar), the big Config tab, inner-frame
+art and footer button. It retains the title, page scrolling, red Close button
+and dragging. Mode survives closing/reopening for the session. Category collapse
+buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
 
 Run `lua src/tests/config-window.lua` and `npm run check`. Review the visual
 match, dragging, scrolling and Escape in the WoW Forever client.

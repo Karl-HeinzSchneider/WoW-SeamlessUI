@@ -129,6 +129,19 @@ end
 function methods:Hide()
     self.shown = false
 end
+function methods:IsShown()
+    return self.shown == true
+end
+function methods:GetLeft()
+    return 100
+end
+function methods:GetTop()
+    return 800
+end
+function methods:GetHighlightTexture()
+    self.highlight = self.highlight or object()
+    return self.highlight
+end
 function methods:SetShown(value)
     self.shown = value
 end
@@ -173,6 +186,10 @@ for _, name in ipairs({
     "SetScrollAllowed",
     "EnableMouseWheel",
     "SetSelected",
+    "SetNormalAtlas",
+    "SetPushedAtlas",
+    "SetHighlightAtlas",
+    "SetAlpha",
     "Raise",
 }) do
     methods[name] = function() end
@@ -226,3 +243,23 @@ end
 assert(config.collapsed.Other)
 config.frame.scripts.OnHide(config.frame)
 print("Config window lifecycle OK")
+
+core:ToggleConfig()
+assert(not config.frame:IsShown())
+core:ToggleConfig()
+assert(config.frame:IsShown())
+local selectedPage = config.pages.Page
+config.minimize.scripts.OnClick()
+assert(config.minimized and config.frame:GetWidth() == 705 and config.frame:GetHeight() == 600)
+assert(not config.navigation.shown and not config.navigationBar.shown)
+assert(not config.tab.shown and not config.inner.shown and not config.done.shown)
+assert(config.selected == "Page" and config.pages.Page == selectedPage and selectedPage.shown)
+core:ToggleConfig()
+assert(not config.frame:IsShown())
+core:ToggleConfig()
+assert(config.frame:IsShown() and config.minimized)
+config.minimize.scripts.OnClick()
+assert(not config.minimized and config.frame:GetWidth() == 920 and config.frame:GetHeight() == 724)
+assert(config.navigation.shown and config.tab.shown and config.inner.shown and config.done.shown)
+assert(config.pages.Page == selectedPage and created == 1)
+print("Config toggle and compact mode OK")

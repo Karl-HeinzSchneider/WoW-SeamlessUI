@@ -12,10 +12,6 @@ local feature = app.features:NewFeature("ItemIDs", {
     name = L["Item IDs"],
     desc = L["Adds the item's ID, and its icon's ID, to item tooltips."],
     order = 10,
-    defaults = {
-        item = true,
-        icon = false,
-    },
     options = {
         item = {
             type = "toggle",

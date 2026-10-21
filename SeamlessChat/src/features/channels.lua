@@ -10,29 +10,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.ChannelSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    numbered = "number", -- numbered channels: key of NUMBERED_STYLES
-    groups = true, -- guild, party, raid, instance as in `short`
-    short = {
-        GUILD = "G",
-        OFFICER = "O",
-        PARTY = "P",
-        PARTY_LEADER = "PL",
-        PARTY_GUIDE = "PG",
-        RAID = "R",
-        RAID_LEADER = "RL",
-        INSTANCE_CHAT = "I",
-        INSTANCE_CHAT_LEADER = "IL",
-    },
-}
-
 local channels = app.features:New(
     "channels",
     module,
     L["Short channel names"],
-    L['Shortens the channel names in front of chat messages: "[2. Trade - City]" to "[2]", "[Guild]" to "[G]".'],
-    defaults
+    L['Shortens the channel names in front of chat messages: "[2. Trade - City]" to "[2]", "[Guild]" to "[G]".']
 ) --[[@as SeamlessChat.Channels]]
 
 ---@return SeamlessChat.ChannelSettings

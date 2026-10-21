@@ -7,6 +7,7 @@ dofile("Seamless/lib/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.l
 local registry = LibStub("AceConfigRegistry-3.0")
 local app = {}
 dofile("src/tests/locale-support.lua")
+assert(loadfile(root .. "db.lua"))("SeamlessDamageMeter", app)
 assert(loadfile(root .. "service.lua"))("SeamlessDamageMeter", app)
 dofile("src/tests/locale-support.lua")
 assert(loadfile(root .. "archive.lua"))("SeamlessDamageMeter", app)

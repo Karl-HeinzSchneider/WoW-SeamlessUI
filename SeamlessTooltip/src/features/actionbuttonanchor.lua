@@ -10,9 +10,6 @@ local feature = app.features:NewFeature("ActionButtonAnchor", {
     name = L["Anchor to action buttons"],
     desc = L["Shows the tooltip of an action bar, pet bar or stance bar button next to that button."],
     order = 20,
-    defaults = {
-        position = "ANCHOR_RIGHT",
-    },
     options = {
         position = {
             type = "select",

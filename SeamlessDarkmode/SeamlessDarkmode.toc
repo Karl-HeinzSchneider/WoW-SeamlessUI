@@ -11,5 +11,6 @@
 ## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
 
 src\frames.lua
+src\db.lua
 src\core.lua
 src\options.lua

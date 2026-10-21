@@ -1,6 +1,6 @@
 # SeamlessUI
 
-Optional addon for general UI improvements, with independent `SeamlessUIDB` profiles. Tooltip,
+Optional addon for general UI improvements, with shared suite profiles. Tooltip,
 unit frame and chat features belong to their own addons; don't move Core tweaks or their settings
 here without a migration.
 
@@ -89,3 +89,12 @@ Run `lua src/tests/fps-display.lua`.
 Feature modules go in `src/features/`, listed in the TOC in dependency order. Register hooks and
 events in `OnEnable`, restore changes in `OnDisable`, read `app.db.profile` at use time and
 implement `OnProfileRefresh` for profile-dependent behavior.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessUI` namespace of Core's `SeamlessDB`.
+`src/core/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessUIDB` once and
+subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

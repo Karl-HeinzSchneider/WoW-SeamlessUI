@@ -1,14 +1,14 @@
 # SeamlessUnitframes
 
 Optional unit frame addon: changes the game's own unit frames. Settings and profiles live in
-`SeamlessUnitframesDB`.
+the `SeamlessUnitframes` namespace of `SeamlessDB`.
 
 ## TOC load order and ownership
 
 1. `src/core/bootstrap.lua`: gets Core through AceAddon and shares its logger.
 2. `db.lua`: defaults, including one table per unit frame in `profile.unitFrames[key]`.
 3. `ace.lua`: AceAddon/AceDB lifecycle, profile callbacks and `/seamlessunitframes` (`reset`
-   resets this profile; `loglevel` delegates to Core).
+   resets the shared suite profile; `loglevel` delegates to Core).
 4. `unitframes.lua`: registry of player, pet, target, target of target, focus, target of focus and
    party frames (`Exists`, `KeyOf`, `All`, `Get(key)`). Each entry names its
    `Enum.EditModeUnitFrameSystemIndices` `system`, or `linkedTo` the frame whose Edit Mode
@@ -89,3 +89,12 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.
 - `src/types.lua`: annotations for `app.*` and `SeamlessUnitframes.DB`; not in the TOC.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessUnitframes` namespace of Core's `SeamlessDB`.
+`src/core/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessUnitframesDB` once and
+subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

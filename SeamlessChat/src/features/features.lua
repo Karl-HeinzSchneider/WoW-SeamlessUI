@@ -16,8 +16,6 @@ local addon = app.addon
 local features = { list = {} }
 app.features = features
 
-app.dbDefaults.profile.features = {}
-
 ---@alias SeamlessChat.OptionsTab "messages"|"windows"|"buttons"|"log"
 
 ---@class SeamlessChat.FeatureSettings
@@ -62,20 +60,19 @@ function featureMixin:OnProfileRefresh()
 end
 
 -- Registers a feature. `prototype` holds its methods (OnEnable, OnDisable, GetOptions, Refresh...),
--- `defaults` its settings with `enabled`; the rest are Ace libraries to embed.
+-- Settings defaults live in src/core/db.lua; the remaining arguments are Ace libraries to embed.
 ---@generic T
 ---@param key string
 ---@param prototype T
 ---@param name string
 ---@param desc string
----@param defaults SeamlessChat.FeatureSettings
 ---@return T
-function features:New(key, prototype, name, desc, defaults, ...)
+function features:New(key, prototype, name, desc, ...)
     setmetatable(prototype, { __index = featureMixin })
     prototype.featureKey = key
     prototype.featureName = name
     prototype.featureDesc = desc
-    app.dbDefaults.profile.features[key] = defaults
+    assert(app.dbDefaults.profile.features[key], "Missing feature defaults: " .. key)
 
     local module = addon:NewModule(key, prototype, ...) --[[@as SeamlessChat.Feature]]
     self.list[#self.list + 1] = module

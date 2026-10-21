@@ -13,9 +13,6 @@ local feature = app.features:NewFeature("VendorPrice", {
     name = L["Vendor price"],
     desc = L["Shows what an item sells for at a vendor; for a stack, also what one of it sells for."],
     order = 25,
-    defaults = {
-        perItem = true,
-    },
     options = {
         perItem = {
             type = "toggle",

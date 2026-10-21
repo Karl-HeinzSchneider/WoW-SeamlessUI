@@ -3,7 +3,7 @@
 Optional addon requiring Seamless that changes how the game's own action buttons look, without
 replacing them: icon colors for actions out of range or lacking mana, and short keybind labels.
 Ships in releases. Open `/seamlessactionbars` or Seamless > Action Bars.
-`SeamlessActionBarsDB` holds independent profiles: `range` and `mana` (`enabled`, `color`) and
+The `SeamlessActionBars` namespace holds settings in shared suite profiles: `range` and `mana` (`enabled`, `color`) and
 `keybinds` (`enabled`), all on by default.
 
 ## Load order and ownership
@@ -36,3 +36,12 @@ Ships in releases. Open `/seamlessactionbars` or Seamless > Action Bars.
 Manual validation: target a mob and step in and out of range; run out of mana, rage and energy;
 check every multi bar, page switching (stance, stealth), bound/unbound buttons, Shift/Ctrl/Alt,
 mouse button, wheel and num pad bindings, toggling each option and switching profiles.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessActionBars` namespace of Core's `SeamlessDB`.
+`src/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessActionBarsDB` once and
+subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

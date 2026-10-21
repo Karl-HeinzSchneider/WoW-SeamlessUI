@@ -124,3 +124,6 @@
 ---@field max? number
 ---@field step? number
 ---@field format? fun(value: number): string Range value text.
+
+---@class SeamlessCore.Addon
+---@field RegisterAddonDatabase fun(self: SeamlessCore.Addon, name: string, defaults: AceDB.Schema, owner: table, refresh: string, legacyName?: string): AceDBObject-3.0

@@ -6,7 +6,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local addon = app.addon
 
 -- Every tooltip enhancement is a feature: one self-contained file in src\features\ that declares
--- its defaults, its options and its code through NewFeature, and that the options switch on and
+-- its options and its code through NewFeature (defaults live in db.lua), and that the options switch on and
 -- off. Features are nested Ace modules of this one, so Ace calls their OnEnable/OnDisable and
 -- AceEvent/AceHook drop their events and hooks while they are off.
 ---@class SeamlessTooltip.Features : AceModule, AceAddon
@@ -31,9 +31,7 @@ module.CATEGORIES = CATEGORIES
 ---@field name string The feature's section heading in the options.
 ---@field desc string One line on what it adds to the tooltip, shown under its Enable switch.
 ---@field order? integer Position among its category's features (default 100).
----@field enabled? boolean Whether it is on in a new profile (default true).
----@field defaults? table Profile defaults of the feature's own settings.
----@field options? table<string, table> AceConfig args; each key is the setting it stores in `defaults`.
+---@field options? table<string, table> AceConfig args; each key maps to its setting in src/core/db.lua.
 
 -- Set once the features are enabled (PLAYER_LOGIN); before that, profile refreshes only set the
 -- state Ace enables them with.
@@ -153,9 +151,7 @@ function module:NewFeature(key, info)
         error(("Feature %s: unknown category %s"):format(key, tostring(info.category)), 2)
     end
 
-    local defaults = info.defaults or {}
-    defaults.enabled = info.enabled ~= false
-    app.dbDefaults.profile.features[key] = defaults
+    assert(app.dbDefaults.profile.features[key], "Missing feature defaults: " .. key)
 
     local feature = self:NewModule(key, prototype, "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessTooltip.Feature]]
     feature.info = info

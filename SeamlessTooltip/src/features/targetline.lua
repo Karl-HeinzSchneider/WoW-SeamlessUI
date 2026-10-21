@@ -12,9 +12,6 @@ local feature = app.features:NewFeature("TargetLine", {
     name = L["Target"],
     desc = L['Adds what the unit is targeting as "T: Name" to its tooltip.'],
     order = 25,
-    defaults = {
-        you = true,
-    },
     options = {
         you = {
             type = "toggle",

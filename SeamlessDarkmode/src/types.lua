@@ -2,6 +2,7 @@
 ---@class SeamlessDarkmode
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessDarkmode.Addon
+---@field dbDefaults AceDB.Schema
 ---@field db AceDBObject-3.0
 ---@field groups SeamlessDarkmode.Group[]
 ---@field StatusTrackingBars fun(experience: SeamlessDarkmode.Paint, reputation: SeamlessDarkmode.Paint, restore: SeamlessDarkmode.Paint)

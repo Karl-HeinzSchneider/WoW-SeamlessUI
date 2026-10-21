@@ -10,19 +10,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.FadingSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    fade = true, -- messages fade out at all
-    timeVisible = 120, -- seconds a message stays before fading (the game's value)
-    fadeDuration = 3, -- seconds the fade takes (the game's value)
-}
-
 app.features:New(
     "fading",
     module,
     L["Fade-out"],
-    L["Whether chat messages fade out after a while, how long they stay, and how long the fade takes."],
-    defaults
+    L["Whether chat messages fade out after a while, how long they stay, and how long the fade takes."]
 )
 
 -- What the game's chat windows use (ChatFrameMixin:OnLoad, ScrollingMessageFrameMixin:OnPreLoad).

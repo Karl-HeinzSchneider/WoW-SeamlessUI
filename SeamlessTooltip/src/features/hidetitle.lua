@@ -12,7 +12,6 @@ local feature = app.features:NewFeature("HideTitle", {
     name = L["Hide titles"],
     desc = L['Leaves player titles ("Private", "the Explorer") out of the name.'],
     order = 21,
-    enabled = false,
 })
 
 function feature:OnInitialize()

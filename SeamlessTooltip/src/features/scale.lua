@@ -9,10 +9,6 @@ local feature = app.features:NewFeature("Scale", {
     name = L["Scale"],
     desc = L["Makes the tooltips bigger or smaller, apart from the rest of the interface."],
     order = 40,
-    enabled = false,
-    defaults = {
-        scale = 1,
-    },
     options = {
         scale = {
             type = "range",

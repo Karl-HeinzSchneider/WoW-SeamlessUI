@@ -12,10 +12,6 @@ local feature = app.features:NewFeature("SpellIDs", {
     name = L["Spell IDs"],
     desc = L["Adds the spell's ID, and its icon's ID, to spell tooltips and to buffs and debuffs."],
     order = 10,
-    defaults = {
-        spell = true,
-        icon = false,
-    },
     options = {
         spell = {
             type = "toggle",

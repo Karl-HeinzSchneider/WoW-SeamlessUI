@@ -11,16 +11,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "messages" }
 
 ---@class SeamlessChat.ClassColorSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-}
-
 app.features:New(
     "classColors",
     module,
     L["Class colored names"],
-    L["Shows every player name in the chat in its class color, in all chat types and channels."],
-    defaults
+    L["Shows every player name in the chat in its class color, in all chat types and channels."]
 )
 
 -- The CVar's value before this feature changed it (account-wide, like the CVar).

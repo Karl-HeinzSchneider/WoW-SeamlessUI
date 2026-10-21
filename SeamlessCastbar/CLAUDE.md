@@ -5,7 +5,7 @@ cast bars without replacing them: cast time text, the spell rank in the name, ch
 the spell icon on the detached player bar and how long a bar stays after a cast.
 Ships in releases. Open `/seamlesscastbar` or Seamless > Castbar: one tab per bar
 (Player, Target, Focus). The player bar's options are also under a collapsible Style header in
-SeamlessUI's extended Edit Mode window for the cast bar. `SeamlessCastbarDB` holds independent profiles with one table per bar
+SeamlessUI's extended Edit Mode window for the cast bar. The `SeamlessCastbar` namespace holds settings in shared suite profiles with one table per bar
 (`player`, `target`, `focus`), each with `enabled`, `castTime` (`enabled`, `format`, `decimals`),
 `rank`, `ticks`, `hold` (`enabled`, `success`, `interrupt`) and, for the player only, `icon`.
 Everything but `hold` is on by default.
@@ -72,3 +72,12 @@ Edit Mode's Show Cast Time on and off; target and focus a caster (interrupt it, 
 mid-cast, Target of Target shown); Drain Life with pushback, Arcane Missiles rank 1 and max rank,
 bandages; spells without a rank; each option and profile switch; Edit Mode preview; select the target and focus previews in Edit Mode and change their Style
 options; check `/console taintLog 1` stays clean.
+
+## Shared suite profiles
+
+Settings now live in the `SeamlessCastbar` namespace of Core's `SeamlessDB`.
+`src/db.lua` is the editable source of defaults (including feature defaults).
+Core's `RegisterAddonDatabase` imports the legacy `SeamlessCastbarDB` once and
+subscribes the addon to shared profile changes, copies and resets. Profiles controls and
+slash-command profile resets operate on the whole suite. Character/global data stay in the
+namespace; the old standalone database is retained only for migration.

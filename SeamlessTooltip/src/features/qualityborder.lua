@@ -11,9 +11,6 @@ local feature = app.features:NewFeature("QualityBorder", {
     name = L["Quality border"],
     desc = L["Colors the border of item tooltips in the item's quality color. Works with the game's border and with \"Border and background\"."],
     order = 30,
-    defaults = {
-        minQuality = 2,
-    },
     options = {
         minQuality = {
             type = "select",

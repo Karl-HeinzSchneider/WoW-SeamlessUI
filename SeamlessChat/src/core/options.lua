@@ -48,7 +48,7 @@ local function SyncGroup()
                 return status
                     .. (
                         L["\nCharacters using profile '%s' share this chat setup. Use separate profiles to keep their chat independent.\n"]
-                    ):format(app.db:GetCurrentProfile())
+                    ):format(app.core.db:GetCurrentProfile())
             end,
         },
         save = {

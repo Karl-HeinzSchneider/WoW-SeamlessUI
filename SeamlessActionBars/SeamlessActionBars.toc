@@ -10,6 +10,7 @@
 ## X-License: MIT
 ## X-Website: https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI
 
+src\db.lua
 src\core.lua
 src\icons.lua
 src\hotkeys.lua

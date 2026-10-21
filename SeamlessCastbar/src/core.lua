@@ -36,25 +36,8 @@ function app.Active(bar)
     return settings ~= nil and settings.enabled == true
 end
 
----@param icon boolean whether the bar has the spell icon option
-local function barDefaults(icon)
-    return {
-        enabled = true,
-        castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
-        rank = { enabled = true },
-        ticks = { enabled = true },
-        icon = icon and { enabled = true } or nil,
-        hold = { enabled = false, success = 0.2, interrupt = 1 },
-    }
-end
-
 function app.addon:OnInitialize()
-    app.db = LibStub("AceDB-3.0"):New("SeamlessCastbarDB", {
-        profile = { player = barDefaults(true), target = barDefaults(false), focus = barDefaults(false) },
-    }, true)
-    app.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
-    app.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
-    app.db.RegisterCallback(self, "OnProfileReset", "Refresh")
+    app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "Refresh", "SeamlessCastbarDB")
     self:RegisterChatCommand("seamlesscastbar", function()
         app.core:OpenOptions(appName)
     end)

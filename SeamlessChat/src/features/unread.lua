@@ -16,18 +16,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.UnreadSettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = false,
-    channels = true, -- numbered channels (General, Trade, ...) count too
-    color = { r = 0.75, g = 0.12, b = 0.1 }, -- the badge
-}
-
 local feature = app.features:New(
     "unread",
     module,
     L["Unread counts"],
-    L["Shows how many messages came in on a chat tab while another tab was selected, as a badge on its corner. Selecting the tab clears it."],
-    defaults
+    L["Shows how many messages came in on a chat tab while another tab was selected, as a badge on its corner. Selecting the tab clears it."]
 ) --[[@as SeamlessChat.Unread]]
 
 -- Before the other transforms; it only counts.

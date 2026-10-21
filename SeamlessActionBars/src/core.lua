@@ -33,16 +33,7 @@ function app.Buttons()
 end
 
 function app.addon:OnInitialize()
-    app.db = LibStub("AceDB-3.0"):New("SeamlessActionBarsDB", {
-        profile = {
-            range = { enabled = true, color = { r = 0.85, g = 0.4, b = 0.4 } },
-            mana = { enabled = true, color = { r = 0.3, g = 0.3, b = 1 } },
-            keybinds = { enabled = true },
-        },
-    }, true)
-    app.db.RegisterCallback(self, "OnProfileChanged", "Refresh")
-    app.db.RegisterCallback(self, "OnProfileCopied", "Refresh")
-    app.db.RegisterCallback(self, "OnProfileReset", "Refresh")
+    app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "Refresh", "SeamlessActionBarsDB")
     self:RegisterChatCommand("seamlessactionbars", function()
         app.core:OpenOptions(appName)
     end)

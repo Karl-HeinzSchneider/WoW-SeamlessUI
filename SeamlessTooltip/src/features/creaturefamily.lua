@@ -13,7 +13,6 @@ local feature = app.features:NewFeature("CreatureFamily", {
     name = L["Creature family"],
     desc = L["Adds a beast's family (Wolf, Cat, Spider, ...) to its tooltip."],
     order = 27,
-    enabled = false,
 })
 
 function feature:OnInitialize()

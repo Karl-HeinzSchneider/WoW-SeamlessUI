@@ -13,13 +13,6 @@ local feature = app.features:NewFeature("StatusTags", {
     name = L["Status tags"],
     desc = L["Adds a player's state behind the name, e.g. <AFK> or <Dead>."],
     order = 22,
-    defaults = {
-        afk = true,
-        offline = true,
-        dead = true,
-        pvp = false,
-        hidePvpLine = false,
-    },
     options = {
         afk = {
             type = "toggle",

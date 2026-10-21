@@ -13,10 +13,6 @@ local feature = app.features:NewFeature("NpcText", {
     name = L["NPC text"],
     desc = L["Changes the text of NPC tooltips."],
     order = 20,
-    defaults = {
-        shortLevel = true,
-        faction = "SHOW",
-    },
     options = {
         shortLevel = {
             type = "toggle",

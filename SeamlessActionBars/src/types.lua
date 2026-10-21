@@ -2,6 +2,7 @@
 ---@class SeamlessActionBars
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessActionBars.Addon
+---@field dbDefaults AceDB.Schema
 ---@field db AceDBObject-3.0
 ---@field Buttons fun(): CheckButton[]
 ---@field PaintIcon fun(button: CheckButton)

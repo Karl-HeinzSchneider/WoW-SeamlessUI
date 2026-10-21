@@ -13,18 +13,14 @@ app.addon = addon
 
 -- Called once, after ADDON_LOADED for this addon: SavedVariables are available now.
 function addon:OnInitialize()
-    local db = LibStub("AceDB-3.0"):New("SeamlessUIDB", app.dbDefaults, true) --[[@as SeamlessUI.DB]]
+    local db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "OnProfileRefresh", "SeamlessUIDB") --[[@as SeamlessUI.DB]]
     self.db = db
     app.db = db
-
-    db.RegisterCallback(self, "OnProfileChanged", "OnProfileRefresh")
-    db.RegisterCallback(self, "OnProfileCopied", "OnProfileRefresh")
-    db.RegisterCallback(self, "OnProfileReset", "OnProfileRefresh")
 
     self:RegisterChatCommand("seamlessui", "OnSlashCommand")
 
     self:OnProfileRefresh()
-    log:debug(L["Initialized (profile: %s)"], db:GetCurrentProfile())
+    log:debug(L["Initialized (profile: %s)"], app.core.db:GetCurrentProfile())
 end
 
 -- Called after OnInitialize and whenever the addon is re-enabled. Register events here.
@@ -56,7 +52,7 @@ function addon:OnSlashCommand(input)
     elseif cmd == "loglevel" then
         app.core:OnSlashCommand(input)
     elseif cmd == "reset" then
-        self.db:ResetProfile()
+        app.core.db:ResetProfile()
         log:chat(L["Profile reset"])
     else
         log:chat(L["Commands: /seamlessui [options], /seamlessui loglevel <level>, /seamlessui reset"])

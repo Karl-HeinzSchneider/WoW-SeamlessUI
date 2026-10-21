@@ -43,7 +43,10 @@ Seamless works on its own.
 
 Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
 addon's own sections, then Profiles, where its profiles are selected, created, copied, deleted
-and reset. Each addon keeps its own profiles.
+and reset. All addons share Core's profiles; selecting, copying or resetting a profile applies to
+the whole suite. Feature settings are stored in separate namespaces of `SeamlessDB`, with
+editable defaults in each addon's `src/db.lua` or `src/core/db.lua`. Existing standalone settings
+are imported automatically the first time each addon loads.
 
 ## Commands
 

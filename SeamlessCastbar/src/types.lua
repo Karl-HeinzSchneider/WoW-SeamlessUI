@@ -2,6 +2,7 @@
 ---@class SeamlessCastbar
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessCastbar.Addon
+---@field dbDefaults AceDB.Schema
 ---@field db AceDBObject-3.0
 ---@field BarKey fun(bar: StatusBar): string?
 ---@field Settings fun(bar: StatusBar): table?

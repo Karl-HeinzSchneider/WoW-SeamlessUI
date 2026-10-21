@@ -20,19 +20,11 @@ local log = app.logger
 local module = { optionsTab = "windows" }
 
 ---@class SeamlessChat.CopySettings : SeamlessChat.FeatureSettings
-local defaults = {
-    enabled = true,
-    clickTimestamp = true, -- clicking a line's timestamp copies the line
-    showButton = true, -- the copy button in the chat windows
-    windowLines = 500, -- how many of the last lines the copy window shows
-}
-
 app.copy = app.features:New(
     "copy",
     module,
     L["Copy chat"],
-    L["Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C."],
-    defaults
+    L["Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C."]
 ) --[[@as SeamlessChat.Copy]]
 
 -- Lines kept for their links, the quick way to find them (FindLine).

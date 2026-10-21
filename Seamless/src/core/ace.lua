@@ -79,7 +79,7 @@ end
 addon.logger = app.logger
 
 -- Gives a feature addon its panel in Settings > AddOns > Seamless: a General tab, `spec.tabs`
--- and, with `spec.db`, a Profiles tab. Call from the addon's OnInitialize, once its database exists.
+-- and, with `spec.db`, the shared suite Profiles tab. Call from the addon's OnInitialize, once its database exists.
 ---@param name string The addon's folder name, also its AceConfig app name.
 ---@param spec SeamlessCore.OptionsSpec
 function addon:RegisterOptions(name, spec)

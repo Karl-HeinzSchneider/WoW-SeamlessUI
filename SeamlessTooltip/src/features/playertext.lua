@@ -15,17 +15,6 @@ feature = app.features:NewFeature("PlayerText", {
     name = L["Player text"],
     desc = L["Changes the text of player tooltips."],
     order = 10,
-    defaults = {
-        classColorName = true,
-        classColorClass = true,
-        raceReactionColor = false,
-        shortLevel = true,
-        hideClass = false,
-        guildLine = true,
-        guildRank = true,
-        guildRankIndex = false,
-        faction = "SHOW",
-    },
     options = {
         classColorName = {
             type = "toggle",

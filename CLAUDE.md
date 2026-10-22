@@ -9,8 +9,9 @@ Seamless is a modular World of Warcraft addon suite (Lua 5.1 / Ace3) for the cli
 (`16001` = WoW Forever). Each direct child folder with a same-named TOC is an independently
 selectable addon:
 
-- `Seamless/`: the required core: shared libraries, logger, locales, core settings, minimap
-  launcher, `/seamless`, the shared options layout and the shared Edit Mode API.
+- `Seamless/`: the required core: shared libraries, logger, locales, core settings and shared
+  profiles, minimap launcher, `/seamless`, the shared options layout, the custom configuration
+  window and the shared Edit Mode API.
 - `SeamlessUnitframes/`: health colors, name display, class icons, PvP and quest icons and an
   optional legacy layout on the game's unit frames.
 - `SeamlessTooltip/`: switchable tooltip enhancements.
@@ -30,6 +31,11 @@ Also at the root: `src/` (Node 20+ / TypeScript tooling, never shipped), `docs/`
 Every feature addon declares `## Dependencies: Seamless` and stores settings in a namespace of Core's `SeamlessDB`, sharing its AceDB profiles. Core works without any feature addon enabled; users enable or disable features
 in the game's AddOns screen and reload. Tooling discovers addons automatically, but every addon
 must be added to `.pkgmeta` `move-folders` (or its `ignore` list, to keep it out of releases).
+
+## Session environment
+
+At the start of every session, check whether it runs in a Claude Code cloud session
+(`CLAUDE_CODE_REMOTE=true`). If it does not, tell the user so in your first reply.
 
 ## Working on the code
 
@@ -77,6 +83,24 @@ else a release. The packager fills in `@project-version@` in the TOCs.
 its `ignore` list**, or it ships inside the core's folder. Each site needs its repository secret
 (`CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN`) and its project id in `Seamless.toc`
 (`## X-Curse-Project-ID`, `## X-Wago-ID`, `## X-WoWI-ID`); a site missing either is skipped.
+
+## Options: two settings panels in parallel
+
+Every option exists in two places, built from one declaration:
+
+- **Custom config window** (`Seamless/src/config/`, `SeamlessConfigWindow`): our own
+  Settings-style window with a category tree (one header per addon, one page per tab). It is the
+  main UI: `/seamless`, the minimap button and `core:OpenOptions` open it.
+- **Blizzard AddOns options** (Settings > AddOns > Seamless and its children): the same options as
+  AceConfig panels, kept in parallel.
+
+Declare an option once, as plain AceConfig args through `core:RegisterOptions` (or
+`core.FeatureGroup` inside it); Core registers it in both. Never add an option to only one panel,
+build controls for one of them by hand, or use AceConfig keys our window can't render without
+checking `Seamless/src/config/CLAUDE.md`. Custom-window-only extras (`new`/`blizzard` tags,
+`tooltip` defaults) are stripped before AceConfig sees them. Settings a frame shows in Edit Mode
+are also offered on its addon's options tab, built from the same rows (see Castbar, Unitframes).
+Test a new option in both panels.
 
 ## Shared Edit Mode controls
 

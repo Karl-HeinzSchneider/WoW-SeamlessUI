@@ -1,6 +1,22 @@
 -- Offline contracts. Live rendering getters deliberately fail, even out of combat.
 unpack = unpack or table.unpack
 local pending, combat, geometryWrites, artworkWrites, hookCount = {}, false, 0, 0, 0
+local anchorWrites = 0
+local editModeActive, libraryEditing = false, false
+local editModeCallbacks = {}
+EditModeManagerFrame = {
+    IsEditModeActive = function()
+        return editModeActive
+    end,
+}
+local editModeLibrary = {
+    IsInEditMode = function()
+        return libraryEditing
+    end,
+    RegisterCallback = function(_, event, callback)
+        editModeCallbacks[event] = callback
+    end,
+}
 local secret = setmetatable({}, {
     __index = function()
         error("indexed a secret")
@@ -92,10 +108,12 @@ function methods:SetHeight(v)
 end
 function methods:SetPoint(...)
     Geometry(self)
+    anchorWrites = anchorWrites + 1
     self.point = { ... }
 end
 function methods:ClearAllPoints()
     Geometry(self)
+    anchorWrites = anchorWrites + 1
     self.point = nil
 end
 function methods:SetJustifyH(v)
@@ -393,6 +411,11 @@ Path(party, "PetFrame.Flash")
 Path(party, "PetFrame.HealthBar", true)
 local warnings = {}
 local app = {
+    core = {
+        GetEditModeLibrary = function()
+            return editModeLibrary
+        end,
+    },
     logger = {
         warn = function(_, fmt, ...)
             warnings[#warnings + 1] = string.format(fmt, ...)
@@ -477,6 +500,118 @@ assert(
     "target artwork repair must happen before native update returns"
 )
 assert(#pending == 0, "target update must not defer repair until the next rendered frame")
+-- Edit Mode can call native unit-frame updates many times in one frame. Each
+-- hook must repair only its owner instead of rebuilding/recoloring the suite.
+local allFrames, applyGeometry = app.unitFrames.All, layout.ApplyGeometry
+local refreshColors, refreshFrameColor = app.healthColor.Refresh, app.healthColor.RefreshFrame
+local scans, fullColorRefreshes, repaired, recolored = 0, 0, {}, {}
+app.unitFrames.All = function(self)
+    scans = scans + 1
+    return allFrames(self)
+end
+layout.ApplyGeometry = function(self, roots, legacy)
+    repaired[#repaired + 1] = roots
+    return applyGeometry(self, roots, legacy)
+end
+app.healthColor.Refresh = function(self)
+    fullColorRefreshes = fullColorRefreshes + 1
+    return refreshColors(self)
+end
+app.healthColor.RefreshFrame = function(self, frame)
+    recolored[#recolored + 1] = frame
+    return refreshFrameColor(self, frame)
+end
+local comboPoint = ComboFrame.point
+local anchorsBeforeBurst = anchorWrites
+for _ = 1, 88 do
+    UnitFrameManaBar_UpdateType(mana)
+end
+assert(scans == 0 and fullColorRefreshes == 0, "native update burst must not scan/recolor every frame")
+assert(#repaired == 88 and #recolored == 88)
+assert(anchorWrites == anchorsBeforeBurst, "stable native updates must not repeatedly clear/reapply identical anchors")
+for index, roots in ipairs(repaired) do
+    assert(#roots == 1 and roots[1] == PlayerFrame and recolored[index] == PlayerFrame)
+end
+assert(ComboFrame.point == comboPoint, "player repairs must not reposition the target's combo points")
+local beforeOpening, colorsBeforeOpening = #repaired, #recolored
+editModeActive, libraryEditing = true, false
+for _ = 1, 88 do
+    UnitFrameManaBar_UpdateType(mana)
+end
+FocusFrame:CheckClassification()
+assert(#repaired == beforeOpening and #recolored == colorsBeforeOpening, "entry setup must deduplicate owner repairs")
+libraryEditing = true
+editModeCallbacks.enter()
+assert(#repaired == beforeOpening + 1, "native entry must flush one scoped refresh synchronously")
+local openingRoots = repaired[#repaired]
+assert(#openingRoots == 2 and openingRoots[1] == PlayerFrame and openingRoots[2] == FocusFrame)
+assert(#recolored == colorsBeforeOpening + 2, "entry flush must recolor each affected frame once")
+assert(
+    scans == 0 and fullColorRefreshes == 0 and #pending == 0,
+    "entry flush must not scan the suite or use next-frame timers"
+)
+local afterOpening = #repaired
+UnitFrameManaBar_UpdateType(mana)
+assert(#repaired == afterOpening + 1, "updates after entry must still repair immediately")
+libraryEditing = false
+UnitFrameManaBar_UpdateType(mana)
+local beforeCancelledOpening = #repaired
+editModeCallbacks.exit()
+libraryEditing = true
+editModeCallbacks.enter()
+assert(#repaired == beforeCancelledOpening, "exit must discard unflushed entry work")
+editModeActive, libraryEditing = false, false
+editModeCallbacks.exit()
+local beforeUnrelated = #repaired
+UnitFrame_Initialize(Object())
+UnitFrame_Initialize(secret)
+UnitFrameManaBar_UpdateType(secret)
+assert(#repaired == beforeUnrelated, "unknown or secret update owners must be ignored")
+FocusFrame:CheckClassification()
+assert(#repaired > beforeUnrelated)
+for index = beforeUnrelated + 1, #repaired do
+    assert(#repaired[index] == 1 and repaired[index][1] == FocusFrame)
+end
+assert(ComboFrame.point == comboPoint, "focus repairs must not reposition the target's combo points")
+layout:Refresh()
+assert(scans > 0 and fullColorRefreshes == 1, "explicit refresh still updates the whole suite")
+app.unitFrames.All, layout.ApplyGeometry = allFrames, applyGeometry
+app.healthColor.Refresh, app.healthColor.RefreshFrame = refreshColors, refreshFrameColor
+-- Cache only fixed anchors we wrote ourselves; every native anchor/parent
+-- setter invalidates them even when its arguments are inaccessible.
+local probe = Object()
+local fixedPoint = { "CENTER", PlayerFrame, "CENTER", 7, 9 }
+layout:Edit(probe, { point = fixedPoint })
+local beforeCached = anchorWrites
+layout:Edit(probe, { point = { unpack(fixedPoint) } })
+assert(anchorWrites == beforeCached)
+for _, method in ipairs({ "SetPoint", "ClearAllPoints", "SetAllPoints", "SetParent" }) do
+    callbacks[probe][method](secret, secret)
+    local beforeInvalidated = anchorWrites
+    layout:Edit(probe, { point = fixedPoint })
+    assert(anchorWrites == beforeInvalidated + 2, method .. " must invalidate the fixed anchor")
+end
+probe.protected = true
+combat = true
+callbacks[probe].SetPoint(secret, secret)
+local beforeProtected = anchorWrites
+layout:Edit(probe, { point = fixedPoint })
+assert(anchorWrites == beforeProtected, "cache must not bypass protected combat guards")
+combat = false
+layout:Edit(probe, { point = fixedPoint })
+assert(anchorWrites == beforeProtected + 2, "combat-skipped repair must not populate the cache")
+local nestedProbe = Object()
+function nestedProbe:SetPoint(...)
+    methods.SetPoint(self, ...)
+    if not self.bounced then
+        self.bounced = true
+        self:ClearAllPoints()
+    end
+end
+layout:Edit(nestedProbe, { point = fixedPoint })
+assert(nestedProbe.point == nil)
+layout:Edit(nestedProbe, { point = fixedPoint })
+assert(nestedProbe.point and nestedProbe.point[4] == 7, "nested native setters must leave the anchor uncached")
 combat = true
 TargetFrame:CheckClassification()
 assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "combat must not expose native sheet coordinates")
@@ -656,8 +791,16 @@ PlayerFrame.PlayerFrameContainer = saved
 Mode("current")
 assert(PlayerName.width == 116)
 Mode("legacy")
+editModeActive, libraryEditing = true, false
+UnitFrameManaBar_UpdateType(mana)
 layout:OnDisable()
 assert(PlayerName.width == 116, "module disable must restore Current")
+local writesAfterDisable = geometryWrites
+libraryEditing = true
+editModeCallbacks.enter()
+assert(geometryWrites == writesAfterDisable, "disabled entry work must not repaint restored frames")
+editModeActive, libraryEditing = false, false
+editModeCallbacks.exit()
 print(
     "Fixed layout contracts passed: no render snapshots, both modes, colors, styles, secret inputs, combat deferral, diagnostics"
 )

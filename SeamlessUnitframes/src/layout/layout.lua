@@ -9,15 +9,19 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = {}
 local layout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
 app.legacyLayout = layout
+local lib = app.core:GetEditModeLibrary()
 
 -- Definitions own atlas names and geometry. Never snapshot live rendering state:
 -- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
 local warnings, bindings, hooked, artwork = {}, {}, {}, {}
+local knownRoots = {}
+local anchors = {}
 local painted, watchedBars, watchedFills, watchedArt = {}, {}, {}, {}
 local visualBars = {}
 local lossColored = false
 local enabled, applied, writing, initialized = false, false, false, false
 local legacyMode = false
+local openingFrames, openingSeen = {}, {}
 
 function module:Readable(value)
     return not canaccessvalue or canaccessvalue(value)
@@ -78,6 +82,37 @@ function module:CheckPaths(frame, context, paths)
     return true
 end
 
+-- Remember only our own fixed anchor writes. Native setters invalidate the
+-- cache without reading their arguments or any possibly secret render state.
+local function AnchorState(region)
+    local state = anchors[region]
+    if not state then
+        state = { revision = 0 }
+        anchors[region] = state
+        for _, name in ipairs({ "SetPoint", "ClearAllPoints", "SetAllPoints", "SetParent" }) do
+            if layout:Readable(region[name]) and type(region[name]) == "function" then
+                hooksecurefunc(region, name, function()
+                    state.point = nil
+                    state.revision = state.revision + 1
+                end)
+            end
+        end
+    end
+    return state
+end
+
+local function SameAnchor(left, right)
+    if not left or #left ~= #right then
+        return false
+    end
+    for index = 1, #right do
+        if left[index] ~= right[index] then
+            return false
+        end
+    end
+    return true
+end
+
 function module:Edit(region, changes)
     if not self:CheckRegion(region, "fixed geometry") then
         return
@@ -94,6 +129,7 @@ function module:Edit(region, changes)
     local function Call(name, ...)
         if self:CheckRegion(region, "fixed geometry", { name }) then
             region[name](region, ...)
+            return true
         end
     end
     if changes.width then
@@ -103,8 +139,17 @@ function module:Edit(region, changes)
         Call("SetHeight", changes.height)
     end
     if changes.point then
-        Call("ClearAllPoints")
-        Call("SetPoint", unpack(changes.point))
+        local state = AnchorState(region)
+        if not SameAnchor(state.point, changes.point) then
+            local revision = state.revision
+            local cleared = Call("ClearAllPoints")
+            local placed = Call("SetPoint", unpack(changes.point))
+            -- Extra setter callbacks mean a nested native update changed the
+            -- region during our write; leave it uncached so repair can retry.
+            if cleared and placed and state.revision == revision + 2 then
+                state.point = { unpack(changes.point) }
+            end
+        end
     end
     if changes.justify then
         Call("SetJustifyH", changes.justify)
@@ -405,6 +450,28 @@ local function Request()
     layout:Refresh()
 end
 
+local function RequestFrame(frame)
+    if writing or not enabled or not layout:Readable(frame) or not frame then
+        return
+    end
+    if not knownRoots[frame] and not app.unitFrames:KeyOf(frame) then
+        return
+    end
+    local manager = EditModeManagerFrame
+    if manager and manager:IsEditModeActive() and not lib:IsInEditMode() then
+        -- The manager is still setting up native frames. Its EditMode.Enter
+        -- event fires synchronously after setup, before the first rendered frame.
+        if not openingSeen[frame] then
+            openingSeen[frame] = true
+            openingFrames[#openingFrames + 1] = frame
+        end
+        return
+    end
+    -- A native update invalidates this frame, not every unit frame in the suite.
+    -- Keep the repair synchronous so the native art never draws with old geometry.
+    layout:Refresh(false, frame)
+end
+
 local function Hook(object, name)
     if hooked[object] == nil then
         hooked[object] = {}
@@ -412,7 +479,9 @@ local function Hook(object, name)
     if not hooked[object][name] and layout:Readable(object[name]) and type(object[name]) == "function" then
         hooked[object][name] = true
         -- Ignore all native arguments: they may contain secret strings/numbers.
-        hooksecurefunc(object, name, Request)
+        hooksecurefunc(object, name, function()
+            RequestFrame(object)
+        end)
     end
 end
 
@@ -421,9 +490,20 @@ local function Initialize()
         return
     end
     initialized = true
+    if type(UnitFrame_Initialize) == "function" then
+        hooksecurefunc("UnitFrame_Initialize", RequestFrame)
+    end
+    if type(UnitFrameManaBar_UpdateType) == "function" then
+        hooksecurefunc("UnitFrameManaBar_UpdateType", function(bar)
+            if layout:Readable(bar) and (type(bar) == "table" or type(bar) == "userdata") then
+                local frame = bar.unitFrame
+                if layout:Readable(frame) then
+                    RequestFrame(frame)
+                end
+            end
+        end)
+    end
     for _, name in ipairs({
-        "UnitFrame_Initialize",
-        "UnitFrameManaBar_UpdateType",
         "PlayerFrame_ToPlayerArt",
         "PlayerFrame_ToVehicleArt",
         "PlayerFrame_UpdatePlayerNameTextAnchor",
@@ -434,12 +514,14 @@ local function Initialize()
         "PlayerFrame_UpdatePvPStatus",
     }) do
         if type(_G[name]) == "function" then
-            hooksecurefunc(name, Request)
+            hooksecurefunc(name, function()
+                RequestFrame(PlayerFrame)
+            end)
         end
     end
 end
 
-function module:Refresh(restore)
+function module:Refresh(restore, frame, selectedRoots)
     if (not enabled and not restore) or not app.db then
         return
     end
@@ -448,7 +530,7 @@ function module:Refresh(restore)
         -- target-family visual regions are repaired; Edit checks protection.
         if enabled and applied and not writing then
             writing = true
-            self:RepairTargets(app.unitFrames:All())
+            self:RepairTargets(selectedRoots or (frame and { frame } or app.unitFrames:All()))
             writing = false
         end
         return
@@ -459,15 +541,19 @@ function module:Refresh(restore)
     end
     Initialize()
     legacyMode = legacy
-    local roots = app.unitFrames:All()
-    for i = 1, 5 do
-        local frame = _G["Boss" .. i .. "TargetFrame"]
-        if frame then
-            roots[#roots + 1] = frame
+    local scoped = frame ~= nil or selectedRoots ~= nil
+    local roots = selectedRoots or (frame and { frame } or app.unitFrames:All())
+    if not scoped then
+        for i = 1, 5 do
+            local boss = _G["Boss" .. i .. "TargetFrame"]
+            if boss then
+                roots[#roots + 1] = boss
+            end
         end
     end
     for _, frame in ipairs(roots) do
         if self:CheckRegion(frame, "unit frame") then
+            knownRoots[frame] = true
             for _, name in ipairs({
                 "CheckClassification",
                 "UpdateArt",
@@ -504,7 +590,13 @@ function module:Refresh(restore)
         self:HideLegacyBackgrounds()
     end
     if app.healthColor then
-        app.healthColor:Refresh()
+        if scoped then
+            for _, root in ipairs(roots) do
+                app.healthColor:RefreshFrame(root)
+            end
+        else
+            app.healthColor:Refresh()
+        end
     end
 end
 
@@ -527,6 +619,7 @@ end
 
 function module:OnDisable()
     enabled = false
+    openingFrames, openingSeen = {}, {}
     if not applied then
         return
     end
@@ -549,3 +642,14 @@ end
 function module:OnProfileRefresh()
     Request()
 end
+
+lib:RegisterCallback("enter", function()
+    local roots = openingFrames
+    openingFrames, openingSeen = {}, {}
+    if enabled and #roots > 0 then
+        layout:Refresh(false, nil, roots)
+    end
+end)
+lib:RegisterCallback("exit", function()
+    openingFrames, openingSeen = {}, {}
+end)

@@ -81,6 +81,21 @@ Rules:
   its red); party health loss uses the Player atlas; unknown power types use the native mana fill.
 - Apply repairs synchronously, never on the next frame. Cache only our own last writes and
   invalidate them on native setters.
+  Fixed anchors remember only our last successful `ClearAllPoints`/`SetPoint`
+  pair. Native point/all-points/parent setters invalidate that entry without
+  inspecting their arguments. Nested setters leave it uncached. Never infer
+  anchor state from rendering getters or populate the cache for combat-skipped writes.
+- Native frame hooks repair only their owner with `Refresh(false, frame)` and
+  `healthColor:RefreshFrame(frame)`. Global mana-bar hooks resolve `bar.unitFrame`,
+  player-art hooks use PlayerFrame, and unrelated/secret owners are ignored. Full
+  refreshes remain for settings and roster/lifecycle events. Never rebuild all
+  frames or recolor the entire suite in response to one frame's native update.
+- During native Edit Mode entry (`manager:IsEditModeActive()` before the shared
+  library enters), deduplicate affected owners and flush one scoped refresh from
+  the library's synchronous `enter` callback. The client's `EnterEditMode` fires
+  that event after native frame setup, in the same call stack and before drawing.
+  No next-frame timer is used. Exit/disable clear pending owners; all ordinary
+  native updates still repair immediately.
 - Treat gameplay values and frame fields as possibly secret: check access before comparing,
   branching, concatenating or indexing.
 

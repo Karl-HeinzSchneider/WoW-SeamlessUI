@@ -31,8 +31,8 @@ local function PvP(icon, parent, side, x, legacy)
     if not module:CheckRegion(icon, "PvP icon", { "IsShown" }) then
         return
     end
-    Point(icon, "TOP", parent, side, x, legacy and -50 or -65)
     if not legacy then
+        Point(icon, "TOP", parent, side, x, -65)
         return
     end
     if not module:CheckRegion(parent, "PvP background", { "CreateTexture" }) then
@@ -691,10 +691,14 @@ function module:ApplyGeometry(roots, legacy)
             elseif self:Readable(frame.PartyMemberOverlay) and frame.PartyMemberOverlay then
                 Party(frame, legacy)
             end
+            if
+                frame == TargetFrame
+                and ComboFrame
+                and self:CheckPaths(frame, "Combo", { "TargetFrameContainer.Portrait" })
+            then
+                Point(ComboFrame, "CENTER", frame.TargetFrameContainer.Portrait, "CENTER", legacy and 0 or 2, 2)
+            end
         end
-    end
-    if ComboFrame and self:CheckPaths(TargetFrame, "Combo", { "TargetFrameContainer.Portrait" }) then
-        Point(ComboFrame, "CENTER", TargetFrame.TargetFrameContainer.Portrait, "CENTER", legacy and 0 or 2, 2)
     end
 end
 

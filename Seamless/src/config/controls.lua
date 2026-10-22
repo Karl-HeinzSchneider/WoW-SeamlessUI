@@ -55,6 +55,7 @@ end
 
 function Row:New(page)
     local row = CreateFrame("Frame", nil, page)
+    row.featureTagViewport = config.contentScroll
     Mixin(row, self)
     row:SetWidth(page:GetWidth())
     row.Label = text(row)

@@ -61,6 +61,10 @@ text layers, preserving the same static glow. Labels sit to the left of the
 setting/category name as optional overlays. Tags never reserve space or change
 label anchors, widths, row heights or control positions; overlap with decoration
 is allowed. Pooled rows hide tags when reused.
+Tags are parented to a window-level overlay outside both scroll containers, above
+the inner-frame artwork. They remain anchored to the original labels. The overlay
+updates visibility from the source row and viewport so tags disappear when their
+label scrolls out of view or its page/category is hidden, without horizontal clipping.
 
 `NormalizeOptionTags` removes these custom keys before passing declarations to
 AceConfigRegistry, retaining them in a weak-key side table. Dynamic declarations

@@ -137,6 +137,27 @@ end
 function methods:IsShown()
     return self.shown
 end
+function methods:IsVisible()
+    return self.shown ~= false and (not self.parent or self.parent:IsVisible())
+end
+function methods:GetFrameLevel()
+    return self.level or 1
+end
+function methods:SetFrameLevel(value)
+    self.level = value
+end
+function methods:GetEffectiveScale()
+    return 1
+end
+function methods:GetTop()
+    return self.top or 100
+end
+function methods:GetBottom()
+    return self.bottom or 0
+end
+function methods:SetShown(value)
+    self.shown = value
+end
 function methods:HasFocus()
     return self.focused
 end
@@ -199,6 +220,7 @@ local app = {
     },
 }
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
+app.config.frame = frame()
 function app.config:GetOptionTags(option)
     return option
 end
@@ -284,6 +306,22 @@ app.config:RefreshOptionsPage(page)
 assert(toggle.featureTags.new:IsShown())
 assert(toggle.featureTags.new.template == "NewFeatureLabelNoAnimateTemplate")
 assert(toggle.featureTags.new.scale == 0.8)
+assert(toggle.featureTags.new.parent == app.config.featureTagOverlay)
+assert(app.config.featureTagOverlay.parent == app.config.frame)
+local viewport = frame()
+toggle.featureTagViewport = viewport
+toggle.Label.top, toggle.Label.bottom = 120, 106
+app.config:RefreshFeatureTags()
+assert(not toggle.featureTags.new:IsShown(), "hide tags for rows scrolled above the viewport")
+toggle.Label.top, toggle.Label.bottom = 90, 76
+app.config:RefreshFeatureTags()
+assert(toggle.featureTags.new:IsShown())
+page:Hide()
+app.config:RefreshFeatureTags()
+assert(not toggle.featureTags.new:IsShown(), "hide tags for hidden pages")
+page:Show()
+app.config:RefreshFeatureTags()
+assert(toggle.featureTags.new:IsShown())
 root.args.general.args.enabled.new = false
 root.args.general.args.enabled.blizzard = true
 app.config:RefreshOptionsPage(page)

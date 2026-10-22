@@ -138,6 +138,15 @@ end
 function methods:GetTop()
     return 800
 end
+function methods:GetBottom()
+    return self:GetTop() - self:GetHeight()
+end
+function methods:GetEffectiveScale()
+    return 1
+end
+function methods:IsVisible()
+    return self.shown ~= false and (not self.parent or self.parent:IsVisible())
+end
 function methods:GetHighlightTexture()
     self.highlight = self.highlight or object()
     return self.highlight
@@ -252,6 +261,7 @@ core:RegisterConfigCategory("Page", {
 })
 core:OpenConfig("Page")
 assert(config.navigation:GetWidth() == 175)
+config:RefreshFeatureTags() -- The overlay updates after OpenConfig shows the window.
 for _, row in ipairs(config.rows) do
     if row.id == "Page" then
         assert(row.featureTags.new:IsShown() and row.featureTags.blizzard:IsShown())

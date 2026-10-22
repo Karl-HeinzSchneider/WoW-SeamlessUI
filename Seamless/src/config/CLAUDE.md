@@ -94,7 +94,15 @@ vendored libraries. Rows follow Settings' left label/right control alignment,
 SharedXML's MinimalSliderWithSteppers, WowStyle2Dropdown, InputBox, ColorSwatch
 and button templates and the Settings checkbox atlases. Select rows use the native
 previous/next stepper buttons and dropdown radio selection methods, preserving
-choice order and disabling arrows at the endpoints or when the setting is disabled. No SettingsPanel mixins,
+choice order and disabling arrows at the endpoints or when the setting is disabled.
+Menus call the native `SetScrollMode(160)` so the menu viewport is capped at eight
+standard 20-pixel rows; longer lists receive native scrolling automatically.
+Range rows replace the right-hand value label with an InputBox. Enter accepts
+finite numbers within the declared min/max and snaps to the declared step from
+min; the same option validation, confirmation and disabled checks still apply.
+Invalid input remains editable with an error tooltip; Escape, focus loss, hiding
+or refresh discard unfinished input. Refresh/profile changes update the displayed
+value without writing settings. No SettingsPanel mixins,
 global setting registration, AceGUI or AceConfigDialog rendering is involved.
 Groups become collapsible section headings using the category headers' same
 `common-button-list-plus/minus` art. Clicking either the label or button toggles

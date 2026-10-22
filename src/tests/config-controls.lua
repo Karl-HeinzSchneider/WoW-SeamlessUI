@@ -70,6 +70,7 @@ for _, key in ipairs({
     "SetPushedAtlas",
     "SetAtlas",
     "SetAutoFocus",
+    "SetMaxLetters",
     "SetFontObject",
     "SetColorRGB",
 }) do
@@ -176,10 +177,14 @@ end
 function methods:GenerateMenu()
     local entries = {}
     local root = {}
+    function root:SetScrollMode(height)
+        self.maxHeight = height
+    end
     function root:CreateRadio(text, selected, choose)
         entries[#entries + 1] = { selected = selected, choose = choose }
     end
     self.menu(self, root)
+    self.menuHeight = root.maxHeight
     self.entries, self.selectedIndex = entries, nil
     for index, entry in ipairs(entries) do
         if entry.selected() then
@@ -217,6 +222,9 @@ function CreateFrame(_, _, parent, template)
     assert(template ~= "SimpleGroup")
     local object = frame()
     object.parent, object.template = parent, template
+    if template == "MinimalSliderWithSteppersTemplate" then
+        object.RightText = frame()
+    end
     if template == "NewFeatureLabelTemplate" then
         object.Label, object.BGLabel = frame(), frame()
     end
@@ -487,4 +495,76 @@ root.args.general.args.choice.values = { a = "A" }
 root.args.general.args.choice.sorting = { "a" }
 app.config:RefreshOptionsPage(page)
 assert(not select.Previous.enabled and not select.Next.enabled)
+-- Native scroll mode bounds long menus without changing the choice order.
+assert(select.Control.menuHeight == 160)
+local choice = root.args.general.args.choice
+choice.values, choice.sorting = {}, {}
+for i = 1, 40 do
+    choice.values[i], choice.sorting[i] = "Choice " .. i, i
+end
+profile.choice = 1
+app.config:RefreshOptionsPage(page)
+assert(#select.Control.entries == 40 and select.Control.menuHeight == 160)
+select.Next.scripts.OnClick()
+assert(profile.choice == 2)
+-- A slider's numeric field shares the same setter, validation and confirmation.
+local range = page.controlPools.range[1]
+local edit = range.ValueInput
+assert(edit.template == "InputBoxTemplate" and not range.Control.RightText:IsShown())
+assert(edit:GetText() == tostring(profile.amount))
+local function enter(text)
+    edit.focused = true
+    edit:SetText(text)
+    edit.scripts.OnEnterPressed()
+end
+for _, text in ipairs({ "", "abc", "-1", "11", "1e999", "nan" }) do
+    local before = profile.amount
+    enter(text)
+    assert(profile.amount == before and GameTooltip.title == "Invalid value")
+    assert(edit:HasFocus(), "invalid input stays editable")
+end
+enter("6")
+assert(profile.amount == 6 and edit:GetText() == "6" and not edit:HasFocus())
+enter("6.6")
+assert(profile.amount == 7 and edit:GetText() == "7", "respect integer steps")
+local amount = root.args.general.args.amount
+amount.min, amount.max, amount.step = -10, 10, 0.1
+app.config:RefreshOptionsPage(page)
+enter("-2.34")
+assert(profile.amount == -2.3 and edit:GetText() == "-2.3", "accept negatives and snap decimal steps")
+amount.validate = function(_, value)
+    return value ~= 4
+end
+enter("4")
+assert(profile.amount == -2.3 and edit:HasFocus(), "custom validators still apply")
+amount.validate = nil
+amount.confirm = true
+enter("3")
+assert(profile.amount == -2.3 and pending, "typing still requires configured confirmation")
+pending()
+assert(profile.amount == 3)
+amount.confirm = nil
+app.config:RefreshOptionsPage(page)
+edit.focused = true
+edit:SetText("9")
+edit.scripts.OnEscapePressed()
+assert(profile.amount == 3 and edit:GetText() == "3")
+edit.focused = true
+edit:SetText("9")
+edit:ClearFocus()
+assert(profile.amount == 3 and edit:GetText() == "3", "focus loss discards unfinished input")
+amount.disabled = true
+enter("8")
+assert(profile.amount == 3, "recheck disabled state at commit")
+app.config:RefreshOptionsPage(page)
+assert(not edit.enabled)
+amount.disabled = nil
+app.config:RefreshOptionsPage(page)
+edit.focused = true
+edit:SetText("9")
+profile = { enabled = true, amount = 1.5, choice = 2, input = "new profile" }
+app.config:RefreshOptionsPage(page)
+assert(edit:GetText() == "1.5" and not edit:HasFocus(), "refresh discards stale profile input")
+range.Control.callback(range.Control.owner, 2.5)
+assert(profile.amount == 2.5 and edit:GetText() == "2.5", "dragging updates the numeric field")
 print("Native config controls OK")

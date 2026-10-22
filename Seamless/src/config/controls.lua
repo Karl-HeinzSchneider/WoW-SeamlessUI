@@ -109,7 +109,7 @@ StaticPopupDialogs.SeamlessConfigConfirm = {
 
 function Row:Commit(...)
     if self.syncing or not self.enabled then
-        return
+        return false
     end
     local option, values = self.option, { ... }
     local valid = option:Read("validate", unpack(values))
@@ -117,7 +117,7 @@ function Row:Commit(...)
         anchorTooltip(self)
         GameTooltip:SetText(type(valid) == "string" and valid or L["Invalid value"], 1, 0.2, 0.2)
         GameTooltip:Show()
-        return
+        return false
     end
     local function apply()
         -- Recheck state after confirmation, as a profile may have changed.
@@ -134,6 +134,7 @@ function Row:Commit(...)
     else
         apply()
     end
+    return true
 end
 
 function creators.toggle(page)
@@ -190,6 +191,9 @@ function creators.select(page)
             return
         end
         local option = row.option
+        -- Native menu scrolling keeps short menus compact and adds a scrollbar
+        -- only when their contents exceed eight standard 20-pixel rows.
+        root:SetScrollMode(160)
         for _, entry in ipairs(option:Choices()) do
             root:CreateRadio(entry.text, function()
                 return option:Read("get") == entry.value
@@ -221,19 +225,80 @@ function creators.range(page)
     row.rowHeight = 46
     slider:SetPoint("LEFT", row, "CENTER", -80, 3)
     slider:SetSize(250, 26)
+    local input = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+    row.ValueInput = input
+    input:SetAutoFocus(false)
+    input:SetJustifyH("CENTER")
+    input:SetMaxLetters(24)
+    input:SetSize(70, 22)
+    input:SetPoint("LEFT", slider, "RIGHT", 10, 0)
+    local inputError
+    local function resetInput()
+        if inputError then
+            GameTooltip:Hide()
+            inputError = nil
+        end
+        input:SetText(string.format("%.12g", row.rangeValue or 0))
+        input:SetTextColor(1, 1, 1)
+    end
+    input:SetScript("OnEnterPressed", function()
+        local option = row.option
+        if not row.enabled or option:Read("disabled") then
+            input:ClearFocus()
+            resetInput()
+            return
+        end
+        local value = tonumber(input:GetText())
+        local min, max = option:Read("min"), option:Read("max")
+        if not value or value ~= value or value == math.huge or value == -math.huge or value < min or value > max then
+            inputError = true
+            input:SetTextColor(1, 0.2, 0.2)
+            anchorTooltip(row)
+            GameTooltip:SetText(L["Invalid value"], 1, 0.2, 0.2)
+            GameTooltip:Show()
+            return
+        end
+        local step = option:Read("step") or 1
+        if step > 0 then
+            value = min + math.floor((value - min) / step + 0.5) * step
+            value = math.max(min, math.min(max, tonumber(string.format("%.12g", value))))
+        end
+        if row:Commit(value) then
+            row.rangeValue = option:Read("get")
+            input:ClearFocus()
+            resetInput()
+        else
+            inputError = true
+            input:SetTextColor(1, 0.2, 0.2)
+        end
+    end)
+    input:SetScript("OnEscapePressed", function()
+        input:ClearFocus()
+        resetInput()
+    end)
+    input:SetScript("OnEditFocusLost", resetInput)
+    row:HookScript("OnHide", function()
+        input:ClearFocus()
+        resetInput()
+    end)
     slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        row:Commit(value)
+        if row:Commit(value) then
+            row.rangeValue = row.option:Read("get")
+            resetInput()
+        end
     end, row)
     tooltip(slider, row)
+    tooltip(input, row)
     function row:Update()
         local option = self.option
         local min, max, step = option:Read("min"), option:Read("max"), option:Read("step") or 1
-        local formatters = {
-            [MinimalSliderWithSteppersMixin.Label.Right] = function(value)
-                return (string.format("%.2f", value):gsub("0+$", ""):gsub("%.$", ""))
-            end,
-        }
-        slider:Init(option:Read("get") or min, min, max, math.max(1, (max - min) / step), formatters)
+        -- The editable value replaces the template's right-hand label entirely.
+        slider:Init(option:Read("get") or min, min, max, math.max(1, (max - min) / step), {})
+        slider.RightText:Hide()
+        input:ClearFocus()
+        self.rangeValue = option:Read("get") or min
+        resetInput()
+        input:SetEnabled(self.enabled)
     end
     return row
 end

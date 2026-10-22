@@ -471,6 +471,15 @@ Mode("legacy")
 local beforeStableRefresh = artworkWrites
 Mode("legacy")
 assert(artworkWrites == beforeStableRefresh, "stable layout refresh must not swap green/white fills")
+local paint, nativePaintCalls = layout.Paint, 0
+layout.Paint = function(self, ...)
+    nativePaintCalls = nativePaintCalls + 1
+    return paint(self, ...)
+end
+TargetFrame.TargetFrameContainer.FrameTexture:SetAtlas("UI-HUD-UnitFrame-Target-PortraitOn", true)
+assert(nativePaintCalls > 0, "native atlas hook repairs must pass through the traceable Paint method")
+assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "traceable native repair must retain legacy artwork")
+layout.Paint = paint
 TargetFrame:CheckClassification()
 assert(
     HasOld(TargetFrame.TargetFrameContainer.FrameTexture),

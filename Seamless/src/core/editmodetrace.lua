@@ -5,6 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local addon = app.addon
 local targets, installed = {}, {}
 local rows, lastReport
+local depth, measured
 local armed, started, waiting, duration, firstFrame, worstFrame
 local observer = CreateFrame("Frame")
 observer:Hide()
@@ -49,8 +50,13 @@ local function Install(label, target, key)
             return original(...)
         end
         local before = debugprofilestop()
+        depth = depth + 1
         local result = Pack(pcall(original, ...))
         local elapsed = debugprofilestop() - before
+        depth = depth - 1
+        if depth == 0 then
+            measured = measured + elapsed
+        end
         row.calls = row.calls + 1
         row.total = row.total + elapsed
         row.maximum = math.max(row.maximum, elapsed)
@@ -75,6 +81,7 @@ local function Report()
         lastReport.worst,
         lastReport.duration
     )
+    app.logger:chat(L["Covered Lua: %.2f ms total (nested calls counted once)."], lastReport.measured)
     app.logger:chat(
         L["Inclusive Lua timings overlap; do not add them together. Frame times also include native and rendering work."]
     )
@@ -115,7 +122,13 @@ observer:SetScript("OnUpdate", function(_, elapsed)
                 end
                 return a.total > b.total
             end)
-            lastReport = { first = firstFrame, worst = worstFrame, duration = duration * 1000, rows = captured }
+            lastReport = {
+                first = firstFrame,
+                worst = worstFrame,
+                duration = duration * 1000,
+                measured = measured,
+                rows = captured,
+            }
             Report()
         end
     elseif waiting >= 60 then
@@ -144,6 +157,7 @@ function addon:OnEditModeTraceCommand(command)
         return
     end
     rows = {}
+    depth, measured = 0, 0
     started, waiting, duration, firstFrame, worstFrame = false, 0, 0, 0, 0
     local methods = {
         "Refresh",
@@ -152,6 +166,7 @@ function addon:OnEditModeTraceCommand(command)
         "Apply",
         "ApplyAll",
         "ApplyPreview",
+        "Paint",
         "Changed",
         "OnProfileRefresh",
     }

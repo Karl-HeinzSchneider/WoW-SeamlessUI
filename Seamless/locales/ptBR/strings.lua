@@ -130,6 +130,7 @@ end
 -- L["Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"] = "Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"
 -- L["Commands: /seamless trace, /seamless trace report, /seamless trace off"] = "Commands: /seamless trace, /seamless trace report, /seamless trace off"
 -- L["Completed: %d  |  %s XP"] = "Completed: %d  |  %s XP"
+-- L["Covered Lua: %.2f ms total (nested calls counted once)."] = "Covered Lua: %.2f ms total (nested calls counted once)."
 -- L["Edit Mode trace armed. Open Edit Mode within 60 seconds; a report follows automatically."] = "Edit Mode trace armed. Open Edit Mode within 60 seconds; a report follows automatically."
 -- L["Edit Mode trace cancelled: Edit Mode was not opened within 60 seconds."] = "Edit Mode trace cancelled: Edit Mode was not opened within 60 seconds."
 -- L["Edit Mode trace stopped."] = "Edit Mode trace stopped."

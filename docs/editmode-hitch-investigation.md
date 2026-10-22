@@ -66,3 +66,21 @@ repairs only its player-frame owner, with no full frame scans, global recolors o
 unrelated combo-point writes. It also checks focus-only repairs and ignored
 unrelated/secret owners. Repeat the in-game capture to measure the improvement;
 the remaining cost has not been measured in the client yet.
+
+## Second capture and measurement gap
+
+After the scoped repair, the reported worst frame fell from 713 ms to 175 ms.
+The same 88 legacy refreshes took 34.66 ms instead of 605.54 ms, and frame-local
+health color refreshes took 3.31 ms. ToT previews still took only 0.45 ms.
+
+This leaves a stall that the original method list does not explain. Legacy atlas
+hooks can call the artwork painter directly, outside `Refresh`, and those calls
+were not timed. The existing painter is now an instrumentable `Paint` method;
+its algorithm and health-color logic are unchanged. The trace includes `Paint`
+and a covered-Lua total that counts nested calls once across the entire capture.
+That total must not be subtracted directly from the worst frame, which is only
+one frame interval within the capture.
+
+Capture again after pulling this update. Compare two openings to distinguish
+first-use work from recurring costs. No additional performance fix is inferred
+from the unexplained part of the frame interval.

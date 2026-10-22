@@ -127,6 +127,7 @@ L["Close Edit Mode and leave combat before arming the trace."] = true
 L["Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"] = true
 L["Commands: /seamless trace, /seamless trace report, /seamless trace off"] = true
 L["Completed: %d  |  %s XP"] = true
+L["Covered Lua: %.2f ms total (nested calls counted once)."] = true
 L["Edit Mode trace armed. Open Edit Mode within 60 seconds; a report follows automatically."] = true
 L["Edit Mode trace cancelled: Edit Mode was not opened within 60 seconds."] = true
 L["Edit Mode trace stopped."] = true

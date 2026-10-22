@@ -4,7 +4,7 @@ local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@class SeamlessUnitframes.Options : AceModule, AceEvent-3.0
----@field positionHooked? boolean
+---@field positionHooked? table<table, boolean> Frames whose native position and size changes refresh the options.
 local module = {}
 app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.Options]]
 
@@ -43,6 +43,9 @@ local function Option(row, order)
     return option
 end
 
+-- Frames with their own Edit Mode position and Frame Size get a Position and scale group.
+local POSITIONED = { player = true, target = true, focus = true }
+
 -- Standalone style rows need no heading; keep groups for related controls.
 ---@param entry SeamlessUnitframes.UnitFrame
 ---@param order number
@@ -60,11 +63,15 @@ local function FrameTab(entry, order)
             args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
         end
     end
-    if entry.key == "player" then
+    if POSITIONED[entry.key] then
+        local function getFrame()
+            return _G[entry.frameName]
+        end
         args = {
-            position = app.core:GetNativePositionOptions(function()
-                return PlayerFrame
-            end),
+            position = app.core:GetNativePositionOptions(
+                getFrame,
+                app.core:GetNativeSettingScale(getFrame, Enum.EditModeUnitFrameSetting.FrameSize)
+            ),
             style = { type = "group", inline = true, order = 20, name = L["Style"], args = args },
         }
     end
@@ -133,9 +140,17 @@ function module:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_DISABLED", refreshPosition)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
-    if not self.positionHooked and PlayerFrame and PlayerFrame.ApplySystemAnchor then
-        self.positionHooked = true
-        hooksecurefunc(PlayerFrame, "ApplySystemAnchor", refreshPosition)
+    self.positionHooked = self.positionHooked or {}
+    for _, entry in ipairs(app.unitFrames.list) do
+        local frame = POSITIONED[entry.key] and _G[entry.frameName]
+        if frame and not self.positionHooked[frame] then
+            self.positionHooked[frame] = true
+            for _, method in ipairs({ "ApplySystemAnchor", "UpdateSystemSettingFrameSize" }) do
+                if frame[method] then
+                    hooksecurefunc(frame, method, refreshPosition)
+                end
+            end
+        end
     end
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
         if name:lower() == "threatshownumeric" then

@@ -35,6 +35,8 @@ local counts = {
     questRefresh = 0,
 }
 local registeredOptions, systemOptions, enabled = nil, {}, true
+local positioned = {}
+Enum = { EditModeUnitFrameSetting = { FrameSize = 9 } }
 local modules = {}
 local app = {
     db = {
@@ -56,9 +58,13 @@ local app = {
         },
     },
     core = {
-        GetNativePositionOptions = function(_, getFrame)
-            assert(getFrame() == PlayerFrame)
+        GetNativePositionOptions = function(_, getFrame, scale)
+            assert(scale.setting == Enum.EditModeUnitFrameSetting.FrameSize and scale.getFrame == getFrame)
+            positioned[#positioned + 1] = getFrame()
             return { type = "group", inline = true, name = "Position and scale", order = 10, args = {} }
+        end,
+        GetNativeSettingScale = function(_, getFrame, setting)
+            return { getFrame = getFrame, setting = setting }
         end,
         RegisterOptions = function(_, name, spec)
             assert(name == "SeamlessUnitframes")
@@ -138,12 +144,19 @@ local function find(tab, key)
         return tab.args[key]
     end
     for _, group in pairs(tab.args) do
-        if group.args and group.args[key] then
-            return group.args[key]
+        local found = group.args and find(group, key)
+        if found then
+            return found
         end
     end
 end
 assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position and scale")
+for _, key in ipairs({ "target", "focus" }) do
+    assert(tabs[key].args.style and tabs[key].args.position, key .. " has Position and scale")
+end
+assert(not tabs.pet.args.position and not tabs.party.args.position, "only frames with their own position")
+assert(#positioned == 3 and positioned[1] == PlayerFrame and positioned[2] == TargetFrame)
+assert(positioned[3] == FocusFrame, "each group resolves its own frame")
 assert(tabs.player.args.style.args.player_classIcon.type == "toggle")
 assert(tabs.player.args.style.args.player_hidePvPIcon.type == "toggle")
 for _, option in pairs(tabs.player.args.style.args) do

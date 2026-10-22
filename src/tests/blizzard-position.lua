@@ -680,6 +680,9 @@ function player:GetScale()
     return 0.75
 end
 assert(config.scale.type == "range" and config.scale.name == "Scale")
+for key, row in pairs(config) do
+    assert(key == "scale" or row.order > config.scale.order, "Scale is the first row")
+end
 assert(config.scale.disabled() and config.scale.get() == player:GetScale())
 local originalScale = player:GetScale()
 config.scale.set(nil, 1.2)
@@ -724,3 +727,91 @@ local generic = app.core:GetPositionOptions({
 assert(generic.args.scale.disabled() and generic.args.scale.get() == 1)
 generic.args.scale.set(nil, 1.2)
 print("Optional position scale binding OK")
+
+-- Defaults come from the preset layout, the same source as the native Reset To
+-- Default Position button and the Frame Size slider.
+local warnings = {}
+coreApp.logger = {
+    warn = function(_, _, message)
+        warnings[#warnings + 1] = message
+    end,
+}
+local presetAnchor =
+    { point = "BOTTOMLEFT", relativeTo = "UIParent", relativePoint = "BOTTOM", offsetX = 300, offsetY = 250 }
+function EditModePresetLayoutManager:GetDefaultSystemAnchorInfo(system, systemIndex)
+    assert(system == player.system and systemIndex == player.systemIndex)
+    return copy(presetAnchor)
+end
+local FRAME_SIZE = 9
+function EditModePresetLayoutManager:GetDefaultSettingForSystem(_, _, setting)
+    return setting == FRAME_SIZE and 0 or nil
+end
+local frameSizeInfo = { minValue = 100, maxValue = 200, stepSize = 5 }
+function frameSizeInfo:ConvertValueForDisplay(raw)
+    return raw * self.stepSize + self.minValue
+end
+local frameSize, largerFrame = 120, true
+player.settingDisplayInfoMap = { [FRAME_SIZE] = frameSizeInfo }
+function player:HasSetting(setting)
+    return setting == FRAME_SIZE
+end
+function player:ShouldShowSetting(setting)
+    return setting == FRAME_SIZE and largerFrame
+end
+function player:GetSettingValue(setting)
+    assert(setting == FRAME_SIZE)
+    return frameSize
+end
+local inDefault = false
+function player:IsInDefaultPosition()
+    return inDefault
+end
+local settingSaves = 0
+function EditModeManagerFrame:SaveLayouts()
+    settingSaves = settingSaves + 1
+end
+function EditModeManagerFrame:OnSystemSettingChange(system, setting, value)
+    assert(system == player and setting == FRAME_SIZE)
+    frameSize = value
+end
+
+local defaults = app.core:GetNativePositionOptions(
+    function()
+        return player
+    end,
+    app.core:GetNativeSettingScale(function()
+        return player
+    end, FRAME_SIZE)
+).args
+assert(native:GetDefault(player).offsetX == 300 and native:GetDefault(player) ~= native:GetDefault(player))
+assert(defaults.point.default() == "BOTTOMLEFT" and defaults.relativeTo.default() == "UIParent")
+assert(defaults.x.default() == 300 and defaults.y.default() == 250, "offsets map to offsetX/offsetY")
+assert(defaults.scale.default() == 1, "raw preset value 0 is 100%")
+assert(defaults.scale.min == 1 and defaults.scale.max == 2 and defaults.scale.step == 0.05)
+assert(defaults.scale.get() == 1.2 and not defaults.scale.disabled())
+
+-- Scale writes the native setting in display units and saves outside Edit Mode.
+defaults.scale.set(nil, 1.35)
+assert(frameSize == 135 and settingSaves == 1, "1.35 is stored as exactly 135")
+combat = true
+defaults.scale.set(nil, 1.5)
+assert(frameSize == 135 and defaults.scale.disabled())
+combat = false
+largerFrame = false
+assert(defaults.scale.disabled(), "hidden native setting (Focus without Larger Frame)")
+defaults.scale.set(nil, 1.5)
+assert(frameSize == 135)
+largerFrame = true
+
+-- Reset applies the preset anchor and marks the frame as in its default position.
+assert(not defaults.reset.disabled() and defaults.reset.type == "execute")
+defaults.reset.func()
+local reset = draft.systems[1]
+assert(reset.anchorInfo.point == "BOTTOMLEFT" and reset.anchorInfo.offsetX == 300 and reset.isInDefaultPosition)
+inDefault = true
+assert(defaults.reset.disabled(), "nothing to reset, like the native button")
+inDefault = false
+EditModePresetLayoutManager.GetDefaultSystemAnchorInfo = nil
+assert(defaults.x.default() == nil, "clients without the preset API show Not applicable")
+assert(not native:ResetToDefault(player) and #warnings == 0)
+print("Native position defaults, Frame Size scale and Reset To Default OK")

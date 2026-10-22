@@ -205,6 +205,21 @@ function position:Read(system)
     return CopyTable(info.anchorInfo)
 end
 
+-- The anchor the native "Reset To Default Position" button applies: the preset
+-- layout's anchor for this system. Nil where the client lacks the preset API.
+function position:GetDefault(system)
+    local presets = EditModePresetLayoutManager
+    if not system or not presets or not presets.GetDefaultSystemAnchorInfo then
+        return nil
+    end
+    local ok, info = pcall(presets.GetDefaultSystemAnchorInfo, presets, system.system, system.systemIndex)
+    return ok and type(info) == "table" and CopyTable(info) or nil
+end
+
+function position:IsDefault(system)
+    return system ~= nil and system.IsInDefaultPosition ~= nil and system:IsInDefaultPosition() or false
+end
+
 function position:CanEdit(system)
     local manager = EditModeManagerFrame
     local override = LibStub("LibEditModeOverride-1.0")
@@ -294,6 +309,74 @@ function position:Apply(system, values, restoreState)
         -- Save the current live layout, never the override library's separate cache.
         manager:SaveLayouts()
         system.savedSystemInfo = CopyTable(info)
+    end
+    return true
+end
+
+-- Same result as the native button: the preset anchor, flagged as default
+-- position so the client's layout code places managed frames again.
+function position:ResetToDefault(system)
+    local default = self:GetDefault(system)
+    if not default then
+        return false, L["This frame has no default position."]
+    end
+    return self:Apply(system, default, { isInDefaultPosition = true })
+end
+
+local function settingDisplayInfo(system, setting)
+    local map = system.settingDisplayInfoMap
+    local manager = EditModeSettingDisplayInfoManager
+    if not map and manager and manager.GetSystemSettingDisplayInfoMap then
+        map = manager:GetSystemSettingDisplayInfoMap(system.system)
+    end
+    return map and map[setting]
+end
+
+-- An Edit Mode setting in its display units (Frame Size: 100 to 200), or nil
+-- while the frame lacks it or Edit Mode hides it (Focus without Larger Frame).
+function position:ReadSetting(system, setting)
+    if not system or not system.HasSetting or not system:HasSetting(setting) then
+        return nil
+    end
+    if system.ShouldShowSetting and not system:ShouldShowSetting(setting) then
+        return nil
+    end
+    return system:GetSettingValue(setting)
+end
+
+---@return number? min, number? max, number? step In display units.
+function position:GetSettingRange(system, setting)
+    local info = system and settingDisplayInfo(system, setting)
+    if info then
+        return info.minValue, info.maxValue, info.stepSize
+    end
+end
+
+function position:GetDefaultSetting(system, setting)
+    local presets = EditModePresetLayoutManager
+    if not system or not presets or not presets.GetDefaultSettingForSystem then
+        return nil
+    end
+    local ok, raw = pcall(presets.GetDefaultSettingForSystem, presets, system.system, system.systemIndex, setting)
+    if not ok or raw == nil then
+        return nil
+    end
+    local info = settingDisplayInfo(system, setting)
+    return info and info.ConvertValueForDisplay and info:ConvertValueForDisplay(raw) or raw
+end
+
+-- Change a setting like the native settings dialog does: inside Edit Mode it
+-- stays in the draft for native Save/Revert, outside it is saved at once.
+function position:ApplySetting(system, setting, value)
+    if not self:CanEdit(system) or self:ReadSetting(system, setting) == nil then
+        return false, L["Position editing is unavailable. Select an enabled frame in a custom layout."]
+    end
+    local manager = EditModeManagerFrame
+    manager:OnSystemSettingChange(system, setting, value)
+    if not manager:IsEditModeActive() then
+        manager:SaveLayouts()
+        local info = manager:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
+        system.savedSystemInfo = info and CopyTable(info)
     end
     return true
 end

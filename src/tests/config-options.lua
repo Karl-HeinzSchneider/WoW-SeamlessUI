@@ -96,7 +96,7 @@ options:RegisterAddon("Unitframes", {
             new = true,
             blizzard = true,
             args = {
-                tagged = { type = "toggle", name = "Tagged", new = true },
+                tagged = { type = "toggle", name = "Tagged", new = true, default = true },
             },
         },
         target = { name = "TargetFrame", order = 20, args = {} },
@@ -122,6 +122,8 @@ local playerTab = tables.Unitframes.args.player
 assert(playerTab.new == nil and playerTab.blizzard == nil)
 assert(playerTab.args.tagged.new == nil)
 assert(config:GetOptionTags(playerTab.args.tagged).new)
+assert(playerTab.args.tagged.default == nil, "AceConfig never sees our default key")
+assert(config:GetOptionTags(playerTab.args.tagged).default == true)
 assert(config.Option:New(tables.Unitframes, { "player", "tagged" }, "Unitframes"):Read("new"))
 assert(config.categories["Seamless:profiles"] and not config.categories["Unitframes:profiles"])
 local page = {}

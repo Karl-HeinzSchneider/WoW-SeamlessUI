@@ -11,7 +11,6 @@
 ---@field optionTags table<table, { new?: boolean, blizzard?: boolean }>
 ---@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
 ---@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
----@field GetFeatureTagWidth fun(self: SeamlessCore.Config, tags: table): number
 ---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
 ---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
 ---@field ControlRow table Base class for Settings-style control rows.

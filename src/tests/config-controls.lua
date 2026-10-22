@@ -75,6 +75,17 @@ end
 function methods:CreateFontString()
     return frame()
 end
+function methods:SetPoint(...)
+    self.points = self.points or {}
+    local point = { ... }
+    self.points[point[1]] = point
+end
+function methods:ClearAllPoints()
+    self.points = {}
+end
+function methods:SetWidth(value)
+    self.width = value
+end
 function methods:CreateTexture()
     return frame()
 end
@@ -266,6 +277,8 @@ local slider = page.controlPools.range[1]
 slider.Control.callback(slider.Control.owner, 7)
 assert(profile.amount == 7 and changes == 1)
 local toggle = page.controlPools.toggle[1]
+local labelLeft, labelRight = toggle.Label.points.LEFT, toggle.Label.points.RIGHT
+local labelWidth, rowHeight, controlLeft = toggle.Label.width, toggle:GetHeight(), toggle.Control.points.LEFT
 root.args.general.args.enabled.new = true
 app.config:RefreshOptionsPage(page)
 assert(toggle.featureTags.new:IsShown())
@@ -279,6 +292,10 @@ assert(toggle.featureTags.blizzard.Label.text == "BLIZZ" and toggle.featureTags.
 root.args.general.args.enabled.new = true
 app.config:RefreshOptionsPage(page)
 assert(toggle.featureTags.new:IsShown() and toggle.featureTags.blizzard:IsShown())
+assert(toggle.Label.points.LEFT == labelLeft and toggle.Label.points.RIGHT == labelRight)
+assert(toggle.Label.width == labelWidth and toggle:GetHeight() == rowHeight)
+assert(toggle.Control.points.LEFT == controlLeft)
+assert(toggle.featureTags.new.ignoreInLayout and toggle.featureTags.blizzard.ignoreInLayout)
 root.args.general.args.enabled.new, root.args.general.args.enabled.blizzard = nil, nil
 app.config:RefreshOptionsPage(page)
 assert(not toggle.featureTags.new:IsShown() and not toggle.featureTags.blizzard:IsShown())

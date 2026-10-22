@@ -258,12 +258,7 @@ function config:Refresh()
                 or (category.id == self.selected and "GameFontHighlight" or "GameFontNormal")
         )
         row.text:ClearAllPoints()
-        local inset = (category.header and 20 or 36) + depth * 12
-        local tagWidth = self:GetFeatureTagWidth(category)
-        if tagWidth > 0 then
-            inset = math.max(inset, tagWidth + 20)
-        end
-        row.text:SetPoint("LEFT", inset, category.header and -1 or 1)
+        row.text:SetPoint("LEFT", (category.header and 20 or 36) + depth * 12, category.header and -1 or 1)
         row.text:SetPoint("RIGHT", category.header and -30 or -4, 0)
         self:UpdateFeatureTags(row, row.text, category)
         row.background:SetShown(category.header == true)

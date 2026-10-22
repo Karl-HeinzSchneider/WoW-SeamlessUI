@@ -58,7 +58,6 @@ function Row:New(page)
     Mixin(row, self)
     row:SetWidth(page:GetWidth())
     row.Label = text(row)
-    row.labelInset = 37
     row.Label:SetPoint("LEFT", 37, 0)
     row.Label:SetPoint("RIGHT", row, "CENTER", -85, 0)
     row.Label:SetWordWrap(true)
@@ -87,16 +86,6 @@ function Row:Refresh(option)
         self:Update()
     end
     local tags = { new = option:Read("new"), blizzard = option:Read("blizzard") }
-    local width = config:GetFeatureTagWidth(tags)
-    local inset = width > 0 and math.max(self.labelInset, width + 20) or self.labelInset
-    self.Label:ClearAllPoints()
-    if self.labelTop then
-        self.Label:SetPoint("TOPLEFT", inset, -self.labelTop)
-        self.Label:SetWidth(self:GetWidth() - inset - self.labelRightInset)
-    else
-        self.Label:SetPoint("LEFT", inset, 0)
-        self.Label:SetPoint("RIGHT", self, "CENTER", -85, 0)
-    end
     config:UpdateFeatureTags(self, self.tagAnchor or self.Label, tags)
     if self.Control then
         self.Control:SetEnabled(self.enabled)
@@ -324,7 +313,6 @@ end
 
 function creators.description(page)
     local row = Row:New(page)
-    row.labelTop, row.labelRightInset = 8, 15
     row.Label:ClearAllPoints()
     row.Label:SetPoint("TOPLEFT", 37, -8)
     row.Label:SetWidth(page:GetWidth() - 52)
@@ -336,7 +324,6 @@ end
 
 function creators.group(page)
     local row = Row:New(page)
-    row.labelInset, row.labelTop, row.labelRightInset = 7, 16, 43
     row.rowHeight = 45
     row.Label:ClearAllPoints()
     row.Label:SetPoint("TOPLEFT", 7, -16)

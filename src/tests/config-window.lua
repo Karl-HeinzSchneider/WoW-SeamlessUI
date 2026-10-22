@@ -256,7 +256,7 @@ for _, row in ipairs(config.rows) do
     if row.id == "Page" then
         assert(row.featureTags.new:IsShown() and row.featureTags.blizzard:IsShown())
         assert(row.featureTags.blizzard.Label.text == "BLIZZ")
-        assert(row.text.points.LEFT[2] >= config:GetFeatureTagWidth(config.categories.Page) + 20)
+        assert(row.text.points.LEFT[2] == 36, "tags must not shift category labels")
     end
 end
 local headerRight, dividerX = 18 + config.navigation:GetWidth(), 18 + 199

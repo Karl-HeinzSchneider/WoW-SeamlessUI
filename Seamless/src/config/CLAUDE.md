@@ -58,8 +58,9 @@ Flags do not propagate to children or automatically clear on hover/open.
 `badges.lua` reuses SharedXML's `NewFeatureLabelNoAnimateTemplate` at 0.8 scale.
 NEW uses the client's localized label; BLIZZ uses the suite locale on both native
 text layers, preserving the same static glow. Labels sit to the left of the
-setting/category name. Tagged rows reserve space for the labels and their glow;
-untagged rows retain their original insets. Pooled rows hide tags when reused.
+setting/category name as optional overlays. Tags never reserve space or change
+label anchors, widths, row heights or control positions; overlap with decoration
+is allowed. Pooled rows hide tags when reused.
 
 `NormalizeOptionTags` removes these custom keys before passing declarations to
 AceConfigRegistry, retaining them in a weak-key side table. Dynamic declarations

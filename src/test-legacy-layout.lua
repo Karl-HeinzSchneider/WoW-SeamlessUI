@@ -631,6 +631,20 @@ layout:ApplyToTPreview(preview)
 app.healthColor:ApplyPreview(preview, "targettarget")
 assert(preview.FrameTexture.atlas == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn")
 assert(preview.Name.justify == "CENTER" and preview.healthbar.color[1] == 0.2)
+powerToken = "RAGE"
+layout:ApplyToTPreview(preview, "MANA")
+assert(
+    preview.ManaBar.fill.atlas == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-Mana",
+    "VIP power selects existing mana artwork"
+)
+layout:ApplyToTPreview(preview, "ENERGY")
+assert(preview.ManaBar.fill.atlas == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-Energy")
+layout:ApplyToTPreview(preview)
+assert(
+    preview.ManaBar.fill.atlas == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn-Bar-Rage",
+    "live fallback restores existing power artwork"
+)
+powerToken = "MANA"
 app.db.profile.unitFrames.targettarget.healthBarColor = "default"
 app.healthColor:ApplyPreview(preview, "targettarget")
 assert(preview.healthbar.color[1] == 1 and preview.healthbar.color[2] == 1)

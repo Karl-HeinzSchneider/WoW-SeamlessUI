@@ -97,6 +97,16 @@ function module:OnInitialize()
 end
 
 function module:ApplyPreview(frame, key)
+    local fontString = frame.name
+    local mode = app.db.profile.unitFrames[key].nameDisplay
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
+        local surname = character.surname ~= "" and character.surname or nil
+        local full = character.name .. (surname and separator .. surname or "")
+        fontString:SetText(mode == "first" and character.name or mode == "last" and (surname or character.name) or full)
+        return
+    end
     native[frame] = nil
     Apply(frame, key)
 end

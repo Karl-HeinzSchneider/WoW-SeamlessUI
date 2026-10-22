@@ -15,7 +15,7 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 - `src/totposition/`: ToT positions and addon-owned Edit Mode stand-ins.
 - `src/layout/`: optional legacy geometry and artwork.
 
-Native Player, Target and Focus position controls use Core's `GetNativePositionOptions` and
+Native Player, Pet, Target and Focus position controls use Core's `GetNativePositionOptions` and
 `GetNativeSettingScale`, reading the active layout without a SeamlessUI dependency. ToT frames
 use `app.totPosition:GetOptions`. Linked frames' Style rows appear with their parent.
 

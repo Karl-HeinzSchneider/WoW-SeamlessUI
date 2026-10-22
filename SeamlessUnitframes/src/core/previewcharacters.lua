@@ -38,7 +38,7 @@ local function Apply(frame)
         return
     end
     local key = app.unitFrames:KeyOf(frame)
-    local character = key and module:Get(frame, key)
+    local character = key and app.previewCharacters:Get(frame, key)
     if not character then
         return
     end

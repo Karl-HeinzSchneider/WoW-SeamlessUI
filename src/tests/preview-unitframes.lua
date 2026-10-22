@@ -49,11 +49,14 @@ function app.addon:IsEnabled()
     return enabled
 end
 function app.addon:NewModule(_, module)
-    module.enabled = true
-    module.IsEnabled = function(self)
-        return self.enabled
-    end
-    return module
+    -- AceAddon returns a distinct instance inheriting the prototype. Lifecycle methods such as
+    -- IsEnabled exist on that instance, not on the prototype captured by file-local callbacks.
+    return setmetatable({
+        enabled = true,
+        IsEnabled = function(self)
+            return self.enabled
+        end,
+    }, { __index = module })
 end
 function app.core:GetEditModeLibrary()
     return lib
@@ -100,6 +103,8 @@ end
 assert(loadfile("SeamlessUnitframes/src/core/previewcharacters.lua"))("SeamlessUnitframes", app)
 local module = app.previewCharacters
 module:OnInitialize()
+hooks.UnitFramePortrait_Update(pet)
+assert(pet.name == "pet", "pet updates before enable must not call lifecycle APIs on the prototype")
 module:OnEnable()
 assert(player.name == "live" and requests == 0)
 editing = true

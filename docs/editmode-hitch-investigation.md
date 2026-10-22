@@ -6,7 +6,7 @@ suspected, but no timing evidence establishes the cause yet.
 
 ## Diagnostic scope
 
-Add an opt-in, session-only timing trace around the suite's Edit Mode entry work.
+An opt-in, session-only timing trace measures the suite's Edit Mode entry work.
 Measure elapsed milliseconds and call counts for:
 
 - SeamlessUI FPS display refresh and anchor validation.
@@ -14,20 +14,37 @@ Measure elapsed milliseconds and call counts for:
 - Unitframes target-of-target and target-of-focus mover refreshes and previews.
 - Core shared Edit Mode panel refreshes and layout callbacks.
 
-Record the opening frame's elapsed time alongside the Lua timings so a rendering
-or native layout stall is distinguishable from expensive addon callbacks. Report
-nested timings as inclusive; they must not be summed as independent costs.
-Keep diagnostics inactive by default, avoid per-call chat output, and preserve
-normal return values and error behavior.
+The first observed active frame and worst frame interval are reported alongside
+Lua timings. These intervals include native work, rendering and other addons;
+they cannot attribute a stall to one addon. Nested timings are inclusive and must
+not be summed as independent costs. Instrumentation adds measurement overhead.
+
+The trace does not change saved settings or profiling CVars. It temporarily wraps
+addon-owned methods and removes the wrappers after the capture, cancellation, a
+60-second timeout or a traced error. The report prints the 15 highest total Lua
+timings, including call counts and the longest call. Diagnostics are inactive by
+default. No native frame methods or vendored library files are modified.
 
 ## In-game validation
 
 1. Keep the current addon configuration and saved settings.
-2. Arm the trace with Edit Mode closed, then open Edit Mode without selecting or
-   moving a frame. Capture the report after the opening frame completes.
+2. With Edit Mode closed and out of combat, run `/seamless trace`, then open Edit
+   Mode without selecting or moving a frame. A chat report follows automatically
+   after roughly 0.75 seconds of observed active frame intervals.
 3. Repeat for several openings to separate first-use setup from recurring work.
 4. Compare callback counts, total time, longest calls and opening frame time.
 5. Use the evidence to choose a fix, then repeat the same capture to verify it.
 
-This PR begins with the investigation plan. Timing instrumentation and an in-game
-capture are pending; no performance fix or measured cause is claimed yet.
+Use `/seamless trace report` to repeat the last report or `/seamless trace off` to
+cancel. Reports last until reload. Instrumentation covers the loaded suite Ace
+modules' refresh/apply methods, Core refresh methods, shared anchor validation,
+SeamlessUI anchor lists, LibEditMode settings refreshes, and ToT mover/preview work.
+It records calls while the native manager reports Edit Mode active; it does not
+measure native methods or the complete native entry event dispatch.
+
+Run `lua src/tests/editmode-trace.lua` for return-value preservation, timing and
+counts, inherited-method restoration, duplicate targets, cancellation, timeout,
+combat/already-open guards, error propagation and cleanup.
+
+An in-game capture is still needed; no performance fix or measured cause is
+claimed yet.

@@ -30,6 +30,7 @@ src\core\editmodelib.lua
 src\core\anchorpicker.lua
 src\core\editmode.lua
 src\core\systemoptions.lua
+src\core\editmodetrace.lua
 src\core\quests.lua
 src\core\questlog.lua
 src\core\tweaks.lua

@@ -67,6 +67,8 @@ function addon:OnSlashCommand(input)
         else
             log:chat(L["Log level is %s"], log:getLevelName())
         end
+    elseif cmd == "trace" then
+        self:OnEditModeTraceCommand(arg and arg:lower() or "")
     elseif cmd == "reset" then
         self.db:ResetProfile()
         log:chat(L["Profile reset"])

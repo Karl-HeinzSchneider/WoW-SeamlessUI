@@ -23,6 +23,7 @@ local RESET = { point = "CENTER", x = 0, y = 0 }
 ---@field shown table<string, boolean>  # the Frames list checkboxes, on for the session
 local mover = { movers = {}, shown = {} }
 app.totMover = mover
+app.core:RegisterEditModeTraceTarget(appName .. ".ToTMover", mover, { "Refresh", "UpdatePreview" })
 
 local function Known(value)
     return not (issecretvalue and issecretvalue(value)) and value ~= nil
@@ -51,7 +52,7 @@ local function OnMoved(key, point, x, y)
     position:SetPosition(key, current)
 end
 
-local function UpdatePreview(frame, key)
+function mover:UpdatePreview(frame, key)
     local first, surname = UnitName("player")
     if Known(first) and not (issecretvalue and issecretvalue(surname)) then
         local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
@@ -119,7 +120,7 @@ local function Create(key)
     CreateVisuals(frame)
     frame:SetScript("OnEvent", function()
         if frame:IsShown() then
-            UpdatePreview(frame, key)
+            mover:UpdatePreview(frame, key)
         end
     end)
     lib:AddFrame(frame, function(_, _, point, x, y)
@@ -154,7 +155,7 @@ function mover:Refresh()
         local real = position:Frames(key)
         local visible = position.active and lib:IsInEditMode() and self.shown[key] and real ~= nil
         if visible then
-            UpdatePreview(frame, key)
+            self:UpdatePreview(frame, key)
             local scale = real:GetEffectiveScale()
             local parentScale = UIParent:GetEffectiveScale()
             frame:SetScale(Known(scale) and scale / parentScale or 1)

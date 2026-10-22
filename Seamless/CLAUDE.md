@@ -63,6 +63,16 @@ Core never references a feature by name or loads disabled features; core profile
 feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
 on the suite profile.
 
+`editmodetrace.lua` provides `/seamless trace` (arm), `/seamless trace report` (repeat
+the last report) and `/seamless trace off` (cancel). It temporarily times addon-owned
+methods on loaded suite Ace modules, core refreshes and explicitly registered targets
+(`RegisterEditModeTraceTarget(label, target, methods)`). Registration does not wrap
+anything until armed. Wrappers are removed after a short opening capture, timeout,
+cancel or a traced error. No native frame methods or library internals are replaced;
+no SavedVariables or profiling CVars are changed. Inclusive timings overlap. The
+observer reports frame intervals, which include work outside Lua and cannot attribute
+a native/rendering stall to one addon. Run `lua src/tests/editmode-trace.lua`.
+
 ## Options: two panels in parallel, one panel per addon, tabs inside
 
 Each `RegisterOptions` call feeds two panels from the same AceConfig table:

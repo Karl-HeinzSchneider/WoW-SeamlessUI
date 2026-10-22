@@ -50,6 +50,8 @@
 ---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
+---@field RegisterEditModeTraceTarget fun(self: SeamlessCore.Addon, label: string, target: table, methods: string[]) Register addon-owned methods for opt-in timing.
+---@field OnEditModeTraceCommand fun(self: SeamlessCore.Addon, command?: string) Arm, cancel or repeat the session-only Edit Mode trace.
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
 ---@field GetOptionDefault fun(self: SeamlessCore.Addon, defaults: table?, path: string[], first?: number): any
 ---@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean

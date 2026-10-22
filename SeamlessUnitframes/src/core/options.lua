@@ -4,6 +4,7 @@ local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@class SeamlessUnitframes.Options : AceModule, AceEvent-3.0
+---@field positionHooked? boolean
 local module = {}
 app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.Options]]
 
@@ -58,6 +59,14 @@ local function FrameTab(entry, order)
             end
             args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
         end
+    end
+    if entry.key == "player" then
+        args = {
+            position = app.core:GetNativePositionOptions(function()
+                return PlayerFrame
+            end),
+            style = { type = "group", inline = true, order = 20, name = L["Style"], args = args },
+        }
     end
     return {
         order = order,
@@ -118,6 +127,16 @@ function module:OnInitialize()
 end
 
 function module:OnEnable()
+    local function refreshPosition()
+        app.core:RefreshOptions(appName)
+    end
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", refreshPosition)
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
+    self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
+    if not self.positionHooked and PlayerFrame and PlayerFrame.ApplySystemAnchor then
+        self.positionHooked = true
+        hooksecurefunc(PlayerFrame, "ApplySystemAnchor", refreshPosition)
+    end
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
         if name:lower() == "threatshownumeric" then
             self:Refresh()

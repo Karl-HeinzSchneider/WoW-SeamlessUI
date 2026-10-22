@@ -31,6 +31,7 @@
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
 
 ---@class SeamlessCore
+---@field framePosition SeamlessCore.FramePosition
 ---@field config SeamlessCore.Config
 ---@field IsEditModeSectionCollapsed fun(key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(key: string, collapsed: boolean)
@@ -67,6 +68,9 @@
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
 ---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
+---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
+---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: fun(): table?): table Native layout Position option group.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)

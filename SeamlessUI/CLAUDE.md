@@ -51,6 +51,8 @@ Run `lua src/tests/blizzard-editmode.lua`.
 
 ## Position controls (`blizzardposition.lua`)
 
+- The position view delegates reading, validation and applying to Core's shared
+  `GetFramePositionService`; its selection/addPosition guards stay in SeamlessUI.
 - Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft. In default
   position, managed frames and default action bars have a placeholder anchor, so it reads the live
   `GetPoint(1)`, follows unnamed containers to the named frame placing them and converts offsets

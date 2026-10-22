@@ -141,3 +141,24 @@ match, dragging, scrolling and Escape in the WoW Forever client.
 
 Scrollbars stay visible when their contents fit; scrolling is disabled and the bar
 is desaturated and dimmed. Compact mode still hides the navigation scrollbar.
+
+## Reusable Position sections
+
+`core:GetPositionOptions(spec)` returns a collapsible inline Position group with
+Anchor, AnchorParent, AnchorFrame, X and Y. It uses the same `get(key)`,
+`set(key, value)`, `anchorFrames` and optional `disabled()` contract as
+`GetEditModePositionSettings`; the keys are point, relativePoint, relativeTo, x, y.
+No position is stored by the controls. The returned group's order can be changed.
+
+For native Edit Mode frames, use `core:GetNativePositionOptions(function()
+return PlayerFrame end)`. The frame is resolved on every access, and the shared
+`core:GetFramePositionService()` reads and applies the active native layout.
+Inside Edit Mode it preserves the live draft and native Save/Revert ownership;
+outside Edit Mode it saves through the manager's current live layout. Presets,
+override layouts, unavailable systems and combat disable editing. Anchor choices
+exclude self, descendants and cycles. This works without SeamlessUI enabled;
+SeamlessUI's Edit Mode extension uses the same core backend with its own selection
+and feature-enable checks. Settings stay in Edit Mode layouts, not AceDB profiles.
+
+`Unit Frames > Player` is the first consumer, with Position and Style groups.
+Run `lua src/tests/blizzard-position.lua` for both native and config paths.

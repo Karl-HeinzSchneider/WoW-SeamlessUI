@@ -218,6 +218,9 @@ EditModeManagerFrame = {
 function EditModeManagerFrame:GetActiveLayoutSystemInfo()
     return draft.systems[1]
 end
+function EditModeManagerFrame:IsEditModeActive()
+    return true
+end
 function EditModeManagerFrame:IsActiveLayoutPreset()
     return preset
 end
@@ -265,6 +268,8 @@ function app.blizzardEditMode:GetSelectedFrame()
         return selected, { key = "player" }
     end
 end
+local coreApp = { addon = app.core }
+assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
 assert(loadfile("SeamlessUI/src/features/blizzardposition.lua"))("SeamlessUI", app)
 local position = app.blizzardPosition
 local values = position:Read(player)
@@ -510,6 +515,8 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 L["Focus frame"], L["Target frame"] = "Z Focus", "A Target"
 L["Anchor"], L["Top right"], L["Revert changes"] = "Translated anchor", "Translated top right", "Translated revert"
 L["X and Y must be finite numbers."] = "Translated numeric error"
+local coreApp = { addon = app.core }
+assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
 assert(loadfile("SeamlessUI/src/features/blizzardposition.lua"))("SeamlessUI", app)
 local localizedPosition = app.blizzardPosition
 local localizedView = localizedPosition:Create(frame())
@@ -602,3 +609,68 @@ selected = frame("OtherFrame")
 picker.apply("LEFT", "TargetFrame", "RIGHT", 5, 0)
 assert(position:Read(player).point == "TOPLEFT")
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")
+
+-- The config view uses the shared core service without requiring SeamlessUI or a selection.
+assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
+local native = app.core:GetFramePositionService()
+local group = app.core:GetNativePositionOptions(function()
+    return player
+end)
+assert(group.name == "Position" and group.type == "group" and group.inline)
+local config = group.args
+assert(config.point.get() == position:Read(player).point)
+assert(config.relativePoint.get() == position:Read(player).relativePoint)
+assert(config.relativeTo.get() == position:Read(player).relativeTo)
+assert(config.x.get() == 5 and config.y.get() == -5)
+assert(not config.x.disabled(), "config editing needs no selected Edit Mode extension")
+local beforeConfigSave = saves
+config.x.set(nil, 42)
+assert(position:Read(player).offsetX == 42 and saves == beforeConfigSave, "active Edit Mode keeps edits in its draft")
+assert(config.y.get() == -5, "editing one field preserves the other four")
+local nativeValues = native:Read(player)
+nativeValues.offsetY = -28
+assert(native:Apply(player, nativeValues))
+assert(config.y.get() == -28, "config getters read later native edits")
+combat = true
+config.x.set(nil, 999)
+assert(config.x.disabled() and config.x.get() == 42)
+combat = false
+preset = true
+assert(config.x.disabled())
+config.x.set(nil, 999)
+assert(config.x.get() == 42)
+preset = false
+local choices = config.relativeTo.values()
+assert(choices.UIParent and not choices.PlayerFrame and not choices.PetFrame, "exclude self and dependent targets")
+assert(config.relativeTo.sorting()[1] == "UIParent")
+local beforeCycle = native:Read(player)
+local cyclic = copy(beforeCycle)
+cyclic.relativeTo = "PetFrame"
+assert(not native:Apply(player, cyclic))
+assert(native:Read(player).relativeTo == beforeCycle.relativeTo)
+-- Outside Edit Mode, persist through the live manager, preserving other system data.
+function EditModeManagerFrame:IsEditModeActive()
+    return false
+end
+local liveSaves = 0
+function EditModeManagerFrame:SaveLayouts()
+    liveSaves = liveSaves + 1
+    assert(draft.systems[1].anchorInfo.offsetX == 73)
+    assert(draft.systems[1].settings[1].value == 1234, "unrelated settings must survive")
+    saved.layouts[1] = copy(draft)
+    player.dirty = false
+end
+draft.systems[1].settings = { { setting = 7, value = 1234 } }
+config.x.set(nil, 73)
+assert(liveSaves == 1 and saved.layouts[1].systems[1].anchorInfo.offsetX == 73)
+assert(player.savedSystemInfo.anchorInfo.offsetX == 73)
+assert(config.x.get() == 73)
+-- A new layout must be read on every access, rather than captured by the option factory.
+draft = copy(draft)
+draft.systems[1].anchorInfo.offsetX = -80
+assert(config.x.get() == -80)
+local missing = app.core:GetNativePositionOptions(function()
+    return nil
+end)
+assert(missing.args.x.disabled() and missing.args.x.get() == 0)
+print("Config position options OK (shared draft, native persistence, layout switches and combat guards)")

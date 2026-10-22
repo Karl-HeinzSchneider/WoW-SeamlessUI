@@ -28,6 +28,9 @@ Required entry point of the suite; works with no feature addon enabled.
   and its "Tweaks" child.
 - `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
   compartment entry (off by default, disabled where the client lacks it).
+- `frameposition.lua`: shared native Edit Mode position backend (reading, anchor validation,
+  applying the live draft and saving outside Edit Mode); exposed through
+  `GetFramePositionService`. SeamlessUI's Edit Mode position view delegates here.
 - `src/config/`: the standalone draggable configuration shell and public category/page API.
   See `src/config/CLAUDE.md`. `/seamless` and minimap right-click open it; existing options
   are also rendered there with Settings-style rows; native AddOns panels remain as a fallback.

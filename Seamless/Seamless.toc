@@ -24,6 +24,8 @@ src\config\badges.lua
 src\config\window.lua
 src\config\model.lua
 src\config\controls.lua
+src\core\frameposition.lua
+src\config\position.lua
 src\core\editmodelib.lua
 src\core\anchorpicker.lua
 src\core\editmode.lua

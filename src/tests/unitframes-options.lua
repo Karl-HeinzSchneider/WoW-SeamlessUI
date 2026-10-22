@@ -382,6 +382,37 @@ modules.ClassIcon:Refresh()
 assert(portraitResets == 1, "the client's own class icon setting stays")
 print("PASS: class icon portraits")
 
+-- VIP identity uses catalogue data even when the live target is an NPC.
+local character = { name = "VIP", surname = "Supporter", class = "PALADIN" }
+app.previewCharacters = {
+    Get = function()
+        return character
+    end,
+}
+app.db.profile.unitFrames.target.nameDisplay = "full"
+nameDisplay:ApplyPreview(TargetFrame, "target")
+assert(TargetFrame.name:GetText() == "VIP-Supporter")
+app.db.profile.unitFrames.target.nameDisplay = "last"
+nameDisplay:ApplyPreview(TargetFrame, "target")
+assert(TargetFrame.name:GetText() == "Supporter")
+modules.ClassIcon:ApplyPreview(TargetFrame, "target")
+assert(TargetFrame.portrait.atlas == "classicon-paladin")
+character.displayTexture = "existing-portrait"
+TargetFrame.portrait.SetTexture = function(self, value)
+    self.texture = value
+end
+TargetFrame.portrait.SetTexCoord = function(self, ...)
+    self.coords = { ... }
+end
+app.db.profile.unitFrames.target.classIcon = false
+modules.ClassIcon:ApplyPreview(TargetFrame, "target")
+assert(TargetFrame.portrait.texture == "existing-portrait" and TargetFrame.portrait.coords[2] == 1)
+app.db.profile.unitFrames.target.classIcon = true
+modules.ClassIcon:ApplyPreview(TargetFrame, "target")
+assert(TargetFrame.portrait.atlas == "classicon-paladin", "class icon preference wins over custom portrait")
+app.previewCharacters = nil
+print("PASS: VIP names and portrait preferences")
+
 preview.portrait = Portrait()
 app.db.profile.unitFrames.targettarget.classIcon = true
 modules.ClassIcon:ApplyPreview(preview, "targettarget")

@@ -43,6 +43,21 @@ Required entry point of the suite; works with no feature addon enabled.
 
 ## Public API
 
+- `src/core/previewcharacters.lua`: `RegisterPreviewCharacter(id, record)` registers a flat,
+  validated VIP record. `previewcharacters-data.lua` is the shipped, editable catalogue, loaded
+  immediately after the service. `GetPreviewCharacter(consumerID)` returns a copy, or nil outside
+  Edit Mode/in combat/with an empty catalogue. Assignments stay stable for the session, drawing
+  from a shuffled bag without repeats until exhausted. Enter/exit reset the session. Core owns
+  only data and never modifies unit APIs, secure bindings or feature frames.
+- Records use `name`, optional `surname`, uppercase `class`, numeric `health`/`healthMax` and
+  `power`/`powerMax` (default 100), `powerType` and `reaction` (1–8). Optional `displayTexture` is
+  a full path to an existing BLP/TGA. Without an asset, consumers may show a class icon. Metadata
+  (`level`, titles, realm, guild/rank, zone, race/sex, faction, role, classification, `displayID`)
+  is available for future consumers; registration does not automatically render it. Add scalar
+  metadata as needed; nested tables are rejected. Character names and guilds are proper names,
+  not localization keys. Do not draw new portraits without asking.
+- Run `lua src/tests/preview-characters.lua`.
+
 At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamless")`.
 
 - `core.logger`: shared logger; its level follows the core profile.

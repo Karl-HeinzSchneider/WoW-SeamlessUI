@@ -27,6 +27,8 @@ src\config\controls.lua
 src\core\frameposition.lua
 src\config\position.lua
 src\core\editmodelib.lua
+src\core\previewcharacters.lua
+src\core\previewcharacters-data.lua
 src\core\anchorpicker.lua
 src\core\editmode.lua
 src\core\systemoptions.lua

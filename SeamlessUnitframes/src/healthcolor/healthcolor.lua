@@ -92,6 +92,17 @@ end
 ---@return ColorMixin?
 local function BarColor(bar, key)
     local mode = app.db.profile.unitFrames[key].healthBarColor
+    local character = app.previewCharacters and app.previewCharacters:Get(bar.unitFrame, key)
+    if character then
+        if mode == "class" or mode == "classReaction" then
+            return RAID_CLASS_COLORS[character.class]
+        elseif mode == "reaction" then
+            -- Match unit selection colors rather than the muted reputation bar palette.
+            reactionColor:SetRGB(character.reaction <= 4 and 1 or 0, character.reaction >= 4 and 1 or 0, 0)
+            return reactionColor
+        end
+        return nil
+    end
     local unit = bar.unit
     if mode == "default" or not Readable(unit) then
         return nil

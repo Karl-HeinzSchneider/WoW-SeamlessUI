@@ -62,10 +62,21 @@ local function UpdatePreview(frame, key)
     frame.HealthBar:SetValue(UnitHealth("player"))
     frame.ManaBar:SetMinMaxValues(0, UnitPowerMax("player"))
     frame.ManaBar:SetValue(UnitPower("player"))
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        frame.HealthBar:SetMinMaxValues(0, character.healthMax)
+        frame.HealthBar:SetValue(character.health)
+        frame.ManaBar:SetMinMaxValues(0, character.powerMax)
+        frame.ManaBar:SetValue(character.power)
+    end
     app.legacyLayout:ApplyToTPreview(frame)
     app.healthColor:ApplyPreview(frame, key)
     app.nameDisplay:ApplyPreview(frame, key)
     app.classIcon:ApplyPreview(frame, key)
+    if character then
+        local color = PowerBarColor[character.powerType] or PowerBarColor.MANA
+        frame.ManaBar:SetStatusBarColor(color.r, color.g, color.b)
+    end
 end
 
 local function CreateVisuals(frame)

@@ -379,6 +379,24 @@ fire("exit")
 assert(not targetMover.frame.shown)
 print("PASS: Edit Mode stand-ins")
 
+-- Only the addon-owned previews use catalogue health/power; they never rebind the real unit.
+PowerBarColor = { MANA = { r = 0, g = 0, b = 1 } }
+app.previewCharacters = {
+    Get = function()
+        return { health = 75, healthMax = 150, power = 20, powerMax = 80, powerType = "MANA" }
+    end,
+}
+editing = true
+fire("enter")
+assert(targetMover.frame.HealthBar.value == 75 and targetMover.frame.HealthBar.range[2] == 150)
+assert(targetMover.frame.ManaBar.value == 20 and targetMover.frame.ManaBar.range[2] == 80)
+app.previewCharacters = nil
+mover:Refresh()
+assert(targetMover.frame.HealthBar.value == health and targetMover.frame.ManaBar.value == power)
+editing = false
+fire("exit")
+print("PASS: VIP ToT bar values and live fallback")
+
 -- Layout copies, renames and deletes follow the game's layouts.
 options.set("x", 70)
 fire("create", "Copy", 3, "Custom")

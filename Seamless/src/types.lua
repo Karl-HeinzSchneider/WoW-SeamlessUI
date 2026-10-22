@@ -1,4 +1,30 @@
 -- Annotations only; not loaded by the client.
+---@class SeamlessCore.PreviewCharacter
+---@field id? string Assigned by the registry.
+---@field name string First name; proper character names are not translated.
+---@field surname? string
+---@field class string Uppercase class token.
+---@field health? number Defaults to healthMax; clamped to [0, healthMax].
+---@field healthMax? number Defaults to 100.
+---@field power? number Defaults to powerMax; clamped to [0, powerMax].
+---@field powerMax? number Defaults to 100.
+---@field powerType? string PowerBarColor token; defaults to MANA.
+---@field reaction? number 1–8; defaults to 5 (friendly).
+---@field displayTexture? string Full Interface path to an existing BLP/TGA portrait.
+---@field level? number Defaults to 85; metadata for future consumers.
+---@field titleBefore? string
+---@field titleAfter? string
+---@field realm? string
+---@field guild? string
+---@field guildRank? string
+---@field zone? string
+---@field race? string
+---@field female? boolean
+---@field faction? string
+---@field role? string
+---@field classification? string
+---@field displayID? number Metadata for a future model consumer; not a 2D portrait.
+
 ---@class SeamlessCore.Config
 ---@field categories table<string, SeamlessCore.ConfigCategory>
 ---@field collapsed table<string, boolean>
@@ -50,6 +76,8 @@
 ---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
+---@field RegisterPreviewCharacter fun(self: SeamlessCore.Addon, id: string, record: SeamlessCore.PreviewCharacter)
+---@field GetPreviewCharacter fun(self: SeamlessCore.Addon, consumer: string): SeamlessCore.PreviewCharacter?
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
 ---@field GetOptionDefault fun(self: SeamlessCore.Addon, defaults: table?, path: string[], first?: number): any
 ---@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean

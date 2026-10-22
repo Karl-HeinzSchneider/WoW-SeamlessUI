@@ -127,6 +127,19 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 
 ## Conventions
 
+- `src/core/previewcharacters.lua` consumes Core's VIP catalogue in Edit Mode for player,
+  target, focus, their ToT stand-ins and party members (pet retains the game data). Assignments
+  live in addon-owned maps, never on protected frame tables. Names, portraits and health colors
+  are painted on native frames; only addon-owned ToT stand-ins use fabricated health/power
+  values. Native unit bindings, geometry and visibility are preserved. Frame
+  settings still control name shortening, class icons and health colors. Existing unit update
+  functions are post-hooked to preserve visuals across native events; no per-frame polling. Exit, disable
+  and combat restore current data via `UnitFrame_Update`, not saved gameplay snapshots. Level,
+  auras, threat, bar text/predictions and classification art remain native; catalogue metadata
+  does not imply support for rendering those fields. Verify these previews and restoration in game.
+  Run `lua src/tests/preview-unitframes.lua`, `lua src/tests/unitframes-options.lua` and
+  `lua src/tests/unitframes-totposition.lua`.
+
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.
 - `src/types.lua`: annotations for `app.*` and `SeamlessUnitframes.DB`; not in the TOC.

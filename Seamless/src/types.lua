@@ -70,7 +70,7 @@
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
 ---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
----@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: fun(): table?, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group.
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
@@ -78,6 +78,8 @@
 ---@field logger SeamlessCore.Logger
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
+
+---@alias SeamlessCore.FrameResolver fun(): table?
 
 ---@class SeamlessCore.PositionScale
 ---@field get? fun(): number Current scale multiplier (1 = 100%).

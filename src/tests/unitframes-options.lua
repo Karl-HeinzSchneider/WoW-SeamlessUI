@@ -382,6 +382,49 @@ modules.ClassIcon:Refresh()
 assert(portraitResets == 1, "the client's own class icon setting stays")
 print("PASS: class icon portraits")
 
+-- VIP identity is painted only through the custom-preview entry points.
+preview.portrait = Portrait()
+local character = { name = "VIP", surname = "Supporter", class = "PALADIN" }
+app.previewCharacters = {
+    Get = function()
+        return character
+    end,
+}
+app.db.profile.unitFrames.targettarget.nameDisplay = "full"
+nameDisplay:ApplyPreview(preview, "targettarget")
+assert(preview.name:GetText() == "VIP-Supporter")
+app.db.profile.unitFrames.targettarget.nameDisplay = "last"
+nameDisplay:ApplyPreview(preview, "targettarget")
+assert(preview.name:GetText() == "Supporter")
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.atlas == "classicon-paladin")
+character.displayTexture = "existing-portrait"
+preview.portrait.SetTexture = function(self, value)
+    self.texture = value
+end
+preview.portrait.SetTexCoord = function(self, ...)
+    self.coords = { ... }
+end
+app.db.profile.unitFrames.targettarget.classIcon = false
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.texture == "existing-portrait" and preview.portrait.coords[2] == 1)
+app.db.profile.unitFrames.targettarget.classIcon = true
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.atlas == "classicon-paladin", "class icon preference wins over custom portrait")
+character.class, character.displayTexture = nil, nil
+preview.portrait.atlas = "live-fallback"
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.atlas == "live-fallback", "missing portrait/class retains the existing fallback")
+app.previewCharacters = {
+    Get = function()
+        error("Native styling must never request VIP data")
+    end,
+}
+nameDisplay:Refresh()
+modules.ClassIcon:Refresh()
+app.previewCharacters = nil
+print("PASS: VIP names and portrait preferences")
+
 preview.portrait = Portrait()
 app.db.profile.unitFrames.targettarget.classIcon = true
 modules.ClassIcon:ApplyPreview(preview, "targettarget")

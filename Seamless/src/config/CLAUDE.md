@@ -59,19 +59,9 @@ new = true, args = { ... } } } })`. The tab flag marks its subcategory in the
 left list; an option flag marks that setting. Both flags together show both labels.
 Flags do not propagate to children or automatically clear on hover/open.
 
-`badges.lua` reuses SharedXML's `NewFeatureLabelTemplate` at 0.8 scale, including its native pulsing glow.
-Tags use Blizzard's 1x1 anchor frame, HIGH strata and level 100. Setting tags
-anchor BOTTOMRIGHT to the label's LEFT at (16, -10); category tags use (-4, -10)
-and right-aligned text layers, matching the client Settings templates.
-NEW uses the client's localized label; BLIZZ uses the suite locale on both native
-text layers, preserving the same static glow. Labels sit to the left of the
-setting/category name as optional overlays. Tags never reserve space or change
-label anchors, widths, row heights or control positions; overlap with decoration
-is allowed. Pooled rows hide tags when reused.
-Tags are children of their setting/category row, matching Blizzard's ownership,
-strata, frame level and anchors. Parent visibility and scrolling handle their
-lifecycle; there is no window overlay, per-frame visibility polling or custom
-viewport calculation.
+`badges.lua` uses `NewFeatureLabelTemplate`. Tags are children of their rows, do not reserve
+layout space, and hide when pooled rows are reused. Let parent visibility and scrolling manage
+them; do not add per-frame visibility polling or a separate overlay.
 
 `NormalizeOptionTags` removes these custom keys before passing declarations to
 AceConfigRegistry, retaining them in a weak-key side table. Dynamic declarations
@@ -132,27 +122,11 @@ colors use RGBA hex. `GetOptionDefault` reads schemas with AceDB wildcard suppor
 `StaticPopupDialogs.SeamlessConfigConfirm` is the owned confirmation dialog key.
 Run `lua src/tests/config-options.lua` and `lua src/tests/config-controls.lua`.
 
-The red minimize/restore button beside Close switches between 920x724 and a
-705x600 compact view. Compact mode retains the selected page and its width,
-but hides navigation (including its scrollbar), the big Config tab, inner-frame
-art and footer button. It retains the title, page scrolling, red Close button
-and dragging. Mode survives closing/reopening for the session. Category collapse
-buttons reuse the profession recipe headers' `common-button-list-plus/minus` art.
-Header labels retain the native left inset, with the collapse button at the right
-edge. Navigation rows and their artwork are 175 pixels wide, with a
-1-pixel vertical gap between items. The navigation pane reserves a
-24-pixel scrollbar gutter between the headers and the fixed inner-frame divider.
-The scrollbar uses TOP/BOTTOM center anchors at the midpoint of that gap, with
-8-pixel top/bottom insets. Its full 17-pixel arrow width fits inside the gap;
-left-edge anchors would incorrectly shift the scrollbar toward the divider.
-The minimize button uses `UIPanelCloseButtonNoScripts` and matches the red
-Close button's frame level so the title border cannot cover it.
+Compact mode preserves the selected page, page width and scrolling while hiding navigation
+and the Config tab. Window and collapse state last for the session. Scrollbars remain visible
+but dimmed and disabled when content fits; compact mode hides the navigation scrollbar.
 
-Run `lua src/tests/config-window.lua` and `npm run check`. Review the visual
-match, dragging, scrolling and Escape in the WoW Forever client.
-
-Scrollbars stay visible when their contents fit; scrolling is disabled and the bar
-is desaturated and dimmed. Compact mode still hides the navigation scrollbar.
+Run `lua src/tests/config-window.lua`. Check dragging, scrolling, compact mode and Escape in game.
 
 ## Reusable Position sections
 

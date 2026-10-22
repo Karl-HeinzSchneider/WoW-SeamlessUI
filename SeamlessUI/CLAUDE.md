@@ -4,33 +4,17 @@ Optional addon for general UI improvements, with shared suite profiles. Tooltip,
 unit frame and chat features belong to their own addons; don't move Core tweaks or their settings
 here without a migration.
 
-## Load order and ownership
+## Ownership
 
-1. `src/core/bootstrap.lua`: gets Core and its shared logger.
-2. `src/core/db.lua`: defaults.
-3. `src/core/ace.lua`: AceAddon/AceDB lifecycle, profile callbacks and `/seamlessui` (`reset`,
-   `loglevel` delegated to Core).
-4. `src/features/xpbartooltip.lua`: replaces the player XP bar tooltip (bar and rested tick) through
-   a secure post-hook on each `ExhaustionTick:ExhaustionToolTipText`, never replacing the method:
-   rest state, XP, XP left, rested XP, time to max rested (the feature's `restedXPCap`/
-   `restedXPRate`), then completed quests and their XP (`core:GetQuestLogSummary()`). Profile
-   `xpBarTooltip` (`enabled`, `completedQuests`, `restedXPCap`, `restedXPRate`). Cap and rate
-   controls live in this feature's options. `OnInitialize` migrates Core's former cap/rate
-   overrides and `tweaks.questXPTooltip = false`, preserving existing UI settings and
-   removing the obsolete Core tooltip keys. Core no longer hooks the XP tooltip.
-5. `src/features/blizzardposition.lua`: position widgets for the selected Blizzard system (below).
-6. `src/features/systemoptions.lua`: draws the sections other addons register with Core's
-   `RegisterEditModeSystemOptions` (the Style sections of Castbar and Unitframes) under Core's
-   collapsible headers, with LibEditMode's row templates.
-7. `src/features/blizzardeditmode.lua`: the per-frame extension panel below the game's Edit Mode
-   settings dialog (below).
-8. `src/features/fpsdisplay.lua`: the FPS display (below).
-9. `src/core/options.lua`: General, Blizzard Edit Mode Extensions (a global switch, then one inline
-   group per frame with Extend Edit Mode, Add position and Add more options).
+- `src/core/`: lifecycle, defaults and options.
+- `src/features/xpbartooltip.lua`: secure post-hooks on XP/rested tooltips, with quest totals
+  from Core. Owns cap/rate settings and migration of the former Core tooltip settings.
+- `blizzardposition.lua`: selected-system position view over Core's position service.
+- `systemoptions.lua`: renders sections registered through `RegisterEditModeSystemOptions`.
+- `blizzardeditmode.lua`: extension panel below native per-frame settings.
+- `fpsdisplay.lua`: FPS/latency overlay and Edit Mode integration.
 
-`src/types.lua`: annotations only, not in the TOC; add a field for every new `app` member.
-
-Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and legacy settings migration.
+Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
 
 ## Blizzard Edit Mode extensions (`blizzardeditmode.lua`)
 
@@ -95,12 +79,3 @@ Run `lua src/tests/fps-display.lua`.
 Feature modules go in `src/features/`, listed in the TOC in dependency order. Register hooks and
 events in `OnEnable`, restore changes in `OnDisable`, read `app.db.profile` at use time and
 implement `OnProfileRefresh` for profile-dependent behavior.
-
-## Shared suite profiles
-
-Settings now live in the `SeamlessUI` namespace of Core's `SeamlessDB`.
-`src/core/db.lua` is the editable source of defaults (including feature defaults).
-Core's `RegisterAddonDatabase` imports the legacy `SeamlessUIDB` once and
-subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
-slash-command profile resets operate on the whole suite. Character/global data stay in the
-namespace; the old standalone database is retained only for migration.

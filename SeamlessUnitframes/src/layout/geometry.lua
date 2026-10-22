@@ -70,12 +70,15 @@ local powerAtlases = {
     PAIN = "_DemonHunter-DemonicPainBar",
     EBON_MIGHT = "Unit_Evoker_EbonMight_Fill",
 }
-local function Power(bar, family, unit, alternate)
+local function Power(bar, family, unit, alternate, previewPowerType)
     if not module:Readable(unit) or type(unit) ~= "string" then
         module:Warn("power artwork", "inaccessible unit token")
         return
     end
     local _, token, altR = UnitPowerType(unit)
+    if previewPowerType then
+        token, altR = previewPowerType, nil
+    end
     if not module:Readable(token) then
         module:Warn("power artwork", "inaccessible power type")
         return
@@ -510,7 +513,7 @@ local function Target(frame, old)
     end
 end
 
-local function Small(frame, pet, old)
+local function Small(frame, pet, old, previewPowerType)
     local name, portrait = pet and PetName or frame.Name, pet and PetPortrait or frame.Portrait
     local health, mana = pet and PetFrameHealthBar or frame.HealthBar, pet and PetFrameManaBar or frame.ManaBar
     if not module:CheckRegion(health, "Pet/ToT health") or not module:CheckRegion(mana, "Pet/ToT mana") then
@@ -518,7 +521,7 @@ local function Small(frame, pet, old)
     end
     module:Art(pet and PetFrameTexture or frame.FrameTexture, P .. "TargetofTarget-PortraitOn", true)
     module:Bar(health, P .. "TargetofTarget-PortraitOn-Bar-Health", true)
-    Power(mana, "TargetofTarget-PortraitOn", frame.unit)
+    Power(mana, "TargetofTarget-PortraitOn", frame.unit, nil, previewPowerType)
     module:Art(pet and PetFrameHealthBarMask or health.HealthBarMask, P .. "Party-PortraitOn-Bar-Health-Mask", true)
     module:Art(pet and PetFrameManaBarMask or mana.ManaBarMask, P .. "Party-PortraitOn-Bar-Mana-Mask", true)
     Point(name, "TOPLEFT", portrait, "TOPRIGHT", 2, old and 0 or -1, 68, nil, old and "LEFT" or "CENTER")
@@ -536,8 +539,8 @@ local function Small(frame, pet, old)
 end
 
 -- The Edit Mode stand-ins use the same fixed ToT geometry and artwork.
-function module:ApplyToTPreview(frame)
-    Small(frame, false, app.db.profile.layout == "legacy")
+function module:ApplyToTPreview(frame, powerType)
+    Small(frame, false, app.db.profile.layout == "legacy", powerType)
 end
 
 local function Party(frame, old)

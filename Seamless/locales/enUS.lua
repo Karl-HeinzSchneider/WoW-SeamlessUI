@@ -114,29 +114,18 @@ L["Vehicle seat indicator"] = true
 L["XP / reputation bar %d"] = true
 
 -- Seamless
-L["%d calls, %.2f ms total:\n%s"] = true
 L["%s = %s"] = true
 L["%s = {"] = true
-L["%s: %d calls, %.2f ms total, %.2f ms longest."] = true
 L["%s |cff%s[%s]|r %s"] = true
 L["/rl reloads the interface"] = true
 L["Addon compartment entry"] = true
 L["Addons"] = true
-L["Callers of %s (stack collection adds overhead):"] = true
 L["Click an anchor point on another frame. Right-click or Escape cancels."] = true
 L["Click an anchor point on the selected frame. Right-click or Escape cancels."] = true
-L["Close Edit Mode and leave combat before arming the trace."] = true
 L["Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"] = true
-L["Commands: /seamless trace, /seamless trace report, /seamless trace off"] = true
 L["Completed: %d  |  %s XP"] = true
-L["Covered Lua: %.2f ms total (nested calls counted once)."] = true
-L["Edit Mode trace armed. Open Edit Mode within 60 seconds; a report follows automatically."] = true
-L["Edit Mode trace cancelled: Edit Mode was not opened within 60 seconds."] = true
-L["Edit Mode trace stopped."] = true
-L["Edit Mode trace: first observed frame %.1f ms; worst frame %.1f ms; capture %.1f ms."] = true
 L["format error: "] = true
 L["How much Seamless writes to chat. Also /seamless loglevel <level>."] = true
-L["Inclusive Lua timings overlap; do not add them together. Frame times also include native and rendering work."] = true
 L["Interface"] = true
 L["Left-click: options"] = true
 L["Log level is %s"] = true
@@ -145,7 +134,6 @@ L["Log level"] = true
 L["Minimap button clicked (%s)"] = true
 L["Minimap button registered"] = true
 L["Minimap button"] = true
-L["No Edit Mode trace has been captured."] = true
 L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] = true
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true

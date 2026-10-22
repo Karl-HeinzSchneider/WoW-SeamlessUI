@@ -2,46 +2,40 @@
 
 Required entry point of the suite; works with no feature addon enabled.
 
-## Load order and ownership
+## Ownership
 
-- `embeds.xml`: every shared vendored library from `lib/` (Ace3, AceGUI, AceConfig, AceDBOptions,
-  LibSharedMedia, LibDBIcon, LibEditModeOverride, LibEditMode). LibEditMode loads `namespaced.lua`
-  before `embed.xml` into Core's private table and is never registered with LibStub; feature
-  addons get it through `core:GetEditModeLibrary()`. Never patch vendored code.
-- `locales/enUS.lua`, then only the client's `locales/[TextLocale]/strings.lua`: the shared
-  `Seamless` AceLocale catalogue every addon uses (see the root `CLAUDE.md`).
-- `src/core/logger.lua`: the shared logger, `core.logger`.
-- `db.lua`: `SeamlessDB` defaults (logging, minimap, tweaks).
-- `ace.lua`: AceAddon lifecycle, core profiles, `/seamless`, the public API below.
-- `profiles.lua`: feature namespaces in `SeamlessDB` and the one-time legacy import (see Shared
-  feature databases).
-- `src/config/registry.lua`, `badges.lua`, `window.lua`, `model.lua`, `controls.lua`: the custom
-  configuration window. See `src/config/CLAUDE.md`. `/seamless` and the minimap button open it;
-  every registered option is rendered there with Settings-style rows, in parallel with the
-  Blizzard AddOns panels (see Options).
-- `frameposition.lua`: shared native Edit Mode position backend (reading, anchor validation,
-  applying the live draft and saving outside Edit Mode); exposed through
-  `GetFramePositionService`. SeamlessUI's Edit Mode position view delegates here.
-- `src/config/position.lua`: reusable Position and scale option groups (`GetPositionOptions`,
-  `GetNativePositionOptions`), see `src/config/CLAUDE.md`.
-- `editmodelib.lua`: suite additions to the namespaced LibEditMode (see below). The only file
-  allowed to use `lib.internal`.
-- `anchorpicker.lua`: the quick anchor picker (see below).
-- `editmode.lua`: the shared Edit Mode panel below the main Edit Mode window (see below).
-- `systemoptions.lua`: registry of settings sections feature addons add to a Blizzard Edit Mode
-  system (see below).
-- `quests.lua`: `core:GetQuestLogSummary()`. `questlog.lua`: completed quest count and XP in the
-  quest log header.
-- `tweaks.lua`: `/rl` (on by default) and showing the framerate once on startup (off; its toggle is
-  in the FPS display's Edit Mode settings, owned by SeamlessUI).
-- `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's panels:
-  "Seamless" (General: minimap button, log level, a button per enabled feature addon; Profiles)
-  and its "Tweaks" child.
-- `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
-  compartment entry (off by default, disabled where the client lacks it).
-- `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
+- `embeds.xml`: shared libraries. LibEditMode is namespaced into Core, not registered with
+  LibStub; features use `core:GetEditModeLibrary()`.
+- `src/core/`: lifecycle, defaults, profiles, logger, options, minimap launcher, quests and tweaks.
+  `frameposition.lua` owns native position validation and persistence; `editmode.lua`,
+  `editmodelib.lua`, `systemoptions.lua` and `anchorpicker.lua` own shared Edit Mode services.
+- `src/config/`: custom options renderer and reusable Position groups; read its `CLAUDE.md`.
+- `locales/`: the suite's shared AceLocale catalogue.
+
+Only `src/core/editmodelib.lua` may access LibEditMode's `lib.internal`.
 
 ## Public API
+
+- `src/core/previewcharacters.lua`: `RegisterPreviewCharacter(id, record)` registers a flat,
+  validated VIP record. `previewcharacters-data.lua` is the shipped, editable catalogue, loaded
+  immediately after the service. `GetPreviewCharacter(consumerID)` returns a copy, or nil outside
+  Edit Mode/in combat/with an empty catalogue. Assignments stay stable for the session, drawing
+  from a shuffled bag without repeats until exhausted. Enter/exit reset the session. Core owns
+  only data and never modifies unit APIs, secure bindings or feature frames.
+- Records allow missing names/classes. Missing names use the client's localized unknown label;
+  missing classes retain the consumer's fallback portrait. Optional text resolves to empty strings.
+  Keep missing fields commented out in the authored catalogue; never invent VIP metadata.
+  Records use optional `name`/`surname`, uppercase `class`, numeric `health`/`healthMax` and
+  `power`/`powerMax` (default 100), `powerType` and `reaction` (1–8). Optional `displayTexture` is
+  a full path to an existing BLP/TGA. Without an asset, consumers may show a class icon. Metadata
+  (`level`, titles, realm, guild/rank, zone, race/sex, faction, role, classification, `displayID`)
+  is available for future consumers; registration does not automatically render it. Add scalar
+  metadata as needed; nested tables are rejected. Character names and guilds are proper names,
+  not localization keys. Do not draw new portraits without asking.
+- Run `lua src/tests/preview-characters.lua` and `lua src/tests/preview-catalogue.lua`.
+  The latter accepts an optional original VIP Lua path to audit every migrated field for exact
+  preservation. `assets/VIP/` contains all 14 supplied, unmodified portrait BLPs; the catalogue
+  contains 15 records, with shared portraits retained and missing portrait paths commented out.
 
 At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamless")`.
 
@@ -62,23 +56,6 @@ At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamles
 Core never references a feature by name or loads disabled features; core profiles include all
 feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
 on the suite profile.
-
-`editmodetrace.lua` provides `/seamless trace` (arm), `/seamless trace report` (repeat
-the last report) and `/seamless trace off` (cancel). It temporarily times addon-owned
-methods on loaded suite Ace modules, core refreshes and explicitly registered targets
-(`RegisterEditModeTraceTarget(label, target, methods)`). Registration does not wrap
-anything until armed. Wrappers are removed after a short opening capture, timeout,
-cancel or a traced error. No native frame methods or library internals are replaced;
-no SavedVariables or profiling CVars are changed. Inclusive timings overlap. The
-observer reports frame intervals, which include work outside Lua and cannot attribute
-a native/rendering stall to one addon. Run `lua src/tests/editmode-trace.lua`.
-The covered-Lua total counts nested calls only once across the entire capture;
-it is not a measurement of the worst frame alone. `Paint` is included so direct
-native-atlas repair hooks are measured even outside a module refresh.
-Top-level `Refresh` calls also collect caller stacks when `debugstack` is
-available. The report groups the three most expensive callers of the hottest
-sampled refresh. Stack collection adds overhead and happens before its method
-timer; use the stacks to identify triggers, not to benchmark frame-time changes.
 
 ## Options: two panels in parallel, one panel per addon, tabs inside
 

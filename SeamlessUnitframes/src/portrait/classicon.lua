@@ -71,6 +71,17 @@ function module:OnInitialize()
 end
 
 function module:ApplyPreview(frame, key)
+    local portrait = frame.portrait
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
+            portrait:SetTexture(character.displayTexture)
+            portrait:SetTexCoord(0, 1, 0, 1)
+        elseif character.class then
+            portrait:SetAtlas(GetClassAtlas(character.class))
+        end
+        return
+    end
     Apply(frame, key)
 end
 

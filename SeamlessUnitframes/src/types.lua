@@ -6,6 +6,7 @@
 -- When a file adds something to `app`, add a matching ---@field here.
 
 ---@class SeamlessUnitframes
+---@field previewCharacters SeamlessUnitframes.PreviewCharacters
 ---@field core SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessUnitframes.Addon

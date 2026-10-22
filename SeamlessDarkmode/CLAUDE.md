@@ -2,8 +2,7 @@
 
 Optional addon requiring Seamless that tints the borders of specific game frames with one shared
 color, switchable per group (unit frames, minimap, action bar slots, gryphons, XP border,
-reputation border). Ships in releases.
-Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmode.
+reputation border).
 
 - `src/frames.lua`: one function per frame naming the exact textures of that frame and its
   subframes, and `app.groups`, the option groups listing those functions:
@@ -26,7 +25,6 @@ Enable its folder beside Core and open `/seamlessdarkmode` or Seamless > Darkmod
   both status containers; retries hook installation on addon load and entering the world.
 - `src/options.lua`: master switch, shared color, one toggle per group. Also
   registers the master switch as a GLOBAL option in the shared Edit Mode window.
-- `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules
 
@@ -46,12 +44,3 @@ Manual validation: toggle each group and the master switch, change the color, sw
 rotate the minimap, and check the frames in a vehicle, in a party and in boss fights. Check
 occupied and empty action slots, pet/stance bars, gryphons, and XP/reputation swapping between
 the main and secondary containers (including a switch to honor with its original border).
-
-## Shared suite profiles
-
-Settings now live in the `SeamlessDarkmode` namespace of Core's `SeamlessDB`.
-`src/db.lua` is the editable source of defaults (including feature defaults).
-Core's `RegisterAddonDatabase` imports the legacy `SeamlessDarkmodeDB` once and
-subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
-slash-command profile resets operate on the whole suite. Character/global data stay in the
-namespace; the old standalone database is retained only for migration.

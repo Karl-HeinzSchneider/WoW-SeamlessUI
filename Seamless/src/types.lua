@@ -1,4 +1,31 @@
 -- Annotations only; not loaded by the client.
+---@class SeamlessCore.PreviewCharacter
+---@field id? string Assigned by the registry.
+---@field name? string Missing/empty names use the client's localized UNKNOWNOBJECT/UNKNOWN label.
+---@field surname? string
+---@field class? string Uppercase class token; absent leaves the live fallback portrait/color.
+---@field health? number Defaults to healthMax; clamped to [0, healthMax].
+---@field healthMax? number Defaults to max(100, health), preserving supplied absolute values.
+---@field power? number Defaults to powerMax; clamped to [0, powerMax].
+---@field powerMax? number Defaults to max(100, power), preserving supplied absolute values.
+---@field powerType? string PowerBarColor token; defaults to MANA.
+---@field reaction? number 1–8; defaults to 5 (friendly).
+---@field displayTexture? string Full Interface path to an existing BLP/TGA portrait.
+---@field level? number|"??" Missing levels resolve to "??"; metadata for future consumers.
+---@field titleBefore? string
+---@field titleAfter? string
+---@field realm? string
+---@field guild? string
+---@field guildRank? string
+---@field zone? string
+---@field race? string
+---@field female? boolean
+---@field faction? string
+---@field role? string
+---@field classification? string
+---@field displayID? number Metadata for a future model consumer; not a 2D portrait.
+---@field targetIcon? number 0–8; missing resolves to 0 (no raid marker).
+
 ---@class SeamlessCore.Config
 ---@field categories table<string, SeamlessCore.ConfigCategory>
 ---@field collapsed table<string, boolean>
@@ -50,8 +77,8 @@
 ---@field tweaks SeamlessCore.Tweaks
 
 ---@class SeamlessCore.Addon
----@field RegisterEditModeTraceTarget fun(self: SeamlessCore.Addon, label: string, target: table, methods: string[]) Register addon-owned methods for opt-in timing.
----@field OnEditModeTraceCommand fun(self: SeamlessCore.Addon, command?: string) Arm, cancel or repeat the session-only Edit Mode trace.
+---@field RegisterPreviewCharacter fun(self: SeamlessCore.Addon, id: string, record: SeamlessCore.PreviewCharacter)
+---@field GetPreviewCharacter fun(self: SeamlessCore.Addon, consumer: string): SeamlessCore.PreviewCharacter?
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
 ---@field GetOptionDefault fun(self: SeamlessCore.Addon, defaults: table?, path: string[], first?: number): any
 ---@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean

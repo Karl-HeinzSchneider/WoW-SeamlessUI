@@ -23,7 +23,6 @@ local RESET = { point = "CENTER", x = 0, y = 0 }
 ---@field shown table<string, boolean>  # the Frames list checkboxes, on for the session
 local mover = { movers = {}, shown = {} }
 app.totMover = mover
-app.core:RegisterEditModeTraceTarget(appName .. ".ToTMover", mover, { "Refresh", "UpdatePreview" })
 
 local function Known(value)
     return not (issecretvalue and issecretvalue(value)) and value ~= nil
@@ -52,7 +51,7 @@ local function OnMoved(key, point, x, y)
     position:SetPosition(key, current)
 end
 
-function mover:UpdatePreview(frame, key)
+local function UpdatePreview(frame, key)
     local first, surname = UnitName("player")
     if Known(first) and not (issecretvalue and issecretvalue(surname)) then
         local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
@@ -63,7 +62,14 @@ function mover:UpdatePreview(frame, key)
     frame.HealthBar:SetValue(UnitHealth("player"))
     frame.ManaBar:SetMinMaxValues(0, UnitPowerMax("player"))
     frame.ManaBar:SetValue(UnitPower("player"))
-    app.legacyLayout:ApplyToTPreview(frame)
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        frame.HealthBar:SetMinMaxValues(0, character.healthMax)
+        frame.HealthBar:SetValue(character.health)
+        frame.ManaBar:SetMinMaxValues(0, character.powerMax)
+        frame.ManaBar:SetValue(character.power)
+    end
+    app.legacyLayout:ApplyToTPreview(frame, character and character.powerType)
     app.healthColor:ApplyPreview(frame, key)
     app.nameDisplay:ApplyPreview(frame, key)
     app.classIcon:ApplyPreview(frame, key)
@@ -120,7 +126,7 @@ local function Create(key)
     CreateVisuals(frame)
     frame:SetScript("OnEvent", function()
         if frame:IsShown() then
-            mover:UpdatePreview(frame, key)
+            UpdatePreview(frame, key)
         end
     end)
     lib:AddFrame(frame, function(_, _, point, x, y)
@@ -155,7 +161,7 @@ function mover:Refresh()
         local real = position:Frames(key)
         local visible = position.active and lib:IsInEditMode() and self.shown[key] and real ~= nil
         if visible then
-            self:UpdatePreview(frame, key)
+            UpdatePreview(frame, key)
             local scale = real:GetEffectiveScale()
             local parentScale = UIParent:GetEffectiveScale()
             frame:SetScale(Known(scale) and scale / parentScale or 1)

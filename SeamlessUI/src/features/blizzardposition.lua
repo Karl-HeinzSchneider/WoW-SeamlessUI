@@ -7,7 +7,6 @@ local base = app.core:GetFramePositionService()
 ---@class SeamlessUI.BlizzardPosition : SeamlessCore.FramePosition
 local position = setmetatable({}, { __index = base })
 app.blizzardPosition = position
-app.core:RegisterEditModeTraceTarget("SeamlessUI.BlizzardPosition", position, { "GetAnchorFrames" })
 
 local anchors = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 local anchorLabels = {

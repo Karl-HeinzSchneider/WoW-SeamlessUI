@@ -252,7 +252,7 @@ local selected = player
 local app = {
     db = { profile = { blizzardEditMode = { frames = { player = { addPosition = true } } } } },
     blizzardEditMode = {},
-    core = { RegisterEditModeTraceTarget = function() end },
+    core = {},
 }
 local picker
 function app.core:StartEditModeAnchorPicker(spec)

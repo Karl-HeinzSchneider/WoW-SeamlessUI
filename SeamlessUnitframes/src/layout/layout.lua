@@ -197,7 +197,7 @@ local function WatchBar(bar, texture)
     return true
 end
 
-function module:Paint(texture, atlas, useSize, bar)
+local function Paint(texture, atlas, useSize, bar)
     if not layout:Readable(atlas) or type(atlas) ~= "string" then
         layout:Warn("fixed artwork", "invalid atlas definition")
         return false
@@ -210,7 +210,7 @@ function module:Paint(texture, atlas, useSize, bar)
     end
     local visual = bar and visualBars[bar]
     if visual and legacyMode then
-        self:Paint(visual:GetStatusBarTexture(), atlas, false, visual)
+        Paint(visual:GetStatusBarTexture(), atlas, false, visual)
         texture:SetAlpha(0)
     end
     local last = painted[texture]
@@ -306,7 +306,7 @@ function module:ShowVisualBars(legacy)
 end
 
 function module:Art(texture, atlas, useSize)
-    if not self:Paint(texture, atlas, useSize) then
+    if not Paint(texture, atlas, useSize) then
         return false
     end
     if not watchedArt[texture] then
@@ -320,7 +320,7 @@ function module:Art(texture, atlas, useSize)
             if legacyMode and definition then
                 -- Rebind old artwork before the native call returns, including
                 -- in combat. Do not resize/reanchor protected regions in combat.
-                layout:Paint(texture, definition.atlas, not InCombatLockdown() and definition.useSize)
+                Paint(texture, definition.atlas, not InCombatLockdown() and definition.useSize)
             end
         end)
     end
@@ -344,7 +344,7 @@ function module:Bar(bar, atlas, health)
         atlas = previous.atlas
     end
     bindings[texture] = { atlas = atlas, bar = bar }
-    self:Paint(texture, atlas, false, bar)
+    Paint(texture, atlas, false, bar)
 end
 
 -- Resolve only addon-owned names from known frame families, never GetAtlas().
@@ -406,7 +406,7 @@ function module:SetHealthAtlas(texture, atlas)
     if not binding then
         return false
     end
-    if self:Paint(texture, atlas, false, binding.bar) then
+    if Paint(texture, atlas, false, binding.bar) then
         binding.atlas = atlas
         return true
     end
@@ -579,7 +579,7 @@ function module:Refresh(restore, frame, selectedRoots)
         -- Retire every file override, including a temporarily unavailable named
         -- component. These are our own constant definitions, never snapshots.
         for texture, definition in pairs(artwork) do
-            self:Paint(texture, definition.atlas, definition.useSize, definition.bar)
+            Paint(texture, definition.atlas, definition.useSize, definition.bar)
         end
     end
     self:ApplyGeometry(roots, legacy)

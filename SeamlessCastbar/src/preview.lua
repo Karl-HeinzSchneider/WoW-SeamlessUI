@@ -30,6 +30,9 @@ end
 
 local function anchorBar(key)
     local bar = _G[specs[key].bar]
+    if bar then
+        app.ApplyCastbarScale(key, bar)
+    end
     if customPosition(key) and previews[key] and bar then
         bar:ClearAllPoints()
         bar:SetPoint("TOPLEFT", previews[key], "TOPLEFT")
@@ -38,9 +41,15 @@ local function anchorBar(key)
 end
 
 function app.ResetCastbarPosition(key)
+    if InCombatLockdown() then
+        return
+    end
     app.db.profile[key].position = nil
     app.UpdatePreviews()
     app.core:RefreshOptions(appName)
+    if previews[key] then
+        lib:RefreshFrameSettings(previews[key])
+    end
 end
 
 -- A cast, a channel and an interrupted cast demonstrate the current Style settings.
@@ -92,16 +101,6 @@ function app.PreviewFrame(key)
     return previews[key]
 end
 
--- The client's spot for the bar under its unit frame, without aura rows (TargetSpellBarMixin).
-local function place(preview, parent)
-    local x, y = parent.smallSize and 38 or 43, parent.smallSize and 3 or 5
-    if parent.haveToT then
-        y = parent.smallSize and -48 or -46
-    end
-    preview:ClearAllPoints()
-    preview:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", x, y)
-end
-
 local function createPreview(key)
     local spec = specs[key]
     local parent = _G[spec.frame]
@@ -151,9 +150,7 @@ local function createPreview(key)
         if point == RESET.point and x == RESET.x and y == RESET.y then
             app.ResetCastbarPosition(key)
         else
-            app.db.profile[key].position = { point = point, x = x, y = y }
-            app.UpdatePreviews()
-            app.core:RefreshOptions(appName)
+            app.SaveCastbarDrag(key, point, x, y)
         end
     end, RESET, spec.name)
     lib:AddFrameSettings(preview, app.LibEditModeSettings(key))
@@ -168,6 +165,9 @@ function app.UpdatePreviews()
         -- Keep the anchor positioned even when the preview artwork is hidden.
         local parent = _G[spec.frame]
         local bar = _G[spec.bar]
+        if bar then
+            app.ApplyCastbarScale(key, bar)
+        end
         local scale = bar and bar:GetScale()
         local parentScale, uiScale = parent:GetEffectiveScale(), UIParent:GetEffectiveScale()
         preview:SetScale(
@@ -176,10 +176,25 @@ function app.UpdatePreviews()
         local position = customPosition(key)
         if position then
             preview:ClearAllPoints()
-            preview:SetPoint(position.point, UIParent, position.point, position.x, position.y)
+            local current = app.CastbarPosition(key)
+            preview:SetPoint(
+                current.point,
+                _G[current.relativeTo] or UIParent,
+                current.relativePoint,
+                current.x,
+                current.y
+            )
             anchorBar(key)
         else
-            place(preview, parent)
+            local current = app.CastbarPosition(key, true)
+            preview:ClearAllPoints()
+            preview:SetPoint(
+                current.point,
+                _G[current.relativeTo] or UIParent,
+                current.relativePoint,
+                current.x,
+                current.y
+            )
             if managed[key] then
                 managed[key] = nil
                 -- Recompute the client's aura/ToT-dependent anchor after reset or disable.

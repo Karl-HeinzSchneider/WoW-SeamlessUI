@@ -108,6 +108,10 @@ local function barTab(order, bar)
             desc = L["Show the spell icon beside the player cast bar when it is not locked to the player frame."],
         })
     end
+    if bar.key ~= "player" then
+        args.position = app.core:GetPositionOptions(app.CastbarPositionSpec(bar.key))
+        args.position.order = 5
+    end
     return { order = order, name = bar.name, args = args }
 end
 

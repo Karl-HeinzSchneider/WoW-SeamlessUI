@@ -31,8 +31,8 @@ local function PvP(icon, parent, side, x, legacy)
     if not module:CheckRegion(icon, "PvP icon", { "IsShown" }) then
         return
     end
-    Point(icon, "TOP", parent, side, x, legacy and -50 or -65)
     if not legacy then
+        Point(icon, "TOP", parent, side, x, -65)
         return
     end
     if not module:CheckRegion(parent, "PvP background", { "CreateTexture" }) then

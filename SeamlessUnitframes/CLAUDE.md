@@ -119,6 +119,10 @@ Rules:
   its red); party health loss uses the Player atlas; unknown power types use the native mana fill.
 - Apply repairs synchronously, never on the next frame. Cache only our own last writes and
   invalidate them on native setters.
+  Fixed anchors remember only our last successful `ClearAllPoints`/`SetPoint`
+  pair. Native point/all-points/parent setters invalidate that entry without
+  inspecting their arguments. Nested setters leave it uncached. Never infer
+  anchor state from rendering getters or populate the cache for combat-skipped writes.
 - Native frame hooks repair only their owner with `Refresh(false, frame)` and
   `healthColor:RefreshFrame(frame)`. Global mana-bar hooks resolve `bar.unitFrame`,
   player-art hooks use PlayerFrame, and unrelated/secret owners are ignored. Full

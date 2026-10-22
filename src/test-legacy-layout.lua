@@ -1,6 +1,7 @@
 -- Offline contracts. Live rendering getters deliberately fail, even out of combat.
 unpack = unpack or table.unpack
 local pending, combat, geometryWrites, artworkWrites, hookCount = {}, false, 0, 0, 0
+local anchorWrites = 0
 local secret = setmetatable({}, {
     __index = function()
         error("indexed a secret")
@@ -92,10 +93,12 @@ function methods:SetHeight(v)
 end
 function methods:SetPoint(...)
     Geometry(self)
+    anchorWrites = anchorWrites + 1
     self.point = { ... }
 end
 function methods:ClearAllPoints()
     Geometry(self)
+    anchorWrites = anchorWrites + 1
     self.point = nil
 end
 function methods:SetJustifyH(v)
@@ -508,11 +511,13 @@ app.healthColor.RefreshFrame = function(self, frame)
     return refreshFrameColor(self, frame)
 end
 local comboPoint = ComboFrame.point
+local anchorsBeforeBurst = anchorWrites
 for _ = 1, 88 do
     UnitFrameManaBar_UpdateType(mana)
 end
 assert(scans == 0 and fullColorRefreshes == 0, "native update burst must not scan/recolor every frame")
 assert(#repaired == 88 and #recolored == 88)
+assert(anchorWrites == anchorsBeforeBurst, "stable native updates must not repeatedly clear/reapply identical anchors")
 for index, roots in ipairs(repaired) do
     assert(#roots == 1 and roots[1] == PlayerFrame and recolored[index] == PlayerFrame)
 end
@@ -532,6 +537,41 @@ layout:Refresh()
 assert(scans > 0 and fullColorRefreshes == 1, "explicit refresh still updates the whole suite")
 app.unitFrames.All, layout.ApplyGeometry = allFrames, applyGeometry
 app.healthColor.Refresh, app.healthColor.RefreshFrame = refreshColors, refreshFrameColor
+-- Cache only fixed anchors we wrote ourselves; every native anchor/parent
+-- setter invalidates them even when its arguments are inaccessible.
+local probe = Object()
+local fixedPoint = { "CENTER", PlayerFrame, "CENTER", 7, 9 }
+layout:Edit(probe, { point = fixedPoint })
+local beforeCached = anchorWrites
+layout:Edit(probe, { point = { unpack(fixedPoint) } })
+assert(anchorWrites == beforeCached)
+for _, method in ipairs({ "SetPoint", "ClearAllPoints", "SetAllPoints", "SetParent" }) do
+    callbacks[probe][method](secret, secret)
+    local beforeInvalidated = anchorWrites
+    layout:Edit(probe, { point = fixedPoint })
+    assert(anchorWrites == beforeInvalidated + 2, method .. " must invalidate the fixed anchor")
+end
+probe.protected = true
+combat = true
+callbacks[probe].SetPoint(secret, secret)
+local beforeProtected = anchorWrites
+layout:Edit(probe, { point = fixedPoint })
+assert(anchorWrites == beforeProtected, "cache must not bypass protected combat guards")
+combat = false
+layout:Edit(probe, { point = fixedPoint })
+assert(anchorWrites == beforeProtected + 2, "combat-skipped repair must not populate the cache")
+local nestedProbe = Object()
+function nestedProbe:SetPoint(...)
+    methods.SetPoint(self, ...)
+    if not self.bounced then
+        self.bounced = true
+        self:ClearAllPoints()
+    end
+end
+layout:Edit(nestedProbe, { point = fixedPoint })
+assert(nestedProbe.point == nil)
+layout:Edit(nestedProbe, { point = fixedPoint })
+assert(nestedProbe.point and nestedProbe.point[4] == 7, "nested native setters must leave the anchor uncached")
 combat = true
 TargetFrame:CheckClassification()
 assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "combat must not expose native sheet coordinates")

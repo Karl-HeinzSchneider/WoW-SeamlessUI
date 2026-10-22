@@ -84,3 +84,25 @@ one frame interval within the capture.
 Capture again after pulling this update. Compare two openings to distinguish
 first-use work from recurring costs. No additional performance fix is inferred
 from the unexplained part of the frame interval.
+
+## Warm capture and redundant anchor writes
+
+The expanded trace measured 42.59 ms of covered Lua with a 140 ms worst frame.
+A second opening without reload measured 42.34 ms with a 120 ms worst frame;
+both performed 88 layout repairs. This establishes recurring work, while the
+remaining frame interval is still not fully attributed.
+
+Each repair cleared and reapplied fixed anchors even when their definitions had
+not changed. The PvP icon also received an intermediate anchor before its final
+legacy anchor in every repair. Fixed anchors now cache only the last successful
+addon-authored write and native point/all-points/parent setters invalidate it.
+No live anchor getters or native setter arguments are read. Nested setter activity
+leaves the entry uncached, and combat-skipped writes never populate the cache.
+The PvP icon receives its final anchor directly.
+
+The legacy harness verifies that 88 stable native mana updates perform zero
+anchor writes, native setter invalidations still force synchronous repair, and
+nested setters and combat guards remain correct. Dimensions and other layout
+work still run. Repeat the capture to measure the client impact; redundant
+anchor writes are verified, but their contribution to the remaining hitch is
+not yet measured.

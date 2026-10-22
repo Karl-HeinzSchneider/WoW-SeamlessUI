@@ -14,6 +14,7 @@ app.legacyLayout = layout
 -- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
 local warnings, bindings, hooked, artwork = {}, {}, {}, {}
 local knownRoots = {}
+local anchors = {}
 local painted, watchedBars, watchedFills, watchedArt = {}, {}, {}, {}
 local visualBars = {}
 local lossColored = false
@@ -79,6 +80,37 @@ function module:CheckPaths(frame, context, paths)
     return true
 end
 
+-- Remember only our own fixed anchor writes. Native setters invalidate the
+-- cache without reading their arguments or any possibly secret render state.
+local function AnchorState(region)
+    local state = anchors[region]
+    if not state then
+        state = { revision = 0 }
+        anchors[region] = state
+        for _, name in ipairs({ "SetPoint", "ClearAllPoints", "SetAllPoints", "SetParent" }) do
+            if layout:Readable(region[name]) and type(region[name]) == "function" then
+                hooksecurefunc(region, name, function()
+                    state.point = nil
+                    state.revision = state.revision + 1
+                end)
+            end
+        end
+    end
+    return state
+end
+
+local function SameAnchor(left, right)
+    if not left or #left ~= #right then
+        return false
+    end
+    for index = 1, #right do
+        if left[index] ~= right[index] then
+            return false
+        end
+    end
+    return true
+end
+
 function module:Edit(region, changes)
     if not self:CheckRegion(region, "fixed geometry") then
         return
@@ -95,6 +127,7 @@ function module:Edit(region, changes)
     local function Call(name, ...)
         if self:CheckRegion(region, "fixed geometry", { name }) then
             region[name](region, ...)
+            return true
         end
     end
     if changes.width then
@@ -104,8 +137,17 @@ function module:Edit(region, changes)
         Call("SetHeight", changes.height)
     end
     if changes.point then
-        Call("ClearAllPoints")
-        Call("SetPoint", unpack(changes.point))
+        local state = AnchorState(region)
+        if not SameAnchor(state.point, changes.point) then
+            local revision = state.revision
+            local cleared = Call("ClearAllPoints")
+            local placed = Call("SetPoint", unpack(changes.point))
+            -- Extra setter callbacks mean a nested native update changed the
+            -- region during our write; leave it uncached so repair can retry.
+            if cleared and placed and state.revision == revision + 2 then
+                state.point = { unpack(changes.point) }
+            end
+        end
     end
     if changes.justify then
         Call("SetJustifyH", changes.justify)

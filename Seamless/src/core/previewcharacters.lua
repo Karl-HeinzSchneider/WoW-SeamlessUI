@@ -119,7 +119,7 @@ function addon:RegisterPreviewCharacter(id, record)
     bag = {}
 end
 
----One stable assignment per consumer ID for each Edit Mode session. Exhaust the bag before repeats.
+---One stable assignment per consumer ID until logout or UI reload. Exhaust the bag before repeats.
 function addon:GetPreviewCharacter(consumer)
     assert(type(consumer) == "string" and consumer ~= "", "Preview consumer ID is required")
     if not lib:IsInEditMode() or InCombatLockdown() or #characters == 0 then
@@ -139,9 +139,3 @@ function addon:GetPreviewCharacter(consumer)
     end
     return Resolve(assigned[consumer])
 end
-
-local function Reset()
-    bag, assigned = {}, {}
-end
-lib:RegisterCallback("enter", Reset)
-lib:RegisterCallback("exit", Reset)

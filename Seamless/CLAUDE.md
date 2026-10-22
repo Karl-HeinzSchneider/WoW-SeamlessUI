@@ -20,7 +20,8 @@ Only `src/core/editmodelib.lua` may access LibEditMode's `lib.internal`.
   validated VIP record. `previewcharacters-data.lua` is the shipped, editable catalogue, loaded
   immediately after the service. `GetPreviewCharacter(consumerID)` returns a copy, or nil outside
   Edit Mode/in combat/with an empty catalogue. Assignments stay stable for the session, drawing
-  from a shuffled bag without repeats until exhausted. Enter/exit reset the session. Core owns
+  from a shuffled bag without repeats until exhausted. Assignments survive Edit Mode enter/exit
+  and reset only on logout or UI reload. Core owns
   only data and never modifies unit APIs, secure bindings or feature frames.
 - Records allow missing names/classes. Missing names use the client's localized unknown label;
   missing classes retain the consumer's fallback portrait. Optional text resolves to empty strings.

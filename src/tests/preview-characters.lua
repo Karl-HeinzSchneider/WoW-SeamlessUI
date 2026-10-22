@@ -1,6 +1,12 @@
 -- Run from the root: lua src/tests/preview-characters.lua
-local callbacks = {}
+local callbacks = { enter = function() end, exit = function() end }
 local editing, combat = false, false
+local random = math.random
+local draws = 0
+math.random = function(...)
+    draws = draws + 1
+    return random(...)
+end
 local lib = {}
 function lib:IsInEditMode()
     return editing
@@ -27,7 +33,6 @@ core:RegisterPreviewCharacter("two", { name = "Two", surname = "Surname", class 
 local first = core:GetPreviewCharacter("player")
 local second = core:GetPreviewCharacter("target")
 assert(first.id ~= second.id, "no repeats before the bag is exhausted")
-assert(core:GetPreviewCharacter("tot") ~= nil, "pool exhaustion starts another bag")
 first.name = "mutated"
 assert(core:GetPreviewCharacter("player").name ~= "mutated", "consumer receives a copy")
 for _, record in ipairs({ core:GetPreviewCharacter("player"), core:GetPreviewCharacter("target") }) do
@@ -40,15 +45,24 @@ assert(core:GetPreviewCharacter("player") == nil)
 combat = false
 assert(core:GetPreviewCharacter("player").id == first.id, "combat does not reroll")
 editing = false
+local previousDraws = draws
 callbacks.exit()
 assert(core:GetPreviewCharacter("player") == nil)
 editing = true
 callbacks.enter()
-local seen = {}
-for i = 1, 2 do
-    local record = core:GetPreviewCharacter("session2:" .. i)
-    assert(not seen[record.id])
-    seen[record.id] = true
+assert(core:GetPreviewCharacter("player").id == first.id, "reopening Edit Mode preserves the player VIP")
+assert(core:GetPreviewCharacter("target").id == second.id, "reopening Edit Mode preserves the target VIP")
+assert(draws == previousDraws, "reopening Edit Mode does not reshuffle the bag")
+local third = core:GetPreviewCharacter("tot")
+assert(third ~= nil, "pool exhaustion starts another bag")
+for i = 1, 3 do
+    editing = false
+    callbacks.exit()
+    editing = true
+    callbacks.enter()
+    assert(core:GetPreviewCharacter("player").id == first.id)
+    assert(core:GetPreviewCharacter("target").id == second.id)
+    assert(core:GetPreviewCharacter("tot").id == third.id)
 end
 local function Reject(id, record)
     assert(not pcall(core.RegisterPreviewCharacter, core, id, record), "expected rejected record")
@@ -86,3 +100,4 @@ end
 assert(absolute.health == 5211 and absolute.healthMax == 5211)
 assert(absolute.power == 6382 and absolute.powerMax == 6382 and absolute.female == false)
 print("Preview character catalogue and fallback tests passed")
+math.random = random

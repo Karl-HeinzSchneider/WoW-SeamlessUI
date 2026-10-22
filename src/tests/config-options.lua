@@ -90,7 +90,15 @@ options:RegisterAddon("Unitframes", {
     title = "Unit frames",
     general = {},
     tabs = {
-        player = { name = "PlayerFrame", order = 10, args = {} },
+        player = {
+            name = "PlayerFrame",
+            order = 10,
+            new = true,
+            blizzard = true,
+            args = {
+                tagged = { type = "toggle", name = "Tagged", new = true },
+            },
+        },
         target = { name = "TargetFrame", order = 20, args = {} },
         missing = {
             name = "Missing",
@@ -109,6 +117,12 @@ assert(#children == 3)
 assert(children[1].id == "Unitframes:general")
 assert(children[2].id == "Unitframes:player")
 assert(children[3].id == "Unitframes:target")
+assert(children[2].new and children[2].blizzard)
+local playerTab = tables.Unitframes.args.player
+assert(playerTab.new == nil and playerTab.blizzard == nil)
+assert(playerTab.args.tagged.new == nil)
+assert(config:GetOptionTags(playerTab.args.tagged).new)
+assert(config.Option:New(tables.Unitframes, { "player", "tagged" }, "Unitframes"):Read("new"))
 assert(config.categories["Seamless:profiles"] and not config.categories["Unitframes:profiles"])
 local page = {}
 function page:GetWidth()
@@ -194,3 +208,11 @@ assert(not cast.db.profile.player.rank.enabled and not rank.disabled({ "player",
 cast.db.profile.player.enabled = false
 assert(rank.disabled({ "player", "rank" }))
 print("Standalone feature options OK")
+playerTab.args.tagged.new = false
+playerTab.args.tagged.blizzard = true
+options:Refresh("Unitframes")
+assert(not config:GetOptionTags(playerTab.args.tagged).new)
+assert(config:GetOptionTags(playerTab.args.tagged).blizzard)
+assert(playerTab.args.tagged.new == nil and playerTab.args.tagged.blizzard == nil)
+realRegistry:GetOptionsTable("Unitframes", "dialog", "SeamlessConfig-1.0")
+print("Feature tag metadata and AceConfig compatibility OK")

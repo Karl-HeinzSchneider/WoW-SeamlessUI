@@ -112,6 +112,9 @@ function Option:Read(member, ...)
     if not inherited[member] then
         value = group[member]
     end
+    if member == "new" or member == "blizzard" then
+        return app.config:GetOptionTags(group)[member]
+    end
     info.option, info.type, info.arg, info.handler = group, group.type, group.arg, handler
     if type(value) == "function" then
         return value(info, ...)

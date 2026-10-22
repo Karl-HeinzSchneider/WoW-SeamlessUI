@@ -153,6 +153,9 @@ function CreateFrame(_, _, parent, template)
     assert(template ~= "SimpleGroup")
     local object = frame()
     object.parent, object.template = parent, template
+    if template == "NewFeatureLabelNoAnimateTemplate" then
+        object.Label, object.BGLabel = frame(), frame()
+    end
     return object
 end
 MinimalSliderWithSteppersMixin = { Event = { OnValueChanged = "changed" }, Label = { Right = 1 } }
@@ -185,6 +188,16 @@ local app = {
     },
 }
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
+function app.config:GetOptionTags(option)
+    return option
+end
+function methods:SetScale(value)
+    self.scale = value
+end
+function methods:SetTextToFit(value)
+    self.text = value
+end
+assert(loadfile("Seamless/src/config/badges.lua"))("Seamless", app)
 assert(loadfile("Seamless/src/config/controls.lua"))("Seamless", app)
 local profile = { enabled = true, amount = 5, choice = "b", input = "old" }
 local root = {
@@ -253,6 +266,22 @@ local slider = page.controlPools.range[1]
 slider.Control.callback(slider.Control.owner, 7)
 assert(profile.amount == 7 and changes == 1)
 local toggle = page.controlPools.toggle[1]
+root.args.general.args.enabled.new = true
+app.config:RefreshOptionsPage(page)
+assert(toggle.featureTags.new:IsShown())
+assert(toggle.featureTags.new.template == "NewFeatureLabelNoAnimateTemplate")
+assert(toggle.featureTags.new.scale == 0.8)
+root.args.general.args.enabled.new = false
+root.args.general.args.enabled.blizzard = true
+app.config:RefreshOptionsPage(page)
+assert(not toggle.featureTags.new:IsShown() and toggle.featureTags.blizzard:IsShown())
+assert(toggle.featureTags.blizzard.Label.text == "BLIZZ" and toggle.featureTags.blizzard.BGLabel.text == "BLIZZ")
+root.args.general.args.enabled.new = true
+app.config:RefreshOptionsPage(page)
+assert(toggle.featureTags.new:IsShown() and toggle.featureTags.blizzard:IsShown())
+root.args.general.args.enabled.new, root.args.general.args.enabled.blizzard = nil, nil
+app.config:RefreshOptionsPage(page)
+assert(not toggle.featureTags.new:IsShown() and not toggle.featureTags.blizzard:IsShown())
 toggle.scripts.OnEnter()
 assert(GameTooltip.owner == toggle and GameTooltip.anchor == "ANCHOR_NONE")
 assert(GameTooltip.point[1] == "BOTTOMLEFT" and GameTooltip.point[2] == toggle.Label)

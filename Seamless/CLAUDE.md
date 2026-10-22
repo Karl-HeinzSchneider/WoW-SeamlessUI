@@ -64,6 +64,9 @@ controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
   `tooltip(path)` optionally returns the declared default and a per-character boolean for
   the custom window's info tooltip. Use `core:GetOptionDefault(schema, path, first)` for
   schema lookup or `core:GetCVarOptionInfo(name)` for CVar defaults and scope.
+  Add `new = true` or `blizzard = true` to a tab or individual option to show a native
+  glowing label in the custom config view; the flags are removed before AceConfig validation.
+  The same flags work on `FeatureGroup` specs and `RegisterConfigCategory` specs.
 - `core:OpenOptions(addonName, tab)`: opens the custom config subview, optionally on a tab; no name opens Seamless General.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.

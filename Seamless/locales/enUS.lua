@@ -8,6 +8,7 @@ L["%dd %dh %dm"] = true
 L["Accept"] = true
 L["Apply this change?"] = true
 L["Background"] = true
+L["BLIZZ"] = true
 L["Bottom left"] = true
 L["Bottom right"] = true
 L["Bottom"] = true

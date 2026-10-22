@@ -11,6 +11,7 @@ end
 -- L["Accept"] = "Accept"
 -- L["Apply this change?"] = "Apply this change?"
 -- L["Background"] = "Background"
+-- L["BLIZZ"] = "BLIZZ"
 -- L["Bottom left"] = "Bottom left"
 -- L["Bottom right"] = "Bottom right"
 -- L["Bottom"] = "Bottom"

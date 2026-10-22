@@ -15,6 +15,8 @@ local function Option(row, order)
         type = row.type,
         order = order,
         name = row.name,
+        new = row.new,
+        blizzard = row.blizzard,
         desc = row.desc,
         get = function()
             return row.get()

@@ -8,6 +8,11 @@
 ---@field selected? string
 ---@field minimized? boolean
 ---@field optionInfo table<string, fun(path: string[]): any, boolean?>
+---@field optionTags table<table, { new?: boolean, blizzard?: boolean }>
+---@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
+---@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
+---@field GetFeatureTagWidth fun(self: SeamlessCore.Config, tags: table): number
+---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
 ---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
 ---@field ControlRow table Base class for Settings-style control rows.
 ---@field controlCreators table<string, fun(page: table): table> Extensible control factories.
@@ -20,6 +25,8 @@
 ---@field parent? string Previously registered parent ID; omitted for a root category.
 ---@field order? number Defaults to 100; ties sort by ID.
 ---@field header? boolean Styled heading; clicking it collapses its children.
+---@field new? boolean Show the native glowing NEW label.
+---@field blizzard? boolean Show a glowing BLIZZ label.
 ---@field hidden? boolean|fun(): boolean Omit unavailable pages from navigation.
 ---@field create? fun(page: table) Called once with an owned content frame; set its height for scrolling.
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
@@ -120,6 +127,8 @@
 ---@field options SeamlessCore.EditModeSystemOption[]
 
 ---@class SeamlessCore.EditModeSystemOption
+---@field new? boolean Optional tag in the custom config view when adapted from a style row.
+---@field blizzard? boolean Optional tag in the custom config view when adapted from a style row.
 ---@field key string Unique within the section.
 ---@field type "toggle"|"select"|"range"
 ---@field name string

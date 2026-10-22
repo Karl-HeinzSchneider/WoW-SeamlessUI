@@ -204,6 +204,9 @@ function CreateFrame(_, name, parent, template)
     if template == "MinimalTabTemplate" then
         frame.Text = object()
     end
+    if template == "NewFeatureLabelNoAnimateTemplate" then
+        frame.Label, frame.BGLabel = object(), object()
+    end
     if name then
         _G[name] = frame
     end
@@ -230,8 +233,14 @@ tinsert = table.insert
 NineSliceUtil = { ApplyLayoutByName = function() end }
 config.frame = nil
 assert(loadfile("Seamless/src/config/window.lua"))("Seamless", app)
+function methods:SetTextToFit(value)
+    self.text = value
+end
+assert(loadfile("Seamless/src/config/badges.lua"))("Seamless", app)
 local created, refreshedPage = 0, 0
 core:RegisterConfigCategory("Page", {
+    new = true,
+    blizzard = true,
     name = "Page",
     create = function(page)
         created = created + 1
@@ -243,6 +252,13 @@ core:RegisterConfigCategory("Page", {
 })
 core:OpenConfig("Page")
 assert(config.navigation:GetWidth() == 175)
+for _, row in ipairs(config.rows) do
+    if row.id == "Page" then
+        assert(row.featureTags.new:IsShown() and row.featureTags.blizzard:IsShown())
+        assert(row.featureTags.blizzard.Label.text == "BLIZZ")
+        assert(row.text.points.LEFT[2] >= config:GetFeatureTagWidth(config.categories.Page) + 20)
+    end
+end
 local headerRight, dividerX = 18 + config.navigation:GetWidth(), 18 + 199
 local scrollbarCenter = headerRight + config.navigationBar.points.TOP[4]
 assert(scrollbarCenter - headerRight == dividerX - scrollbarCenter)

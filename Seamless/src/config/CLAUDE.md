@@ -46,6 +46,27 @@ the supplied page. All categories currently belong to the single Config tab.
 opens General in this window. `core:OpenOptions(addonName, tab)` opens the corresponding
 addon subview here as well.
 
+## Feature tags
+
+Set `new = true` or `blizzard = true` on a `RegisterConfigCategory` spec, an
+individual option declaration, a `FeatureGroup` spec, or a tab in
+`RegisterOptions(..., { tabs = { player = { name = L["Player"], order = 10,
+new = true, args = { ... } } } })`. The tab flag marks its subcategory in the
+left list; an option flag marks that setting. Both flags together show both labels.
+Flags do not propagate to children or automatically clear on hover/open.
+
+`badges.lua` reuses SharedXML's `NewFeatureLabelNoAnimateTemplate` at 0.8 scale.
+NEW uses the client's localized label; BLIZZ uses the suite locale on both native
+text layers, preserving the same static glow. Labels sit to the left of the
+setting/category name. Tagged rows reserve space for the labels and their glow;
+untagged rows retain their original insets. Pooled rows hide tags when reused.
+
+`NormalizeOptionTags` removes these custom keys before passing declarations to
+AceConfigRegistry, retaining them in a weak-key side table. Dynamic declarations
+should call `core:RefreshOptions(addonName)` after rebuilding so flags are
+normalized before native options redraw. Never modify the vendored AceConfig
+validator to accept custom keys.
+
 ## Settings rows
 
 `core/options.lua` registers one category header per addon and one child page per

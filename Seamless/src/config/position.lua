@@ -79,7 +79,8 @@ function app.addon:GetPositionOptions(spec)
     local scaleRow = {
         type = "range",
         name = L["Scale"],
-        order = 6,
+        -- Scale leads the group, before the anchor rows.
+        order = 0,
         min = scale.min or 0.5,
         max = scale.max or 2,
         step = scale.step or 0.01,

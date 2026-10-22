@@ -680,6 +680,9 @@ function player:GetScale()
     return 0.75
 end
 assert(config.scale.type == "range" and config.scale.name == "Scale")
+for key, row in pairs(config) do
+    assert(key == "scale" or row.order > config.scale.order, "Scale is the first row")
+end
 assert(config.scale.disabled() and config.scale.get() == player:GetScale())
 local originalScale = player:GetScale()
 config.scale.set(nil, 1.2)

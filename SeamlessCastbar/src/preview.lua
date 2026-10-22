@@ -101,6 +101,28 @@ local function createPreview(key)
             return not position.active
         end,
     })
+    local scale = position:ScaleOption(key)
+    settings[#settings + 1] = {
+        kind = lib.SettingType.Slider,
+        name = L["Scale"],
+        default = scale.default,
+        minValue = scale.min,
+        maxValue = scale.max,
+        valueStep = scale.step,
+        formatter = function(value)
+            return ("%d%%"):format(math.floor(value * 100 + 0.5))
+        end,
+        get = scale.get,
+        set = function(_, value, fromReset)
+            -- Reset To Default leaves the scale alone, like the position rows.
+            if not fromReset and position.active then
+                scale.set(value)
+            end
+        end,
+        disabled = function()
+            return not position.active
+        end,
+    }
     for _, setting in ipairs(app.LibEditModeSettings(key)) do
         settings[#settings + 1] = setting
     end
@@ -108,15 +130,14 @@ local function createPreview(key)
     previews[key] = preview
 end
 
--- The bar's effective scale, or its unit frame's while the bar's is secret.
-local function barScale(spec)
-    local bar, parent = _G[spec.bar], _G[spec.frame]
-    local scale = bar and bar:GetEffectiveScale()
-    if not app.Known(scale) then
-        scale = parent:GetEffectiveScale()
+-- The bar's effective scale relative to UIParent: its unit frame's times our scale (the bar's own
+-- can be secret).
+local function barScale(key, spec)
+    local scale, parentScale = _G[spec.frame]:GetEffectiveScale(), UIParent:GetEffectiveScale()
+    if not (app.Known(scale) and app.Known(parentScale)) then
+        return app.position:GetScale(key)
     end
-    local parentScale = UIParent:GetEffectiveScale()
-    return app.Known(scale) and scale / parentScale or 1
+    return scale * app.position:GetScale(key) / parentScale
 end
 
 ---Show the previews in Edit Mode at their bar's position with the current Style options, or hide them.
@@ -126,7 +147,7 @@ function app.UpdatePreviews()
         local visible = app.addon:IsEnabled() and lib:IsInEditMode() and shown[key]
         if visible then
             local settings = app.db.profile[key]
-            preview:SetScale(barScale(spec))
+            preview:SetScale(barScale(key, spec))
             local position = app.position:Get(key)
             preview:ClearAllPoints()
             preview:SetPoint(

@@ -9,7 +9,8 @@ local appName, app = ...
 -- secret, so dragging happens on the addon-owned preview (preview.lua). A bar that was never
 -- moved keeps the client's anchor; after a reset or disabling, the client's next placement (the
 -- next cast or target change) puts it back. Nothing is stored on the bars and none of their
--- methods are called.
+-- methods are called. A scale per layout (profile.scales) works the same way: the client never
+-- scales the bars, so ours is set on every placement and 1 restores the client's.
 
 local lib = app.core:GetEditModeLibrary()
 
@@ -89,6 +90,52 @@ function module:RelativeFrame(key, name)
     return parent or UIParent
 end
 
+local SCALE_MIN, SCALE_MAX = 0.5, 2
+
+-- Bars whose scale this module changed, so a reset or disabling puts the client's back.
+local scaled = {}
+
+---The active layout's scale of the bar, 1 when unchanged.
+---@return number
+function module:GetScale(key)
+    local layout = lib:GetActiveLayoutName()
+    return layout and app.db.profile.scales[key][layout] or 1
+end
+
+---Change the scale in the active layout and keep the bar's anchor point where it is on screen.
+function module:SetScale(key, value)
+    local layout = lib:GetActiveLayoutName()
+    if not layout or not self.active or type(value) ~= "number" then
+        return
+    end
+    value = math.min(SCALE_MAX, math.max(SCALE_MIN, math.floor(value * 100 + 0.5) / 100))
+    local old = self:GetScale(key)
+    app.db.profile.scales[key][layout] = value ~= 1 and value or nil
+    local stored = Stored(key)
+    if stored then
+        stored.x, stored.y = stored.x * old / value, stored.y * old / value
+    end
+    self:Apply(key)
+    self:Changed()
+end
+
+---The Scale binding of the options tab and the Edit Mode slider.
+---@return table
+function module:ScaleOption(key)
+    return {
+        min = SCALE_MIN,
+        max = SCALE_MAX,
+        step = 0.01,
+        default = 1,
+        get = function()
+            return self:GetScale(key)
+        end,
+        set = function(value)
+            self:SetScale(key, value)
+        end,
+    }
+end
+
 -- Every part of the addon that shows a position: the options and the Edit Mode previews.
 function module:Changed()
     app.core:RefreshOptions(appName)
@@ -100,7 +147,15 @@ end
 ---@param key string
 function module:Apply(key)
     local bar = self:Frames(key)
-    if not (bar and self.active and self:IsMoved(key)) then
+    if not bar then
+        return
+    end
+    local scale = self.active and self:GetScale(key) or 1
+    if scale ~= 1 or scaled[bar] then
+        bar:SetScale(scale)
+        scaled[bar] = scale ~= 1 or nil
+    end
+    if not (self.active and self:IsMoved(key)) then
         return
     end
     local position = self:Get(key)
@@ -179,8 +234,7 @@ function module:MeasureOffsets(frame, point, relativeTo, relativePoint)
     return (fx - rx) / scale, (fy - ry) / scale
 end
 
----The bar's options tab Position group; nil for bars that can't move. Scale stays disabled:
----the bar takes its unit frame's Frame Size.
+---The bar's options tab Position and scale group; nil for bars that can't move.
 ---@param key string
 ---@return table?
 function module:GetOptions(key)
@@ -209,6 +263,7 @@ function module:GetOptions(key)
         anchorFrames = function()
             return app.core:GetFramePositionService():GetAnchorFrames((self:Frames(key)))
         end,
+        scale = self:ScaleOption(key),
     })
 end
 
@@ -217,8 +272,10 @@ end
 local function ForEachLayoutTable(callback)
     if app.db then
         for _, profile in pairs(app.db.profiles) do
-            for _, layouts in pairs(profile.positions or {}) do
-                callback(layouts)
+            for _, field in ipairs({ "positions", "scales" }) do
+                for _, layouts in pairs(profile[field] or {}) do
+                    callback(layouts)
+                end
             end
         end
     end
@@ -265,6 +322,9 @@ end
 
 function module:Disable()
     self.active = false
+    for _, key in ipairs(self.keys) do
+        self:Apply(key)
+    end
     self:Changed()
 end
 

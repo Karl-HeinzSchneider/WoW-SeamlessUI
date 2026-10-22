@@ -74,10 +74,55 @@ local function Frame(name, rect, scale)
         self.shown = false
     end
     function frame:CreateTexture()
-        return { SetAtlas = function() end, SetPoint = function() end }
+        return Frame(nil)
     end
+    frame.CreateMaskTexture, frame.CreateFontString = frame.CreateTexture, frame.CreateTexture
+    function frame:SetText(value)
+        self.text = value
+    end
+    function frame:SetMinMaxValues(low, high)
+        self.range = { low, high }
+    end
+    function frame:SetValue(value)
+        self.value = value
+    end
+    function frame:SetStatusBarTexture(value)
+        self.atlas = value
+    end
+    function frame:GetStatusBarTexture()
+        return self
+    end
+    function frame:SetScript(event, handler)
+        self[event] = handler
+    end
+    function frame:IsShown()
+        return self.shown
+    end
+    frame.SetAtlas, frame.SetAllPoints, frame.AddMaskTexture, frame.SetStatusBarColor, frame.RegisterUnitEvent =
+        function() end, function() end, function() end, function() end, function() end
     frame.SetSize, frame.SetClampedToScreen = function() end, function() end
     return frame
+end
+
+Constants = { CharacterNameSeparatorConsts = { CHARACTERNAME_SURNAME_SEPARATOR = " " } }
+local health, power = 450, 35
+function UnitName()
+    return "First", "Last"
+end
+function UnitHealth()
+    return health
+end
+function UnitHealthMax()
+    return 1000
+end
+function UnitPower()
+    return power
+end
+function UnitPowerMax()
+    return 100
+end
+function SetPortraitTexture(texture, unit)
+    texture.portraitUnit = unit
 end
 function CreateFrame()
     return Frame(nil)
@@ -181,6 +226,18 @@ local function load(file)
     assert(loadfile("SeamlessUnitframes/src/" .. file))("SeamlessUnitframes", app)
 end
 load("core/unitframes.lua")
+local previewCalls = {}
+for _, name in ipairs({ "legacyLayout", "healthColor", "nameDisplay", "classIcon" }) do
+    app[name] = {
+        Refresh = function() end,
+        ApplyPreview = function(_, frame, key)
+            previewCalls[name] = { frame = frame, key = key }
+        end,
+        ApplyToTPreview = function(_, frame)
+            frame.previewLayout = app.db.profile.layout
+        end,
+    }
+end
 load("totposition/totposition.lua")
 load("totposition/mover.lua")
 local position, mover = app.totPosition, app.totMover
@@ -275,6 +332,22 @@ editing = true
 TargetFrameToT.scale = 0.8
 fire("enter")
 assert(targetMover.frame.shown and targetMover.frame.scale == 0.8, "the real frame's effective scale")
+assert(targetMover.frame.name.text == "First Last" and targetMover.frame.portrait.portraitUnit == "player")
+assert(targetMover.frame.HealthBar.value == 450 and targetMover.frame.HealthBar.range[2] == 1000)
+assert(targetMover.frame.ManaBar.value == 35 and targetMover.frame.ManaBar.range[2] == 100)
+for _, name in ipairs({ "healthColor", "nameDisplay", "classIcon" }) do
+    local call = previewCalls[name]
+    assert(mover.movers[call.key] == call.frame, "preview styling uses the ToT's own settings key")
+end
+app.db.profile.layout = "legacy"
+app.legacyLayout:Refresh()
+assert(targetMover.frame.previewLayout == "legacy" and focusMover.frame.previewLayout == "legacy")
+app.db.profile.layout = "current"
+app.legacyLayout:Refresh()
+assert(targetMover.frame.previewLayout == "current")
+health, power = 250, 12
+targetMover.frame:OnEvent("UNIT_HEALTH", "player")
+assert(targetMover.frame.HealthBar.value == 250 and targetMover.frame.ManaBar.value == 12)
 local placed = last(targetMover.frame)
 assert(placed[1] == "TOPRIGHT" and placed[2] == TargetFrame and placed[4] == 12)
 frames.options[1].set(false)

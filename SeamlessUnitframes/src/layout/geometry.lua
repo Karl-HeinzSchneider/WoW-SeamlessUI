@@ -535,6 +535,11 @@ local function Small(frame, pet, old)
     Point(mana, "TOPLEFT", health, "BOTTOMLEFT", old and -4 or -2, old and -1 or -2, 74, 7)
 end
 
+-- The Edit Mode stand-ins use the same fixed ToT geometry and artwork.
+function module:ApplyToTPreview(frame)
+    Small(frame, false, app.db.profile.layout == "legacy")
+end
+
 local function Party(frame, old)
     if
         not module:CheckPaths(frame, "Party", {

@@ -618,6 +618,23 @@ combat = false
 Mode("legacy")
 Mode("current")
 -- Missing known fields fail with a diagnostic, not a nil call; later refresh retries.
+local preview = Small("player")
+preview.healthbar.unit, preview.healthbar.lockColor = "player", true
+app.db.profile.unitFrames.targettarget.healthBarColor = "class"
+Mode("legacy")
+layout:ApplyToTPreview(preview)
+app.healthColor:ApplyPreview(preview, "targettarget")
+assert(HasOld(preview.FrameTexture) and HasOld(preview.healthbar.fill))
+assert(preview.Name.justify == "LEFT" and preview.healthbar.color[1] == 0.2)
+Mode("current")
+layout:ApplyToTPreview(preview)
+app.healthColor:ApplyPreview(preview, "targettarget")
+assert(preview.FrameTexture.atlas == "UI-HUD-UnitFrame-TargetofTarget-PortraitOn")
+assert(preview.Name.justify == "CENTER" and preview.healthbar.color[1] == 0.2)
+app.db.profile.unitFrames.targettarget.healthBarColor = "default"
+app.healthColor:ApplyPreview(preview, "targettarget")
+assert(preview.healthbar.color[1] == 1 and preview.healthbar.color[2] == 1)
+
 local saved = PlayerFrame.PlayerFrameContainer
 PlayerFrame.PlayerFrameContainer = nil
 Mode("legacy")

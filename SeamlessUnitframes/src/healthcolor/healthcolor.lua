@@ -188,6 +188,10 @@ local function ApplyAll()
     end
 end
 
+function module:ApplyPreview(frame, key)
+    Apply(frame.healthbar, key)
+end
+
 function module:OnInitialize()
     -- Every unit frame runs this on a unit change and on max health changes.
     hooksecurefunc("UnitFrameHealthBar_Update", Update)

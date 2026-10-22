@@ -64,6 +64,7 @@ function app.addon:OnEnable()
     end
     app.RegisterEditMode()
     app.RegisterPreviews()
+    app.position:Enable()
     self:Refresh()
 end
 
@@ -77,6 +78,7 @@ function app.addon:OnDisable()
         app.RestoreHold(bar)
     end
     wipe(keys)
+    app.position:Disable()
     app.UpdatePreviews()
     app.core:RefreshEditModeSystemOptions()
 end
@@ -101,5 +103,6 @@ function app.addon:Refresh()
             app.RestoreHold(bar)
         end
     end
+    app.position:Refresh()
     app.UpdatePreviews()
 end

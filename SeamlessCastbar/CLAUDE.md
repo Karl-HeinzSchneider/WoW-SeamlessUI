@@ -2,9 +2,10 @@
 
 Optional addon requiring Seamless that adds information to the game's own player, target and focus
 cast bars without replacing them: cast time text, the spell rank in the name, channel tick marks,
-the spell icon on the detached player bar and how long a bar stays after a cast.
-Options have Player, Target and Focus tabs. The player's Style section uses SeamlessUI's
-native Edit Mode extension; target/focus previews use LibEditMode settings.
+the spell icon on the detached player bar and how long a bar stays after a cast. It also makes
+the target and focus bars movable. Options have Player, Target and Focus tabs. The player's Style
+section uses SeamlessUI's native Edit Mode extension; target/focus previews use LibEditMode
+settings.
 
 ## What the client already does (don't duplicate)
 
@@ -26,9 +27,18 @@ system, so they are not part of this addon.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/options.lua`, `src/editmode.lua`: options and shared Style declarations.
-- `src/preview.lua`: fixed target/focus previews using client art, registered through
-  `core:SetEditModeFrameFixed`. Never move the real bars: aura anchoring makes their geometry
-  secret. Preview Frames checkboxes are session-only.
+- `src/position.lua`, `app.position`: target/focus positions per Edit Mode layout name in
+  `profile.positions[key][layout]` (point, relativeTo, relativePoint, x, y in the bar's scale),
+  following layout copies, renames and deletes. A layout without one keeps the client's anchor.
+  Post-hooks on the bar's `AdjustPosition` and its `OnShow` script (the client's placement on
+  target change, cast start and aura rows) re-anchor a moved bar. The bars are not protected, so
+  this also runs in combat. Reset and disabling only stop re-anchoring; the client's next
+  placement puts the bar back. `GetOptions(key)` is the tab's Position group.
+- `src/preview.lua`: target/focus Edit Mode stand-ins using client art: addon-owned UIParent
+  children at the bar's position and effective scale, registered with LibEditMode with Core's
+  Position section and the Style rows. A drag keeps the stored anchor frame and measures offsets
+  from it; Reset Position reports the registered default (`RESET`). Preview Frames checkboxes are
+  session-only.
 
 ## Rules
 
@@ -36,12 +46,17 @@ system, so they are not part of this addon.
   post-hook them and set text, textures and animation timings. Nothing is stored on the bars:
   our regions and saved values live in local tables keyed by bar.
 - Target and focus casts and the bars' geometry can be secret: skip any value `issecretvalue`
-  reports (`app.Known`); ticks use the bar's last known width.
+  reports (`app.Known`); ticks use the bar's last known width. This is why the real bars are
+  only anchored, never dragged or measured (the approach EditModeExpanded uses too): once the
+  client anchors a bar to the aura container it inherits the container's forbidden aspects.
+  Never reparent the bars or anchor other frames to them.
 - New channeled spells go into `intervalsBySpellID` with their tick interval, not a tick count.
 
 `lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks, hold and the
-Edit Mode rows and target/focus previews.
+Edit Mode rows, target/focus previews and positions.
 
 Manual validation: player cast bar locked/unlocked, native Show Cast Time on/off, target/focus
 casts and interruptions, channel pushback, spell ranks, profile changes and Edit Mode previews.
+Moved target/focus bars: drag, Position rows, Reset Position, layout switch, target with aura
+rows and a ToT, casts in combat.
 Check `/console taintLog 1` stays clean.

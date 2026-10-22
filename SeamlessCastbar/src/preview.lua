@@ -3,12 +3,12 @@ local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- The target and focus cast bars have no Edit Mode system of their own, and their unit frames
--- place them, so they are never moved. In Edit Mode a preview of each, built from the game's cast
--- bar art, sits where the client shows the bar under its unit frame. Selecting it opens its Style
--- options in LibEditMode's dialog. The preview is a child of the unit frame, so it follows that
--- frame's position, scale and visibility; the bar itself is never touched or read (its geometry
--- can be secret).
+-- The target and focus cast bars have no Edit Mode system of their own. In Edit Mode a preview of
+-- each, built from the game's cast bar art, stands in for the bar: an addon-owned UIParent child
+-- at the bar's position (app.position) and effective scale, registered with LibEditMode. Dragging
+-- it, its Position section or Reset Position store a position through app.position, which then
+-- moves the real bar. Selecting it also shows its Style options. The bar itself is never dragged
+-- or read (its geometry can be secret).
 
 local lib = app.core:GetEditModeLibrary()
 
@@ -21,6 +21,10 @@ local order = { "target", "focus" }
 -- Size of the client's target and focus bars (TargetSpellBarTemplate).
 local WIDTH, HEIGHT = 150, 10
 
+-- LibEditMode's Reset Position reports the registered default through the same callback as a
+-- drag. No drag ends exactly on this point, so it means "back to the client's anchor".
+local RESET = { point = "CENTER", x = 0, y = 0 }
+
 ---@type table<string, StatusBar>
 local previews = {}
 -- The Frames list checkboxes; the previews show by default.
@@ -32,23 +36,31 @@ function app.PreviewFrame(key)
     return previews[key]
 end
 
--- The client's spot for the bar under its unit frame, without aura rows (TargetSpellBarMixin).
-local function place(preview, parent)
-    local x, y = parent.smallSize and 38 or 43, parent.smallSize and 3 or 5
-    if parent.haveToT then
-        y = parent.smallSize and -48 or -46
+-- LibEditMode anchored the preview to UIParent; keep the stored point and anchor frame and
+-- measure the new offsets from there, so a bar anchored to its unit frame stays attached to it.
+local function onMoved(key, point, x, y)
+    local position = app.position
+    if point == RESET.point and x == RESET.x and y == RESET.y then
+        position:Reset(key)
+        return
     end
-    preview:ClearAllPoints()
-    preview:SetPoint("TOPLEFT", parent, "BOTTOMLEFT", x, y)
+    local current = position:Get(key)
+    local relative = position:RelativeFrame(key, current.relativeTo)
+    local offsetX, offsetY = position:MeasureOffsets(previews[key], current.point, relative, current.relativePoint)
+    if offsetX then
+        current.relativeTo, current.x, current.y = relative:GetName(), offsetX, offsetY
+    else
+        current.point, current.relativeTo, current.relativePoint, current.x, current.y = point, "UIParent", point, x, y
+    end
+    position:SetPosition(key, current)
 end
 
 local function createPreview(key)
     local spec = specs[key]
-    local parent = _G[spec.frame]
-    local preview = CreateFrame("StatusBar", nil, parent)
+    local preview = CreateFrame("StatusBar", nil, UIParent)
     preview:Hide()
     preview:SetSize(WIDTH, HEIGHT)
-    preview:SetFrameLevel(parent:GetFrameLevel() + 10)
+    preview:SetClampedToScreen(true)
     preview:SetStatusBarTexture("ui-castingbar-filling-standard")
     preview:SetMinMaxValues(0, 1)
     preview:SetValue(0.5)
@@ -71,28 +83,65 @@ local function createPreview(key)
     -- Where text.lua puts the cast time of these bars.
     preview.Time = preview:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small")
     preview.Time:SetPoint("LEFT", preview, "RIGHT", 4, 0)
-    lib:AddFrame(preview, function() end, { point = "CENTER", x = 0, y = 0 }, spec.name)
-    app.core:SetEditModeFrameFixed(preview)
-    lib:AddFrameSettings(preview, app.LibEditModeSettings(key))
+    lib:AddFrame(preview, function(_, _, point, x, y)
+        onMoved(key, point, x, y)
+    end, RESET, spec.name)
+    local position = app.position
+    local settings = app.core:GetEditModePositionSettings({
+        get = function(field)
+            return position:Get(key)[field]
+        end,
+        set = function(field, value)
+            position:Set(key, field, value)
+        end,
+        anchorFrames = function()
+            return app.core:GetFramePositionService():GetAnchorFrames((position:Frames(key)))
+        end,
+        disabled = function()
+            return not position.active
+        end,
+    })
+    for _, setting in ipairs(app.LibEditModeSettings(key)) do
+        settings[#settings + 1] = setting
+    end
+    lib:AddFrameSettings(preview, settings)
     previews[key] = preview
 end
 
----Show the previews in Edit Mode with the current Style options, or hide them.
+-- The bar's effective scale, or its unit frame's while the bar's is secret.
+local function barScale(spec)
+    local bar, parent = _G[spec.bar], _G[spec.frame]
+    local scale = bar and bar:GetEffectiveScale()
+    if not app.Known(scale) then
+        scale = parent:GetEffectiveScale()
+    end
+    local parentScale = UIParent:GetEffectiveScale()
+    return app.Known(scale) and scale / parentScale or 1
+end
+
+---Show the previews in Edit Mode at their bar's position with the current Style options, or hide them.
 function app.UpdatePreviews()
     for key, preview in pairs(previews) do
         local spec = specs[key]
         local visible = app.addon:IsEnabled() and lib:IsInEditMode() and shown[key]
         if visible then
             local settings = app.db.profile[key]
-            local bar = _G[spec.bar]
-            local scale = bar and bar:GetScale()
-            preview:SetScale(app.Known(scale) and scale or 1)
-            place(preview, preview:GetParent())
+            preview:SetScale(barScale(spec))
+            local position = app.position:Get(key)
+            preview:ClearAllPoints()
+            preview:SetPoint(
+                position.point,
+                app.position:RelativeFrame(key, position.relativeTo),
+                position.relativePoint,
+                position.x,
+                position.y
+            )
             preview.Text:SetText(spec.name)
             local castTime = settings.enabled and settings.castTime.enabled
             preview.Time:SetText(
                 castTime and app.FormatCastTime(1.2, 2.5, settings.castTime.format, settings.castTime.decimals) or ""
             )
+            lib:RefreshFrameSettings(preview)
         end
         preview:SetShown(visible)
     end

@@ -14,5 +14,11 @@ local function barDefaults(icon)
 end
 
 app.dbDefaults = {
-    profile = { player = barDefaults(true), target = barDefaults(false), focus = barDefaults(false) },
+    profile = {
+        player = barDefaults(true),
+        target = barDefaults(false),
+        focus = barDefaults(false),
+        -- position.lua. Moved target/focus bars: positions[key][Edit Mode layout name] = position.
+        positions = { target = {}, focus = {} },
+    },
 }

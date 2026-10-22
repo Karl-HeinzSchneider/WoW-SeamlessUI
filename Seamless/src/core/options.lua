@@ -312,7 +312,6 @@ function module:OnInitialize()
                         end,
                     },
                     compartment = {
-                        blizzard = true,
                         type = "toggle",
                         order = 15,
                         name = L["Addon compartment entry"],
@@ -329,7 +328,6 @@ function module:OnInitialize()
                         end,
                     },
                     logLevel = {
-                        new = true,
                         type = "select",
                         order = 20,
                         name = L["Log level"],

@@ -172,8 +172,21 @@ exclude self, descendants and cycles. This works without SeamlessUI enabled;
 SeamlessUI's Edit Mode extension uses the same core backend with its own selection
 and feature-enable checks. Settings stay in Edit Mode layouts, not AceDB profiles.
 
-`Unit Frames > Player` is the first consumer, with Position and scale and Style groups.
-Run `lua src/tests/blizzard-position.lua` for both native and config paths.
+`Unit Frames > Player`, `Target` and `Focus` use it, each with Position and scale and
+Style groups. Run `lua src/tests/blizzard-position.lua` for both native and config paths.
+
+Defaults come from the game, not from our schemas: the service's `GetDefault(frame)`
+returns `EditModePresetLayoutManager:GetDefaultSystemAnchorInfo`, the anchor the native
+"Reset To Default Position" button applies, and `GetDefaultSetting(frame, setting)`
+converts `GetDefaultSettingForSystem` to display units. Both return nil (tooltip: Not
+applicable) where the client lacks the API. The native group passes them as the
+optional spec `default(key)` and adds **Reset to default position** (spec `reset()`,
+disabled by `isDefault()`), which applies the preset anchor with
+`isInDefaultPosition = true` through the same `Apply` path.
+
+Any option may carry its own `default` (a value or a function returning it). It is
+stripped with the `new`/`blizzard` tags before AceConfig sees the table and wins over
+the addon's `tooltip(path)` resolver; use it for values only the game knows.
 
 Scale is always shown but disabled without an explicit `scale` binding containing
 both `get()` and `set(value)`. Scale uses multipliers (1 = 100%); defaults are
@@ -186,5 +199,12 @@ For a generic frame, add `scale = { get = getScale, set = setScale }` to the
 `GetPositionOptions` spec. For a native frame, pass that binding as the optional
 second argument to `GetNativePositionOptions(getFrame, scale)`; its default
 getter reads the native frame's current scale. Omit the binding to retain the
-disabled slider, as the Player frame currently does. This does not change the
-existing Edit Mode Position rows.
+disabled slider. This does not change the existing Edit Mode Position rows.
+
+`core:GetNativeSettingScale(getFrame, setting)` binds Scale to a native Edit Mode
+percentage setting (the unit frames pass `Enum.EditModeUnitFrameSetting.FrameSize`):
+range, step and default from the setting's display info and preset, values written as
+whole percentages through `EditModeManagerFrame:OnSystemSettingChange` like the native
+slider (`ApplySetting`: saved at once outside Edit Mode, a draft inside it). It is
+disabled while Edit Mode hides the setting (`ShouldShowSetting`, e.g. Focus without
+Larger Frame).

@@ -383,6 +383,19 @@ assert(GameTooltip.lines[1] == "\n(Default: |cff8080ff3|r)")
 assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
 page.controlPools.select[1].scripts.OnEnter()
 assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffA|r)")
+-- An option's own default (a value only the game knows) wins over the resolver,
+-- keeps the resolver's per-character flag and still shows choice labels.
+root.args.general.args.amount.default = function()
+    return 6
+end
+slider.scripts.OnEnter()
+assert(GameTooltip.lines[1] == "\n(Default: |cff8080ff6|r)")
+assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
+root.args.general.args.amount.default = nil
+root.args.general.args.choice.default = "b"
+page.controlPools.select[1].scripts.OnEnter()
+assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffB|r)")
+root.args.general.args.choice.default = nil
 toggle:Commit(false)
 app.config:RefreshOptionsPage(page)
 assert(not profile.enabled and not slider.Control.enabled)

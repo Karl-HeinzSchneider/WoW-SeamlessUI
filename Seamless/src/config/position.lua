@@ -24,6 +24,9 @@ function app.addon:GetPositionOptions(spec)
                     spec.set(key, value)
                 end
             end,
+            default = spec.default and function()
+                return spec.default(key)
+            end,
         }
         args[key] = row
         return row
@@ -83,6 +86,7 @@ function app.addon:GetPositionOptions(spec)
         get = scale.get or function()
             return 1
         end,
+        default = scale.default,
         disabled = function()
             return not scale.get or not scale.set or disabled() or (scale.disabled and scale.disabled()) or false
         end,
@@ -93,6 +97,21 @@ function app.addon:GetPositionOptions(spec)
         end
     end
     args.scale = scaleRow
+    if spec.reset then
+        args.reset = {
+            type = "execute",
+            name = L["Reset to default position"],
+            order = 7,
+            disabled = function()
+                return disabled() or (spec.isDefault and spec.isDefault()) or false
+            end,
+            func = function()
+                if not args.reset.disabled() then
+                    spec.reset()
+                end
+            end,
+        }
+    end
     return { type = "group", inline = true, name = L["Position and scale"], order = 10, args = args }
 end
 
@@ -113,8 +132,23 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
     for key, value in pairs(scale or {}) do
         scaleOptions[key] = value
     end
+    local function warn(ok, err)
+        if not ok and err then
+            app.logger:warn("%s", err)
+        end
+    end
     return self:GetPositionOptions({
         scale = scaleOptions,
+        default = function(key)
+            local values = service:GetDefault(getFrame())
+            return values and values[keys[key] or key]
+        end,
+        isDefault = function()
+            return service:IsDefault(getFrame())
+        end,
+        reset = function()
+            warn(service:ResetToDefault(getFrame()))
+        end,
         disabled = function()
             return not service:CanEdit(getFrame())
         end,
@@ -129,10 +163,7 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
                 return
             end
             values[keys[key] or key] = value
-            local ok, err = service:Apply(frame, values)
-            if not ok and err then
-                app.logger:warn("%s", err)
-            end
+            warn(service:Apply(frame, values))
         end,
         anchorFrames = function()
             -- Disabled dropdowns still generate their menus; do not inspect protected
@@ -143,4 +174,36 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
             return anchorFrames
         end,
     })
+end
+
+---Scale bound to a native Edit Mode percentage setting, such as the unit frames'
+---Frame Size: the same value, range, default and saving as the native slider.
+---@param getFrame fun(): table?
+---@param setting number The system's setting enum value.
+---@return SeamlessCore.PositionScale
+function app.addon:GetNativeSettingScale(getFrame, setting)
+    local service = self:GetFramePositionService()
+    local min, max, step = service:GetSettingRange(getFrame(), setting)
+    return {
+        min = min and min / 100,
+        max = max and max / 100,
+        step = step and step / 100,
+        get = function()
+            local value = service:ReadSetting(getFrame(), setting)
+            return value and value / 100 or 1
+        end,
+        set = function(value)
+            local ok, err = service:ApplySetting(getFrame(), setting, math.floor(value * 100 + 0.5))
+            if not ok and err then
+                app.logger:warn("%s", err)
+            end
+        end,
+        disabled = function()
+            return service:ReadSetting(getFrame(), setting) == nil
+        end,
+        default = function()
+            local value = service:GetDefaultSetting(getFrame(), setting)
+            return value and value / 100
+        end,
+    }
 end

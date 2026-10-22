@@ -61,9 +61,16 @@ end
 
 function Option:TooltipDetails()
     local resolver = app.config.optionInfo and app.config.optionInfo[self.appName]
-    local value, perCharacter
+    local value, perCharacter = self:Read("default"), nil
+    if type(value) == "function" then
+        value = value()
+    end
     if resolver then
-        value, perCharacter = resolver(self.path)
+        local resolved
+        resolved, perCharacter = resolver(self.path)
+        if value == nil then
+            value = resolved
+        end
     end
     if value == nil then
         return L["Not applicable"], perCharacter
@@ -112,7 +119,7 @@ function Option:Read(member, ...)
     if not inherited[member] then
         value = group[member]
     end
-    if member == "new" or member == "blizzard" then
+    if member == "new" or member == "blizzard" or member == "default" then
         return app.config:GetOptionTags(group)[member]
     end
     info.option, info.type, info.arg, info.handler = group, group.type, group.arg, handler

@@ -8,7 +8,7 @@
 ---@field selected? string
 ---@field minimized? boolean
 ---@field optionInfo table<string, fun(path: string[]): any, boolean?>
----@field optionTags table<table, { new?: boolean, blizzard?: boolean }>
+---@field optionTags table<table, { new?: boolean, blizzard?: boolean, default?: any }> `default`: tooltip default value or a function returning it.
 ---@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
 ---@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
 ---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
@@ -70,7 +70,8 @@
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
 ---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
----@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group.
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group, with preset defaults and Reset to default position.
+---@field GetNativeSettingScale fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, setting: number): SeamlessCore.PositionScale Scale bound to a native Edit Mode percentage setting (Frame Size).
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
@@ -88,8 +89,12 @@
 ---@field max? number Defaults to 2.
 ---@field step? number Defaults to 0.01.
 ---@field disabled? fun(): boolean Additional scale-specific guard.
+---@field default? fun(): number? Default multiplier for the tooltip.
 
 ---@class SeamlessCore.EditModePosition
+---@field default? fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any `GetPositionOptions` only: the default shown in the custom window's tooltip.
+---@field reset? fun() `GetPositionOptions` only: adds a Reset to default position button.
+---@field isDefault? fun(): boolean Disables that button while the frame is in its default position.
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.

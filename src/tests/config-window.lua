@@ -262,7 +262,6 @@ core:RegisterConfigCategory("Page", {
 })
 core:OpenConfig("Page")
 assert(config.navigation:GetWidth() == 175)
-config:RefreshFeatureTags() -- The overlay updates after OpenConfig shows the window.
 for _, row in ipairs(config.rows) do
     if row.id == "Page" then
         assert(row.featureTags.new:IsShown() and row.featureTags.blizzard:IsShown())

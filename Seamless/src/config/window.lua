@@ -196,7 +196,6 @@ end
 
 function config:CreateRow(index)
     local row = CreateFrame("Button", nil, self.list)
-    row.featureTagViewport = self.navigation
     self.rows[index] = row
     row:SetWidth(NAVIGATION_WIDTH)
     row.background = row:CreateTexture(nil, "BACKGROUND")

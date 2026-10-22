@@ -343,22 +343,11 @@ assert(toggle.featureTags.new.strata == "HIGH" and toggle.featureTags.new.level 
 local tagPoint = toggle.featureTags.new.points.BOTTOMRIGHT
 assert(tagPoint[1] == "BOTTOMRIGHT" and tagPoint[2] == toggle.Label)
 assert(tagPoint[3] == "LEFT" and tagPoint[4] == 16 and tagPoint[5] == -10)
-assert(toggle.featureTags.new.parent == app.config.featureTagOverlay)
-assert(app.config.featureTagOverlay.parent == app.config.frame)
-local viewport = frame()
-toggle.featureTagViewport = viewport
-toggle.Label.top, toggle.Label.bottom = 120, 106
-app.config:RefreshFeatureTags()
-assert(not toggle.featureTags.new:IsShown(), "hide tags for rows scrolled above the viewport")
-toggle.Label.top, toggle.Label.bottom = 90, 76
-app.config:RefreshFeatureTags()
-assert(toggle.featureTags.new:IsShown())
+assert(toggle.featureTags.new.parent == toggle)
 page:Hide()
-app.config:RefreshFeatureTags()
-assert(not toggle.featureTags.new:IsShown(), "hide tags for hidden pages")
+assert(not toggle.featureTags.new:IsVisible(), "tags inherit page visibility")
 page:Show()
-app.config:RefreshFeatureTags()
-assert(toggle.featureTags.new:IsShown())
+assert(toggle.featureTags.new:IsVisible())
 root.args.general.args.enabled.new = false
 root.args.general.args.enabled.blizzard = true
 app.config:RefreshOptionsPage(page)

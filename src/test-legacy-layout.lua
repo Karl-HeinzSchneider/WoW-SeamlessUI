@@ -477,6 +477,52 @@ assert(
     "target artwork repair must happen before native update returns"
 )
 assert(#pending == 0, "target update must not defer repair until the next rendered frame")
+-- Edit Mode can call native unit-frame updates many times in one frame. Each
+-- hook must repair only its owner instead of rebuilding/recoloring the suite.
+local allFrames, applyGeometry = app.unitFrames.All, layout.ApplyGeometry
+local refreshColors, refreshFrameColor = app.healthColor.Refresh, app.healthColor.RefreshFrame
+local scans, fullColorRefreshes, repaired, recolored = 0, 0, {}, {}
+app.unitFrames.All = function(self)
+    scans = scans + 1
+    return allFrames(self)
+end
+layout.ApplyGeometry = function(self, roots, legacy)
+    repaired[#repaired + 1] = roots
+    return applyGeometry(self, roots, legacy)
+end
+app.healthColor.Refresh = function(self)
+    fullColorRefreshes = fullColorRefreshes + 1
+    return refreshColors(self)
+end
+app.healthColor.RefreshFrame = function(self, frame)
+    recolored[#recolored + 1] = frame
+    return refreshFrameColor(self, frame)
+end
+local comboPoint = ComboFrame.point
+for _ = 1, 88 do
+    UnitFrameManaBar_UpdateType(mana)
+end
+assert(scans == 0 and fullColorRefreshes == 0, "native update burst must not scan/recolor every frame")
+assert(#repaired == 88 and #recolored == 88)
+for index, roots in ipairs(repaired) do
+    assert(#roots == 1 and roots[1] == PlayerFrame and recolored[index] == PlayerFrame)
+end
+assert(ComboFrame.point == comboPoint, "player repairs must not reposition the target's combo points")
+local beforeUnrelated = #repaired
+UnitFrame_Initialize(Object())
+UnitFrame_Initialize(secret)
+UnitFrameManaBar_UpdateType(secret)
+assert(#repaired == beforeUnrelated, "unknown or secret update owners must be ignored")
+FocusFrame:CheckClassification()
+assert(#repaired > beforeUnrelated)
+for index = beforeUnrelated + 1, #repaired do
+    assert(#repaired[index] == 1 and repaired[index][1] == FocusFrame)
+end
+assert(ComboFrame.point == comboPoint, "focus repairs must not reposition the target's combo points")
+layout:Refresh()
+assert(scans > 0 and fullColorRefreshes == 1, "explicit refresh still updates the whole suite")
+app.unitFrames.All, layout.ApplyGeometry = allFrames, applyGeometry
+app.healthColor.Refresh, app.healthColor.RefreshFrame = refreshColors, refreshFrameColor
 combat = true
 TargetFrame:CheckClassification()
 assert(HasOld(TargetFrame.TargetFrameContainer.FrameTexture), "combat must not expose native sheet coordinates")

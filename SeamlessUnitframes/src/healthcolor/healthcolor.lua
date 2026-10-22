@@ -203,12 +203,17 @@ function module:OnEnable()
     self:Refresh()
 end
 
+-- A native layout repair only invalidates its owner's health bar.
+function module:RefreshFrame(frame)
+    if Readable(frame.healthbar) and frame.healthbar then
+        Update(frame.healthbar)
+    end
+end
+
 -- Recolors every health bar, after a setting changed.
 function module:Refresh()
     for _, frame in ipairs(unitFrames:All()) do
-        if Readable(frame.healthbar) and frame.healthbar then
-            Update(frame.healthbar)
-        end
+        self:RefreshFrame(frame)
     end
     -- Party frames are pooled and may have been swapped; recolor every bar ever seen as well.
     ApplyAll()

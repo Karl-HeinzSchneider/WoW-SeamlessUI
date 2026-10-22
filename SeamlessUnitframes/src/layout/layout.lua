@@ -13,6 +13,7 @@ app.legacyLayout = layout
 -- Definitions own atlas names and geometry. Never snapshot live rendering state:
 -- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
 local warnings, bindings, hooked, artwork = {}, {}, {}, {}
+local knownRoots = {}
 local painted, watchedBars, watchedFills, watchedArt = {}, {}, {}, {}
 local visualBars = {}
 local lossColored = false
@@ -405,6 +406,18 @@ local function Request()
     layout:Refresh()
 end
 
+local function RequestFrame(frame)
+    if writing or not enabled or not layout:Readable(frame) or not frame then
+        return
+    end
+    if not knownRoots[frame] and not app.unitFrames:KeyOf(frame) then
+        return
+    end
+    -- A native update invalidates this frame, not every unit frame in the suite.
+    -- Keep the repair synchronous so the native art never draws with old geometry.
+    layout:Refresh(false, frame)
+end
+
 local function Hook(object, name)
     if hooked[object] == nil then
         hooked[object] = {}
@@ -412,7 +425,9 @@ local function Hook(object, name)
     if not hooked[object][name] and layout:Readable(object[name]) and type(object[name]) == "function" then
         hooked[object][name] = true
         -- Ignore all native arguments: they may contain secret strings/numbers.
-        hooksecurefunc(object, name, Request)
+        hooksecurefunc(object, name, function()
+            RequestFrame(object)
+        end)
     end
 end
 
@@ -421,9 +436,20 @@ local function Initialize()
         return
     end
     initialized = true
+    if type(UnitFrame_Initialize) == "function" then
+        hooksecurefunc("UnitFrame_Initialize", RequestFrame)
+    end
+    if type(UnitFrameManaBar_UpdateType) == "function" then
+        hooksecurefunc("UnitFrameManaBar_UpdateType", function(bar)
+            if layout:Readable(bar) and (type(bar) == "table" or type(bar) == "userdata") then
+                local frame = bar.unitFrame
+                if layout:Readable(frame) then
+                    RequestFrame(frame)
+                end
+            end
+        end)
+    end
     for _, name in ipairs({
-        "UnitFrame_Initialize",
-        "UnitFrameManaBar_UpdateType",
         "PlayerFrame_ToPlayerArt",
         "PlayerFrame_ToVehicleArt",
         "PlayerFrame_UpdatePlayerNameTextAnchor",
@@ -434,12 +460,14 @@ local function Initialize()
         "PlayerFrame_UpdatePvPStatus",
     }) do
         if type(_G[name]) == "function" then
-            hooksecurefunc(name, Request)
+            hooksecurefunc(name, function()
+                RequestFrame(PlayerFrame)
+            end)
         end
     end
 end
 
-function module:Refresh(restore)
+function module:Refresh(restore, frame)
     if (not enabled and not restore) or not app.db then
         return
     end
@@ -448,7 +476,7 @@ function module:Refresh(restore)
         -- target-family visual regions are repaired; Edit checks protection.
         if enabled and applied and not writing then
             writing = true
-            self:RepairTargets(app.unitFrames:All())
+            self:RepairTargets(frame and { frame } or app.unitFrames:All())
             writing = false
         end
         return
@@ -459,15 +487,18 @@ function module:Refresh(restore)
     end
     Initialize()
     legacyMode = legacy
-    local roots = app.unitFrames:All()
-    for i = 1, 5 do
-        local frame = _G["Boss" .. i .. "TargetFrame"]
-        if frame then
-            roots[#roots + 1] = frame
+    local roots = frame and { frame } or app.unitFrames:All()
+    if not frame then
+        for i = 1, 5 do
+            local boss = _G["Boss" .. i .. "TargetFrame"]
+            if boss then
+                roots[#roots + 1] = boss
+            end
         end
     end
     for _, frame in ipairs(roots) do
         if self:CheckRegion(frame, "unit frame") then
+            knownRoots[frame] = true
             for _, name in ipairs({
                 "CheckClassification",
                 "UpdateArt",
@@ -504,7 +535,11 @@ function module:Refresh(restore)
         self:HideLegacyBackgrounds()
     end
     if app.healthColor then
-        app.healthColor:Refresh()
+        if frame then
+            app.healthColor:RefreshFrame(frame)
+        else
+            app.healthColor:Refresh()
+        end
     end
 end
 

@@ -119,6 +119,11 @@ Rules:
   its red); party health loss uses the Player atlas; unknown power types use the native mana fill.
 - Apply repairs synchronously, never on the next frame. Cache only our own last writes and
   invalidate them on native setters.
+- Native frame hooks repair only their owner with `Refresh(false, frame)` and
+  `healthColor:RefreshFrame(frame)`. Global mana-bar hooks resolve `bar.unitFrame`,
+  player-art hooks use PlayerFrame, and unrelated/secret owners are ignored. Full
+  refreshes remain for settings and roster/lifecycle events. Never rebuild all
+  frames or recolor the entire suite in response to one frame's native update.
 - Treat gameplay values and frame fields as possibly secret: check access before comparing,
   branching, concatenating or indexing.
 

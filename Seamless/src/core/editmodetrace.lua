@@ -145,7 +145,16 @@ function addon:OnEditModeTraceCommand(command)
     end
     rows = {}
     started, waiting, duration, firstFrame, worstFrame = false, 0, 0, 0, 0
-    local methods = { "Refresh", "RefreshPanel", "Apply", "ApplyAll", "ApplyPreview", "Changed", "OnProfileRefresh" }
+    local methods = {
+        "Refresh",
+        "RefreshFrame",
+        "RefreshPanel",
+        "Apply",
+        "ApplyAll",
+        "ApplyPreview",
+        "Changed",
+        "OnProfileRefresh",
+    }
     for name, owner in LibStub("AceAddon-3.0"):IterateAddons() do
         if name == appName or name:sub(1, #appName) == appName then
             for moduleName, module in owner:IterateModules() do

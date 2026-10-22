@@ -46,5 +46,23 @@ Run `lua src/tests/editmode-trace.lua` for return-value preservation, timing and
 counts, inherited-method restoration, duplicate targets, cancellation, timeout,
 combat/already-open guards, error propagation and cleanup.
 
-An in-game capture is still needed; no performance fix or measured cause is
-claimed yet.
+The first in-game capture and resulting repair are recorded below. A follow-up
+capture is needed to measure the remaining cost in the client.
+
+## First capture and scoped repair
+
+The reported capture had a 713 ms worst frame. `LegacyLayout.Refresh` ran 88 times
+and took 605.54 ms inclusive; `HealthColor.Refresh` also ran 88 times (58.51 ms,
+included in the layout refresh). ToT preview work took 0.44 ms across two calls.
+
+Native unit-frame hooks were calling the full legacy layout refresh, rebuilding
+all unit frames and recoloring all health bars for each individual update. They
+now repair only the frame that changed, including its health color. Repairs remain
+synchronous. Explicit settings changes and roster/lifecycle events retain full
+refreshes. Combo points are only repositioned when the target frame is repaired.
+
+The legacy harness simulates 88 native mana-bar updates and verifies that each
+repairs only its player-frame owner, with no full frame scans, global recolors or
+unrelated combo-point writes. It also checks focus-only repairs and ignored
+unrelated/secret owners. Repeat the in-game capture to measure the improvement;
+the remaining cost has not been measured in the client yet.

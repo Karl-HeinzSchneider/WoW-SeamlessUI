@@ -289,9 +289,72 @@ local function AddScrolling(dialog)
         dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
     end
 
+    -- Features refresh the dialog from their setters (RefreshFrameSettings), and LibEditMode's
+    -- Update releases and rebuilds every widget, which ends a slider drag after one step. While a
+    -- slider is held, an Update of the same selection only refreshes the rows in place; one full
+    -- Update follows on the first frame after the mouse button is released, outside any slider
+    -- script (rebuilding inside the slider's own OnMouseUp left the next grab stuck).
+    local heldSlider, pendingUpdate
+    local hookedSliders = {}
+    local releaseWatcher = CreateFrame("Frame")
+    local function StopHolding()
+        heldSlider, pendingUpdate = nil, nil
+        releaseWatcher:SetScript("OnUpdate", nil)
+    end
+    local function WatchRelease()
+        if IsMouseButtonDown("LeftButton") then
+            return
+        end
+        local pending = pendingUpdate
+        StopHolding()
+        if pending and dialog:IsShown() and dialog.selection then
+            dialog:Update(dialog.selection)
+        end
+    end
+    local function Hold(slider)
+        heldSlider = slider
+        releaseWatcher:SetScript("OnUpdate", WatchRelease)
+    end
+    local function OnSliderMouseDown(slider, button)
+        if button == "LeftButton" then
+            Hold(slider)
+        end
+    end
+    -- A click on the track can change the value before the slider's OnMouseDown script runs.
+    local function PressedSlider()
+        if not IsMouseButtonDown("LeftButton") then
+            return nil
+        end
+        for _, widget in ipairs(settings.widgets) do
+            local slider = widget.Slider and widget.Slider.Slider
+            if slider and slider:IsVisible() and slider:IsMouseOver() then
+                return slider
+            end
+        end
+        return nil
+    end
+    local function HookSliders()
+        for _, widget in ipairs(settings.widgets) do
+            local slider = widget.Slider and widget.Slider.Slider
+            if slider and not hookedSliders[slider] then
+                hookedSliders[slider] = true
+                slider:HookScript("OnMouseDown", OnSliderMouseDown)
+            end
+        end
+    end
+    dialog:HookScript("OnHide", StopHolding)
+
     local update, refreshWidgets = dialog.Update, dialog.RefreshWidgets
     function dialog:Update(selection)
         local newSelection = selection ~= self.selection
+        local held = not newSelection and self:IsShown() and (heldSlider or PressedSlider())
+        if held then
+            Hold(held)
+            pendingUpdate = true
+            self:RefreshWidgets()
+            return
+        end
+        StopHolding()
         if newSelection then
             scroll:SetVerticalScroll(0)
         end
@@ -315,6 +378,7 @@ local function AddScrolling(dialog)
                 self.Buttons:Hide()
             end
         end
+        HookSliders()
         ApplyCollapsed(self)
         LayoutDialog()
         if newSelection and selection.parent then

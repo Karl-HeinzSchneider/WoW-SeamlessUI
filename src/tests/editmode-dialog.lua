@@ -171,6 +171,16 @@ function table.wipe(t)
     end
     return t
 end
+local mouseDown = false
+function IsMouseButtonDown(button)
+    return button == "LeftButton" and mouseDown
+end
+function methods:IsVisible()
+    return self.shown
+end
+function methods:IsMouseOver()
+    return self.mouseOver
+end
 function InCombatLockdown()
     return false
 end
@@ -449,3 +459,76 @@ assert(not dialog.Buttons:IsShown(), "an empty button list is left out of the wi
 dialog:Update({ parent = rightFrame, system = selection.system })
 assert(dialog.Buttons:IsShown() and dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
 print("PASS: fixed frames are selectable but never move")
+
+-- A held slider keeps its drag: refreshes of the same selection wait until it is released.
+local sliderKind = "test-slider"
+lib.internal:CreatePool(sliderKind, function()
+    local row = object("Frame", UIParent)
+    row.Slider = object("Frame", row)
+    row.Slider.Slider = object("Slider", row.Slider)
+    row.Setup = function(self, data)
+        self.setting = data
+        self.setups = (self.setups or 0) + 1
+        self:Show()
+    end
+    row.Refresh = function(self)
+        self.refreshes = (self.refreshes or 0) + 1
+    end
+    return row
+end, function(_, row)
+    row:Hide()
+end)
+local sliderFrame = object("Frame", UIParent)
+sliderFrame.left, sliderFrame.right, sliderFrame.top = 100, 250, 500
+sliderFrame.GetPoint = frame.GetPoint
+lib.frameSettings[sliderFrame] = { { kind = sliderKind, name = "X" } }
+lib.frameButtons[sliderFrame] = {}
+local sliderSelection = { parent = sliderFrame, system = selection.system }
+dialog:Update(sliderSelection)
+local row = dialog.Settings.widgets[1]
+local thumb = row.Slider.Slider
+assert(row.setups == 1 and thumb.scripts.OnMouseDown, "sliders are watched")
+-- The watcher frame is the one that gets an OnUpdate while a slider is held.
+local function Watcher()
+    for _, candidate in ipairs(frames) do
+        if candidate.scripts.OnUpdate then
+            return candidate
+        end
+    end
+end
+mouseDown = true
+thumb.scripts.OnMouseDown(thumb, "LeftButton")
+dialog:Update(sliderSelection)
+dialog:Update(sliderSelection)
+assert(dialog.Settings.widgets[1] == row and row.setups == 1 and row:IsShown(), "a held slider is not rebuilt")
+assert(row.refreshes >= 2, "held refreshes still update the rows in place")
+local watcher = assert(Watcher(), "release is watched")
+watcher.scripts.OnUpdate(watcher)
+assert(row.setups == 1, "nothing rebuilds while the button is down")
+mouseDown = false
+watcher.scripts.OnUpdate(watcher)
+assert(dialog.Settings.widgets[1].setups == 2, "the first frame after release runs the held refresh")
+assert(not Watcher(), "the watcher stops after release")
+-- A click on the track changes the value before OnMouseDown: a pressed slider under the mouse counts.
+row = dialog.Settings.widgets[1]
+thumb = row.Slider.Slider
+local setups = row.setups
+mouseDown, thumb.mouseOver = true, true
+dialog:Update(sliderSelection)
+assert(row.setups == setups and row:IsShown(), "a pressed slider is not rebuilt before its OnMouseDown")
+mouseDown, thumb.mouseOver = false, false
+Watcher().scripts.OnUpdate(Watcher())
+assert(row.setups == setups + 1 and not Watcher())
+-- Without a press, the same selection rebuilds as before.
+dialog:Update(sliderSelection)
+assert(row.setups == setups + 2, "an unheld refresh rebuilds")
+-- Another selection always rebuilds, even with a slider held.
+mouseDown = true
+thumb.scripts.OnMouseDown(thumb, "LeftButton")
+setups = row.setups
+dialog:Update({ parent = rightFrame, system = selection.system })
+assert(#dialog.Settings.widgets == 0 and not Watcher(), "a new selection rebuilds and stops holding")
+mouseDown = false
+dialog:Update(sliderSelection)
+assert(dialog.Settings.widgets[1].setups == setups + 1, "the held state ended with the old selection")
+print("PASS: sliders keep their drag while features refresh the dialog")

@@ -6,6 +6,7 @@ app.dbDefaults = {
         logLevel = "INFO",
         minimap = { hide = false, minimapPos = 200, showInCompartment = false },
         tweaks = {
+            quickKeybindShortcut = true,
             reloadShortcut = true,
             showFramerateOnStartup = false,
         },

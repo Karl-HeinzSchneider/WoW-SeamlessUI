@@ -117,6 +117,7 @@ L["XP / reputation bar %d"] = true
 L["%s = %s"] = true
 L["%s = {"] = true
 L["%s |cff%s[%s]|r %s"] = true
+L["/kb starts Quick Keybind Mode"] = true
 L["/rl reloads the interface"] = true
 L["Addon compartment entry"] = true
 L["Addons"] = true
@@ -142,6 +143,7 @@ L["Seamless"] = true
 L["SeamlessUI"] = true
 L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = true
 L["Tweaks"] = true
+L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] = true
 L["Type /rl in chat to reload the user interface, just like /reload."] = true
 L["Unknown log level: %s"] = true
 

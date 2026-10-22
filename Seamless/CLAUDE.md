@@ -49,14 +49,20 @@ Required entry point of the suite; works with no feature addon enabled.
   Edit Mode/in combat/with an empty catalogue. Assignments stay stable for the session, drawing
   from a shuffled bag without repeats until exhausted. Enter/exit reset the session. Core owns
   only data and never modifies unit APIs, secure bindings or feature frames.
-- Records use `name`, optional `surname`, uppercase `class`, numeric `health`/`healthMax` and
+- Records allow missing names/classes. Missing names use the client's localized unknown label;
+  missing classes retain the consumer's fallback portrait. Optional text resolves to empty strings.
+  Keep missing fields commented out in the authored catalogue; never invent VIP metadata.
+  Records use optional `name`/`surname`, uppercase `class`, numeric `health`/`healthMax` and
   `power`/`powerMax` (default 100), `powerType` and `reaction` (1–8). Optional `displayTexture` is
   a full path to an existing BLP/TGA. Without an asset, consumers may show a class icon. Metadata
   (`level`, titles, realm, guild/rank, zone, race/sex, faction, role, classification, `displayID`)
   is available for future consumers; registration does not automatically render it. Add scalar
   metadata as needed; nested tables are rejected. Character names and guilds are proper names,
   not localization keys. Do not draw new portraits without asking.
-- Run `lua src/tests/preview-characters.lua`.
+- Run `lua src/tests/preview-characters.lua` and `lua src/tests/preview-catalogue.lua`.
+  The latter accepts an optional original VIP Lua path to audit every migrated field for exact
+  preservation. `assets/VIP/` contains all 14 supplied, unmodified portrait BLPs; the catalogue
+  contains 15 records, with shared portraits retained and missing portrait paths commented out.
 
 At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamless")`.
 

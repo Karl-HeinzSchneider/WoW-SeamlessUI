@@ -77,7 +77,7 @@ function module:ApplyPreview(frame, key)
         if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
             portrait:SetTexture(character.displayTexture)
             portrait:SetTexCoord(0, 1, 0, 1)
-        else
+        elseif character.class then
             portrait:SetAtlas(GetClassAtlas(character.class))
         end
         return

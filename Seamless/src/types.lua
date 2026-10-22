@@ -1,17 +1,17 @@
 -- Annotations only; not loaded by the client.
 ---@class SeamlessCore.PreviewCharacter
 ---@field id? string Assigned by the registry.
----@field name string First name; proper character names are not translated.
+---@field name? string Missing/empty names use the client's localized UNKNOWNOBJECT/UNKNOWN label.
 ---@field surname? string
----@field class string Uppercase class token.
+---@field class? string Uppercase class token; absent leaves the live fallback portrait/color.
 ---@field health? number Defaults to healthMax; clamped to [0, healthMax].
----@field healthMax? number Defaults to 100.
+---@field healthMax? number Defaults to max(100, health), preserving supplied absolute values.
 ---@field power? number Defaults to powerMax; clamped to [0, powerMax].
----@field powerMax? number Defaults to 100.
+---@field powerMax? number Defaults to max(100, power), preserving supplied absolute values.
 ---@field powerType? string PowerBarColor token; defaults to MANA.
 ---@field reaction? number 1–8; defaults to 5 (friendly).
 ---@field displayTexture? string Full Interface path to an existing BLP/TGA portrait.
----@field level? number Defaults to 85; metadata for future consumers.
+---@field level? number|"??" Missing levels resolve to "??"; metadata for future consumers.
 ---@field titleBefore? string
 ---@field titleAfter? string
 ---@field realm? string
@@ -24,6 +24,7 @@
 ---@field role? string
 ---@field classification? string
 ---@field displayID? number Metadata for a future model consumer; not a 2D portrait.
+---@field targetIcon? number 0–8; missing resolves to 0 (no raid marker).
 
 ---@class SeamlessCore.Config
 ---@field categories table<string, SeamlessCore.ConfigCategory>

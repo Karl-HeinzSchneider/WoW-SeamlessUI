@@ -411,6 +411,10 @@ assert(preview.portrait.texture == "existing-portrait" and preview.portrait.coor
 app.db.profile.unitFrames.targettarget.classIcon = true
 modules.ClassIcon:ApplyPreview(preview, "targettarget")
 assert(preview.portrait.atlas == "classicon-paladin", "class icon preference wins over custom portrait")
+character.class, character.displayTexture = nil, nil
+preview.portrait.atlas = "live-fallback"
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.atlas == "live-fallback", "missing portrait/class retains the existing fallback")
 app.previewCharacters = {
     Get = function()
         error("Native styling must never request VIP data")

@@ -33,7 +33,7 @@ assert(core:GetPreviewCharacter("player").name ~= "mutated", "consumer receives 
 for _, record in ipairs({ core:GetPreviewCharacter("player"), core:GetPreviewCharacter("target") }) do
     assert(record.health <= record.healthMax)
     assert(record.name ~= "mutated", "registry owns its input")
-    assert(record.level == 85 and record.powerType == "MANA")
+    assert(record.level == "??" and record.powerType == "MANA")
 end
 combat = true
 assert(core:GetPreviewCharacter("player") == nil)
@@ -55,11 +55,34 @@ local function Reject(id, record)
 end
 Reject("one", { name = "Duplicate", class = "MAGE" })
 Reject("badclass", { name = "Bad", class = "NOPE" })
-Reject("badname", { class = "MAGE" })
+Reject("badname", { name = 42 })
 Reject("badhealth", { name = "Bad", class = "MAGE", health = 0 / 0 })
 Reject("badmax", { name = "Bad", class = "MAGE", healthMax = 0 })
 Reject("badpower", { name = "Bad", class = "MAGE", power = -1 })
 Reject("badreaction", { name = "Bad", class = "MAGE", reaction = 9 })
 Reject("nested", { name = "Bad", class = "MAGE", guild = {} })
 Reject("badsurname", { name = "Bad", class = "MAGE", surname = 42 })
-print("Preview character catalogue tests passed")
+-- Missing fields are allowed; fallback data belongs only to returned copies.
+local fallbackCore = {
+    GetEditModeLibrary = function()
+        return lib
+    end,
+}
+assert(loadfile("Seamless/src/core/previewcharacters.lua"))("Seamless", { addon = fallbackCore })
+UNKNOWNOBJECT = "Unknown"
+local missing = {}
+fallbackCore:RegisterPreviewCharacter("missing", missing)
+local fallback = fallbackCore:GetPreviewCharacter("missing")
+assert(fallback.name == UNKNOWNOBJECT and fallback.guild == "" and fallback.realm == "")
+assert(fallback.level == "??" and fallback.class == nil and fallback.displayTexture == nil)
+assert(fallback.health == 100 and fallback.power == 100 and fallback.targetIcon == 0)
+assert(fallback.female == nil and fallback.displayID == nil, "no invented identity metadata")
+assert(next(missing) == nil, "fallbacks never fill the authored record")
+fallbackCore:RegisterPreviewCharacter("absolute", { health = 5211, power = 6382, level = "??", female = false })
+local absolute = fallbackCore:GetPreviewCharacter("absolute")
+if absolute.id ~= "absolute" then
+    absolute = fallbackCore:GetPreviewCharacter("absolute:next")
+end
+assert(absolute.health == 5211 and absolute.healthMax == 5211)
+assert(absolute.power == 6382 and absolute.powerMax == 6382 and absolute.female == false)
+print("Preview character catalogue and fallback tests passed")

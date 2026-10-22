@@ -33,6 +33,29 @@ local function feature(bar, key, spec)
     return group
 end
 
+-- The player bar is the client's Edit Mode cast bar system: its Position and scale group reads
+-- and writes the active layout like the native settings, with Bar Size as the scale. While the
+-- bar is locked to the player frame, the player frame places it, so position is unavailable.
+local function playerPosition()
+    local settings = Enum.EditModeCastBarSetting
+    if not settings then
+        return nil
+    end
+    local service = app.core:GetFramePositionService()
+    local function getBar()
+        return PlayerCastingBarFrame
+    end
+    local function getMovableBar()
+        local frame = getBar()
+        local locked = frame and service:ReadSetting(frame, settings.LockToPlayerFrame)
+        if locked and locked ~= 0 then
+            return nil
+        end
+        return frame
+    end
+    return app.core:GetNativePositionOptions(getMovableBar, app.core:GetNativeSettingScale(getBar, settings.BarSize))
+end
+
 local function barTab(order, bar)
     local args = {
         enabled = {
@@ -101,7 +124,7 @@ local function barTab(order, bar)
             },
         }),
     }
-    local position = app.position:GetOptions(bar.key)
+    local position = bar.key == "player" and playerPosition() or app.position:GetOptions(bar.key)
     if position then
         position.order = 5
         args.position = position

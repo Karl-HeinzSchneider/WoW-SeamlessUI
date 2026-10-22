@@ -44,7 +44,7 @@ local function Option(row, order)
 end
 
 -- Frames with their own Edit Mode position and Frame Size get a native Position and scale group.
-local NATIVE = { player = true, target = true, focus = true }
+local NATIVE = { player = true, pet = true, target = true, focus = true }
 
 ---The frame's Position and scale group, or nil when it has none.
 ---@param entry SeamlessUnitframes.UnitFrame

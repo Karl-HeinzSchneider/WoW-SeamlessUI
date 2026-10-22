@@ -27,6 +27,9 @@ system, so they are not part of this addon.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/options.lua`, `src/editmode.lua`: options and shared Style declarations.
+  The Player tab's Position and scale group is Core's native group for the cast bar system
+  (`GetNativePositionOptions`, Bar Size via `GetNativeSettingScale`), stored in the Edit Mode
+  layout; position is unavailable while Lock to Player Frame is on.
 - `src/position.lua`, `app.position`: target/focus positions per Edit Mode layout name in
   `profile.positions[key][layout]` (point, relativeTo, relativePoint, x, y in the bar's scale),
   following layout copies, renames and deletes. A layout without one keeps the client's anchor.

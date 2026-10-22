@@ -158,14 +158,14 @@ local function find(tab, key)
     end
 end
 assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position and scale")
-for _, key in ipairs({ "target", "focus" }) do
+for _, key in ipairs({ "pet", "target", "focus" }) do
     assert(tabs[key].args.style and tabs[key].args.position, key .. " has Position and scale")
 end
-assert(not tabs.pet.args.position and not tabs.party.args.position, "only frames with their own position")
+assert(not tabs.party.args.position, "only frames with their own position")
 assert(tabs.targettarget.args.position and tabs.targettarget.args.style, "the ToT frames are movable too")
 assert(tabs.focustarget.args.position and find(tabs.targettarget, "targettarget_healthBarColor"))
-assert(#positioned == 3 and positioned[1] == PlayerFrame and positioned[2] == TargetFrame)
-assert(positioned[3] == FocusFrame, "each group resolves its own frame")
+assert(#positioned == 4 and positioned[1] == PlayerFrame and positioned[2] == PetFrame)
+assert(positioned[3] == TargetFrame and positioned[4] == FocusFrame, "each group resolves its own frame")
 assert(tabs.player.args.style.args.player_classIcon.type == "toggle")
 assert(tabs.player.args.style.args.player_hidePvPIcon.type == "toggle")
 for _, option in pairs(tabs.player.args.style.args) do

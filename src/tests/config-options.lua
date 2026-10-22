@@ -172,13 +172,29 @@ switch.set({ "general", "keybinds" }, false)
 assert(not settings.enabled and toggles == 1 and not switch.disabled())
 settings = { enabled = true }
 assert(switch.get())
-local castOptions, castSpec
+local castOptions, castSpec, castLocked = nil, nil, 0
+local savedEnum, savedCastBar = Enum, PlayerCastingBarFrame
+Enum = { EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
+PlayerCastingBarFrame = {}
 local cast = {
     core = {
         GetOptionDefault = app.addon.GetOptionDefault,
         FeatureGroup = options.FeatureGroup,
         RegisterOptions = function(_, _, spec)
             castSpec = spec
+        end,
+        GetFramePositionService = function()
+            return {
+                ReadSetting = function(_, _, setting)
+                    return setting == 2 and castLocked or 100
+                end,
+            }
+        end,
+        GetNativePositionOptions = function(_, getFrame, scale)
+            return { type = "group", inline = true, args = {}, getFrame = getFrame, scale = scale }
+        end,
+        GetNativeSettingScale = function(_, getFrame, setting)
+            return { getFrame = getFrame, setting = setting }
         end,
     },
     addon = {
@@ -205,7 +221,15 @@ for _, key in ipairs({ "rank", "ticks", "icon" }) do
     assert(option.type == "toggle" and option.name ~= "Enable" and not option.args)
 end
 assert(castSpec.tabs.player.args.castTime.type == "group")
-assert(castSpec.tabs.target.args.position.order == 5 and not castSpec.tabs.player.args.position)
+assert(castSpec.tabs.target.args.position.order == 5)
+-- The player bar's native group: its Edit Mode layout position, Bar Size as scale.
+local playerPosition = castSpec.tabs.player.args.position
+assert(playerPosition.order == 5 and playerPosition.scale.setting == 1)
+assert(playerPosition.getFrame() == PlayerCastingBarFrame and playerPosition.scale.getFrame() == PlayerCastingBarFrame)
+castLocked = 1
+assert(playerPosition.getFrame() == nil, "no position while locked to the player frame")
+assert(playerPosition.scale.getFrame() == PlayerCastingBarFrame)
+Enum, PlayerCastingBarFrame = savedEnum, savedCastBar
 assert(castSpec.tabs.player.args.hold.type == "group")
 assert(castSpec.tooltip({ "player", "rank" }) == true)
 assert(castSpec.tooltip({ "player", "hold", "enabled" }) == false)

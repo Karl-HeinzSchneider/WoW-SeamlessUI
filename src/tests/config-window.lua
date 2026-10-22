@@ -181,6 +181,7 @@ for _, name in ipairs({
     "SetPushedTexture",
     "SetScale",
     "SetFrameStrata",
+    "SetFrameStrata",
     "SetToplevel",
     "SetClampedToScreen",
     "SetMovable",
@@ -213,7 +214,7 @@ function CreateFrame(_, name, parent, template)
     if template == "MinimalTabTemplate" then
         frame.Text = object()
     end
-    if template == "NewFeatureLabelNoAnimateTemplate" then
+    if template == "NewFeatureLabelTemplate" then
         frame.Label, frame.BGLabel = object(), object()
     end
     if name then

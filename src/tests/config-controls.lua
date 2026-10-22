@@ -38,6 +38,9 @@ function methods:GetHighlightTexture()
     self.highlight = self.highlight or frame()
     return self.highlight
 end
+function methods:SetFrameStrata(value)
+    self.strata = value
+end
 function methods:SetHighlightAtlas() end
 function methods:SetAlpha() end
 function methods:SetScript(event, callback)
@@ -170,7 +173,36 @@ end
 function methods:SetupMenu(callback)
     self.menu = callback
 end
-function methods:GenerateMenu() end
+function methods:GenerateMenu()
+    local entries = {}
+    local root = {}
+    function root:CreateRadio(text, selected, choose)
+        entries[#entries + 1] = { selected = selected, choose = choose }
+    end
+    self.menu(self, root)
+    self.entries, self.selectedIndex = entries, nil
+    for index, entry in ipairs(entries) do
+        if entry.selected() then
+            self.selectedIndex = index
+        end
+    end
+    local index = self.selectedIndex
+    self.callback(self.owner, index and entries[index - 1], index and entries[index + 1])
+end
+function methods:Increment()
+    local entry = self.selectedIndex and self.entries[self.selectedIndex + 1]
+    if entry then
+        entry.choose()
+        self:GenerateMenu()
+    end
+end
+function methods:Decrement()
+    local entry = self.selectedIndex and self.entries[self.selectedIndex - 1]
+    if entry then
+        entry.choose()
+        self:GenerateMenu()
+    end
+end
 function methods:SetDefaultText(value)
     self.selection = value
 end
@@ -185,11 +217,12 @@ function CreateFrame(_, _, parent, template)
     assert(template ~= "SimpleGroup")
     local object = frame()
     object.parent, object.template = parent, template
-    if template == "NewFeatureLabelNoAnimateTemplate" then
+    if template == "NewFeatureLabelTemplate" then
         object.Label, object.BGLabel = frame(), frame()
     end
     return object
 end
+DropdownButtonMixin = { Event = { OnUpdate = "updated" } }
 MinimalSliderWithSteppersMixin = { Event = { OnValueChanged = "changed" }, Label = { Right = 1 } }
 GameTooltip = {
     SetOwner = function(self, owner, anchor)
@@ -304,8 +337,12 @@ local labelWidth, rowHeight, controlLeft = toggle.Label.width, toggle:GetHeight(
 root.args.general.args.enabled.new = true
 app.config:RefreshOptionsPage(page)
 assert(toggle.featureTags.new:IsShown())
-assert(toggle.featureTags.new.template == "NewFeatureLabelNoAnimateTemplate")
+assert(toggle.featureTags.new.template == "NewFeatureLabelTemplate")
 assert(toggle.featureTags.new.scale == 0.8)
+assert(toggle.featureTags.new.strata == "HIGH" and toggle.featureTags.new.level == 100)
+local tagPoint = toggle.featureTags.new.points.BOTTOMRIGHT
+assert(tagPoint[1] == "BOTTOMRIGHT" and tagPoint[2] == toggle.Label)
+assert(tagPoint[3] == "LEFT" and tagPoint[4] == 16 and tagPoint[5] == -10)
 assert(toggle.featureTags.new.parent == app.config.featureTagOverlay)
 assert(app.config.featureTagOverlay.parent == app.config.frame)
 local viewport = frame()
@@ -441,4 +478,24 @@ handler.Get = function(self, info)
 end
 root.args.profiles = { type = "group", handler = handler, args = { choose = { type = "select", get = "Get" } } }
 assert(app.config.Option:New(root, { "profiles", "choose" }, "Test"):Read("get") == "current")
+local select = page.controlPools.select[1]
+app.config:RefreshOptionsPage(page)
+assert(select.Previous.template == "SteppersDecrementButtonTemplate")
+assert(select.Next.template == "SteppersIncrementButtonTemplate")
+assert(select.Previous.enabled and not select.Next.enabled)
+select.Previous.scripts.OnClick()
+assert(profile.choice == "b")
+assert(not select.Previous.enabled and select.Next.enabled)
+select.Next.scripts.OnClick()
+assert(profile.choice == "a")
+select.Next.scripts.OnClick()
+assert(profile.choice == "a", "steppers must not wrap")
+root.args.general.args.choice.disabled = true
+app.config:RefreshOptionsPage(page)
+assert(not select.Previous.enabled and not select.Next.enabled)
+root.args.general.args.choice.disabled = false
+root.args.general.args.choice.values = { a = "A" }
+root.args.general.args.choice.sorting = { "a" }
+app.config:RefreshOptionsPage(page)
+assert(not select.Previous.enabled and not select.Next.enabled)
 print("Native config controls OK")

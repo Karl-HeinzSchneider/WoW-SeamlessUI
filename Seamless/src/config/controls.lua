@@ -167,8 +167,25 @@ function creators.select(page)
     local row = Row:New(page)
     local dropdown = CreateFrame("DropdownButton", nil, row, "WowStyle2DropdownTemplate")
     row.Control = dropdown
-    dropdown:SetPoint("LEFT", row, "CENTER", -80, 0)
+    -- Match Settings' dropdown inset, leaving space before it for the back arrow.
+    dropdown:SetPoint("LEFT", row, "CENTER", -48, 0)
     dropdown:SetWidth(220)
+    row.Previous = CreateFrame("Button", nil, row, "SteppersDecrementButtonTemplate")
+    row.Previous:SetPoint("RIGHT", dropdown, "LEFT", -5, 0)
+    row.Next = CreateFrame("Button", nil, row, "SteppersIncrementButtonTemplate")
+    row.Next:SetPoint("LEFT", dropdown, "RIGHT", 4, 0)
+    row.Previous:SetScript("OnClick", function()
+        dropdown:Decrement()
+    end)
+    row.Next:SetScript("OnClick", function()
+        dropdown:Increment()
+    end)
+    -- Native menu selection data preserves radio ordering and endpoint behavior.
+    -- Stepping picks the same radio callback as the menu, including confirmation.
+    dropdown:RegisterCallback(DropdownButtonMixin.Event.OnUpdate, function(_, previous, nextOption)
+        row.Previous:SetEnabled(row.enabled and previous ~= nil)
+        row.Next:SetEnabled(row.enabled and nextOption ~= nil)
+    end, row)
     dropdown:SetupMenu(function(_, root)
         if not row.option then
             return
@@ -183,6 +200,8 @@ function creators.select(page)
         end
     end)
     tooltip(dropdown, row)
+    tooltip(row.Previous, row)
+    tooltip(row.Next, row)
     function row:Update()
         local value, label = self.option:Read("get"), ""
         for _, entry in ipairs(self.option:Choices()) do

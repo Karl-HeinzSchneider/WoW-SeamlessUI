@@ -55,7 +55,10 @@ new = true, args = { ... } } } })`. The tab flag marks its subcategory in the
 left list; an option flag marks that setting. Both flags together show both labels.
 Flags do not propagate to children or automatically clear on hover/open.
 
-`badges.lua` reuses SharedXML's `NewFeatureLabelNoAnimateTemplate` at 0.8 scale.
+`badges.lua` reuses SharedXML's `NewFeatureLabelTemplate` at 0.8 scale, including its native pulsing glow.
+Tags use Blizzard's 1x1 anchor frame, HIGH strata and level 100. Setting tags
+anchor BOTTOMRIGHT to the label's LEFT at (16, -10); category tags use (-4, -10)
+and right-aligned text layers, matching the client Settings templates.
 NEW uses the client's localized label; BLIZZ uses the suite locale on both native
 text layers, preserving the same static glow. Labels sit to the left of the
 setting/category name as optional overlays. Tags never reserve space or change
@@ -89,7 +92,9 @@ time so profile switching continues to work.
 vendored libraries. Rows follow Settings' left label/right control alignment,
 37-pixel label inset, 45-pixel section headers and hover treatment. They reuse
 SharedXML's MinimalSliderWithSteppers, WowStyle2Dropdown, InputBox, ColorSwatch
-and button templates and the Settings checkbox atlases. No SettingsPanel mixins,
+and button templates and the Settings checkbox atlases. Select rows use the native
+previous/next stepper buttons and dropdown radio selection methods, preserving
+choice order and disabling arrows at the endpoints or when the setting is disabled. No SettingsPanel mixins,
 global setting registration, AceGUI or AceConfigDialog rendering is involved.
 Groups become collapsible section headings using the category headers' same
 `common-button-list-plus/minus` art. Clicking either the label or button toggles

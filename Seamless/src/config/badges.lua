@@ -3,8 +3,8 @@ local _, app = ...
 local config = app.config
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- The native label is 40x20; scale it to 32x16 to fit our 20-pixel list rows.
-local GAP, LABEL_GAP = 2, 4
+-- Match the native Settings tag anchors; the template sizes its text on show.
+local GAP = 2
 
 local function refreshOwner(owner)
     local visible = owner:IsVisible()
@@ -67,12 +67,14 @@ function config:UpdateFeatureTags(owner, anchor, tags)
             if not badge then
                 -- A sibling of both scroll containers, above the window artwork.
                 -- Anchoring to a scrolled label follows its position without inheriting clipping.
-                badge = CreateFrame("Frame", nil, self.featureTagOverlay, "NewFeatureLabelNoAnimateTemplate")
+                badge = CreateFrame("Frame", nil, self.featureTagOverlay, "NewFeatureLabelTemplate")
                 owner.featureTags[key] = badge
                 badge.ignoreInLayout = true
                 badge:EnableMouse(false)
-                badge:SetSize(40, 20)
+                badge:SetSize(1, 1)
                 badge:SetScale(0.8)
+                badge:SetFrameStrata("HIGH")
+                badge:SetFrameLevel(100)
                 if key == "blizzard" then
                     badge.Label:SetTextToFit(L["BLIZZ"])
                     badge.BGLabel:SetTextToFit(L["BLIZZ"])
@@ -80,7 +82,28 @@ function config:UpdateFeatureTags(owner, anchor, tags)
             end
             badge.tagEnabled = true
             badge:ClearAllPoints()
-            badge:SetPoint("RIGHT", previous, "LEFT", -(previous == anchor and LABEL_GAP or GAP) / 0.8, 0)
+            if previous == anchor then
+                local category = owner.text == anchor
+                badge:SetPoint("BOTTOMRIGHT", anchor, "LEFT", category and -4 or 16, -10)
+                if category then
+                    badge.Label:ClearAllPoints()
+                    badge.BGLabel:ClearAllPoints()
+                    badge.Label:SetPoint("RIGHT", 0, 0)
+                    badge.BGLabel:SetPoint("RIGHT", 0.5, -0.5)
+                else
+                    badge.Label:ClearAllPoints()
+                    badge.BGLabel:ClearAllPoints()
+                    badge.Label:SetPoint("CENTER")
+                    badge.BGLabel:SetPoint("CENTER", 0.5, -0.5)
+                end
+            else
+                -- Keep a second tag clear of the first tag's rendered text.
+                badge:SetPoint("RIGHT", previous.Label, "LEFT", -GAP / 0.8, 0)
+                badge.Label:ClearAllPoints()
+                badge.BGLabel:ClearAllPoints()
+                badge.Label:SetPoint("RIGHT", 0, 0)
+                badge.BGLabel:SetPoint("RIGHT", 0.5, -0.5)
+            end
             previous = badge
         elseif badge then
             badge.tagEnabled = false

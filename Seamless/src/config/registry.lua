@@ -126,5 +126,8 @@ end
 
 -- A small real tree for reviewing the shell; addon options are migrated separately.
 app.addon:RegisterConfigCategory("Seamless", { name = L["Seamless"], header = true, order = 0 })
-app.addon:RegisterConfigCategory("Seamless:general", { name = L["General"], parent = "Seamless", order = 0 })
+app.addon:RegisterConfigCategory(
+    "Seamless:general",
+    { name = L["General"], parent = "Seamless", order = 0, new = true }
+)
 config.selected = "Seamless:general"

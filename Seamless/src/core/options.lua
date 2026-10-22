@@ -83,6 +83,13 @@ local function RegisterConfigPages(name, title, args, flags)
         }
         if app.config.categories[id] then
             -- Core's initial General placeholder is selected before initialization.
+            local existing = app.config.categories[id]
+            if spec.new == nil then
+                spec.new = existing.new
+            end
+            if spec.blizzard == nil then
+                spec.blizzard = existing.blizzard
+            end
             app.config.categories[id] = spec
             spec.id = id
         else
@@ -305,6 +312,7 @@ function module:OnInitialize()
                         end,
                     },
                     compartment = {
+                        blizzard = true,
                         type = "toggle",
                         order = 15,
                         name = L["Addon compartment entry"],
@@ -321,6 +329,7 @@ function module:OnInitialize()
                         end,
                     },
                     logLevel = {
+                        new = true,
                         type = "select",
                         order = 20,
                         name = L["Log level"],

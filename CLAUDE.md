@@ -12,8 +12,9 @@ selectable addon:
 - `Seamless/`: the required core: shared libraries, logger, locales, core settings and shared
   profiles, minimap launcher, `/seamless`, the shared options layout, the custom configuration
   window and the shared Edit Mode API.
-- `SeamlessUnitframes/`: health colors, name display, class icons, PvP and quest icons and an
-  optional legacy layout on the game's unit frames.
+- `SeamlessUnitframes/`: health colors, name display, class icons, PvP and quest icons, an
+  optional legacy layout and positions (including movable target of target/focus) on the game's
+  unit frames.
 - `SeamlessTooltip/`: switchable tooltip enhancements.
 - `SeamlessChat/`: the same chat setup on every character, history, copy/log windows and chat
   enhancements.

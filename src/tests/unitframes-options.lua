@@ -57,6 +57,13 @@ local app = {
             targetQuestIcon = { enabled = false, scale = 1.7, x = -30, y = 25 },
         },
     },
+    totPosition = {
+        GetOptions = function(_, key)
+            if key == "targettarget" or key == "focustarget" then
+                return { type = "group", inline = true, name = "Position and scale", order = 10, args = {} }
+            end
+        end,
+    },
     core = {
         GetNativePositionOptions = function(_, getFrame, scale)
             assert(scale.setting == Enum.EditModeUnitFrameSetting.FrameSize and scale.getFrame == getFrame)
@@ -155,6 +162,8 @@ for _, key in ipairs({ "target", "focus" }) do
     assert(tabs[key].args.style and tabs[key].args.position, key .. " has Position and scale")
 end
 assert(not tabs.pet.args.position and not tabs.party.args.position, "only frames with their own position")
+assert(tabs.targettarget.args.position and tabs.targettarget.args.style, "the ToT frames are movable too")
+assert(tabs.focustarget.args.position and find(tabs.targettarget, "targettarget_healthBarColor"))
 assert(#positioned == 3 and positioned[1] == PlayerFrame and positioned[2] == TargetFrame)
 assert(positioned[3] == FocusFrame, "each group resolves its own frame")
 assert(tabs.player.args.style.args.player_classIcon.type == "toggle")

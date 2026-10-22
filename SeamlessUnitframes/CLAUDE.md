@@ -23,13 +23,14 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 7. `options.lua`: General (the global layout), one tab per unit frame built from `StyleGroups`
    (hidden when the client lacks the frame). Single-row groups become standalone options in both
    options windows; related controls such as Quest icon retain their heading.
-   Player, Target and Focus (`POSITIONED`) wrap those controls in a collapsible Style
-   group, beside a Position and scale group from Core's `GetNativePositionOptions`,
-   with Scale bound to Edit Mode's Frame Size through `GetNativeSettingScale`. Both
-   read/write the native active layout (no profile settings, no SeamlessUI dependency)
-   and show the game's preset defaults; Reset to default position matches the native
-   button. Native anchor and Frame Size changes, layout changes and combat transitions
-   refresh the view.
+   Frames with a position wrap those controls in a collapsible Style group beside a Position
+   and scale group (`PositionGroup`). Player, Target and Focus (`NATIVE`) use Core's
+   `GetNativePositionOptions`, with Scale bound to Edit Mode's Frame Size through
+   `GetNativeSettingScale`: both read/write the native active layout (no profile settings,
+   no SeamlessUI dependency) and show the game's preset defaults; Reset to default position
+   matches the native button. Native anchor and Frame Size changes, layout changes and combat
+   transitions refresh the view. Target of Target and Target of Focus use
+   `app.totPosition:GetOptions` (below).
    `CVAR_UPDATE` refreshes threat changes.
 8. `editmode.lua`: on enable, registers a collapsible Style section (key `unitframe-style`) per
    frame with `RegisterEditModeSystemOptions`. SeamlessUI draws it below the frame's own settings.
@@ -53,11 +54,39 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
       alpha, so no hook is needed; `GROUP_ROSTER_UPDATE` covers pooled party frames.
     - `src/questicon/targetquesticon.lua`: the optional target quest icon (`targetQuestIcon`:
       enabled, scale, offsets; off by default).
+    - `src/totposition/`: movable Target of Target and Target of Focus (below).
 11. `SeamlessUnitframes.lua`: load diagnostic.
 
 New per-frame settings need a default in `db.lua` and a row in `style.lua`, which puts them in both
 the frame's tab and its Edit Mode Style section; global settings go in `options.lua`'s General tab.
 Run `lua src/tests/unitframes-options.lua`.
+
+## `src/totposition/`: movable ToT frames
+
+`TargetFrameToT` and `FocusFrameToT` have no Edit Mode system: the client creates them as secure
+children of their unit frame (`TargetFrameMixin:CreateTargetofTarget`), anchored TOPRIGHT to its
+BOTTOMRIGHT (12, 10; the small focus frame 20, 8 from `FocusFrameMixin:SetSmallSize`).
+
+- `totposition.lua`, `app.totPosition`: positions per Edit Mode layout name in
+  `profile.totPositions[key][layout]` (point, relativeTo, relativePoint, x, y in the ToT's own
+  scale), following layout copies, renames and deletes. A layout without one keeps the client's
+  anchor: the frame is never touched until moved, and Reset or disabling puts the client's anchor
+  back. `Apply` only runs out of combat (queued to `PLAYER_REGEN_ENABLED`); a post-hook on
+  `FocusFrame.SetSmallSize` re-applies a moved focus ToT. Anchor frames are validated with Core's
+  position service and fall back to the unit frame. `GetOptions(key)` is the options tab's
+  Position group (Scale disabled: the ToT takes its unit frame's Frame Size).
+- `mover.lua`, `app.totMover`: an addon-owned UIParent stand-in per frame with the ToT art, size
+  and effective scale, registered with LibEditMode and shown only in Edit Mode (a Frames checkbox
+  each, on for the session), with Core's Position section. A drag keeps the stored point and
+  anchor frame and measures new offsets from it, so a ToT anchored to its unit frame follows that
+  frame. LibEditMode's Reset Position reports the registered default (`RESET`), which means
+  Reset.
+
+Never drag, reparent or `SetUserPlaced` the real frames, change their scripts, store anything on
+them or anchor them to the aura container or cast bar (Forever restricts those). Blizzard still
+reserves the ToT's room under its unit frame (`haveToT` lowers the cast bar, `TOT_AURA_ROW_WIDTH`
+narrows two aura rows); that state lives on the secure unit frame, so it is left alone.
+Run `lua src/tests/unitframes-totposition.lua`.
 
 ## `src/layout/`: legacy layout
 

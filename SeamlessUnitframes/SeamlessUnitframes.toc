@@ -28,5 +28,7 @@ src\name\namedisplay.lua
 src\portrait\classicon.lua
 src\pvpicon\pvpicon.lua
 src\questicon\targetquesticon.lua
+src\totposition\totposition.lua
+src\totposition\mover.lua
 
 SeamlessUnitframes.lua

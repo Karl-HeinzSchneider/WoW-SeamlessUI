@@ -191,6 +191,11 @@ local cast = {
         end,
     },
     db = { profile = { player = { enabled = true, rank = { enabled = true } } } },
+    position = {
+        GetOptions = function(_, key)
+            return key ~= "player" and { type = "group", inline = true, args = {} } or nil
+        end,
+    },
 }
 assert(loadfile("SeamlessCastbar/src/options.lua"))("SeamlessCastbar", cast)
 assert(loadfile("SeamlessCastbar/src/db.lua"))("SeamlessCastbar", cast)
@@ -200,6 +205,7 @@ for _, key in ipairs({ "rank", "ticks", "icon" }) do
     assert(option.type == "toggle" and option.name ~= "Enable" and not option.args)
 end
 assert(castSpec.tabs.player.args.castTime.type == "group")
+assert(castSpec.tabs.target.args.position.order == 5 and not castSpec.tabs.player.args.position)
 assert(castSpec.tabs.player.args.hold.type == "group")
 assert(castSpec.tooltip({ "player", "rank" }) == true)
 assert(castSpec.tooltip({ "player", "hold", "enabled" }) == false)

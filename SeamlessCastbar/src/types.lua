@@ -29,6 +29,8 @@
 ---@field LibEditModeSettings fun(key: string): table[]
 ---@field RegisterPreviews fun()
 ---@field UpdatePreviews fun()
+---@field PreviewFrame fun(key: string): StatusBar?
+---@field position table  # position.lua: moved target/focus bars per Edit Mode layout
 
 ---@class SeamlessCastbar.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessCastbar.Addon)

@@ -101,6 +101,11 @@ local function barTab(order, bar)
             },
         }),
     }
+    local position = app.position:GetOptions(bar.key)
+    if position then
+        position.order = 5
+        args.position = position
+    end
     if bar.key == "player" then
         args.icon = feature(bar, "icon", {
             order = 40,

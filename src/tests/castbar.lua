@@ -297,9 +297,13 @@ enabled = false
 assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")
 
--- Target and focus previews: selectable in Edit Mode with their Style settings, never moved.
-local function Frame()
-    local frame = { shown = false, level = 1 }
+-- Target and focus previews: Edit Mode stand-ins that move the real bars, with their Style settings.
+local secret = {}
+issecretvalue = function(value)
+    return value == secret
+end
+local function Frame(name)
+    local frame = { shown = false, level = 1, name = name, scale = 1 }
     setmetatable(frame, {
         __index = function()
             return function() end
@@ -317,8 +321,23 @@ local function Frame()
     function frame:GetFrameLevel()
         return 1
     end
+    function frame:GetName()
+        return self.name
+    end
+    function frame:IsObjectType()
+        return true
+    end
+    function frame:GetEffectiveScale()
+        return self.scale
+    end
+    function frame:ClearAllPoints()
+        self.point = nil
+    end
     function frame:SetPoint(...)
         self.point = { ... }
+    end
+    function frame:SetScale(value)
+        self.ownScale = value
     end
     function frame:CreateTexture()
         return Frame()
@@ -340,17 +359,30 @@ function CreateFrame(_, _, parent)
     frame.parent = parent
     return frame
 end
-TargetFrame, FocusFrame = Frame(), Frame()
+function CopyTable(source)
+    local copy = {}
+    for key, value in pairs(source) do
+        copy[key] = value
+    end
+    return copy
+end
+UIParent = Frame("UIParent")
+TargetFrame, FocusFrame = Frame("TargetFrame"), Frame("FocusFrame")
 TargetFrame.smallSize, TargetFrame.haveToT, FocusFrame.smallSize, FocusFrame.haveToT = false, false, true, false
-TargetFrameSpellBar = {
-    GetScale = function()
-        return 1
-    end,
-}
+TargetFrame.scale = 1.5
+TargetFrameSpellBar, FocusFrameSpellBar = Frame("TargetFrameSpellBar"), Frame("FocusFrameSpellBar")
+for _, bar in ipairs({ TargetFrameSpellBar, FocusFrameSpellBar }) do
+    function bar:AdjustPosition()
+        self.point = { "TOPLEFT", "client" }
+    end
+end
+-- Anchored to the aura container, the target bar's geometry is secret.
+TargetFrameSpellBar.scale = secret
 EventRegistry = { TriggerEvent = function() end }
-local editMode, added, fixed, frameSettings, libCallbacks, previewOptions = true, {}, {}, {}, {}, nil
-function editLib:AddFrame(frame, _, _, name)
-    added[name] = frame
+local editMode, layout, added, defaults, moved = true, "Modern", {}, {}, {}
+local fixed, frameSettings, libCallbacks, previewOptions, positionSpecs, hooks = {}, {}, {}, nil, {}, {}
+function editLib:AddFrame(frame, callback, default, name)
+    added[name], moved[frame], defaults[frame] = frame, callback, default
 end
 function editLib:AddFrameSettings(frame, settings)
     frameSettings[frame] = settings
@@ -358,6 +390,9 @@ end
 function editLib:RefreshFrameSettings() end
 function editLib:IsInEditMode()
     return editMode
+end
+function editLib:GetActiveLayoutName()
+    return layout
 end
 function editLib:RegisterCallback(event, callback)
     libCallbacks[event] = callback
@@ -368,20 +403,136 @@ end
 app.core.RegisterEditModeOptions = function(_, _, spec)
     previewOptions = spec.options
 end
+app.core.GetEditModePositionSettings = function(_, spec)
+    positionSpecs[#positionSpecs + 1] = spec
+    return { { kind = "header", name = "Position", spec = spec } }
+end
+app.core.GetPositionOptions = function(_, spec)
+    return { type = "group", spec = spec }
+end
+app.core.GetFramePositionService = function()
+    return {
+        IsValidAnchorTarget = function(_, target, frame)
+            return target ~= frame
+        end,
+        GetAnchorFrames = function()
+            return {}
+        end,
+    }
+end
+function app.addon:SecureHook(object, method, handler)
+    hooks[object] = hooks[object] or {}
+    hooks[object][method] = handler
+end
+function app.addon:SecureHookScript(object, script, handler)
+    hooks[object] = hooks[object] or {}
+    hooks[object][script] = handler
+end
+app.db.profile.positions = { target = {}, focus = {} }
+app.db.profile.scales = { target = {}, focus = {} }
+app.db.profiles = { Default = app.db.profile }
 enabled = true
 app.db.profile.player.enabled = true
+load("position.lua")
 load("preview.lua")
 app.RegisterPreviews()
 local target, focus = added["Target cast bar"], added["Focus cast bar"]
-assert(target and focus and fixed[target] and fixed[focus] and #previewOptions == 2)
-assert(target:GetParent() == TargetFrame, "a child of the unit frame")
+assert(target and focus and not fixed[target] and #previewOptions == 2, "movable stand-ins")
+assert(target:GetParent() == UIParent, "an addon-owned UIParent child, not a child of the unit frame")
+app.position:Enable()
+assert(hooks[TargetFrameSpellBar].AdjustPosition and hooks[TargetFrameSpellBar].OnShow, "post-hooks the placement")
 libCallbacks.enter()
 assert(target.shown and focus.shown and target.point[2] == TargetFrame and target.point[4] == 43)
 assert(focus.point[4] == 38 and focus.point[5] == 3, "small focus frame spot")
+assert(target.ownScale == 1.5, "the unit frame's scale while the bar's is secret")
 assert(target.Time.text == "1.2 / 2.5" and target.Text.text == "Target cast bar")
--- The preview's dialog shows the target bar's Style rows, writing the target profile.
+
+-- Not moved: the client's placement stays.
+TargetFrameSpellBar:AdjustPosition()
+hooks[TargetFrameSpellBar].AdjustPosition(TargetFrameSpellBar)
+assert(TargetFrameSpellBar.point[2] == "client" and not app.position:IsMoved("target"))
+
+-- A drag keeps the anchor frame and stores offsets measured from it.
+target.GetLeft, target.GetRight = function()
+    return 100
+end, function()
+    return 250
+end
+target.GetTop, target.GetBottom = function()
+    return 300
+end, function()
+    return 290
+end
+target.scale = 1.5
+TargetFrame.GetLeft, TargetFrame.GetRight = function()
+    return 60
+end, function()
+    return 260
+end
+TargetFrame.GetTop, TargetFrame.GetBottom = function()
+    return 420
+end, function()
+    return 340
+end
+moved[target](target, layout, "TOPLEFT", 1, 2)
+local stored = app.db.profile.positions.target.Modern
+assert(
+    stored and stored.relativeTo == "TargetFrame" and stored.x == 40 and stored.y == -40,
+    "offsets from the unit frame"
+)
+assert(TargetFrameSpellBar.point[2] == TargetFrame and TargetFrameSpellBar.point[4] == 40, "the real bar moves")
+-- The client placing the bar again (new target, cast start) puts it back at the stored position.
+TargetFrameSpellBar:AdjustPosition()
+hooks[TargetFrameSpellBar].OnShow(TargetFrameSpellBar)
+assert(TargetFrameSpellBar.point[2] == TargetFrame and TargetFrameSpellBar.point[5] == -40)
+assert(rawget(FocusFrameSpellBar, "point") == nil, "the focus bar is left alone")
+
+-- Positions belong to the layout and follow copies, renames and deletes.
+libCallbacks.create("Copy", nil, "Modern")
+libCallbacks.rename("Copy", "Renamed")
+assert(app.db.profile.positions.target.Renamed.x == 40 and not app.db.profile.positions.target.Copy)
+libCallbacks.delete("Renamed")
+assert(not app.db.profile.positions.target.Renamed)
+layout = "Classic"
+libCallbacks.layout()
+assert(not app.position:IsMoved("target") and app.position:Get("target").x == 43)
+layout = "Modern"
+
+-- The Position rows and options tab write the same layout position.
+local positionSpec = frameSettings[target][1].spec
+positionSpec.set("y", -60)
+assert(stored ~= app.db.profile.positions.target.Modern and app.db.profile.positions.target.Modern.y == -60)
+assert(app.position:GetOptions("target").spec.get("y") == -60)
+assert(app.position:GetOptions("player") == nil, "the player bar is the client's Edit Mode system")
+
+-- Scale: set on the real bar at every placement, offsets keep the anchor point on screen.
+local scaleRow = frameSettings[target][2]
+assert(scaleRow.get() == 1 and scaleRow.formatter(1.25) == "125%")
+scaleRow.set(layout, 2)
+assert(TargetFrameSpellBar.ownScale == 2 and app.db.profile.scales.target.Modern == 2)
+assert(app.db.profile.positions.target.Modern.y == -30, "offsets follow the scale")
+TargetFrameSpellBar.ownScale = nil
+hooks[TargetFrameSpellBar].OnShow(TargetFrameSpellBar)
+assert(TargetFrameSpellBar.ownScale == 2, "re-applied when the client places the bar")
+app.UpdatePreviews()
+assert(target.ownScale == 3, "the preview shows the unit frame's scale times ours")
+scaleRow.set(layout, 1, true)
+assert(app.db.profile.scales.target.Modern == 2, "Reset To Default leaves the scale alone")
+assert(app.position:GetOptions("target").spec.scale.get() == 2, "the options tab's Scale slider")
+app.position:GetOptions("target").spec.scale.set(1)
+assert(TargetFrameSpellBar.ownScale == 1 and app.db.profile.scales.target.Modern == nil, "1 restores the client's")
+assert(app.db.profile.positions.target.Modern.y == -60)
+
+-- Reset Position: back to the client's anchor from the next placement on.
+moved[target](target, layout, defaults[target].point, defaults[target].x, defaults[target].y)
+assert(not app.position:IsMoved("target"))
+TargetFrameSpellBar:AdjustPosition()
+hooks[TargetFrameSpellBar].AdjustPosition(TargetFrameSpellBar)
+assert(TargetFrameSpellBar.point[2] == "client")
+
+-- The preview's dialog shows Position, then the target bar's Style rows, writing the target profile.
 local settings = frameSettings[target]
-assert(settings[1].kind == "header" and settings[1].name == "Style")
+assert(settings[1].name == "Position" and settings[2].name == "Scale" and settings[3].name == "Style")
 local byName = {}
 for _, setting in ipairs(settings) do
     byName[setting.name] = setting
@@ -400,4 +551,14 @@ assert(not target.shown and focus.shown, "the Frames checkbox hides a preview")
 editMode = false
 libCallbacks.exit()
 assert(not focus.shown, "hidden outside Edit Mode")
-print("PASS: target and focus previews in Edit Mode")
+
+-- Disabled: moved bars are no longer re-anchored and the client's scale returns.
+moved[target](target, layout, "TOPLEFT", 1, 2)
+app.position:SetScale("target", 1.5)
+assert(TargetFrameSpellBar.ownScale == 1.5)
+app.position:Disable()
+assert(TargetFrameSpellBar.ownScale == 1)
+TargetFrameSpellBar:AdjustPosition()
+hooks[TargetFrameSpellBar].AdjustPosition(TargetFrameSpellBar)
+assert(TargetFrameSpellBar.point[2] == "client", "disabled leaves the client's placement")
+print("PASS: target and focus previews in Edit Mode move the real bars")

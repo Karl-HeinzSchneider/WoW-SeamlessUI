@@ -15,6 +15,7 @@ src\core.lua
 src\text.lua
 src\ticks.lua
 src\hold.lua
+src\position.lua
 src\options.lua
 src\editmode.lua
 src\preview.lua

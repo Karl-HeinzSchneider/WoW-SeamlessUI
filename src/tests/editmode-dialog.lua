@@ -449,3 +449,51 @@ assert(not dialog.Buttons:IsShown(), "an empty button list is left out of the wi
 dialog:Update({ parent = rightFrame, system = selection.system })
 assert(dialog.Buttons:IsShown() and dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
 print("PASS: fixed frames are selectable but never move")
+
+-- A held slider keeps its drag: refreshes of the same selection wait until it is released.
+local sliderKind = "test-slider"
+lib.internal:CreatePool(sliderKind, function()
+    local row = object("Frame", UIParent)
+    row.Slider = object("Frame", row)
+    row.Slider.Slider = object("Slider", row.Slider)
+    row.Setup = function(self, data)
+        self.setting = data
+        self.setups = (self.setups or 0) + 1
+    end
+    row.Refresh = function(self)
+        self.refreshes = (self.refreshes or 0) + 1
+    end
+    return row
+end, function(_, row)
+    row:Hide()
+end)
+local sliderFrame = object("Frame", UIParent)
+sliderFrame.left, sliderFrame.right, sliderFrame.top = 100, 250, 500
+sliderFrame.GetPoint = frame.GetPoint
+lib.frameSettings[sliderFrame] = { { kind = sliderKind, name = "X" } }
+lib.frameButtons[sliderFrame] = {}
+local sliderSelection = { parent = sliderFrame, system = selection.system }
+dialog:Update(sliderSelection)
+local row = dialog.Settings.widgets[1]
+local thumb = row.Slider.Slider
+assert(row.setups == 1 and thumb.scripts.OnMouseDown and thumb.scripts.OnMouseUp, "sliders are watched")
+thumb.scripts.OnMouseDown(thumb, "LeftButton")
+dialog:Update(sliderSelection)
+dialog:Update(sliderSelection)
+assert(dialog.Settings.widgets[1] == row and row.setups == 1 and row:IsShown(), "a held slider is not rebuilt")
+assert(row.refreshes >= 2, "held refreshes still update the rows in place")
+thumb.scripts.OnMouseUp(thumb, "LeftButton")
+assert(dialog.Settings.widgets[1].setups >= 2, "releasing the slider runs the held refresh")
+local setups = dialog.Settings.widgets[1].setups
+thumb.scripts.OnMouseUp(thumb, "LeftButton")
+assert(dialog.Settings.widgets[1].setups == setups, "only one refresh per held drag")
+-- Another selection always rebuilds, even with a slider held.
+row = dialog.Settings.widgets[1]
+thumb = row.Slider.Slider
+thumb.scripts.OnMouseDown(thumb, "LeftButton")
+setups = row.setups
+dialog:Update({ parent = rightFrame, system = selection.system })
+assert(#dialog.Settings.widgets == 0, "a new selection rebuilds")
+dialog:Update(sliderSelection)
+assert(dialog.Settings.widgets[1].setups == setups + 1, "the held state ended with the old selection")
+print("PASS: sliders keep their drag while features refresh the dialog")

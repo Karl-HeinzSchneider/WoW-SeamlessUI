@@ -289,9 +289,50 @@ local function AddScrolling(dialog)
         dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
     end
 
+    -- Features refresh the dialog from their setters (RefreshFrameSettings), and LibEditMode's
+    -- Update releases and rebuilds every widget, which ends a slider drag after one step. While a
+    -- slider is held, an Update of the same selection only refreshes the rows in place; one full
+    -- Update follows when the slider is released.
+    local heldSlider, pendingUpdate
+    local hookedSliders = {}
+    local function OnSliderMouseDown(slider)
+        heldSlider = slider
+    end
+    local function OnSliderMouseUp(slider)
+        if heldSlider ~= slider then
+            return
+        end
+        heldSlider = nil
+        if pendingUpdate then
+            pendingUpdate = nil
+            if dialog:IsShown() and dialog.selection then
+                dialog:Update(dialog.selection)
+            end
+        end
+    end
+    local function HookSliders()
+        for _, widget in ipairs(settings.widgets) do
+            local slider = widget.Slider and widget.Slider.Slider
+            if slider and not hookedSliders[slider] then
+                hookedSliders[slider] = true
+                slider:HookScript("OnMouseDown", OnSliderMouseDown)
+                slider:HookScript("OnMouseUp", OnSliderMouseUp)
+            end
+        end
+    end
+    dialog:HookScript("OnHide", function()
+        heldSlider, pendingUpdate = nil, nil
+    end)
+
     local update, refreshWidgets = dialog.Update, dialog.RefreshWidgets
     function dialog:Update(selection)
         local newSelection = selection ~= self.selection
+        if heldSlider and not newSelection and self:IsShown() then
+            pendingUpdate = true
+            self:RefreshWidgets()
+            return
+        end
+        heldSlider, pendingUpdate = nil, nil
         if newSelection then
             scroll:SetVerticalScroll(0)
         end
@@ -315,6 +356,7 @@ local function AddScrolling(dialog)
                 self.Buttons:Hide()
             end
         end
+        HookSliders()
         ApplyCollapsed(self)
         LayoutDialog()
         if newSelection and selection.parent then

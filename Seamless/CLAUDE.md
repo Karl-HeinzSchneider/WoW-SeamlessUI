@@ -152,6 +152,9 @@ Run `lua src/tests/editmode-panel.lua`.
 - The settings list scrolls past 400 pixels or 60% of the screen height. The dialog opens
   16 pixels beside its frame (the side with more room), grows downward only and never changes
   width.
+- While a slider is held, `RefreshFrameSettings` of the same frame only refreshes rows in place
+  (a full rebuild would end the drag); one full update follows when it is released. Setters may
+  keep refreshing the dialog.
 
 It asserts on the library internals it relies on: rerun `lua src/tests/editmode-dialog.lua`
 whenever LibEditMode is updated.

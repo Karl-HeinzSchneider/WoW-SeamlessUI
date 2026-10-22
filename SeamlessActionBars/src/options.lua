@@ -7,10 +7,74 @@ local function refresh()
     app.addon:Refresh()
 end
 
-local options = app.addon:NewModule("Options")
+-- Native Edit Mode frames, one Position and scale tab each, in tab order. Bars 4 and 5 follow
+-- the client's numbering (Action Bar 4 is MultiBarRight). Scale is the frame's own size setting
+-- (Icon Size, status bar Size); the leave vehicle button has none, so its Scale stays disabled.
+local frames = {
+    { key = "bar1", frame = "MainActionBar", size = "ActionBar" },
+    { key = "bar2", frame = "MultiBarBottomLeft", size = "ActionBar" },
+    { key = "bar3", frame = "MultiBarBottomRight", size = "ActionBar" },
+    { key = "bar4", frame = "MultiBarRight", size = "ActionBar" },
+    { key = "bar5", frame = "MultiBarLeft", size = "ActionBar" },
+    { key = "bar6", frame = "MultiBar5", size = "ActionBar" },
+    { key = "bar7", frame = "MultiBar6", size = "ActionBar" },
+    { key = "bar8", frame = "MultiBar7", size = "ActionBar" },
+    { key = "statusBar1", frame = "MainStatusTrackingBarContainer", size = "StatusTrackingBar" },
+    { key = "statusBar2", frame = "SecondaryStatusTrackingBarContainer", size = "StatusTrackingBar" },
+    { key = "petBar", frame = "PetActionBar", size = "ActionBar", name = L["Pet action bar"] },
+    { key = "vehicleLeave", frame = "MainMenuBarVehicleLeaveButton", name = L["Leave vehicle button"] },
+}
+for i = 1, 8 do
+    frames[i].name = string.format(L["Action bar %d"], i)
+end
+for i = 1, 2 do
+    frames[8 + i].name = string.format(L["XP / reputation bar %d"], i)
+end
+
+---The native setting used as Scale, or nil when the frame has none.
+---@return number?
+local function sizeSetting(size)
+    if size == "ActionBar" then
+        return Enum.EditModeActionBarSetting and Enum.EditModeActionBarSetting.IconSize
+    elseif size == "StatusTrackingBar" then
+        return Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTrackingBarSetting.Size
+    end
+end
+
+local function frameTab(entry, order)
+    local function getFrame()
+        return _G[entry.frame]
+    end
+    local setting = sizeSetting(entry.size)
+    return {
+        order = order,
+        name = entry.name,
+        hidden = function()
+            return getFrame() == nil
+        end,
+        args = {
+            position = app.core:GetNativePositionOptions(
+                getFrame,
+                setting and app.core:GetNativeSettingScale(getFrame, setting) or nil
+            ),
+        },
+    }
+end
+
+---@class SeamlessActionBars.Options : AceModule, AceEvent-3.0
+---@field positionHooked? table<table, boolean> Frames whose native position and size changes refresh the options.
+local options = app.addon:NewModule("Options", "AceEvent-3.0") --[[@as SeamlessActionBars.Options]]
 function options:OnInitialize()
+    local tabs = {}
+    for i, entry in ipairs(frames) do
+        tabs[entry.key] = frameTab(entry, i * 10)
+    end
     app.core:RegisterOptions(appName, {
         tooltip = function(path)
+            -- Position rows carry their own game defaults.
+            if path[1] ~= "general" then
+                return nil
+            end
             local defaults = app.dbDefaults.profile[path[2]]
             return app.core:GetOptionDefault(defaults, #path == 2 and { "enabled" } or path, #path == 2 and 1 or 3)
         end,
@@ -52,5 +116,28 @@ function options:OnInitialize()
                 toggled = refresh,
             }),
         },
+        tabs = tabs,
     })
+end
+
+-- Position and scale live in the native layout: redraw when it changes outside these options.
+function options:OnEnable()
+    local function refreshPosition()
+        app.core:RefreshOptions(appName)
+    end
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", refreshPosition)
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
+    self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
+    self.positionHooked = self.positionHooked or {}
+    for _, entry in ipairs(frames) do
+        local frame = _G[entry.frame]
+        if frame and not self.positionHooked[frame] then
+            self.positionHooked[frame] = true
+            for _, method in ipairs({ "ApplySystemAnchor", "UpdateSystemSetting" }) do
+                if frame[method] then
+                    hooksecurefunc(frame, method, refreshPosition)
+                end
+            end
+        end
+    end
 end

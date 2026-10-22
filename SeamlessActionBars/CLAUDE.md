@@ -13,7 +13,10 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   usability colors. Leave secret values alone.
 - `src/hotkeys.lua`: `ShortKeyLabel`, `UpdateHotkey`, `RestoreHotkey`; skip range dots and
   gamepad bindings and retain original text for restoration.
-- `src/options.lua`: feature groups.
+- `src/options.lua`: feature groups on General, then one tab per native Edit Mode frame (action
+  bars 1-8, both XP / reputation bars, pet action bar, leave vehicle button) holding only Core's
+  native Position and scale group. Scale is Icon Size for action bars, Size for status bars and
+  disabled for the leave vehicle button. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
 
 ## Rules
 

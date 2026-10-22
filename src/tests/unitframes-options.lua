@@ -323,6 +323,15 @@ hooked(member)
 assert(member.name:GetText() == "Carl", "no surname keeps the first name")
 print("PASS: name display")
 
+local preview = { unit = "player", name = FontString("Anna Weber") }
+app.db.profile.unitFrames.targettarget.nameDisplay = "last"
+nameDisplay:ApplyPreview(preview, "targettarget")
+assert(preview.name:GetText() == "Weber", "preview uses its ToT setting with the player's identity")
+preview.name:SetText("Anna Weber")
+app.db.profile.unitFrames.targettarget.nameDisplay = "full"
+nameDisplay:ApplyPreview(preview, "targettarget")
+assert(preview.name:GetText() == "Anna Weber", "full preview name survives a settings change")
+
 -- Class icon: the class atlas on player characters' portraits, the portrait back when off.
 local function Portrait()
     local portrait = {}
@@ -372,6 +381,15 @@ app.db.profile.unitFrames.player.classIcon = false
 modules.ClassIcon:Refresh()
 assert(portraitResets == 1, "the client's own class icon setting stays")
 print("PASS: class icon portraits")
+
+preview.portrait = Portrait()
+app.db.profile.unitFrames.targettarget.classIcon = true
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.atlas == "classicon-mage")
+replaceCVar = false
+app.db.profile.unitFrames.targettarget.classIcon = false
+modules.ClassIcon:ApplyPreview(preview, "targettarget")
+assert(preview.portrait.atlas == nil, "preview restores the portrait when its class icon is disabled")
 
 -- PvP icon: transparent while hidden, the game's own alpha back when shown.
 local function Icon()

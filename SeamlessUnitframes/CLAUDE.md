@@ -81,6 +81,9 @@ BOTTOMRIGHT (12, 10; the small focus frame 20, 8 from `FocusFrameMixin:SetSmallS
   anchor frame and measures new offsets from it, so a ToT anchored to its unit frame follows that
   frame. LibEditMode's Reset Position reports the registered default (`RESET`), which means
   Reset.
+  The stand-ins show live player name, portrait, health and power. They reuse the layout's fixed
+  ToT geometry and the name, class icon and health color modules' `ApplyPreview` methods with
+  their own ToT settings key. Hooks on those modules' `Refresh` keep visible previews in sync.
 
 Never drag, reparent or `SetUserPlaced` the real frames, change their scripts, store anything on
 them or anchor them to the aura container or cast bar (Forever restricts those). Blizzard still

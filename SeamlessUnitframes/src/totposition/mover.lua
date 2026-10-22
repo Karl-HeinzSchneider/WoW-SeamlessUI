@@ -25,7 +25,7 @@ local mover = { movers = {}, shown = {} }
 app.totMover = mover
 
 local function Known(value)
-    return value ~= nil and not (issecretvalue and issecretvalue(value))
+    return not (issecretvalue and issecretvalue(value)) and value ~= nil
 end
 
 local function IsReset(point, x, y)
@@ -51,6 +51,64 @@ local function OnMoved(key, point, x, y)
     position:SetPosition(key, current)
 end
 
+local function UpdatePreview(frame, key)
+    local first, surname = UnitName("player")
+    if Known(first) and not (issecretvalue and issecretvalue(surname)) then
+        local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
+        frame.name:SetText(first .. (surname and surname ~= "" and separator .. surname or ""))
+    end
+    SetPortraitTexture(frame.portrait, "player")
+    frame.HealthBar:SetMinMaxValues(0, UnitHealthMax("player"))
+    frame.HealthBar:SetValue(UnitHealth("player"))
+    frame.ManaBar:SetMinMaxValues(0, UnitPowerMax("player"))
+    frame.ManaBar:SetValue(UnitPower("player"))
+    app.legacyLayout:ApplyToTPreview(frame)
+    app.healthColor:ApplyPreview(frame, key)
+    app.nameDisplay:ApplyPreview(frame, key)
+    app.classIcon:ApplyPreview(frame, key)
+end
+
+local function CreateVisuals(frame)
+    frame.unit = "player"
+    frame.Portrait = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+    frame.Portrait:SetSize(37, 37)
+    frame.Portrait:SetPoint("TOPLEFT", 5, -5)
+    local mask = frame:CreateMaskTexture()
+    mask:SetAtlas("CircleMask")
+    mask:SetAllPoints(frame.Portrait)
+    frame.Portrait:AddMaskTexture(mask)
+    frame.FrameTexture = frame:CreateTexture(nil, "BACKGROUND", nil, 2)
+    frame.FrameTexture:SetAtlas(ART, true)
+    frame.FrameTexture:SetPoint("CENTER")
+    frame.Name = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    frame.Name:SetSize(68, 10)
+    for _, kind in ipairs({ "Health", "Mana" }) do
+        local bar = CreateFrame("StatusBar", nil, frame)
+        bar.unit, bar.unitFrame, bar.lockColor = "player", frame, true
+        bar:SetStatusBarTexture(ART .. "-Bar-" .. kind)
+        bar:SetStatusBarColor(1, 1, 1)
+        local barMask = bar:CreateMaskTexture()
+        barMask:SetAtlas("UI-HUD-UnitFrame-Party-PortraitOn-Bar-" .. kind .. "-Mask", true)
+        barMask:SetPoint("TOPLEFT", kind == "Health" and -26 or -27, kind == "Health" and 3 or 4)
+        bar:GetStatusBarTexture():AddMaskTexture(barMask)
+        bar[kind .. "BarMask"] = barMask
+        frame[kind .. "Bar"] = bar
+    end
+    frame.name, frame.portrait, frame.healthbar = frame.Name, frame.Portrait, frame.HealthBar
+    for _, event in ipairs({
+        "UNIT_NAME_UPDATE",
+        "UNIT_PORTRAIT_UPDATE",
+        "UNIT_HEALTH",
+        "UNIT_MAXHEALTH",
+        "UNIT_POWER_UPDATE",
+        "UNIT_MAXPOWER",
+        "UNIT_DISPLAYPOWER",
+        "UNIT_FACTION",
+    }) do
+        frame:RegisterUnitEvent(event, "player")
+    end
+end
+
 ---@param key string
 local function Create(key)
     local entry = app.unitFrames:Get(key)
@@ -58,9 +116,12 @@ local function Create(key)
     frame:Hide()
     frame:SetSize(WIDTH, HEIGHT)
     frame:SetClampedToScreen(true)
-    local art = frame:CreateTexture(nil, "ARTWORK")
-    art:SetAtlas(ART, true)
-    art:SetPoint("CENTER")
+    CreateVisuals(frame)
+    frame:SetScript("OnEvent", function()
+        if frame:IsShown() then
+            UpdatePreview(frame, key)
+        end
+    end)
     lib:AddFrame(frame, function(_, _, point, x, y)
         OnMoved(key, point, x, y)
     end, RESET, entry.name)
@@ -93,6 +154,7 @@ function mover:Refresh()
         local real = position:Frames(key)
         local visible = position.active and lib:IsInEditMode() and self.shown[key] and real ~= nil
         if visible then
+            UpdatePreview(frame, key)
             local scale = real:GetEffectiveScale()
             local parentScale = UIParent:GetEffectiveScale()
             frame:SetScale(Known(scale) and scale / parentScale or 1)
@@ -119,6 +181,11 @@ function mover:Register()
         return
     end
     registered = true
+    for _, module in ipairs({ app.legacyLayout, app.healthColor, app.nameDisplay, app.classIcon }) do
+        hooksecurefunc(module, "Refresh", function()
+            self:Refresh()
+        end)
+    end
     local options = {}
     for _, key in ipairs(app.totPosition.keys) do
         if app.totPosition:IsMovable(key) then

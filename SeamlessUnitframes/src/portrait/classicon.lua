@@ -70,6 +70,10 @@ function module:OnInitialize()
     hooksecurefunc("UnitFramePortrait_Update", Update)
 end
 
+function module:ApplyPreview(frame, key)
+    Apply(frame, key)
+end
+
 function module:OnEnable()
     self:Refresh()
 end

@@ -96,6 +96,11 @@ function module:OnInitialize()
     hooksecurefunc("UnitFrame_Update", Update)
 end
 
+function module:ApplyPreview(frame, key)
+    native[frame] = nil
+    Apply(frame, key)
+end
+
 function module:OnEnable()
     self:Refresh()
 end

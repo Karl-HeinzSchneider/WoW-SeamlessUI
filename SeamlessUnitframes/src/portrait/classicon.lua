@@ -42,16 +42,6 @@ local function Apply(frame, key)
     if not (Readable(portrait) and portrait and Readable(unit) and unit) then
         return
     end
-    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
-    if character then
-        if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
-            portrait:SetTexture(character.displayTexture)
-            portrait:SetTexCoord(0, 1, 0, 1)
-        else
-            portrait:SetAtlas(GetClassAtlas(character.class))
-        end
-        return
-    end
     local atlas = addon:IsEnabled() and app.db.profile.unitFrames[key].classIcon and ClassAtlas(unit)
     if atlas then
         portrait:SetAtlas(atlas)
@@ -81,6 +71,17 @@ function module:OnInitialize()
 end
 
 function module:ApplyPreview(frame, key)
+    local portrait = frame.portrait
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
+            portrait:SetTexture(character.displayTexture)
+            portrait:SetTexCoord(0, 1, 0, 1)
+        else
+            portrait:SetAtlas(GetClassAtlas(character.class))
+        end
+        return
+    end
     Apply(frame, key)
 end
 

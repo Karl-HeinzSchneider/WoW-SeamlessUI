@@ -90,9 +90,8 @@ end
 ---@param bar SeamlessUnitframes.HealthColor.HealthBar
 ---@param key string
 ---@return ColorMixin?
-local function BarColor(bar, key)
+local function BarColor(bar, key, character)
     local mode = app.db.profile.unitFrames[key].healthBarColor
-    local character = app.previewCharacters and app.previewCharacters:Get(bar.unitFrame, key)
     if character then
         if mode == "class" or mode == "classReaction" then
             return RAID_CLASS_COLORS[character.class]
@@ -123,7 +122,7 @@ end
 
 ---@param bar SeamlessUnitframes.HealthColor.HealthBar
 ---@param key string
-local function Apply(bar, key)
+local function Apply(bar, key, character)
     if settingAtlas or app.legacyLayout:IsWriting() then
         return
     end
@@ -131,7 +130,7 @@ local function Apply(bar, key)
     if not atlas then
         return
     end
-    local color = BarColor(bar, key)
+    local color = BarColor(bar, key, character)
     if color and app.legacyLayout:HasHealthStatus(atlas) then
         -- Reassert on native updates even if our own logical name is unchanged:
         -- the client may have just reset the underlying fill to green.
@@ -200,7 +199,8 @@ local function ApplyAll()
 end
 
 function module:ApplyPreview(frame, key)
-    Apply(frame.healthbar, key)
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    Apply(frame.healthbar, key, character)
 end
 
 function module:OnInitialize()

@@ -127,18 +127,16 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 
 ## Conventions
 
-- `src/core/previewcharacters.lua` consumes Core's VIP catalogue in Edit Mode for player,
-  target, focus, their ToT stand-ins and party members (pet retains the game data). Assignments
-  live in addon-owned maps, never on protected frame tables. Names, portraits and health colors
-  are painted on native frames; only addon-owned ToT stand-ins use fabricated health/power
-  values. Native unit bindings, geometry and visibility are preserved. Frame
-  settings still control name shortening, class icons and health colors. Existing unit update
-  functions are post-hooked to preserve visuals across native events; no per-frame polling. Exit, disable
-  and combat restore current data via `UnitFrame_Update`, not saved gameplay snapshots. Level,
-  auras, threat, bar text/predictions and classification art remain native; catalogue metadata
-  does not imply support for rendering those fields. Verify these previews and restoration in game.
+- `src/core/previewcharacters.lua` consumes Core's VIP catalogue only for the addon-owned
+  Target of Target and Target of Focus Edit Mode stand-ins. Getters require both an allowed key
+  and the exact frame in `totMover.movers`; native frames cannot consume VIP data. No native
+  frame enumeration, native update hooks or native refresh/restoration calls belong in this
+  controller. Native name, portrait and health-color paths never consult the catalogue; only
+  their explicit `ApplyPreview` methods do. The stand-ins render names, portraits, health/power
+  and configured health colors. Combat/disable refresh only those custom frames with live
+  fallback data. Core retains metadata for future custom-frame consumers.
   Run `lua src/tests/preview-unitframes.lua`, `lua src/tests/unitframes-options.lua` and
-  `lua src/tests/unitframes-totposition.lua`.
+  `lua src/tests/unitframes-totposition.lua`. The isolation test rejects native hooks and calls.
 
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.

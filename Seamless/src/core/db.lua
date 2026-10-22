@@ -8,9 +8,6 @@ app.dbDefaults = {
         tweaks = {
             reloadShortcut = true,
             showFramerateOnStartup = false,
-            enhancedXPTooltip = true,
-            restedXPCap = 150,
-            restedXPRate = 5,
         },
     },
 }

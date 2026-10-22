@@ -2,8 +2,34 @@
 local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
-local config = { categories = {}, collapsed = {}, pages = {}, rows = {} }
+local config = { categories = {}, collapsed = {}, pages = {}, rows = {}, optionInfo = {} }
+config.optionTags = setmetatable({}, { __mode = "k" })
 app.config = config
+
+function config:GetOptionTags(option)
+    local saved = self.optionTags[option] or {}
+    local new, blizzard = option.new, option.blizzard
+    if new == nil then
+        new = saved.new
+    end
+    if blizzard == nil then
+        blizzard = saved.blizzard
+    end
+    return { new = new, blizzard = blizzard }
+end
+
+-- These convenience flags are ours, not AceConfig schema fields.
+function config:NormalizeOptionTags(option)
+    if option.new ~= nil or option.blizzard ~= nil then
+        assert(option.new == nil or type(option.new) == "boolean", "Option new must be a boolean")
+        assert(option.blizzard == nil or type(option.blizzard) == "boolean", "Option blizzard must be a boolean")
+        self.optionTags[option] = self:GetOptionTags(option)
+        option.new, option.blizzard = nil, nil
+    end
+    for _, child in pairs(option.args or {}) do
+        self:NormalizeOptionTags(child)
+    end
+end
 
 -- IDs belong to the registering addon (prefer an AddonName:category prefix).
 -- Parents must already exist, so a registration can never introduce a cycle.
@@ -15,6 +41,8 @@ function app.addon:RegisterConfigCategory(id, spec)
     assert(spec.order == nil or type(spec.order) == "number", "Config order must be a number")
     assert(not spec.create or type(spec.create) == "function", "Config create must be a function")
     assert(not spec.refresh or type(spec.refresh) == "function", "Config refresh must be a function")
+    assert(spec.new == nil or type(spec.new) == "boolean", "Config new must be a boolean")
+    assert(spec.blizzard == nil or type(spec.blizzard) == "boolean", "Config blizzard must be a boolean")
     config.categories[id] = {
         id = id,
         name = spec.name,
@@ -23,6 +51,9 @@ function app.addon:RegisterConfigCategory(id, spec)
         header = spec.header,
         create = spec.create,
         refresh = spec.refresh,
+        hidden = spec.hidden,
+        new = spec.new,
+        blizzard = spec.blizzard,
     }
     if config.frame then
         config:Refresh()
@@ -32,7 +63,11 @@ end
 function config:GetChildren(parent)
     local children = {}
     for _, category in pairs(self.categories) do
-        if category.parent == parent then
+        local hidden = category.hidden
+        if type(hidden) == "function" then
+            hidden = hidden()
+        end
+        if category.parent == parent and not hidden then
             children[#children + 1] = category
         end
     end

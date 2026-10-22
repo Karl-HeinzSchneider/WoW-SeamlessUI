@@ -7,6 +7,16 @@
 ---@field frame? table
 ---@field selected? string
 ---@field minimized? boolean
+---@field optionInfo table<string, fun(path: string[]): any, boolean?>
+---@field optionTags table<table, { new?: boolean, blizzard?: boolean }>
+---@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
+---@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
+---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
+---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
+---@field ControlRow table Base class for Settings-style control rows.
+---@field controlCreators table<string, fun(page: table): table> Extensible control factories.
+---@field CreateOptionsPage fun(self: SeamlessCore.Config, page: table, root: table, key: string, name: string)
+---@field RefreshOptionsPage fun(self: SeamlessCore.Config, page: table)
 
 ---@class SeamlessCore.ConfigCategory
 ---@field id? string Assigned by the registry.
@@ -14,10 +24,14 @@
 ---@field parent? string Previously registered parent ID; omitted for a root category.
 ---@field order? number Defaults to 100; ties sort by ID.
 ---@field header? boolean Styled heading; clicking it collapses its children.
+---@field new? boolean Show the native glowing NEW label.
+---@field blizzard? boolean Show a glowing BLIZZ label.
+---@field hidden? boolean|fun(): boolean Omit unavailable pages from navigation.
 ---@field create? fun(page: table) Called once with an owned content frame; set its height for scrolling.
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
 
 ---@class SeamlessCore
+---@field framePosition SeamlessCore.FramePosition
 ---@field config SeamlessCore.Config
 ---@field IsEditModeSectionCollapsed fun(key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(key: string, collapsed: boolean)
@@ -37,6 +51,8 @@
 
 ---@class SeamlessCore.Addon
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
+---@field GetOptionDefault fun(self: SeamlessCore.Addon, defaults: table?, path: string[], first?: number): any
+---@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean
 ---@field OpenConfig fun(self: SeamlessCore.Addon, id?: string)
 ---@field ToggleConfig fun(self: SeamlessCore.Addon)
 ---@field RefreshConfig fun(self: SeamlessCore.Addon)
@@ -52,6 +68,9 @@
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
 ---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
+---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
+---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
@@ -60,10 +79,21 @@
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
 
+---@alias SeamlessCore.FrameResolver fun(): table?
+
+---@class SeamlessCore.PositionScale
+---@field get? fun(): number Current scale multiplier (1 = 100%).
+---@field set? fun(value: number) Explicit opt-in to editable scale.
+---@field min? number Defaults to 0.5.
+---@field max? number Defaults to 2.
+---@field step? number Defaults to 0.01.
+---@field disabled? fun(): boolean Additional scale-specific guard.
+
 ---@class SeamlessCore.EditModePosition
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
+---@field scale? SeamlessCore.PositionScale Optional binding for the config Position and scale group; does not alter Edit Mode rows.
 ---@field anchorFrame? fun(value: any): table? The frame of an anchorFrames entry; defaults to the global named by the value.
 ---@field disabled? fun(): boolean
 
@@ -78,7 +108,7 @@
 ---@class SeamlessCore.Profile
 ---@field logLevel string
 ---@field minimap table
----@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean, enhancedXPTooltip: boolean, restedXPCap: number, restedXPRate: number }
+---@field tweaks { reloadShortcut: boolean, showFramerateOnStartup: boolean }
 
 ---@class SeamlessCore.EditModeOptions
 ---@field section "options"|"frames"|nil Defaults to options, above the shared Frames heading.
@@ -111,6 +141,8 @@
 ---@field options SeamlessCore.EditModeSystemOption[]
 
 ---@class SeamlessCore.EditModeSystemOption
+---@field new? boolean Optional tag in the custom config view when adapted from a style row.
+---@field blizzard? boolean Optional tag in the custom config view when adapted from a style row.
 ---@field key string Unique within the section.
 ---@field type "toggle"|"select"|"range"
 ---@field name string

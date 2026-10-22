@@ -118,6 +118,13 @@ function options:OnInitialize()
         tabs[bar.key] = barTab(index * 10, bar)
     end
     app.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            local value = app.core:GetOptionDefault(app.dbDefaults.profile, path)
+            if type(value) == "table" then
+                return value.enabled
+            end
+            return value
+        end,
         title = L["Castbar"],
         general = {
             bars = {

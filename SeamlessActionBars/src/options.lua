@@ -10,6 +10,10 @@ end
 local options = app.addon:NewModule("Options")
 function options:OnInitialize()
     app.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            local defaults = app.dbDefaults.profile[path[2]]
+            return app.core:GetOptionDefault(defaults, #path == 2 and { "enabled" } or path, #path == 2 and 1 or 3)
+        end,
         title = L["Action Bars"],
         general = {
             range = app.core.FeatureGroup({

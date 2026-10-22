@@ -56,6 +56,10 @@ local app = {
         },
     },
     core = {
+        GetNativePositionOptions = function(_, getFrame)
+            assert(getFrame() == PlayerFrame)
+            return { type = "group", inline = true, name = "Position and scale", order = 10, args = {} }
+        end,
         RegisterOptions = function(_, name, spec)
             assert(name == "SeamlessUnitframes")
             registeredOptions = spec
@@ -130,11 +134,20 @@ assert(not tabs.target.hidden() and tabs.focustarget.hidden(), "missing frames h
 assert(not tabs.party.hidden(), "party always counts")
 
 local function find(tab, key)
+    if tab.args[key] then
+        return tab.args[key]
+    end
     for _, group in pairs(tab.args) do
-        if group.args[key] then
+        if group.args and group.args[key] then
             return group.args[key]
         end
     end
+end
+assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position and scale")
+assert(tabs.player.args.style.args.player_classIcon.type == "toggle")
+assert(tabs.player.args.style.args.player_hidePvPIcon.type == "toggle")
+for _, option in pairs(tabs.player.args.style.args) do
+    assert(option.type ~= "group", "single player settings need no redundant headers")
 end
 local playerColor = find(tabs.player, "player_healthBarColor")
 assert(playerColor.type == "select" and playerColor.values.class == "Class" and #playerColor.sorting == 4)

@@ -19,6 +19,8 @@ local profile = {
     xpBarTooltip = {
         enabled = true,
         completedQuests = true,
+        restedXPCap = 150,
+        restedXPRate = 5,
     },
     blizzardEditMode = {
         enabled = true,

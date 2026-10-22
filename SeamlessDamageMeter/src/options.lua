@@ -527,6 +527,49 @@ function app:RegisterOptions()
     self:BuildWindowOptions()
     self:BuildSkinOptions()
     self.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            local key = path[#path]
+            if path[1] == "history" then
+                if key == "retention" then
+                    return 50, true
+                end
+                if key == "pinned" then
+                    return false, true
+                end
+                return nil, true
+            end
+            if path[1] == "general" then
+                if key == "tracking" then
+                    return self.core:GetCVarOptionInfo("damageMeterEnabled")
+                end
+                return self.dbDefaults.profile[key]
+            end
+            if path[1] == "skin" then
+                if key == "name" then
+                    return ""
+                end
+                return self.skinDefaults[key]
+            end
+            if path[1] == "windows" then
+                if key == "override" or key == "hidden" then
+                    return false
+                end
+                if key == "skin" then
+                    return "default"
+                end
+                if key == "anchorTo" then
+                    return "screen"
+                end
+                if key == "enabled" then
+                    return path[2] == "window1"
+                end
+                if key == "default" or key == "value" then
+                    return self.db.profile.windowDefaults[path[#path - 1]]
+                end
+                return self.windowDefaults[key]
+            end
+            return nil
+        end,
         title = L["Damage Meter"],
         general = {
             windows = {

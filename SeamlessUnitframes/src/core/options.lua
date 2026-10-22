@@ -4,6 +4,7 @@ local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@class SeamlessUnitframes.Options : AceModule, AceEvent-3.0
+---@field positionHooked? boolean
 local module = {}
 app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.Options]]
 
@@ -15,6 +16,8 @@ local function Option(row, order)
         type = row.type,
         order = order,
         name = row.name,
+        new = row.new,
+        blizzard = row.blizzard,
         desc = row.desc,
         get = function()
             return row.get()
@@ -40,18 +43,30 @@ local function Option(row, order)
     return option
 end
 
--- One tab per unit frame, hidden when this client lacks the frame, with an inline group per
--- style group.
+-- Standalone style rows need no heading; keep groups for related controls.
 ---@param entry SeamlessUnitframes.UnitFrame
 ---@param order number
 local function FrameTab(entry, order)
     local args = {}
     for i, group in ipairs(app.StyleGroups(entry.key)) do
-        local groupArgs = {}
-        for j, row in ipairs(group.rows) do
-            groupArgs[row.key:gsub("%.", "_")] = Option(row, j * 10)
+        if #group.rows == 1 then
+            local row = group.rows[1]
+            args[row.key:gsub("%.", "_")] = Option(row, i * 10)
+        else
+            local groupArgs = {}
+            for j, row in ipairs(group.rows) do
+                groupArgs[row.key:gsub("%.", "_")] = Option(row, j * 10)
+            end
+            args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
         end
-        args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
+    end
+    if entry.key == "player" then
+        args = {
+            position = app.core:GetNativePositionOptions(function()
+                return PlayerFrame
+            end),
+            style = { type = "group", inline = true, order = 20, name = L["Style"], args = args },
+        }
     end
     return {
         order = order,
@@ -69,6 +84,26 @@ function module:OnInitialize()
         tabs[entry.key] = FrameTab(entry, i * 10)
     end
     app.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            local key = path[#path]
+            local defaults = app.dbDefaults.profile
+            if path[1] == "general" then
+                return defaults[key]
+            end
+            if key == "threatPercentage" then
+                return app.core:GetCVarOptionInfo("threatShowNumeric")
+            end
+            local questKey = key:match("^questIcon_(.+)$")
+            if questKey then
+                return defaults.targetQuestIcon[questKey]
+            end
+            local field = key:match("^[^_]+_(.+)$")
+            local frame = defaults.unitFrames[path[1]] or {}
+            if frame[field] ~= nil then
+                return frame[field]
+            end
+            return defaults.unitFrames["**"][field]
+        end,
         title = L["Unit Frames"],
         general = {
             layout = {
@@ -92,6 +127,16 @@ function module:OnInitialize()
 end
 
 function module:OnEnable()
+    local function refreshPosition()
+        app.core:RefreshOptions(appName)
+    end
+    self:RegisterEvent("PLAYER_REGEN_DISABLED", refreshPosition)
+    self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
+    self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
+    if not self.positionHooked and PlayerFrame and PlayerFrame.ApplySystemAnchor then
+        self.positionHooked = true
+        hooksecurefunc(PlayerFrame, "ApplySystemAnchor", refreshPosition)
+    end
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
         if name:lower() == "threatshownumeric" then
             self:Refresh()

@@ -52,9 +52,9 @@ local function addXPLines(tooltip)
     end
     local currXP = UnitXP("player")
 
-    -- The client does not expose the rested cap or rate; Core's Tweaks hold the assumptions.
-    local tweaks = app.core.db.profile.tweaks
-    local restedMax = maxXP * tweaks.restedXPCap / 100
+    -- The client does not expose the rested cap or rate; this feature owns the assumptions.
+    local tooltipSettings = settings()
+    local restedMax = maxXP * tooltipSettings.restedXPCap / 100
     local rested = math.max(0, GetXPExhaustion() or 0)
 
     addSpacer(tooltip)
@@ -70,9 +70,9 @@ local function addXPLines(tooltip)
     )
     addValue(tooltip, L["XP left:"], amountText(math.max(0, maxXP - currXP), maxXP))
     addValue(tooltip, L["Rested:"], amountText(rested, restedMax))
-    if rested < restedMax and tweaks.restedXPRate > 0 then
+    if rested < restedMax and tooltipSettings.restedXPRate > 0 then
         local levels = (restedMax - rested) / maxXP * 100
-        addValue(tooltip, L["Time to max rested:"], durationText(levels / tweaks.restedXPRate * 8 * 60 * 60))
+        addValue(tooltip, L["Time to max rested:"], durationText(levels / tooltipSettings.restedXPRate * 8 * 60 * 60))
     end
 end
 
@@ -85,9 +85,8 @@ local function addQuestLines(tooltip)
 end
 
 -- Runs after ExhaustionTickMixin:ExhaustionToolTipText, which both the bar's and the tick's
--- OnEnter call. Re-anchoring clears the default lines (and those of hooks that ran before this
--- one, such as Core's enhanced XP lines), so the tooltip is rebuilt from scratch without
--- replacing the secure method.
+-- OnEnter call. Re-anchoring clears the default lines so the tooltip is rebuilt
+-- from scratch without replacing the secure method.
 function module:ShowTooltip()
     local tooltip = GetAppropriateTooltip()
     GameTooltip_SetDefaultAnchor(tooltip, UIParent)
@@ -141,18 +140,25 @@ function module:OnProfileRefresh()
     end
 end
 
--- The completed-quests lines used to be Core's `tweaks.questXPTooltip`. Carry a profile's
--- "off" over to the UI profile of the same name, then drop it from Core.
+-- Import the former Core tooltip settings into same-named UI profiles without
+-- overwriting existing UI choices, then remove the obsolete Core values.
 function module:OnInitialize()
     for name, profile in pairs(app.core.db.profiles or {}) do
         local tweaks = profile.tweaks
-        if tweaks and tweaks.questXPTooltip ~= nil then
+        if tweaks then
             local target = app.db.profiles[name] or {}
             app.db.profiles[name] = target
             target.xpBarTooltip = target.xpBarTooltip or {}
             if tweaks.questXPTooltip == false and target.xpBarTooltip.completedQuests == nil then
                 target.xpBarTooltip.completedQuests = false
             end
+            for _, key in ipairs({ "restedXPCap", "restedXPRate" }) do
+                if tweaks[key] ~= nil and rawget(target.xpBarTooltip, key) == nil then
+                    target.xpBarTooltip[key] = tweaks[key]
+                end
+                tweaks[key] = nil
+            end
+            tweaks.enhancedXPTooltip = nil
             tweaks.questXPTooltip = nil
         end
     end
@@ -162,9 +168,27 @@ end
 function module:Options()
     return app.core.FeatureGroup({
         name = L["XP bar tooltip"],
-        desc = L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Rested cap and rate come from the Seamless Tweaks."],
+        desc = L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Configure the rested XP cap and accumulation rate below."],
         order = 20,
         options = {
+            restedXPCap = {
+                type = "range",
+                order = 20,
+                name = L["Rested XP cap (%)"],
+                desc = L["Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly."],
+                min = 1,
+                max = 500,
+                step = 1,
+            },
+            restedXPRate = {
+                type = "range",
+                order = 30,
+                name = L["Rested XP per 8 hours (%)"],
+                desc = L["Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent."],
+                min = 0.1,
+                max = 100,
+                step = 0.1,
+            },
             completedQuests = {
                 type = "toggle",
                 order = 10,

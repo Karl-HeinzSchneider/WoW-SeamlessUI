@@ -21,7 +21,14 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
    write the profile (or the `threatShowNumeric` CVar), apply and refresh. `app.StyleOptions(entry)`
    flattens a frame's rows plus its linked frames'.
 7. `options.lua`: General (the global layout), one tab per unit frame built from `StyleGroups`
-   (hidden when the client lacks the frame). `CVAR_UPDATE` refreshes threat changes.
+   (hidden when the client lacks the frame). Single-row groups become standalone options in both
+   options windows; related controls such as Quest icon retain their heading.
+   Player wraps those controls in a collapsible Style group, beside a Position
+   and scale group from Core's reusable `GetNativePositionOptions` (Scale stays
+   disabled until an explicit scale binding is provided). Positions read/write the
+   native active layout, with no new profile settings or SeamlessUI dependency.
+   Native anchor changes, layout changes and combat transitions refresh the view.
+   `CVAR_UPDATE` refreshes threat changes.
 8. `editmode.lua`: on enable, registers a collapsible Style section (key `unitframe-style`) per
    frame with `RegisterEditModeSystemOptions`. SeamlessUI draws it below the frame's own settings.
 9. `src/layout/`: optional legacy layout (below).

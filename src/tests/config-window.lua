@@ -138,6 +138,15 @@ end
 function methods:GetTop()
     return 800
 end
+function methods:GetBottom()
+    return self:GetTop() - self:GetHeight()
+end
+function methods:GetEffectiveScale()
+    return 1
+end
+function methods:IsVisible()
+    return self.shown ~= false and (not self.parent or self.parent:IsVisible())
+end
 function methods:GetHighlightTexture()
     self.highlight = self.highlight or object()
     return self.highlight
@@ -172,6 +181,7 @@ for _, name in ipairs({
     "SetPushedTexture",
     "SetScale",
     "SetFrameStrata",
+    "SetFrameStrata",
     "SetToplevel",
     "SetClampedToScreen",
     "SetMovable",
@@ -184,6 +194,8 @@ for _, name in ipairs({
     "Init",
     "SetVisibleExtentPercentage",
     "SetScrollAllowed",
+    "SetHideIfUnscrollable",
+    "DesaturateHierarchy",
     "EnableMouseWheel",
     "SetSelected",
     "SetNormalAtlas",
@@ -201,6 +213,9 @@ function CreateFrame(_, name, parent, template)
         or ((parent and parent:GetFrameLevel() or 0) + 1)
     if template == "MinimalTabTemplate" then
         frame.Text = object()
+    end
+    if template == "NewFeatureLabelTemplate" then
+        frame.Label, frame.BGLabel = object(), object()
     end
     if name then
         _G[name] = frame
@@ -228,8 +243,14 @@ tinsert = table.insert
 NineSliceUtil = { ApplyLayoutByName = function() end }
 config.frame = nil
 assert(loadfile("Seamless/src/config/window.lua"))("Seamless", app)
+function methods:SetTextToFit(value)
+    self.text = value
+end
+assert(loadfile("Seamless/src/config/badges.lua"))("Seamless", app)
 local created, refreshedPage = 0, 0
 core:RegisterConfigCategory("Page", {
+    new = true,
+    blizzard = true,
     name = "Page",
     create = function(page)
         created = created + 1
@@ -240,6 +261,25 @@ core:RegisterConfigCategory("Page", {
     end,
 })
 core:OpenConfig("Page")
+assert(config.navigation:GetWidth() == 175)
+for _, row in ipairs(config.rows) do
+    if row.id == "Page" then
+        assert(row.featureTags.new:IsShown() and row.featureTags.blizzard:IsShown())
+        assert(row.featureTags.blizzard.Label.text == "BLIZZ")
+        assert(row.text.points.LEFT[2] == 36, "tags must not shift category labels")
+    end
+end
+local headerRight, dividerX = 18 + config.navigation:GetWidth(), 18 + 199
+local scrollbarCenter = headerRight + config.navigationBar.points.TOP[4]
+assert(scrollbarCenter - headerRight == dividerX - scrollbarCenter)
+assert(scrollbarCenter - 17 / 2 > headerRight and scrollbarCenter + 17 / 2 < dividerX)
+assert(config.navigationBar.points.TOP[1] == "TOP")
+assert(config.navigationBar.points.BOTTOM[1] == "BOTTOM")
+assert(config.navigationBar.points.TOP[4] == 12 and config.navigationBar.points.TOP[5] == -8)
+assert(config.navigationBar.points.BOTTOM[4] == 12 and config.navigationBar.points.BOTTOM[5] == 8)
+for _, row in ipairs(config.rows) do
+    assert(row:GetWidth() == 175 and row.active:GetWidth() == 175)
+end
 assert(config.minimize:GetFrameLevel() == 510)
 assert(config.minimize.template == "UIPanelCloseButtonNoScripts")
 for _, row in ipairs(config.rows) do
@@ -253,6 +293,10 @@ assert(config.content:GetHeight() == 1500)
 assert(config.pages.Page.parent == config.pageHost)
 config.contentScroll.scripts.OnMouseWheel(config.contentScroll, -1)
 assert(config.contentScroll:GetVerticalScroll() == 30)
+config.contentScroll:SetVerticalScroll(1400)
+config.pages.Page:SetHeight(120) -- Collapsing sections must not leave an empty scrolled page.
+assert(config.contentScroll:GetVerticalScroll() <= math.max(0, 120 - config.contentScroll:GetHeight()))
+config.pages.Page:SetHeight(1500)
 config:Select("Seamless:general")
 assert(not config.pages.Page.shown and config.contentScroll:GetVerticalScroll() == 0)
 core:OpenConfig("Page")
@@ -287,3 +331,21 @@ assert(not config.minimized and config.frame:GetWidth() == 920 and config.frame:
 assert(config.navigation.shown and config.tab.shown and config.inner.shown and config.done.shown)
 assert(config.pages.Page == selectedPage and created == 1)
 print("Config toggle and compact mode OK")
+
+-- A fitting category list retains its disabled scrollbar, including after restore.
+function methods:SetScrollAllowed(value)
+    self.scrollAllowed = value
+end
+function methods:SetAlpha(value)
+    self.alpha = value
+end
+config.navigation:SetHeight(10000)
+assert(config.navigationBar:IsShown() and not config.navigationBar.scrollAllowed)
+assert(config.navigationBar.alpha == 0.45)
+config:SetMinimized(true)
+assert(not config.navigationBar:IsShown())
+config:SetMinimized(false)
+assert(config.navigationBar:IsShown() and config.navigationBar.alpha == 0.45)
+config.navigation:SetHeight(100)
+assert(config.navigationBar.scrollAllowed and config.navigationBar.alpha == 1)
+print("Persistent navigation scrollbar OK")

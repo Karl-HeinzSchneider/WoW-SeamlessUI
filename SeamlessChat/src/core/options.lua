@@ -157,6 +157,28 @@ end
 
 function module:OnInitialize()
     app.core:RegisterOptions(appName, {
+        tooltip = function(path)
+            if path[1] == "general" then
+                if path[2] == "sync" then
+                    return app.dbDefaults.profile.sync[path[3]]
+                end
+                if path[2] == "input" then
+                    return app.dbDefaults.profile[path[3]]
+                end
+            end
+            local defaults = app.dbDefaults.profile.features[path[2]]
+            local field = path[3]
+            if path[2] == "channels" and field and field:match("^short.+") then
+                return defaults.short[field:sub(6)]
+            end
+            if path[2] == "skin" and field and field:match("^show_") then
+                if field == "show_log" then
+                    return app.dbDefaults.profile.features.log.showButton
+                end
+                return app.core:GetOptionDefault(defaults.show, { field:sub(6) })
+            end
+            return app.core:GetOptionDefault(defaults, #path == 2 and { "enabled" } or path, #path == 2 and 1 or 3)
+        end,
         title = L["Chat"],
         general = { sync = SyncGroup(), input = InputGroup() },
         tabs = FeatureTabs(),

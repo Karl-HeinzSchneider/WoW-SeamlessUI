@@ -54,7 +54,18 @@ function module:OnInitialize()
             tabs[category] = { order = categories[category].order, name = categories[category].name, args = args }
         end
     end
-    app.core:RegisterOptions(appName, { title = L["Tooltip"], general = sections.all, tabs = tabs })
+    app.core:RegisterOptions(appName, {
+        title = L["Tooltip"],
+        general = sections.all,
+        tabs = tabs,
+        tooltip = function(path)
+            if path[2] == "game" then
+                return app.core:GetCVarOptionInfo(path[3])
+            end
+            local defaults = app.dbDefaults.profile.features[path[2]]
+            return app.core:GetOptionDefault(defaults, #path == 2 and { "enabled" } or path, #path == 2 and 1 or 3)
+        end,
+    })
 end
 
 function module:OnEnable()

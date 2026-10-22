@@ -3,6 +3,9 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = app.config
+local NAVIGATION_PANE_WIDTH, SCROLLBAR_GUTTER = 199, 24
+local NAVIGATION_WIDTH = NAVIGATION_PANE_WIDTH - SCROLLBAR_GUTTER
+local NAVIGATION_ROW_GAP = 1
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -24,15 +27,21 @@ local function scroll(parent, x, width)
     bar:SetPoint("TOPLEFT", frame, "TOPRIGHT", 0, 2)
     bar:SetPoint("BOTTOMLEFT", frame, "BOTTOMRIGHT", -1, 7)
     bar:Init(1, 0.1)
+    bar:SetHideIfUnscrollable(false)
     bar:RegisterCallback("OnScroll", function(_, percentage)
         frame:SetVerticalScroll(percentage * math.max(0, child:GetHeight() - frame:GetHeight()))
     end, frame)
     local function update()
         local height = math.max(1, child:GetHeight())
         local range = math.max(0, height - frame:GetHeight())
+        if frame:GetVerticalScroll() > range then
+            frame:SetVerticalScroll(range)
+        end
         bar:SetVisibleExtentPercentage(math.min(1, frame:GetHeight() / height))
         bar:SetScrollAllowed(range > 0)
-        bar:SetShown(range > 0 and not (frame == config.navigation and config.minimized))
+        bar:SetShown(not (frame == config.navigation and config.minimized))
+        bar:DesaturateHierarchy(range > 0 and 0 or 1)
+        bar:SetAlpha(range > 0 and 1 or 0.45)
         bar:SetScrollPercentage(range > 0 and math.min(1, frame:GetVerticalScroll() / range) or 0, true)
     end
     child:SetScript("OnSizeChanged", update)
@@ -124,7 +133,13 @@ function config:CreateWindow()
         tab:SetSelected(true)
     end)
 
-    self.navigation, self.list, self.navigationBar = scroll(frame, 18, 199)
+    self.navigation, self.list, self.navigationBar = scroll(frame, 18, NAVIGATION_WIDTH)
+    -- The native inner-frame divider is at the right of the 199-pixel pane.
+    -- Center the entire scrollbar (17-pixel arrows, 8-pixel track) in its gutter.
+    -- TOP/BOTTOM anchor its center; TOPLEFT would push half the track to the right.
+    self.navigationBar:ClearAllPoints()
+    self.navigationBar:SetPoint("TOP", self.navigation, "TOPRIGHT", SCROLLBAR_GUTTER / 2, -8)
+    self.navigationBar:SetPoint("BOTTOM", self.navigation, "BOTTOMRIGHT", SCROLLBAR_GUTTER / 2, 8)
     self.contentScroll, self.content = scroll(frame, 233, 643)
     self.contentScroll:SetPoint("TOPLEFT", 233, -137)
     self.title = label(frame, "GameFontHighlightHuge", "", "TOPLEFT", frame, "TOPLEFT", 240, -98)
@@ -150,7 +165,7 @@ function config:SetMinimized(minimized)
     frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
     frame:SetSize(minimized and 705 or 920, minimized and 600 or 724)
     self.navigation:SetShown(not minimized)
-    self.navigationBar:SetShown(not minimized and self.list:GetHeight() > self.navigation:GetHeight())
+    self.navigationBar:SetShown(not minimized)
     self.tab:SetShown(not minimized)
     self.inner:SetShown(not minimized)
     self.done:SetShown(not minimized)
@@ -182,7 +197,7 @@ end
 function config:CreateRow(index)
     local row = CreateFrame("Button", nil, self.list)
     self.rows[index] = row
-    row:SetWidth(199)
+    row:SetWidth(NAVIGATION_WIDTH)
     row.background = row:CreateTexture(nil, "BACKGROUND")
     row.background:SetPoint("TOPLEFT")
     row.active = row:CreateTexture(nil, "ARTWORK")
@@ -214,6 +229,7 @@ function config:CreateRow(index)
     row:SetScript("OnEnter", function()
         if row.id ~= self.selected then
             row.active:SetAtlas("Options_List_Hover", true)
+            row.active:SetWidth(NAVIGATION_WIDTH)
             row.active:Show()
         end
     end)
@@ -227,6 +243,9 @@ function config:Refresh()
     local y, headerIndex = 0, 0
     local visible = self:GetVisibleCategories()
     for index, entry in ipairs(visible) do
+        if index > 1 then
+            y = y + NAVIGATION_ROW_GAP
+        end
         local category, depth = entry.category, entry.depth
         local row = self.rows[index] or self:CreateRow(index)
         row.id = category.id
@@ -241,12 +260,15 @@ function config:Refresh()
         row.text:ClearAllPoints()
         row.text:SetPoint("LEFT", (category.header and 20 or 36) + depth * 12, category.header and -1 or 1)
         row.text:SetPoint("RIGHT", category.header and -30 or -4, 0)
+        self:UpdateFeatureTags(row, row.text, category)
         row.background:SetShown(category.header == true)
         if category.header then
             headerIndex = headerIndex + 1
             row.background:SetAtlas("Options_CategoryHeader_" .. ((headerIndex - 1) % 2 + 1), true)
+            row.background:SetWidth(NAVIGATION_WIDTH)
         end
         row.active:SetAtlas("Options_List_Active", true)
+        row.active:SetWidth(NAVIGATION_WIDTH)
         row.active:SetShown(category.id == self.selected)
         local hasChildren = #self:GetChildren(category.id) > 0
         row.toggle:SetShown(hasChildren)

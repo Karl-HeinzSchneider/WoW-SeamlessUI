@@ -18,10 +18,14 @@ local PROFILE_EVENTS = { "OnProfileChanged", "OnProfileCopied", "OnProfileReset"
 ---@field title string The panel's name in the AddOns list and its heading.
 ---@field general table<string, table> AceConfig args of the General tab.
 ---@field tabs? table<string, table> The addon's own tabs: AceConfig groups by key, `order` 1 to 999.
+---@field tooltip? fun(path: string[]): any, boolean? Default value and whether the setting is per-character.
+---@field new? boolean Tag the addon's category header.
+---@field blizzard? boolean Tag the addon's category header.
 
 ---@class SeamlessCore.OptionsPanel
 ---@field title string
 ---@field id any Settings category ID.
+---@field options table Registered AceConfig root, with custom tags stored separately.
 
 ---@class SeamlessCore.Options : AceModule
 ---@field panels table<string, SeamlessCore.OptionsPanel>
@@ -30,11 +34,76 @@ local PROFILE_EVENTS = { "OnProfileChanged", "OnProfileCopied", "OnProfileReset"
 local module = {}
 app.options = app.addon:NewModule("Options", module) --[[@as SeamlessCore.Options]]
 
+-- Keep the original option paths: inherited accessors and AceDBOptions handlers
+-- must receive exactly the same info tables in either window.
+local function RegisterConfigPages(name, title, args, flags)
+    local isTweaks = name == appName .. "Tweaks"
+    local parent = isTweaks and appName or name
+    if name == appName then
+        app.config.categories[name].new = flags.new
+        app.config.categories[name].blizzard = flags.blizzard
+    end
+    if name ~= appName and not isTweaks then
+        app.addon:RegisterConfigCategory(
+            name,
+            { name = title, header = true, new = flags.new, blizzard = flags.blizzard }
+        )
+    end
+    for key, tab in pairs(args) do
+        local tags = app.config:GetOptionTags(tab)
+        local id = name .. ":" .. key
+        local spec = {
+            name = isTweaks and title or tab.name,
+            parent = parent,
+            order = isTweaks and 500 or tab.order,
+            hidden = tab.hidden,
+            new = tags.new,
+            blizzard = tags.blizzard,
+            create = function(page)
+                local root = AceConfigRegistry:GetOptionsTable(name, "dialog", "SeamlessConfig-1.0")
+                app.config:CreateOptionsPage(page, root, key, name)
+                -- NotifyChange may arrive inside a widget callback. Rebuild on the
+                -- next frame so that callback finishes before its widget is released.
+                local dirty = false
+                AceConfigRegistry.RegisterCallback(page, "ConfigTableChange", function(_, changed)
+                    if changed == name then
+                        dirty = true
+                    end
+                end)
+                page:SetScript("OnUpdate", function()
+                    if dirty then
+                        dirty = false
+                        app.config:RefreshOptionsPage(page)
+                    end
+                end)
+            end,
+            refresh = function(page)
+                app.config:RefreshOptionsPage(page)
+            end,
+        }
+        if app.config.categories[id] then
+            -- Core's initial General placeholder is selected before initialization.
+            local existing = app.config.categories[id]
+            if spec.new == nil then
+                spec.new = existing.new
+            end
+            if spec.blizzard == nil then
+                spec.blizzard = existing.blizzard
+            end
+            app.config.categories[id] = spec
+            spec.id = id
+        else
+            app.addon:RegisterConfigCategory(id, spec)
+        end
+    end
+end
+
 ---@param name string AceConfig app name: the addon's folder name.
 ---@param spec SeamlessCore.OptionsSpec
 ---@param parent? any Settings category ID of the parent panel.
 function module:Register(name, spec, parent)
     assert(not self.panels[name], "Duplicate Seamless options: " .. name)
+    app.config.optionInfo[name] = spec.tooltip
     local args = {
         general = { type = "group", name = L["General"], order = GENERAL_ORDER, args = spec.general },
     }
@@ -55,15 +124,15 @@ function module:Register(name, spec, parent)
             self:Refresh(name)
         end)
     end
-    AceConfigRegistry:RegisterOptionsTable(
-        name,
-        { type = "group", name = spec.title, childGroups = "tab", args = args }
-    )
+    local root = { type = "group", name = spec.title, childGroups = "tab", args = args }
+    app.config:NormalizeOptionTags(root)
+    AceConfigRegistry:RegisterOptionsTable(name, root)
     local _, id = AceConfigDialog:AddToBlizOptions(name, spec.title, parent)
-    self.panels[name] = { title = spec.title, id = id }
+    self.panels[name] = { title = spec.title, id = id, options = root }
+    RegisterConfigPages(name, spec.title, args, spec)
 end
 
--- Opens the native Settings window on `name`'s panel (Core's when nil), on one of its tabs if given.
+-- Opens the shared config window on the addon's General page or requested tab.
 ---@param name? string
 ---@param tab? string
 function module:Open(name, tab)
@@ -72,15 +141,16 @@ function module:Open(name, tab)
     if not panel then
         return
     end
-    if tab then
-        AceConfigDialog:SelectGroup(name, tab)
-    end
-    Settings.OpenToCategory(panel.id)
+    app.addon:OpenConfig(name .. ":" .. (tab or "general"))
 end
 
 -- Redraws `name`'s panel (Core's when nil) after a change made outside of it.
 ---@param name? string
 function module:Refresh(name)
+    local panel = self.panels and self.panels[name or appName]
+    if panel then
+        app.config:NormalizeOptionTags(panel.options)
+    end
     AceConfigRegistry:NotifyChange(name or appName)
 end
 
@@ -88,6 +158,8 @@ end
 ---@field name string Section heading.
 ---@field desc string What the feature does, shown under its Enable switch.
 ---@field order? number
+---@field new? boolean Show a glowing NEW label beside this feature.
+---@field blizzard? boolean Show a glowing BLIZZ label beside this feature.
 ---@field options? table<string, table> AceConfig args; each key is the setting it stores.
 ---@field settings fun(): table The current profile's settings table; `enabled` is the switch.
 ---@field toggled fun() After `enabled` changed.
@@ -99,6 +171,29 @@ end
 ---@param spec SeamlessCore.FeatureSpec
 ---@return table
 function module.FeatureGroup(spec)
+    -- A feature with no subordinate settings needs only a clearly named switch.
+    if not spec.options or not next(spec.options) then
+        return {
+            type = "toggle",
+            new = spec.new,
+            blizzard = spec.blizzard,
+            order = spec.order,
+            width = "full",
+            name = spec.name,
+            desc = spec.desc,
+            descStyle = "inline",
+            get = function()
+                return spec.settings().enabled
+            end,
+            set = function(_, value)
+                spec.settings().enabled = value
+                spec.toggled()
+            end,
+            disabled = function()
+                return false
+            end,
+        }
+    end
     local args = {
         enabled = {
             type = "toggle",
@@ -115,6 +210,8 @@ function module.FeatureGroup(spec)
     end
     return {
         type = "group",
+        new = spec.new,
+        blizzard = spec.blizzard,
         inline = true,
         order = spec.order,
         name = spec.name,
@@ -176,6 +273,23 @@ function module:OnInitialize()
     }
     local levels, levelOrder = LogLevels()
     self:Register(appName, {
+        tooltip = function(path)
+            local key = path[#path]
+            local defaults = app.dbDefaults.profile
+            if path[1] == "profiles" then
+                if key == "choose" then
+                    return "Default", true
+                end
+                return nil
+            end
+            if key == "minimap" then
+                return not defaults.minimap.hide
+            end
+            if key == "compartment" then
+                return defaults.minimap.showInCompartment
+            end
+            return defaults[key]
+        end,
         title = L["Seamless"],
         general = {
             interface = {
@@ -248,6 +362,9 @@ function module:OnInitialize()
         },
     })
     self:Register(appName .. "Tweaks", {
+        tooltip = function(path)
+            return app.dbDefaults.profile.tweaks[path[#path]]
+        end,
         title = L["Tweaks"],
         general = {
             tweaks = {
@@ -270,38 +387,6 @@ function module:OnInitialize()
                         name = L["/rl reloads the interface"],
                         desc = L["Type /rl in chat to reload the user interface, just like /reload."],
                         descStyle = "inline",
-                    },
-                    enhancedXPTooltip = {
-                        type = "toggle",
-                        order = 40,
-                        width = "full",
-                        name = L["Enhance the XP tooltip"],
-                        desc = L["Shows XP to the next level, rested XP as a percentage of a level, and estimated time to the configured rested cap while resting in an inn or city. Takes effect on the next hover."],
-                        descStyle = "inline",
-                    },
-                    restedXPCap = {
-                        type = "range",
-                        order = 41,
-                        name = L["Rested XP cap (%)"],
-                        desc = L["Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly."],
-                        min = 1,
-                        max = 500,
-                        step = 1,
-                        disabled = function()
-                            return not app.db.profile.tweaks.enhancedXPTooltip
-                        end,
-                    },
-                    restedXPRate = {
-                        type = "range",
-                        order = 42,
-                        name = L["Rested XP per 8 hours (%)"],
-                        desc = L["Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent."],
-                        min = 0.1,
-                        max = 100,
-                        step = 0.1,
-                        disabled = function()
-                            return not app.db.profile.tweaks.enhancedXPTooltip
-                        end,
                     },
                 },
             },

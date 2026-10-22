@@ -21,10 +21,6 @@ Required entry point of the suite; works with no feature addon enabled.
   system (see below).
 - `quests.lua`: `core:GetQuestLogSummary()`. `questlog.lua`: completed quest count and XP in the
   quest log header.
-- `xptooltip.lua`: `tweaks.enhancedXPTooltip` (on by default) adds XP left and rested XP to the
-  player XP bar tooltip. SeamlessUI's XP bar tooltip replaces it while enabled. Time to max rested
-  uses `restedXPCap` (150%) and `restedXPRate` (5% per eight hours), because the client exposes
-  neither.
 - `tweaks.lua`: `/rl` (on by default) and showing the framerate once on startup (off; its toggle is
   in the FPS display's Edit Mode settings, owned by SeamlessUI).
 - `options.lua`: the shared options layout (`Register`, `FeatureGroup`) and Core's panels:
@@ -32,9 +28,12 @@ Required entry point of the suite; works with no feature addon enabled.
   and its "Tweaks" child.
 - `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
   compartment entry (off by default, disabled where the client lacks it).
+- `frameposition.lua`: shared native Edit Mode position backend (reading, anchor validation,
+  applying the live draft and saving outside Edit Mode); exposed through
+  `GetFramePositionService`. SeamlessUI's Edit Mode position view delegates here.
 - `src/config/`: the standalone draggable configuration shell and public category/page API.
   See `src/config/CLAUDE.md`. `/seamless` and minimap right-click open it; existing options
-  remain available through minimap left-click pending migration.
+  are also rendered there with Settings-style rows; native AddOns panels remain as a fallback.
 - `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
 
 ## Public API
@@ -55,18 +54,29 @@ the suite profile.
 
 ## Options: one panel per addon, tabs inside
 
-Every addon has one AceConfig panel in Settings > AddOns; Core's "Seamless" panel is the parent.
+Every addon has a category header in the custom config window, with its tabs as
+child subviews rendered using our Settings-style controls. The shared AceConfig
+declarations also retain one fallback panel per addon in Settings > AddOns;
+Core's "Seamless" panel is the parent.
 Tabs are always **General**, then the addon's own tabs (`order` 1–999; few and broad, related
 controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 
 - `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
   `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
   `type = "group"` is filled in).
-- `core:OpenOptions(addonName, tab)`: opens the panel, optionally on a tab; no name opens Seamless.
+  `tooltip(path)` optionally returns the declared default and a per-character boolean for
+  the custom window's info tooltip. Use `core:GetOptionDefault(schema, path, first)` for
+  schema lookup or `core:GetCVarOptionInfo(name)` for CVar defaults and scope.
+  Add `new = true` or `blizzard = true` to a tab or individual option to show a native
+  glowing label in the custom config view; the flags are removed before AceConfig validation.
+  The same flags work on `FeatureGroup` specs and `RegisterConfigCategory` specs.
+- `core:OpenOptions(addonName, tab)`: opens the custom config subview, optionally on a tab; no name opens Seamless General.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.
 - `core.FeatureGroup(spec)`: an inline group for one switchable feature: Enable toggle with its
-  description, then the options. Options without their own `get`/`set` use
+  description, then the options. Features without subordinate options instead return a standalone
+  toggle named after the feature, in both the custom and native options windows. Features with
+  subordinate controls retain their section and Enable toggle. Options without their own `get`/`set` use
   `spec.settings()[key]` (colors as `{ r, g, b, a }`) and are disabled while the feature is off
   unless they define `disabled`. `spec.toggled` runs after the switch, `spec.changed` after any
   other setting.

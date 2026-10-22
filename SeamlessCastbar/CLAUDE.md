@@ -46,21 +46,23 @@ system, so they are not part of this addon.
    bar's settings, so it needs SeamlessUI with the cast bar's Edit Mode extension on; it is never
    a window of its own. `app.LibEditModeSettings(key)` turns target/focus rows into LibEditMode
    settings under a Style header. `Refresh` and `OnDisable` call `RefreshEditModeSystemOptions`.
-7. `src/preview.lua`: target and focus bars have no Edit Mode system and are placed by their
-   unit frames, so they are never moved (moving them was tried: once the client anchors a bar to
-   the aura rows, its size, position and even its number of points are secret). In Edit Mode,
-   `app.RegisterPreviews` (from `OnEnable`, once) shows a preview of each, made from the game's
-   cast bar art and a child of the unit frame at the client's spot without aura rows. Each is
-   registered with LibEditMode and `core:SetEditModeFrameFixed`, so selecting it opens its Style
-   settings and it cannot be dragged, nudged or reset. A Frames checkbox each ("Target cast bar",
-   "Focus cast bar", on for the session by default) hides the preview. `app.UpdatePreviews` runs
-   on Edit Mode enter/exit and every `Refresh`, showing the name and a sample cast time.
+7. `src/preview.lua`: target/focus have addon-owned UIParent castbar previews registered with
+   LibEditMode. Dragging stores `{ point, x, y }` in that bar's shared profile `position`;
+   Reset Position clears it and restores the client's aura/ToT-dependent placement. With a saved
+   position, the real castbar anchors to the preview even when its artwork is hidden. Secure
+   post-hooks of `AdjustPosition` and `OnShow` reapply this anchor, including in combat, without
+   reading real geometry or replacing casting logic. Disabling the bar/addon restores native
+   placement; re-enabling reinstalls Ace hooks. Frames checkboxes only hide Edit Mode artwork.
+   Previews animate a cast, channel and interrupted cast, showing localized spell names/icons,
+   rank, time formatting, tick marks and hold durations from the current settings. They remain
+   visible without a target/focus. Position resets when the shared profile resets.
 8. `src/types.lua`: annotations only; not loaded. Update it when adding private app members.
 
 ## Rules
 
 - Never call the bars' own methods (`UpdateCastTimeText`, `UpdateIconShown`, `SetLook`); only
-  post-hook them and set text, textures and animation timings. Nothing is stored on the bars:
+  post-hook them and set text, textures and animation timings. Movement may call `AdjustPosition`
+  solely to restore native placement after reset/disable. Nothing is stored on the bars:
   our regions and saved values live in local tables keyed by bar.
 - Target and focus casts and the bars' geometry can be secret: skip any value `issecretvalue`
   reports (`app.Known`); ticks use the bar's last known width.
@@ -73,7 +75,8 @@ Manual validation: cast and channel with each bar locked and unlocked from the p
 Edit Mode's Show Cast Time on and off; target and focus a caster (interrupt it, change target
 mid-cast, Target of Target shown); Drain Life with pushback, Arcane Missiles rank 1 and max rank,
 bandages; spells without a rank; each option and profile switch; Edit Mode preview; select the target and focus previews in Edit Mode and change their Style
-options; check `/console taintLog 1` stays clean.
+options; drag both previews, leave Edit Mode and change target/focus during combat; reload and
+switch/reset profiles; reset positions and disable/re-enable the addon; check `/console taintLog 1` stays clean.
 
 ## Shared suite profiles
 

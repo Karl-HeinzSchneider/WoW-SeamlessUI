@@ -27,6 +27,8 @@
 ---@field RegisterEditMode fun()
 ---@field StyleOptions fun(key: string): SeamlessCore.EditModeSystemOption[]
 ---@field LibEditModeSettings fun(key: string): table[]
+---@field PreviewFrame fun(key: string): StatusBar?
+---@field ResetCastbarPosition fun(key: string)
 ---@field RegisterPreviews fun()
 ---@field UpdatePreviews fun()
 

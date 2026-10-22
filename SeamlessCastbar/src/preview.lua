@@ -3,12 +3,8 @@ local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- The target and focus cast bars have no Edit Mode system of their own, and their unit frames
--- place them, so they are never moved. In Edit Mode a preview of each, built from the game's cast
--- bar art, sits where the client shows the bar under its unit frame. Selecting it opens its Style
--- options in LibEditMode's dialog. The preview is a child of the unit frame, so it follows that
--- frame's position, scale and visibility; the bar itself is never touched or read (its geometry
--- can be secret).
+-- Readable addon-owned previews act as movable anchors. The real cast bars keep their
+-- casting logic and parent; their potentially secret coordinates are never read.
 
 local lib = app.core:GetEditModeLibrary()
 
@@ -25,6 +21,70 @@ local WIDTH, HEIGHT = 150, 10
 local previews = {}
 -- The Frames list checkboxes; the previews show by default.
 local shown = { target = true, focus = true }
+local managed, scriptHooks, clocks = {}, {}, {}
+local RESET = { point = "CENTER", x = 0, y = 0 }
+
+local function customPosition(key)
+    return app.addon:IsEnabled() and app.db.profile[key].enabled and app.db.profile[key].position
+end
+
+local function anchorBar(key)
+    local bar = _G[specs[key].bar]
+    if customPosition(key) and previews[key] and bar then
+        bar:ClearAllPoints()
+        bar:SetPoint("TOPLEFT", previews[key], "TOPLEFT")
+        managed[key] = true
+    end
+end
+
+function app.ResetCastbarPosition(key)
+    app.db.profile[key].position = nil
+    app.UpdatePreviews()
+    app.core:RefreshOptions(appName)
+end
+
+-- A cast, a channel and an interrupted cast demonstrate the current Style settings.
+local function paint(key, elapsed)
+    local preview, settings = previews[key], app.db.profile[key]
+    local hold = settings.enabled and settings.hold.enabled
+    local success = hold and settings.hold.success or 0.2
+    local interrupt = hold and settings.hold.interrupt or 1
+    local phase = elapsed % (8.7 + success * 2 + interrupt)
+    local channel = phase >= 2.5 + success and phase < 7.5 + success * 2
+    local interrupted = phase >= 7.5 + success * 2
+    local total = channel and 5 or 2.5
+    local time = channel and phase - 2.5 - success or interrupted and phase - 7.5 - success * 2 or phase
+    local spellID = channel and 5143 or 116
+    local name = C_Spell.GetSpellName(spellID) or specs[key].name
+    local rank = settings.enabled and settings.rank.enabled and C_Spell.GetSpellSubtext(spellID)
+    if rank and rank ~= "" then
+        name = L["%s (%s)"]:format(name, rank)
+    end
+    preview.Text:SetText(name)
+    preview.Icon:SetTexture(C_Spell.GetSpellTexture(spellID))
+    preview:SetMinMaxValues(0, total)
+    local failed = interrupted and time >= 1.2
+    preview:SetValue(channel and math.max(0, total - time) or math.min(time, failed and 1.2 or total))
+    local texture = failed and "ui-castingbar-interrupted"
+        or channel and "ui-castingbar-filling-channel"
+        or "ui-castingbar-filling-standard"
+    preview:SetStatusBarTexture(texture)
+    preview:SetStatusBarColor(1, 1, 1)
+    preview.Time:SetText(
+        settings.enabled
+                and settings.castTime.enabled
+                and app.FormatCastTime(
+                    failed and 1.2 or time,
+                    total,
+                    settings.castTime.format,
+                    settings.castTime.decimals
+                )
+            or ""
+    )
+    for _, tick in ipairs(preview.Ticks) do
+        tick:SetShown(channel and settings.enabled and settings.ticks.enabled)
+    end
+end
 
 ---@param key string
 ---@return StatusBar?
@@ -45,7 +105,7 @@ end
 local function createPreview(key)
     local spec = specs[key]
     local parent = _G[spec.frame]
-    local preview = CreateFrame("StatusBar", nil, parent)
+    local preview = CreateFrame("StatusBar", nil, UIParent)
     preview:Hide()
     preview:SetSize(WIDTH, HEIGHT)
     preview:SetFrameLevel(parent:GetFrameLevel() + 10)
@@ -71,8 +131,31 @@ local function createPreview(key)
     -- Where text.lua puts the cast time of these bars.
     preview.Time = preview:CreateFontString(nil, "OVERLAY", "SystemFont_Shadow_Small")
     preview.Time:SetPoint("LEFT", preview, "RIGHT", 4, 0)
-    lib:AddFrame(preview, function() end, { point = "CENTER", x = 0, y = 0 }, spec.name)
-    app.core:SetEditModeFrameFixed(preview)
+    preview.Icon = preview:CreateTexture(nil, "ARTWORK")
+    preview.Icon:SetSize(20, 20)
+    preview.Icon:SetPoint("RIGHT", preview, "LEFT", -2, -5)
+    preview.Ticks = {}
+    for i = 1, 4 do
+        local tick = preview:CreateTexture(nil, "OVERLAY")
+        tick:SetAtlas("ui-castingbar-empower-pip")
+        tick:SetWidth(2)
+        tick:SetPoint("TOP", preview, "TOPLEFT", WIDTH * i / 5, -1)
+        tick:SetPoint("BOTTOM", preview, "BOTTOMLEFT", WIDTH * i / 5, 1)
+        preview.Ticks[i] = tick
+    end
+    preview:SetScript("OnUpdate", function(_, elapsed)
+        clocks[key] = (clocks[key] or 1.2) + elapsed
+        paint(key, clocks[key])
+    end)
+    lib:AddFrame(preview, function(_, _, point, x, y)
+        if point == RESET.point and x == RESET.x and y == RESET.y then
+            app.ResetCastbarPosition(key)
+        else
+            app.db.profile[key].position = { point = point, x = x, y = y }
+            app.UpdatePreviews()
+            app.core:RefreshOptions(appName)
+        end
+    end, RESET, spec.name)
     lib:AddFrameSettings(preview, app.LibEditModeSettings(key))
     previews[key] = preview
 end
@@ -82,17 +165,31 @@ function app.UpdatePreviews()
     for key, preview in pairs(previews) do
         local spec = specs[key]
         local visible = app.addon:IsEnabled() and lib:IsInEditMode() and shown[key]
+        -- Keep the anchor positioned even when the preview artwork is hidden.
+        local parent = _G[spec.frame]
+        local bar = _G[spec.bar]
+        local scale = bar and bar:GetScale()
+        local parentScale, uiScale = parent:GetEffectiveScale(), UIParent:GetEffectiveScale()
+        preview:SetScale(
+            app.Known(scale) and app.Known(parentScale) and app.Known(uiScale) and scale * parentScale / uiScale or 1
+        )
+        local position = customPosition(key)
+        if position then
+            preview:ClearAllPoints()
+            preview:SetPoint(position.point, UIParent, position.point, position.x, position.y)
+            anchorBar(key)
+        else
+            place(preview, parent)
+            if managed[key] then
+                managed[key] = nil
+                -- Recompute the client's aura/ToT-dependent anchor after reset or disable.
+                if bar and bar.AdjustPosition then
+                    bar:AdjustPosition()
+                end
+            end
+        end
         if visible then
-            local settings = app.db.profile[key]
-            local bar = _G[spec.bar]
-            local scale = bar and bar:GetScale()
-            preview:SetScale(app.Known(scale) and scale or 1)
-            place(preview, preview:GetParent())
-            preview.Text:SetText(spec.name)
-            local castTime = settings.enabled and settings.castTime.enabled
-            preview.Time:SetText(
-                castTime and app.FormatCastTime(1.2, 2.5, settings.castTime.format, settings.castTime.decimals) or ""
-            )
+            paint(key, clocks[key] or 1.2)
         end
         preview:SetShown(visible)
     end
@@ -102,6 +199,21 @@ local registered = false
 
 -- Called once from OnEnable; the unit frames create their bars at load.
 function app.RegisterPreviews()
+    -- Ace hooks are removed on disable; permanent script hooks check the current profile.
+    for _, key in ipairs(order) do
+        local bar = _G[specs[key].bar]
+        if bar and bar.AdjustPosition then
+            app.addon:SecureHook(bar, "AdjustPosition", function()
+                anchorBar(key)
+            end)
+            if not scriptHooks[key] then
+                bar:HookScript("OnShow", function()
+                    anchorBar(key)
+                end)
+                scriptHooks[key] = true
+            end
+        end
+    end
     if registered then
         return
     end

@@ -297,7 +297,7 @@ enabled = false
 assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")
 
--- Target and focus previews: selectable in Edit Mode with their Style settings, never moved.
+-- Target and focus previews: movable anchors; real bar coordinates are never read.
 local function Frame()
     local frame = { shown = false, level = 1 }
     setmetatable(frame, {
@@ -316,6 +316,19 @@ local function Frame()
     end
     function frame:GetFrameLevel()
         return 1
+    end
+    function frame:GetEffectiveScale()
+        return 1
+    end
+    function frame:GetScale()
+        return 1
+    end
+    function frame:SetScript(event, callback)
+        self.scripts = rawget(self, "scripts") or {}
+        self.scripts[event] = callback
+    end
+    function frame:HookScript(event, callback)
+        self:SetScript(event, callback)
     end
     function frame:SetPoint(...)
         self.point = { ... }
@@ -342,15 +355,33 @@ function CreateFrame(_, _, parent)
 end
 TargetFrame, FocusFrame = Frame(), Frame()
 TargetFrame.smallSize, TargetFrame.haveToT, FocusFrame.smallSize, FocusFrame.haveToT = false, false, true, false
-TargetFrameSpellBar = {
-    GetScale = function()
-        return 1
-    end,
-}
+UIParent = Frame()
+TargetFrameSpellBar, FocusFrameSpellBar = Frame(), Frame()
+local hooks = {}
+function app.addon:SecureHook(bar, method, callback)
+    hooks[bar] = callback
+end
+for _, bar in ipairs({ TargetFrameSpellBar, FocusFrameSpellBar }) do
+    function bar:AdjustPosition()
+        self:SetPoint("TOPLEFT", TargetFrame, "BOTTOMLEFT", 43, 5)
+        hooks[self]()
+    end
+    function bar:GetPoint()
+        error("must not read real castbar coordinates")
+    end
+    function bar:GetWidth()
+        error("must not read real castbar geometry")
+    end
+end
+C_Spell.GetSpellTexture = function()
+    return 135846
+end
 EventRegistry = { TriggerEvent = function() end }
 local editMode, added, fixed, frameSettings, libCallbacks, previewOptions = true, {}, {}, {}, {}, nil
-function editLib:AddFrame(frame, _, _, name)
+local moveCallbacks = {}
+function editLib:AddFrame(frame, callback, _, name)
     added[name] = frame
+    moveCallbacks[frame] = callback
 end
 function editLib:AddFrameSettings(frame, settings)
     frameSettings[frame] = settings
@@ -373,12 +404,12 @@ app.db.profile.player.enabled = true
 load("preview.lua")
 app.RegisterPreviews()
 local target, focus = added["Target cast bar"], added["Focus cast bar"]
-assert(target and focus and fixed[target] and fixed[focus] and #previewOptions == 2)
-assert(target:GetParent() == TargetFrame, "a child of the unit frame")
+assert(target and focus and not fixed[target] and not fixed[focus] and #previewOptions == 2)
+assert(target:GetParent() == UIParent, "preview stays visible without a target")
 libCallbacks.enter()
 assert(target.shown and focus.shown and target.point[2] == TargetFrame and target.point[4] == 43)
 assert(focus.point[4] == 38 and focus.point[5] == 3, "small focus frame spot")
-assert(target.Time.text == "1.2 / 2.5" and target.Text.text == "Target cast bar")
+assert(target.Time.text == "1.2 / 2.5" and target.Text.text == "Target cast bar (Rank 3)")
 -- The preview's dialog shows the target bar's Style rows, writing the target profile.
 local settings = frameSettings[target]
 assert(settings[1].kind == "header" and settings[1].name == "Style")
@@ -400,4 +431,55 @@ assert(not target.shown and focus.shown, "the Frames checkbox hides a preview")
 editMode = false
 libCallbacks.exit()
 assert(not focus.shown, "hidden outside Edit Mode")
-print("PASS: target and focus previews in Edit Mode")
+-- Dragging persists only addon-owned coordinates, including while real geometry is secret.
+moveCallbacks[target](target, "Modern", "TOPLEFT", 120, -80)
+assert(app.db.profile.target.position.x == 120 and target.point[2] == UIParent)
+assert(TargetFrameSpellBar.point[2] == target)
+-- Combat callbacks follow exactly the same path; there is no geometry read or deferral.
+InCombatLockdown = function()
+    return true
+end
+TargetFrameSpellBar:AdjustPosition()
+assert(TargetFrameSpellBar.point[2] == target, "client reposition is post-hooked")
+TargetFrameSpellBar.scripts.OnShow()
+assert(TargetFrameSpellBar.point[2] == target, "show reanchors the real bar")
+assert(not target.shown, "hidden artwork still anchors the live bar outside Edit Mode")
+-- Animation demonstrates ranks and tick settings with localized game spell names.
+editMode = true
+previewOptions[1].set(true)
+app.UpdatePreviews()
+target.scripts.OnUpdate(target, 2)
+assert(target.Text.text == "Arcane Missiles" and target.Ticks[1].shown)
+app.db.profile.target.ticks.enabled = false
+app.UpdatePreviews()
+assert(not target.Ticks[1].shown)
+app.db.profile.target.enabled = false
+app.UpdatePreviews()
+assert(TargetFrameSpellBar.point[2] == TargetFrame, "disabling restores native placement")
+app.db.profile.target.enabled = true
+app.UpdatePreviews()
+assert(TargetFrameSpellBar.point[2] == target, "reenabling restores saved placement")
+local savedProfile = app.db.profile.target
+app.db.profile.target = {
+    enabled = true,
+    castTime = savedProfile.castTime,
+    rank = savedProfile.rank,
+    ticks = savedProfile.ticks,
+    hold = savedProfile.hold,
+}
+app.UpdatePreviews()
+assert(TargetFrameSpellBar.point[2] == TargetFrame, "profile without a position restores native placement")
+app.db.profile.target = savedProfile
+app.UpdatePreviews()
+assert(TargetFrameSpellBar.point[2] == target, "profile switch restores that profile's saved anchor")
+moveCallbacks[target](target, "Modern", "CENTER", 0, 0)
+assert(
+    not app.db.profile.target.position and TargetFrameSpellBar.point[2] == TargetFrame,
+    "reset restores client placement"
+)
+app.db.profile.target.position = { point = "CENTER", x = 50, y = 60 }
+app.UpdatePreviews()
+enabled = false
+app.UpdatePreviews()
+assert(not target.shown and TargetFrameSpellBar.point[2] == TargetFrame, "addon disable restores placement")
+print("PASS: animated castbar movers, persistence, combat hooks, reset and disable")

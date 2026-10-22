@@ -98,8 +98,11 @@ local function Frame(name, rect, scale)
     function frame:IsShown()
         return self.shown
     end
-    frame.SetAtlas, frame.SetAllPoints, frame.AddMaskTexture, frame.SetStatusBarColor, frame.RegisterUnitEvent =
-        function() end, function() end, function() end, function() end, function() end
+    frame.SetAtlas, frame.SetAllPoints, frame.AddMaskTexture, frame.RegisterUnitEvent =
+        function() end, function() end, function() end, function() end
+    function frame:SetStatusBarColor(r, g, b)
+        self.color = { r, g, b }
+    end
     frame.SetSize, frame.SetClampedToScreen = function() end, function() end
     return frame
 end
@@ -233,8 +236,9 @@ for _, name in ipairs({ "legacyLayout", "healthColor", "nameDisplay", "classIcon
         ApplyPreview = function(_, frame, key)
             previewCalls[name] = { frame = frame, key = key }
         end,
-        ApplyToTPreview = function(_, frame)
+        ApplyToTPreview = function(_, frame, powerType)
             frame.previewLayout = app.db.profile.layout
+            frame.previewPowerType = powerType
         end,
     }
 end
@@ -380,7 +384,7 @@ assert(not targetMover.frame.shown)
 print("PASS: Edit Mode stand-ins")
 
 -- Only the addon-owned previews use catalogue health/power; they never rebind the real unit.
-PowerBarColor = { MANA = { r = 0, g = 0, b = 1 } }
+PowerBarColor = nil -- The preview must reuse colored artwork, never apply an extra power tint.
 app.previewCharacters = {
     Get = function()
         return { health = 75, healthMax = 150, power = 20, powerMax = 80, powerType = "MANA" }
@@ -390,9 +394,16 @@ editing = true
 fire("enter")
 assert(targetMover.frame.HealthBar.value == 75 and targetMover.frame.HealthBar.range[2] == 150)
 assert(targetMover.frame.ManaBar.value == 20 and targetMover.frame.ManaBar.range[2] == 80)
+assert(targetMover.frame.previewPowerType == "MANA")
+assert(
+    targetMover.frame.ManaBar.color[1] == 1
+        and targetMover.frame.ManaBar.color[2] == 1
+        and targetMover.frame.ManaBar.color[3] == 1
+)
 app.previewCharacters = nil
 mover:Refresh()
 assert(targetMover.frame.HealthBar.value == health and targetMover.frame.ManaBar.value == power)
+assert(targetMover.frame.previewPowerType == nil, "live fallback uses the existing unit power selection")
 editing = false
 fire("exit")
 print("PASS: VIP ToT bar values and live fallback")

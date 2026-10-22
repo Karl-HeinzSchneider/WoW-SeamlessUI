@@ -1,6 +1,13 @@
 -- Run from the repository root: lua src/tests/editmode-trace.lua
 unpack = unpack or table.unpack
 local active, combat, clock = false, false, 0
+local stackCalls = 0
+local stackSite = "test/native-hook.lua:10: native update"
+debugstack = function(start, top, bottom)
+    assert(start == 2 and top == 10 and bottom == 0)
+    stackCalls = stackCalls + 1
+    return stackSite
+end
 local messages, frames = {}, {}
 local function object()
     local frame = { scripts = {} }
@@ -97,6 +104,7 @@ assert(messages[#messages]:find("No Edit Mode trace", 1, true))
 addon:OnEditModeTraceCommand("")
 assert(module.Refresh ~= original and observer.shown)
 module:Refresh() -- Outside Edit Mode: not counted.
+assert(stackCalls == 0, "stack collection must be limited to active capture work")
 local function verifyReturns(...)
     assert(select("#", ...) == 4, "trailing nil returns must survive")
     local first, second, third, fourth = ...
@@ -113,6 +121,8 @@ local report = table.concat(messages, "\n")
 assert(report:find("Seamless.Example.Refresh: 1 calls, 12.00 ms total", 1, true))
 assert(report:find("Example.Mover.Apply: 1 calls, 3.00 ms total", 1, true))
 assert(report:find("Covered Lua: 15.00 ms total", 1, true))
+assert(report:find("Callers of Seamless.Example.Refresh", 1, true))
+assert(report:find("1 calls, 12.00 ms total:\ntest/native-hook.lua:10", 1, true))
 assert(report:find("first observed frame 100.0 ms; worst frame 700.0 ms", 1, true))
 addon:OnEditModeTraceCommand("report")
 assert(messages[#messages]:find("Example.Mover.Apply", 1, true))
@@ -154,4 +164,22 @@ active = true
 local ok, failure = pcall(module.Refresh, module, true)
 assert(not ok and failure == "trace test error", "errors must propagate unchanged")
 assert(module.Refresh == original and not observer.shown, "error restores wrappers")
+active = false
+addon:OnEditModeTraceCommand("")
+active = true
+module:Refresh()
+module:Refresh()
+stackSite = "test/other-hook.lua:20: other update"
+module:Refresh()
+tick(0.8)
+report = table.concat(messages, "\n")
+assert(report:find("2 calls, 24.00 ms total:\ntest/native-hook.lua:10", 1, true))
+assert(report:find("1 calls, 12.00 ms total:\ntest/other-hook.lua:20", 1, true))
+active = false
+debugstack = nil
+addon:OnEditModeTraceCommand("")
+active = true
+module:Refresh()
+tick(0.8)
+assert(module.Refresh == original and not observer.shown, "capture must also work without debugstack")
 print("PASS: Edit Mode trace timing, return values, restoration, guards and error propagation")

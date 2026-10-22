@@ -114,6 +114,7 @@ L["Vehicle seat indicator"] = true
 L["XP / reputation bar %d"] = true
 
 -- Seamless
+L["%d calls, %.2f ms total:\n%s"] = true
 L["%s = %s"] = true
 L["%s = {"] = true
 L["%s: %d calls, %.2f ms total, %.2f ms longest."] = true
@@ -121,6 +122,7 @@ L["%s |cff%s[%s]|r %s"] = true
 L["/rl reloads the interface"] = true
 L["Addon compartment entry"] = true
 L["Addons"] = true
+L["Callers of %s (stack collection adds overhead):"] = true
 L["Click an anchor point on another frame. Right-click or Escape cancels."] = true
 L["Click an anchor point on the selected frame. Right-click or Escape cancels."] = true
 L["Close Edit Mode and leave combat before arming the trace."] = true

@@ -106,3 +106,19 @@ nested setters and combat guards remain correct. Dimensions and other layout
 work still run. Repeat the capture to measure the client impact; redundant
 anchor writes are verified, but their contribution to the remaining hitch is
 not yet measured.
+
+## Anchor result and caller attribution
+
+After the anchor change, the reported capture measured 36.81 ms covered Lua and
+a 109 ms worst frame. The 88 layout refreshes still consumed 33.01 ms. This is a
+modest improvement; the remaining stall and recurring repair triggers need more
+attribution before further behavioral changes.
+
+Top-level `Refresh` calls now collect `debugstack` caller information during the
+armed capture. The report includes the three most expensive caller groups of
+the hottest sampled refresh, with counts and inclusive method time. Collection
+occurs before the method timer and adds frame-time overhead, so this capture is
+for identifying native hook triggers rather than comparing frame benchmarks.
+The normal `/seamless trace` command includes these caller blocks automatically;
+capture and share them along with the method rows. If `debugstack` is unavailable,
+the timing capture still works without caller information.

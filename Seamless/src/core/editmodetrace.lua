@@ -49,6 +49,12 @@ local function Install(label, target, key)
         if not armed or not manager or not manager:IsEditModeActive() then
             return original(...)
         end
+        -- Capture callers of top-level refreshes, where repeated native hooks
+        -- enter addon code. Keep stack collection outside this call's timer.
+        local caller
+        if key == "Refresh" and depth == 0 and type(debugstack) == "function" then
+            caller = debugstack(2, 10, 0)
+        end
         local before = debugprofilestop()
         depth = depth + 1
         local result = Pack(pcall(original, ...))
@@ -60,6 +66,13 @@ local function Install(label, target, key)
         row.calls = row.calls + 1
         row.total = row.total + elapsed
         row.maximum = math.max(row.maximum, elapsed)
+        if caller then
+            row.sources = row.sources or {}
+            local source = row.sources[caller] or { stack = caller, calls = 0, total = 0 }
+            row.sources[caller] = source
+            source.calls = source.calls + 1
+            source.total = source.total + elapsed
+        end
         if not result[1] then
             Restore()
             error(result[2], 0)
@@ -85,6 +98,28 @@ local function Report()
     app.logger:chat(
         L["Inclusive Lua timings overlap; do not add them together. Frame times also include native and rendering work."]
     )
+    -- Show callers of the most expensive sampled refresh, rather than printing
+    -- a stack for every module or every call.
+    for _, row in ipairs(lastReport.rows) do
+        if row.sources then
+            local sources = {}
+            for _, source in pairs(row.sources) do
+                sources[#sources + 1] = source
+            end
+            table.sort(sources, function(a, b)
+                if a.total == b.total then
+                    return a.stack < b.stack
+                end
+                return a.total > b.total
+            end)
+            app.logger:chat(L["Callers of %s (stack collection adds overhead):"], row.label)
+            for index = 1, math.min(3, #sources) do
+                local source = sources[index]
+                app.logger:chat(L["%d calls, %.2f ms total:\n%s"], source.calls, source.total, source.stack)
+            end
+            break
+        end
+    end
     for index = 1, math.min(15, #lastReport.rows) do
         local row = lastReport.rows[index]
         app.logger:chat(

@@ -117,6 +117,7 @@ end
 -- L["XP / reputation bar %d"] = "XP / reputation bar %d"
 
 -- Seamless
+-- L["%d calls, %.2f ms total:\n%s"] = "%d calls, %.2f ms total:\n%s"
 -- L["%s = %s"] = "%s = %s"
 -- L["%s = {"] = "%s = {"
 -- L["%s: %d calls, %.2f ms total, %.2f ms longest."] = "%s: %d calls, %.2f ms total, %.2f ms longest."
@@ -124,6 +125,7 @@ end
 -- L["/rl reloads the interface"] = "/rl reloads the interface"
 -- L["Addon compartment entry"] = "Addon compartment entry"
 -- L["Addons"] = "Addons"
+-- L["Callers of %s (stack collection adds overhead):"] = "Callers of %s (stack collection adds overhead):"
 -- L["Click an anchor point on another frame. Right-click or Escape cancels."] = "Click an anchor point on another frame. Right-click or Escape cancels."
 -- L["Click an anchor point on the selected frame. Right-click or Escape cancels."] = "Click an anchor point on the selected frame. Right-click or Escape cancels."
 -- L["Close Edit Mode and leave combat before arming the trace."] = "Close Edit Mode and leave combat before arming the trace."

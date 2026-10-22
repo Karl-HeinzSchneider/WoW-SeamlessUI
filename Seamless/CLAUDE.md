@@ -75,6 +75,10 @@ a native/rendering stall to one addon. Run `lua src/tests/editmode-trace.lua`.
 The covered-Lua total counts nested calls only once across the entire capture;
 it is not a measurement of the worst frame alone. `Paint` is included so direct
 native-atlas repair hooks are measured even outside a module refresh.
+Top-level `Refresh` calls also collect caller stacks when `debugstack` is
+available. The report groups the three most expensive callers of the hottest
+sampled refresh. Stack collection adds overhead and happens before its method
+timer; use the stacks to identify triggers, not to benchmark frame-time changes.
 
 ## Options: two panels in parallel, one panel per addon, tabs inside
 

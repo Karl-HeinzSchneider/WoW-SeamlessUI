@@ -1,9 +1,13 @@
 # Custom configuration window
 
 This folder owns the standalone SettingsPanel-style shell inside the core addon.
-`registry.lua` loads after `core/ace.lua`; `window.lua` owns rendering. Keep this
-separate from `core/options.lua`, which owns the shared option declarations and
-retains the existing Settings > AddOns panels as a fallback.
+TOC order: `registry.lua` (after `core/profiles.lua`), `badges.lua`, `window.lua`
+(the shell), `model.lua`, `controls.lua`, then `position.lua` after
+`core/frameposition.lua`. Keep this separate from `core/options.lua`, which owns
+the shared option declarations and registers each one in both this window and
+Blizzard's Settings > AddOns panels. The two panels run in parallel: every option
+added through `RegisterOptions` must work in both, so new control types or
+AceConfig keys need a renderer here and must stay valid AceConfig there.
 
 The shell uses the client's SharedXML primitives and Settings artwork, with its
 own window, category tree and page lifecycle. It does not inherit SettingsPanel

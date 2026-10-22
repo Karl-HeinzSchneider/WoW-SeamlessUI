@@ -13,6 +13,17 @@ Required entry point of the suite; works with no feature addon enabled.
 - `src/core/logger.lua`: the shared logger, `core.logger`.
 - `db.lua`: `SeamlessDB` defaults (logging, minimap, tweaks).
 - `ace.lua`: AceAddon lifecycle, core profiles, `/seamless`, the public API below.
+- `profiles.lua`: feature namespaces in `SeamlessDB` and the one-time legacy import (see Shared
+  feature databases).
+- `src/config/registry.lua`, `badges.lua`, `window.lua`, `model.lua`, `controls.lua`: the custom
+  configuration window. See `src/config/CLAUDE.md`. `/seamless` and the minimap button open it;
+  every registered option is rendered there with Settings-style rows, in parallel with the
+  Blizzard AddOns panels (see Options).
+- `frameposition.lua`: shared native Edit Mode position backend (reading, anchor validation,
+  applying the live draft and saving outside Edit Mode); exposed through
+  `GetFramePositionService`. SeamlessUI's Edit Mode position view delegates here.
+- `src/config/position.lua`: reusable Position and scale option groups (`GetPositionOptions`,
+  `GetNativePositionOptions`), see `src/config/CLAUDE.md`.
 - `editmodelib.lua`: suite additions to the namespaced LibEditMode (see below). The only file
   allowed to use `lib.internal`.
 - `anchorpicker.lua`: the quick anchor picker (see below).
@@ -28,12 +39,6 @@ Required entry point of the suite; works with no feature addon enabled.
   and its "Tweaks" child.
 - `minimapbutton.lua`: the suite's launcher, as a minimap button and an optional addon
   compartment entry (off by default, disabled where the client lacks it).
-- `frameposition.lua`: shared native Edit Mode position backend (reading, anchor validation,
-  applying the live draft and saving outside Edit Mode); exposed through
-  `GetFramePositionService`. SeamlessUI's Edit Mode position view delegates here.
-- `src/config/`: the standalone draggable configuration shell and public category/page API.
-  See `src/config/CLAUDE.md`. `/seamless` and minimap right-click open it; existing options
-  are also rendered there with Settings-style rows; native AddOns panels remain as a fallback.
 - `src/types.lua`: annotations only, not in the TOC. Annotate new public API here.
 
 ## Public API
@@ -45,19 +50,32 @@ At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamles
 - `core:GetQuestLogSummary()`: a fresh `{ totalQuests, completedQuests, completedQuestXP }`,
   counting quests under collapsed headers without changing the selection. Call again on
   `QUEST_LOG_UPDATE`.
-- `core:RegisterOptions`, `OpenOptions`, `RefreshOptions`, `core.FeatureGroup`: see Options.
+- `core:RegisterAddonDatabase`: a feature's AceDB namespace, see Shared feature databases.
+- `core:RegisterOptions`, `OpenOptions`, `RefreshOptions`, `core.FeatureGroup`,
+  `GetOptionDefault`, `GetCVarOptionInfo`: see Options.
+- Custom config window: `RegisterConfigCategory`, `OpenConfig`, `ToggleConfig`, `RefreshConfig`,
+  and the Position groups `GetPositionOptions`, `GetNativePositionOptions`,
+  `GetFramePositionService`: see `src/config/CLAUDE.md`.
 - Edit Mode: `RegisterEditModeOptions`, `RefreshEditModeOptions`, `RegisterEditModeSystemOptions`
   and the `editmodelib.lua` helpers, below.
 
-Core never references a feature by name or loads disabled features; core profiles include all feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act on
-the suite profile.
+Core never references a feature by name or loads disabled features; core profiles include all
+feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
+on the suite profile.
 
-## Options: one panel per addon, tabs inside
+## Options: two panels in parallel, one panel per addon, tabs inside
 
-Every addon has a category header in the custom config window, with its tabs as
-child subviews rendered using our Settings-style controls. The shared AceConfig
-declarations also retain one fallback panel per addon in Settings > AddOns;
-Core's "Seamless" panel is the parent.
+Each `RegisterOptions` call feeds two panels from the same AceConfig table:
+
+- our **custom config window**: a category header per addon with one child page per tab, drawn
+  with our Settings-style controls (`src/config/`). It is what `/seamless`, the minimap button
+  and `OpenOptions` show;
+- the **Blizzard AddOns options**: one AceConfig panel per addon in Settings > AddOns, Core's
+  "Seamless" panel as the parent, kept alongside the custom window.
+
+Add every option through this declaration so it shows in both; never build it for one panel only.
+Only keys both renderers understand belong in it (the custom-only `new`/`blizzard` tags and the
+`tooltip` resolver are kept outside AceConfig). Check a new option in both panels.
 Tabs are always **General**, then the addon's own tabs (`order` 1–999; few and broad, related
 controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 
@@ -70,7 +88,8 @@ controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
   Add `new = true` or `blizzard = true` to a tab or individual option to show a native
   glowing label in the custom config view; the flags are removed before AceConfig validation.
   The same flags work on `FeatureGroup` specs and `RegisterConfigCategory` specs.
-- `core:OpenOptions(addonName, tab)`: opens the custom config subview, optionally on a tab; no name opens Seamless General.
+- `core:OpenOptions(addonName, tab)`: opens the addon's page in the custom config window,
+  optionally on a tab; no name opens Seamless General.
 - `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
   changes redraw on their own.
 - `core.FeatureGroup(spec)`: an inline group for one switchable feature: Enable toggle with its

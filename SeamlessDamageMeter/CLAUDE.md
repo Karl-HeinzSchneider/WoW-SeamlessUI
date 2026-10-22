@@ -68,21 +68,13 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - Skins: `profile.skins` holds named appearances, selected by `config.skin` (`default`).
   `config.modifyGlobalStyle` (default true) edits the shared skin; when false,
   `config.styleOverrides` take precedence (missing values inherit, false is valid).
-- Plain Lua frames with client art and fonts, no inherited templates or meter mixins. Header
-  32 px (type arrow, category label at X 28, then the combat timer); rows 24 px with 4 px spacing,
-  square icons (spec/spell textures cropped to `0.1`–`0.9`, reapplied per texture so pooled rows
-  don't accumulate zoom) and a grayscale shaded fill tinted by `RAID_CLASS_COLORS`. Regenerate
-  `Textures/ShadedBar.tga` with `python src/generate-meter-texture.py`. The default font comes
-  from `NumberFontNormal`. Column widths depend only on public settings, never on measured combat
-  text. `hideTypeSelector` and `hideCombatTimer` are per skin and never move the category label.
-- Numbers (Edit Mode, per window): Minimal, Compact or Complete (default) value columns, also in
-  detail and hover rows. DPS/HPS show the rate first; action counts have no rate.
+- Use owned Lua frames with client art/fonts, never native meter mixins. Column widths depend
+  only on public settings, never measured combat text. Reapply texture crops when pooling rows
+  so zoom does not accumulate. Regenerate `Textures/ShadedBar.tga` with
+  `python src/generate-meter-texture.py`.
 - `fixedHeight` (default on, `visibleLines` 7, 1–30 in quarter steps) sizes the window from its
   rows; `showResizeHandle`, `lockSize` and `lockPosition` ("Lock position outside Edit Mode") are
   per window with shared defaults. Collapse keeps the header and the saved expanded height.
-- Gear menu: Settings, Editmode, Lock/Unlock Position, Make Noninteractive (saved per window; gear
-  and collapse stay usable), Reset Data (client sessions only), Delete Window (deactivates), Create
-  New Window.
 - Hover over a combat row: a pooled, headerless panel above the row (its width, at most 75% of
   the screen high, never takes the mouse) with the spell breakdown, or the death recap. Combat and
   post-combat hovers use separate pools; in combat only the normal source breakdown is queried.
@@ -91,9 +83,6 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - Left-click a combat row: the same breakdown inside the window; clicking the selector or
   right-clicking returns. The selection clears on category, session or profile changes, resets and
   Edit Mode.
-- Right-click a window: shared favorites (`profile.favorites`, up to "Maximum visible favorites",
-  default 6, 0–20) shown with each statistic's `icon` from `data.lua`, plus "Select type". Only one
-  favorites view is open at a time.
 
 ## Edit Mode
 
@@ -105,11 +94,7 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - One Frames checkbox ("Seamless Damage Meter", via `core:RegisterEditModeOptions` with
   `section = "frames"`) previews active slots without changing activation. Previews use local
   sample sessions only, never live combat data, and expand collapsed windows visually.
-- Settings: Core's Position section (AnchorFrame = screen or another window; the quick picker
-  resolves `SeamlessDamageMeterWindow<ID>`), a Window section (size, fixed height and rows, size
-  lock, buttons to create/remove windows and edit the skin), then a Style section (Numbers, Skin,
-  Modify global style, bar height, spacing, transparency 50–100%, background alpha, text size
-  50–150% of 15 px, spec icons, class colors, type selector).
+- Reuse Core's Position section; window and Style settings follow it.
 - Callbacks ignore calls outside Edit Mode or in combat. Never read or alter library-owned state
   (Selection, pools) or native layout containers.
 
@@ -123,12 +108,3 @@ In game: tracking on, a second window with another statistic, current/overall se
 scrolling in a group, drag/resize/hide/show, deactivating every window, reload and profile
 switch/reset, restricted combat values in and out of combat, inherited versus overridden settings,
 windows anchored to each other, Edit Mode dragging, arrow keys, sliders, layouts and reload.
-
-## Shared suite profiles
-
-Settings now live in the `SeamlessDamageMeter` namespace of Core's `SeamlessDB`.
-`src/db.lua` is the editable source of defaults (including feature defaults).
-Core's `RegisterAddonDatabase` imports the legacy `SeamlessDamageMeterDB` once and
-subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
-slash-command profile resets operate on the whole suite. Character/global data stay in the
-namespace; the old standalone database is retained only for migration.

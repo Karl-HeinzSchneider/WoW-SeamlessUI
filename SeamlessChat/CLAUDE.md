@@ -62,132 +62,35 @@ secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argum
   commands, no consecutive repeats; Down past the newest empties the input), `inputHistoryLines`
   deep, per window; with `persistInputHistory` kept in `db.char.inputHistory` (temporary windows not).
 
-### `src/features/` — optional features
+### Feature integration
 
-Everything the user can switch on and off is a feature: one file per feature, listed in the TOC
-after `features.lua`.
+`app.features:New(key, prototype, name, desc, ...libs)` creates an Ace module. Its prototype's
+`optionsTab` selects Messages, Windows, Buttons or Log. Defaults live in `src/core/db.lua`;
+`GetSettings()` reads `profile.features[key]`, `GetOptions()` declares controls, and `Refresh()`
+reapplies changes. Add the file to the TOC after `features.lua` and document it in the README.
 
-- `features.lua` — `app.features`. `app.features:New(key, prototype, name, desc, ...libs)`
-  makes an Ace module whose prototype inherits the feature methods: `GetSettings()`
-  (`profile.features[key]`, where `enabled` is the switch; defaults live in `src/core/db.lua`), `GetOptions()` (AceConfig args for its own settings), `Refresh()` (re-apply after a
-  setting changed) and `OnProfileRefresh()` (enable/disable to match the profile). `options.lua`
-  gives every feature a section on its `optionsTab`: the Enable toggle with its description, then `GetOptions()`, with get/set
-  defaulting to the feature's settings and everything grayed out while it is off.
-- A feature sets itself up in `OnEnable` and undoes it in `OnDisable`. Hooks that can't be removed
-  (`hooksecurefunc`, a wrapped method) are installed once and check `self:IsEnabled()`.
-- `timestamps.lua` — the last line transform (1000, `secretSafe`: the stamp is only concatenated)
-  puts the time in front. Lines pass the transform from file load on, but stamping starts in
-  `OnInitialize` (settings known); `Backfill` stamps the lines added before that, or while the
-  feature was off (`unstampedSince`), with the time each arrived (`entry.timestamp`). Switches the game's
-  `showTimestamps` CVar to `none` while enabled and restores it (`global.blizzardTimestamps`) when
-  disabled.
+Set up in `OnEnable`, undo changes in `OnDisable`. Install permanent hooks once and guard them
+with `self:IsEnabled()`. Preserve these ownership boundaries:
 
-- `history.lua` — `SetMaxLines` on every chat window (not the combat log; temporary windows via a
-  hook on `FCF_OpenTemporaryWindow`), back to the game's 128 when disabled. Resizing keeps the
-  lines (the newest ones when shrinking). With `persist`, logout (also /reload; via AceDB's `OnDatabaseShutdown`, see Conventions)
-  saves the last `savedLines` of each open window (text as shown + color, no secret lines) into
-  `SeamlessChatHistoryDB` (`## SavedVariablesPerCharacter`); `OnEnable` puts them back once per
-  session with `BackFillMessage` (adds above everything, only while the window has room), below
-  them a divider that is never saved (`dividers`). Copy links in saved lines get new ids
-  (`app.copy:Relink`).
-- `copy.lua` — `app.copy`. The game can only copy out of an edit box, so copying puts the line into
-  the chat input, selected (`ChatFrameUtil.OpenChat(nil, frame)`, then `SetText` +
-  `HighlightText`). `WrapTimestamp` (called by timestamps.lua) keeps the line under an id (last 1000) and wraps the stamp in `|Haddon:SeamlessChat:copy:<id>|h`; the game hands `addon` links to
-  `EventRegistry` `"SetItemRef"`, where `OnSetItemRef` copies the line (`FindLine`: the kept one, else
-  read back from the chat window still showing the link, so restored history stays copyable), stripped with
-  `C_StringUtil.StripHyperlinks`. Secret lines get no link. The copy button (`CreateButton`, one
-  per chat window, top right) follows the game's chat fade via hooks on `FCF_FadeInChatFrame` /
-  `FCF_FadeOutChatFrame` with its own OnUpdate fade (not `UIFrameFadeIn`, whose shared list would
-  get tainted); it opens the copy window with `GetRecentText` (`GetMessageInfo(1)` is the oldest
-  line).
-- `copywindow.lua` + `copywindow.xml` — `SeamlessChatCopyWindow`, a `DefaultPanelFlatTemplate` with
-  a `ScrollingEditBoxTemplate` and `MinimalScrollBar` (shared templates this client loads).
-  `ShowText` shows the text focused, selected and scrolled to its end; Escape closes it.
-
-- `log.lua` — `app.chatLog`, the chat log: one `SeamlessChat.LogRecord` per chat event (`time`,
-  `type` = event without `CHAT_MSG_`, `text` raw, `sender`, `channel`, `channelNum`, `guid`,
-  `class`, `lang`, `flags`; empty/secret fields nil, secret text not recorded), from its own frame
-  registered for every event in `ChatTypeGroup` plus `CHAT_MSG_COMMUNITIES_CHANNEL`. Stored in
-  `SeamlessChatLogDB.records` (`## SavedVariablesPerCharacter`), oldest first. `Prune` drops past
-  `maxMessages`/`maxDays` by moving `first` (no table.remove on a big array); `Compact` closes
-  the gap at `OnDatabaseShutdown`. `Query(filter)` (search = text or sender, text on the plain
-  text, sender, group, channel, types, since/before, limit; returns matches and the total) is the
-  search API. `GROUPS` sorts records into kinds (`groupOf`: by type, then channel, BN_, NPC,
-  else system); `CountGroups` counts them. `FormatRecord` is a plain line (copying),
-  `FormatColored` the window's line with links, class color and the chat type's color. `onAdd` is
-  the window's live-update hook.
-- `logwindow.lua` + `logwindow.xml` — `SeamlessChatLogWindow` (`/seamlesschat log`, `search`): a
-  `SearchBoxTemplate`, the groups in a `WowScrollBoxList` (`SeamlessChatLogGroupTemplate` rows,
-  channels indented under Channels) and the newest 2000 matches in a `ScrollingMessageFrame`
-  (hyperlinks go to `SetItemRef`, like the chat). Searching is debounced; new messages refresh the
-  counts, and the results only while scrolled to the bottom. Copy sends `FormatRecord` lines to
-  the copy window (`ShowText(text, title)`). `SeamlessChatLogButton` opens it: parented to
-  `ChatFrame1ButtonFrame` above `ChatFrameMenuButton` (placed by `skin.lua` while it is on), remade with the chat buttons' atlases
-  (`chatframe-button-*`, not `VoiceToggleButtonTemplate`, which brings voice behavior); shown per
-  `showButton` (`log.lua` `UpdateButton`).
-
-- `urls.lua` — `app.urls`, line transform 10: web addresses (`scheme://`, `www.`, `domain/path`; outside
-  existing `|H...|h` links, punctuation around them left out) become
-  `|Haddon:SeamlessChat:url:<address>|h[address]|h`, the address in the link itself so restored
-  history keeps working; a click (`SetItemRef` callback) puts it into the chat input. `Linkify` is
-  also used by the log window.
-- `channels.lua` — line transform 20: rewrites `|Hchannel:<data>|h[<name>]|h` (numbered: data
-  `channel:<n>`, name "2. Trade - City", shown per `numbered` style; group channels: data GUILD,
-  PARTY, ..., shown as `short[chatType]`, so PARTY_LEADER gets its own).
-- `classcolors.lua` — sets the CVar `chatClassColorOverride` to "0" (every name class colored,
-  overriding the per-type setting) while enabled; restores it (`global.classColorOverrideBefore`).
-- `fading.lua` — `SetFading` / `SetTimeVisible` / `SetFadeDuration` on every chat window; the
-  game's values (fade, 120 s, 3 s) when disabled.
-- `background.lua` — one background `color` (with alpha; black, opaque by default) on every chat
-  window, display only: `FCF_SetWindowColor` / `FCF_SetWindowAlpha` with `doNotSave`, so the
-  windows' saved backgrounds (and the synced snapshot) stay and are restored when disabled. Secure
-  hooks on those two setters paint over every redraw by the game (`painting` guards our own calls).
-- `unread.lua` — line transform 1 (`secretSafe`, returns the line unchanged): counts chat lines (a
-  `chatType`; numbered channels per `channels`) reaching a docked window that isn't the selected one
-  (`FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)`), shown as a badge (`color`) at its tab's top right
-  corner. The badge is on UIParent, anchored to the tab, so it stays while the game fades idle tabs;
-  it hides with the tab. Cleared by hooks on `FCFDock_SelectWindow`, `FCF_UnDockFrame`, `FCF_Close`.
-- `skin.lua` — the button bar left of the main chat window (feature key `skin`, "Chat buttons").
-  `BUTTONS` lists the game's chat buttons and ours top to bottom; `Arrange` reparents the shown ones
-  into `SeamlessChatButtonBar` (on UIParent where the game puts ChatFrame1's strip, so it stays while
-  another docked tab hides ChatFrame1) and stacks them from the bottom up at one size, so hidden ones leave no gap (re-run from
-  each button's OnShow/OnHide). `show[key]` hides a button (the log button uses the log feature's
-  `showButton`; `game` buttons are still shown and hidden by the game). Its own buttons (`own`): copy
-  (copy window for `SELECTED_CHAT_FRAME`) and options (Chat settings). Bottom up: options, copy, log,
-  chat menu, channels, social, then text to speech and voice. Its settings are on the
-  Buttons tab. Every button gets a dark plate (1 px edge + fill,
-  the edge in `accent` on hover) and one icon style (`StyleIcons`): its own normal, pushed,
-  highlight and disabled art hidden (again on `UpdateHighlight`, voice buttons swap it), its icon
-  textures (`icons`, default `Icon`; the chat menu's art includes a frame, so a cropped `glyph`)
-  desaturated and tinted `ICON_COLOR`, `accent` on hover. The social button's friends count is a
-  corner badge shown only above 0 (hook on `UpdateDisplayedFriendCount`). The button strips' own art (`ButtonFrame*` in `CHAT_FRAME_TEXTURES`,
-  whose alpha the game sets while fading) is hidden. `Release` puts parents, sizes, anchors, art, icon colors and
-  hidden buttons back when disabled.
-
-To add a feature: a new `src/features/<name>.lua` calling `app.features:New` with an `optionsTab`
-on its prototype, its TOC line, a README entry. Nothing else needs registering.
-
-### Annotations (not in the TOC)
-
-- `src/types.lua` — the private-table class `SeamlessChat` (`app.*` fields) and
-  `SeamlessChat.DB`. When a file adds a member to `app`, add a matching `---@field` here.
+- `timestamps.lua`: final line transform; copy links must contain the fully transformed line.
+- `history.lua`: per-character persisted public lines, restored once with `BackFillMessage`;
+  relink saved copy links through `app.copy:Relink`.
+- `copy.lua`, `copywindow.lua/xml`: copy via an edit box; never attach copy links to secret lines.
+  Use an owned fade rather than tainting the shared `UIFrameFadeIn` list.
+- `log.lua`, `logwindow.lua/xml`: structured per-character records and search UI. Never record
+  secret text. Prune through the moving first index, compact at database shutdown.
+- `urls.lua`, `channels.lua`, `unread.lua`: ordered line transforms (10, 20, 1 respectively).
+  URL links carry their address so restored history remains usable.
+- `background.lua`: visual overrides use `doNotSave`; preserve the synced native backgrounds.
+- `skin.lua`: owns chat-button placement and styling; restore parents, anchors, art and hidden
+  buttons on disable. Keep the bar on UIParent so switching docked tabs cannot hide it.
 
 ## Conventions
 
 - Feature keys are persistent compatibility contracts; retain old SavedVariables names for migration.
 - New feature settings belong in `src/core/db.lua` and their `GetOptions()` definitions.
-- New private-table members need annotations in `src/types.lua`.
 - Keep the single AddMessage wrapper in `src/chat/lines.lua`; transforms must preserve secret-value handling.
 - Logout code reading settings registers AceDB `OnDatabaseShutdown`, never `PLAYER_LOGOUT`, because
   AceDB removes defaults when serializing its SavedVariables.
 - Preserve combat, Edit Mode readiness and preset-layout guards in chat synchronization.
 - The custom copy/log windows stay native Lua/XML UI; the options panel does not replace them.
-
-## Shared suite profiles
-
-Settings now live in the `SeamlessChat` namespace of Core's `SeamlessDB`.
-`src/core/db.lua` is the editable source of defaults (including feature defaults).
-Core's `RegisterAddonDatabase` imports the legacy `SeamlessChatDB` once and
-subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
-slash-command profile resets operate on the whole suite. Character/global data stay in the
-namespace; the old standalone database is retained only for migration.

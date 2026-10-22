@@ -61,37 +61,21 @@ local function frameTab(entry, order)
     }
 end
 
--- Bars 2-8 are shown or hidden by the game's own action bar settings (Settings > Action Bars),
--- saved per character. A hidden bar is not offered in Edit Mode either.
-local function showBarsGroup()
-    local args = {}
-    for i = 2, 8 do
-        local variable = "PROXY_SHOW_ACTIONBAR_" .. i
-        local function unavailable()
-            return InCombatLockdown()
-                or (C_GameRules.IsMultiActionBarVisibilityForced and C_GameRules.IsMultiActionBarVisibilityForced())
-                or not Settings.GetSetting(variable)
-        end
-        args["bar" .. i] = {
-            type = "toggle",
-            order = i,
-            name = string.format(L["Show action bar %d"], i),
-            desc = L["Show this action bar. A hidden bar is not shown in Edit Mode either."],
-            disabled = function()
-                return unavailable() and true or false
-            end,
-            get = function()
-                return Settings.GetSetting(variable) and Settings.GetValue(variable) or false
-            end,
-            set = function(_, value)
-                if not unavailable() then
-                    Settings.SetValue(variable, value)
-                end
-            end,
-        }
-    end
-    return { type = "group", inline = true, order = 5, name = L["Action bars"], args = args }
-end
+-- Bars 2-8 are shown or hidden by the game's own Action Bars settings. Changing them from addon
+-- code runs the bars' update in our call and taints the buttons (blocked SetShown in combat), so
+-- this only opens that settings page, through the same secure call Edit Mode uses.
+local showBars = {
+    type = "execute",
+    order = 5,
+    name = L["Show action bars"],
+    desc = L["Open the game's Action Bars settings to show or hide action bars 2 to 8. A hidden bar is not shown in Edit Mode either."],
+    disabled = function()
+        return Settings.ACTION_BAR_CATEGORY_ID == nil
+    end,
+    func = function()
+        Settings.OpenToCategory(Settings.ACTION_BAR_CATEGORY_ID)
+    end,
+}
 
 ---@class SeamlessActionBars.Options : AceModule, AceEvent-3.0
 ---@field positionHooked? table<table, boolean> Frames whose native position and size changes refresh the options.
@@ -107,15 +91,12 @@ function options:OnInitialize()
             if path[1] ~= "general" then
                 return nil
             end
-            if path[2] == "bars" then
-                return false, true
-            end
             local defaults = app.dbDefaults.profile[path[2]]
             return app.core:GetOptionDefault(defaults, #path == 2 and { "enabled" } or path, #path == 2 and 1 or 3)
         end,
         title = L["Action Bars"],
         general = {
-            bars = showBarsGroup(),
+            bars = showBars,
             range = app.core.FeatureGroup({
                 order = 10,
                 name = L["Out of range"],
@@ -164,8 +145,6 @@ function options:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_DISABLED", refreshPosition)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
-    -- The game's own bar toggles changed, from its settings, a macro or our options.
-    EventRegistry:RegisterCallback("ActionBarShownSettingUpdated", refreshPosition, self)
     self.positionHooked = self.positionHooked or {}
     for _, entry in ipairs(frames) do
         local frame = _G[entry.frame]

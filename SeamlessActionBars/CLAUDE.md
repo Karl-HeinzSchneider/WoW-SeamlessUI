@@ -13,14 +13,17 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   usability colors. Leave secret values alone.
 - `src/hotkeys.lua`: `ShortKeyLabel`, `UpdateHotkey`, `RestoreHotkey`; skip range dots and
   gamepad bindings and retain original text for restoration.
-- `src/options.lua`: on General, Show toggles for action bars 2-8 (the game's per-character
-  `PROXY_SHOW_ACTIONBAR_<n>` settings, read and written through `Settings`, never stored in our
-  profile; disabled in combat and where the game forces bar visibility) and the feature groups; then one tab per native Edit Mode frame (action
-  bars 1-8, both XP / reputation bars, pet action bar, leave vehicle button) holding only Core's
+- `src/options.lua`: on General, a Show action bars button opening the game's Action Bars
+  settings (`Settings.OpenToCategory(Settings.ACTION_BAR_CATEGORY_ID)`), then the feature groups;
+  then one tab per native Edit Mode frame (action bars 1-8, both XP / reputation bars, pet action bar, leave vehicle button) holding only Core's
   native Position and scale group. Scale is Icon Size for action bars, Size for status bars and
   disabled for the leave vehicle button. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
 
 ## Rules
+
+- Never change the game's bar visibility settings (`PROXY_SHOW_ACTIONBAR_<n>`,
+  `SetActionBarToggles`) from addon code: the bars' update then runs in our call and taints the
+  buttons, blocking their `SetShown` in combat. Open the game's settings page instead.
 
 - Never call the buttons' own methods (`UpdateUsable`, `UpdateHotkeys`, `Update`): running
   Blizzard code from addon code taints fields such as `bindingAction`. Only post-hook them and

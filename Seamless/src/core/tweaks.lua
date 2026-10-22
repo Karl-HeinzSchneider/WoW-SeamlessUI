@@ -1,6 +1,8 @@
 ---@type string, SeamlessCore
 local _, app = ...
 
+local log = app.logger
+
 ---@class SeamlessCore.Tweaks : AceModule, AceConsole-3.0
 ---@field active? boolean
 local module = {}
@@ -10,15 +12,40 @@ local function reload()
     ReloadUI()
 end
 
-function module:OnProfileRefresh()
-    if self.active and app.db.profile.tweaks.reloadShortcut then
-        if SlashCmdList.ACECONSOLE_RL ~= reload then
-            self:RegisterChatCommand("rl", reload)
-        end
-    elseif SlashCmdList.ACECONSOLE_RL == reload then
-        -- Another addon may have replaced this command since we registered it.
-        self:UnregisterChatCommand("rl")
+-- Same as the Keybindings settings' Quick Keybind Mode button; the frame is protected.
+local function quickKeybind()
+    if InCombatLockdown() then
+        log:warn(ERR_NOT_IN_COMBAT)
+        return
     end
+    if not QuickKeybindFrame then
+        return
+    end
+    if SettingsPanel and SettingsPanel:IsShown() then
+        SettingsPanel:Close(true)
+    end
+    QuickKeybindFrame:Show()
+end
+
+---@param command string
+---@param handler function
+---@param enabled boolean
+function module:SetShortcut(command, handler, enabled)
+    local key = "ACECONSOLE_" .. command:upper()
+    if self.active and enabled then
+        if SlashCmdList[key] ~= handler then
+            self:RegisterChatCommand(command, handler)
+        end
+    elseif SlashCmdList[key] == handler then
+        -- Another addon may have replaced this command since we registered it.
+        self:UnregisterChatCommand(command)
+    end
+end
+
+function module:OnProfileRefresh()
+    local tweaks = app.db.profile.tweaks
+    self:SetShortcut("rl", reload, tweaks.reloadShortcut)
+    self:SetShortcut("kb", quickKeybind, tweaks.quickKeybindShortcut)
 end
 
 function module:OnEnable()

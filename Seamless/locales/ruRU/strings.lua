@@ -120,6 +120,7 @@ end
 -- L["%s = %s"] = "%s = %s"
 -- L["%s = {"] = "%s = {"
 -- L["%s |cff%s[%s]|r %s"] = "%s |cff%s[%s]|r %s"
+-- L["/kb starts Quick Keybind Mode"] = "/kb starts Quick Keybind Mode"
 -- L["/rl reloads the interface"] = "/rl reloads the interface"
 -- L["Addon compartment entry"] = "Addon compartment entry"
 -- L["Addons"] = "Addons"
@@ -145,6 +146,7 @@ end
 -- L["SeamlessUI"] = "SeamlessUI"
 -- L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = "The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"
 -- L["Tweaks"] = "Tweaks"
+-- L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] = "Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."
 -- L["Type /rl in chat to reload the user interface, just like /reload."] = "Type /rl in chat to reload the user interface, just like /reload."
 -- L["Unknown log level: %s"] = "Unknown log level: %s"
 

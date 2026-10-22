@@ -39,6 +39,7 @@ end
 -- L["Not applicable"] = "Not applicable"
 -- L["Open"] = "Open"
 -- L["Options"] = "Options"
+-- L["Position and scale"] = "Position and scale"
 -- L["Profile reset"] = "Profile reset"
 -- L["Profiles"] = "Profiles"
 -- L["Reset"] = "Reset"

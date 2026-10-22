@@ -72,17 +72,49 @@ function app.addon:GetPositionOptions(spec)
         local current = math.ceil(math.abs(spec.get(key) or 0))
         row.min, row.max, row.step = -math.max(extent, current), math.max(extent, current), 1
     end
-    return { type = "group", inline = true, name = L["Position"], order = 10, args = args }
+    local scale = spec.scale or {}
+    local scaleRow = {
+        type = "range",
+        name = L["Scale"],
+        order = 6,
+        min = scale.min or 0.5,
+        max = scale.max or 2,
+        step = scale.step or 0.01,
+        get = scale.get or function()
+            return 1
+        end,
+        disabled = function()
+            return not scale.get or not scale.set or disabled() or (scale.disabled and scale.disabled()) or false
+        end,
+    }
+    scaleRow.set = function(_, value)
+        if not scaleRow.disabled() and type(value) == "number" and value >= scaleRow.min and value <= scaleRow.max then
+            scale.set(value)
+        end
+    end
+    args.scale = scaleRow
+    return { type = "group", inline = true, name = L["Position and scale"], order = 10, args = args }
 end
 
 ---A native frame's active layout is the only source of position values.
 ---@param getFrame fun(): table?
+---@param scale? SeamlessCore.PositionScale Explicit scale binding; omitted means read-only.
 ---@return table
-function app.addon:GetNativePositionOptions(getFrame)
+function app.addon:GetNativePositionOptions(getFrame, scale)
     local service = self:GetFramePositionService()
     local keys = { x = "offsetX", y = "offsetY" }
     local anchorFrames = {}
+    local scaleOptions = {
+        get = function()
+            local frame = getFrame()
+            return frame and frame:GetScale() or 1
+        end,
+    }
+    for key, value in pairs(scale or {}) do
+        scaleOptions[key] = value
+    end
     return self:GetPositionOptions({
+        scale = scaleOptions,
         disabled = function()
             return not service:CanEdit(getFrame())
         end,

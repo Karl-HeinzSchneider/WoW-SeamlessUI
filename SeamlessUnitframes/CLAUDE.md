@@ -24,7 +24,8 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
    (hidden when the client lacks the frame). Single-row groups become standalone options in both
    options windows; related controls such as Quest icon retain their heading.
    Player wraps those controls in a collapsible Style group, beside a Position
-   group from Core's reusable `GetNativePositionOptions`. Positions read/write the
+   and scale group from Core's reusable `GetNativePositionOptions` (Scale stays
+   disabled until an explicit scale binding is provided). Positions read/write the
    native active layout, with no new profile settings or SeamlessUI dependency.
    Native anchor changes, layout changes and combat transitions refresh the view.
    `CVAR_UPDATE` refreshes threat changes.

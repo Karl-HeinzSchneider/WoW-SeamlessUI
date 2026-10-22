@@ -616,7 +616,7 @@ local native = app.core:GetFramePositionService()
 local group = app.core:GetNativePositionOptions(function()
     return player
 end)
-assert(group.name == "Position" and group.type == "group" and group.inline)
+assert(group.name == "Position and scale" and group.type == "group" and group.inline)
 local config = group.args
 assert(config.point.get() == position:Read(player).point)
 assert(config.relativePoint.get() == position:Read(player).relativePoint)
@@ -674,3 +674,53 @@ local missing = app.core:GetNativePositionOptions(function()
 end)
 assert(missing.args.x.disabled() and missing.args.x.get() == 0)
 print("Config position options OK (shared draft, native persistence, layout switches and combat guards)")
+
+-- Scale is always present, but only explicit bindings may write it.
+function player:GetScale()
+    return 0.75
+end
+assert(config.scale.type == "range" and config.scale.name == "Scale")
+assert(config.scale.disabled() and config.scale.get() == player:GetScale())
+local originalScale = player:GetScale()
+config.scale.set(nil, 1.2)
+assert(player:GetScale() == originalScale)
+local scaleValue = 1
+local scalable = app.core:GetNativePositionOptions(function()
+    return player
+end, {
+    get = function()
+        return scaleValue
+    end,
+    set = function(value)
+        scaleValue = value
+    end,
+    min = 0.25,
+    max = 3,
+    step = 0.05,
+}).args.scale
+assert(not scalable.disabled() and scalable.min == 0.25 and scalable.max == 3 and scalable.step == 0.05)
+scalable.set(nil, 1.25)
+assert(scaleValue == 1.25 and scalable.get() == 1.25)
+scalable.set(nil, 4)
+scalable.set(nil, 0 / 0)
+assert(scaleValue == 1.25)
+combat = true
+assert(scalable.disabled())
+scalable.set(nil, 2)
+assert(scaleValue == 1.25)
+combat = false
+preset = true
+assert(scalable.disabled())
+preset = false
+local generic = app.core:GetPositionOptions({
+    get = function()
+        return 0
+    end,
+    set = function()
+        error("position setter used for scale")
+    end,
+    anchorFrames = {},
+})
+assert(generic.args.scale.disabled() and generic.args.scale.get() == 1)
+generic.args.scale.set(nil, 1.2)
+print("Optional position scale binding OK")

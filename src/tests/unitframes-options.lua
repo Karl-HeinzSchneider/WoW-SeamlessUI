@@ -58,7 +58,7 @@ local app = {
     core = {
         GetNativePositionOptions = function(_, getFrame)
             assert(getFrame() == PlayerFrame)
-            return { type = "group", inline = true, name = "Position", order = 10, args = {} }
+            return { type = "group", inline = true, name = "Position and scale", order = 10, args = {} }
         end,
         RegisterOptions = function(_, name, spec)
             assert(name == "SeamlessUnitframes")
@@ -143,7 +143,7 @@ local function find(tab, key)
         end
     end
 end
-assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position")
+assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position and scale")
 assert(tabs.player.args.style.args.player_classIcon.type == "toggle")
 assert(tabs.player.args.style.args.player_hidePvPIcon.type == "toggle")
 for _, option in pairs(tabs.player.args.style.args) do

@@ -70,7 +70,7 @@
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
 ---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
----@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: fun(): table?): table Native layout Position option group.
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: fun(): table?, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group.
 ---@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
@@ -79,10 +79,19 @@
 ---@field db SeamlessCore.DB
 ---@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
 
+---@class SeamlessCore.PositionScale
+---@field get? fun(): number Current scale multiplier (1 = 100%).
+---@field set? fun(value: number) Explicit opt-in to editable scale.
+---@field min? number Defaults to 0.5.
+---@field max? number Defaults to 2.
+---@field step? number Defaults to 0.01.
+---@field disabled? fun(): boolean Additional scale-specific guard.
+
 ---@class SeamlessCore.EditModePosition
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
+---@field scale? SeamlessCore.PositionScale Optional binding for the config Position and scale group; does not alter Edit Mode rows.
 ---@field anchorFrame? fun(value: any): table? The frame of an anchorFrames entry; defaults to the global named by the value.
 ---@field disabled? fun(): boolean
 

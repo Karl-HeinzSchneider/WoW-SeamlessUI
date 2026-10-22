@@ -152,8 +152,8 @@ is desaturated and dimmed. Compact mode still hides the navigation scrollbar.
 
 ## Reusable Position sections
 
-`core:GetPositionOptions(spec)` returns a collapsible inline Position group with
-Anchor, AnchorParent, AnchorFrame, X and Y. It uses the same `get(key)`,
+`core:GetPositionOptions(spec)` returns a collapsible inline Position and scale group with
+Anchor, AnchorParent, AnchorFrame, X, Y and Scale. It uses the same `get(key)`,
 `set(key, value)`, `anchorFrames` and optional `disabled()` contract as
 `GetEditModePositionSettings`; the keys are point, relativePoint, relativeTo, x, y.
 No position is stored by the controls. The returned group's order can be changed.
@@ -168,5 +168,19 @@ exclude self, descendants and cycles. This works without SeamlessUI enabled;
 SeamlessUI's Edit Mode extension uses the same core backend with its own selection
 and feature-enable checks. Settings stay in Edit Mode layouts, not AceDB profiles.
 
-`Unit Frames > Player` is the first consumer, with Position and Style groups.
+`Unit Frames > Player` is the first consumer, with Position and scale and Style groups.
 Run `lua src/tests/blizzard-position.lua` for both native and config paths.
+
+Scale is always shown but disabled without an explicit `scale` binding containing
+both `get()` and `set(value)`. Scale uses multipliers (1 = 100%); defaults are
+min 0.5, max 2, step 0.01. Override these with the binding's `min`, `max`, `step`;
+its optional `disabled()` adds to the section's combat/availability guards.
+The binding owns applying and persisting scale through the frame's existing
+settings path. It never routes scale through the position setter.
+
+For a generic frame, add `scale = { get = getScale, set = setScale }` to the
+`GetPositionOptions` spec. For a native frame, pass that binding as the optional
+second argument to `GetNativePositionOptions(getFrame, scale)`; its default
+getter reads the native frame's current scale. Omit the binding to retain the
+disabled slider, as the Player frame currently does. This does not change the
+existing Edit Mode Position rows.

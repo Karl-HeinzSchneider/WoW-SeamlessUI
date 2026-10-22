@@ -36,6 +36,7 @@ L["None"] = true
 L["Not applicable"] = true
 L["Open"] = true
 L["Options"] = true
+L["Position and scale"] = true
 L["Profile reset"] = true
 L["Profiles"] = true
 L["Reset"] = true

@@ -321,10 +321,7 @@ local function Frame()
         return 1
     end
     function frame:GetScale()
-        return rawget(self, "scale") or 1
-    end
-    function frame:SetScale(value)
-        self.scale = value
+        return 1
     end
     function frame:SetScript(event, callback)
         self.scripts = rawget(self, "scripts") or {}
@@ -402,34 +399,8 @@ end
 app.core.RegisterEditModeOptions = function(_, _, spec)
     previewOptions = spec.options
 end
-local combat = false
-InCombatLockdown = function()
-    return combat
-end
-app.core.GetEditModePositionSettings = function(_, spec)
-    return {
-        { kind = "header", name = "Position" },
-        {
-            name = "X",
-            get = function()
-                return spec.get("x")
-            end,
-            set = function(_, value)
-                spec.set("x", value)
-            end,
-        },
-    }
-end
-app.core.GetFramePositionService = function()
-    return {
-        GetAnchorFrames = function()
-            return { { value = "UIParent", text = "UIParent" } }
-        end,
-    }
-end
 enabled = true
 app.db.profile.player.enabled = true
-load("position.lua")
 load("preview.lua")
 app.RegisterPreviews()
 local target, focus = added["Target cast bar"], added["Focus cast bar"]
@@ -465,13 +436,14 @@ moveCallbacks[target](target, "Modern", "TOPLEFT", 120, -80)
 assert(app.db.profile.target.position.x == 120 and target.point[2] == UIParent)
 assert(TargetFrameSpellBar.point[2] == target)
 -- Combat callbacks follow exactly the same path; there is no geometry read or deferral.
-combat = true
+InCombatLockdown = function()
+    return true
+end
 TargetFrameSpellBar:AdjustPosition()
 assert(TargetFrameSpellBar.point[2] == target, "client reposition is post-hooked")
 TargetFrameSpellBar.scripts.OnShow()
 assert(TargetFrameSpellBar.point[2] == target, "show reanchors the real bar")
 assert(not target.shown, "hidden artwork still anchors the live bar outside Edit Mode")
-combat = false
 -- Animation demonstrates ranks and tick settings with localized game spell names.
 editMode = true
 previewOptions[1].set(true)
@@ -511,108 +483,3 @@ enabled = false
 app.UpdatePreviews()
 assert(not target.shown and TargetFrameSpellBar.point[2] == TargetFrame, "addon disable restores placement")
 print("PASS: animated castbar movers, persistence, combat hooks, reset and disable")
-
--- Both settings panels consume the same standard position declaration as Edit Mode.
-enabled = true
-app.db.profile.target.position = nil
-app.UpdatePreviews()
-local modules, config = {}, nil
-function app.addon:NewModule(name)
-    local module = {}
-    modules[name] = module
-    return module
-end
-app.core.FeatureGroup = function(spec)
-    return {
-        type = "group",
-        args = spec.options or {},
-        disabled = function()
-            return false
-        end,
-    }
-end
-app.core.RegisterOptions = function(_, _, spec)
-    config = spec
-end
-assert(loadfile("Seamless/src/config/position.lua"))("Seamless", { addon = app.core })
-function UIParent:GetWidth()
-    return 1920
-end
-function UIParent:GetHeight()
-    return 1080
-end
-load("options.lua")
-modules.Options:OnInitialize()
-local position = config.tabs.target.args.position.args
-assert(position.x.get() == 43 and position.relativeTo.get() == "TargetFrame")
-position.x.set(nil, 70)
-assert(app.db.profile.target.position.x == 70 and target.point[2] == TargetFrame)
-assert(byName.X.get() == 70, "Edit Mode reflects config changes")
-byName.X.set(nil, 80)
-assert(position.x.get() == 80 and target.point[4] == 80, "config reflects Edit Mode changes")
-position.scale.set(nil, 1.5)
-assert(TargetFrameSpellBar:GetScale() == 1.5 and target:GetScale() == 1.5)
-assert(byName.Scale.get() == 1.5 and app.db.profile.focus.scale == nil)
-app.UpdatePreviews()
-TargetFrameSpellBar.scripts.OnShow()
-assert(TargetFrameSpellBar:GetScale() == 1.5, "scale is not multiplied on repeated refresh/show")
-byName.Scale.set(nil, 1.75)
-assert(position.scale.get() == 1.75 and TargetFrameSpellBar:GetScale() == 1.75)
-position.relativeTo.set(nil, "UIParent")
-position.relativePoint.set(nil, "BOTTOMRIGHT")
-position.point.set(nil, "TOPRIGHT")
-assert(target.point[2] == UIParent and target.point[3] == "BOTTOMRIGHT")
-combat = true
-byName.Scale.set(nil, 2)
-byName.X.set(nil, 999)
-assert(position.scale.get() == 1.75 and position.x.get() == 80, "no settings edits in combat")
-combat = false
-position.reset.func()
-assert(not app.db.profile.target.position and TargetFrameSpellBar.point[2] == TargetFrame)
-assert(position.scale.get() == 1.75, "Reset Position preserves scale")
-enabled = false
-app.UpdatePreviews()
-assert(TargetFrameSpellBar:GetScale() == 1 and target:GetScale() == 1, "disable restores original scale")
-enabled = true
-app.UpdatePreviews()
-assert(TargetFrameSpellBar:GetScale() == 1.75, "reenable reapplies scale without requiring a moved position")
-app.db.profile.target.scale = nil
-app.UpdatePreviews()
-assert(TargetFrameSpellBar:GetScale() == 1, "profile reset restores native scale")
-assert(not config.tabs.player.args.position, "player continues using native Edit Mode positioning")
-print("PASS: shared position/scale controls, legacy positions, combat guards and scale restoration")
-
--- Dragging retains the chosen anchor points, with offsets measured in preview coordinates.
-local dragSpec = app.CastbarPositionSpec("target")
-dragSpec.set("relativeTo", "UIParent")
-dragSpec.set("point", "TOPRIGHT")
-dragSpec.set("relativePoint", "BOTTOMRIGHT")
-function target:GetLeft()
-    return 100
-end
-function target:GetRight()
-    return 250
-end
-function target:GetTop()
-    return 210
-end
-function target:GetBottom()
-    return 200
-end
-function UIParent:GetLeft()
-    return 0
-end
-function UIParent:GetRight()
-    return 1920
-end
-function UIParent:GetTop()
-    return 1080
-end
-function UIParent:GetBottom()
-    return 0
-end
-app.SaveCastbarDrag("target", "CENTER", 7, 8)
-local dragged = app.CastbarPosition("target")
-assert(dragged.point == "TOPRIGHT" and dragged.relativePoint == "BOTTOMRIGHT")
-assert(dragged.x == -1670 and dragged.y == 210 and dragged.relativeTo == "UIParent")
-print("PASS: drag preserves configured anchors")

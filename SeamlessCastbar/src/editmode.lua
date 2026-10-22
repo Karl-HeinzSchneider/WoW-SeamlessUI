@@ -165,36 +165,6 @@ function app.LibEditModeSettings(key)
             disabled = row.disabled,
         }
     end
-    local position = app.CastbarPositionSpec(key)
-    for _, row in ipairs(app.core:GetEditModePositionSettings(position)) do
-        settings[#settings + 1] = row
-    end
-    settings[#settings + 1] = {
-        kind = lib.SettingType.Slider,
-        name = L["Scale"],
-        default = 1,
-        minValue = 0.5,
-        maxValue = 2,
-        valueStep = 0.01,
-        get = position.scale.get,
-        set = function(_, value)
-            position.scale.set(value)
-        end,
-        disabled = function()
-            return InCombatLockdown() or position.disabled()
-        end,
-        formatter = function(value)
-            return ("%.2f"):format(value)
-        end,
-    }
-    settings[#settings + 1] = {
-        kind = lib.SettingType.Button,
-        name = L["Reset to default position"],
-        disabled = function()
-            return InCombatLockdown() or position.disabled() or position.isDefault()
-        end,
-        click = position.reset,
-    }
     return settings
 end
 

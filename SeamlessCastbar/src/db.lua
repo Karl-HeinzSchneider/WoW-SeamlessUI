@@ -5,7 +5,6 @@ local _, app = ...
 local function barDefaults(icon)
     return {
         enabled = true,
-        scale = not icon and 1 or nil,
         castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
         rank = { enabled = true },
         ticks = { enabled = true },

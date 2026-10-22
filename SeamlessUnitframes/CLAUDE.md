@@ -3,59 +3,21 @@
 Optional unit frame addon: changes the game's own unit frames. Settings and profiles live in
 the `SeamlessUnitframes` namespace of `SeamlessDB`.
 
-## TOC load order and ownership
+## Ownership
 
-1. `src/core/bootstrap.lua`: gets Core through AceAddon and shares its logger.
-2. `db.lua`: defaults, including one table per unit frame in `profile.unitFrames[key]`.
-3. `ace.lua`: AceAddon/AceDB lifecycle, profile callbacks and `/seamlessunitframes` (`reset`
-   resets the shared suite profile; `loglevel` delegates to Core).
-4. `unitframes.lua`: registry of player, pet, target, target of target, focus, target of focus and
-   party frames (`Exists`, `KeyOf`, `All`, `Get(key)`). Each entry names its
-   `Enum.EditModeUnitFrameSystemIndices` `system`, or `linkedTo` the frame whose Edit Mode
-   settings show it. `players` marks frames that show player characters, `pvpIcon` frames with a
-   PvP icon.
-5. `questicons.lua`: reads unfinished tooltip objectives and matches quest log objective types.
-6. `style.lua`: the single source of every per-frame setting. `app.StyleGroups(key)` returns a
-   frame's groups (Name and Portrait where `players`, Health bar, PvP where `pvpIcon`, Threat and
-   Quest icon on the target) as rows in the shape of Core's Edit Mode system options; setters
-   write the profile (or the `threatShowNumeric` CVar), apply and refresh. `app.StyleOptions(entry)`
-   flattens a frame's rows plus its linked frames'.
-7. `options.lua`: General (the global layout), one tab per unit frame built from `StyleGroups`
-   (hidden when the client lacks the frame). Single-row groups become standalone options in both
-   options windows; related controls such as Quest icon retain their heading.
-   Frames with a position wrap those controls in a collapsible Style group beside a Position
-   and scale group (`PositionGroup`). Player, Target and Focus (`NATIVE`) use Core's
-   `GetNativePositionOptions`, with Scale bound to Edit Mode's Frame Size through
-   `GetNativeSettingScale`: both read/write the native active layout (no profile settings,
-   no SeamlessUI dependency) and show the game's preset defaults; Reset to default position
-   matches the native button. Native anchor and Frame Size changes, layout changes and combat
-   transitions refresh the view. Target of Target and Target of Focus use
-   `app.totPosition:GetOptions` (below).
-   `CVAR_UPDATE` refreshes threat changes.
-8. `editmode.lua`: on enable, registers a collapsible Style section (key `unitframe-style`) per
-   frame with `RegisterEditModeSystemOptions`. SeamlessUI draws it below the frame's own settings.
-9. `src/layout/`: optional legacy layout (below).
-10. Features, each a module reading `profile.unitFrames[key]`:
-    - `src/healthcolor/healthcolor.lua`, `app.healthColor`: `healthBarColor` = `default`, `class`
-      (players), `reaction` (`UnitSelectionColor`, grey when tap-denied) or `classReaction`.
-      Post-hooks `UnitFrameHealthBar_Update`, swaps the green fill for the game's white
-      `…-Bar-Health-Status` atlas and tints it; a `SetAtlas` hook puts the white atlas back when
-      the game swaps it, `UNIT_FACTION` recolors. Pets take the player's class; disconnected or
-      secret units keep the default. Restores only bars it colored.
-    - `src/name/namedisplay.lua`, `app.nameDisplay`: `nameDisplay` = `full`, `first` or `last`
-      for player characters (this client has surnames, joined by
-      `CHARACTERNAME_SURNAME_SEPARATOR`). Post-hooks `UnitFrame_Update` and keeps the game's text
-      to restore. Secret names are left alone.
-    - `src/portrait/classicon.lua`, `app.classIcon`: `classIcon` shows `GetClassAtlas` on player
-      portraits. Post-hooks `UnitFramePortrait_Update`; when off, restores only portraits it
-      changed, unless the client's own CVars show a class icon there.
-    - `src/pvpicon/pvpicon.lua`, `app.pvpIcon`: `hidePvPIcon` sets alpha 0 on the game's PvP
-      indicator regions and the legacy layout's circle behind them. The game never changes their
-      alpha, so no hook is needed; `GROUP_ROSTER_UPDATE` covers pooled party frames.
-    - `src/questicon/targetquesticon.lua`: the optional target quest icon (`targetQuestIcon`:
-      enabled, scale, offsets; off by default).
-    - `src/totposition/`: movable Target of Target and Target of Focus (below).
-11. `SeamlessUnitframes.lua`: load diagnostic.
+- `src/core/`: lifecycle, database defaults, unit-frame registry, options and Edit Mode sections.
+  `unitframes.lua` maps keys to native systems or linked frames; `style.lua` is the single
+  source for per-frame settings (`StyleGroups`, `StyleOptions`).
+- `src/healthcolor/`, `src/name/`, `src/portrait/`, `src/pvpicon/`, `src/questicon/`: visual
+  features reading `profile.unitFrames[key]`. Preserve secret-value guards and restore only
+  regions the feature changed. Pets use the player's class color; native class-icon CVars win
+  when restoring portraits.
+- `src/totposition/`: ToT positions and addon-owned Edit Mode stand-ins.
+- `src/layout/`: optional legacy geometry and artwork.
+
+Native Player, Target and Focus position controls use Core's `GetNativePositionOptions` and
+`GetNativeSettingScale`, reading the active layout without a SeamlessUI dependency. ToT frames
+use `app.totPosition:GetOptions`. Linked frames' Style rows appear with their parent.
 
 New per-frame settings need a default in `db.lua` and a row in `style.lua`, which puts them in both
 the frame's tab and its Edit Mode Style section; global settings go in `options.lua`'s General tab.
@@ -130,12 +92,3 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.
 - `src/types.lua`: annotations for `app.*` and `SeamlessUnitframes.DB`; not in the TOC.
-
-## Shared suite profiles
-
-Settings now live in the `SeamlessUnitframes` namespace of Core's `SeamlessDB`.
-`src/core/db.lua` is the editable source of defaults (including feature defaults).
-Core's `RegisterAddonDatabase` imports the legacy `SeamlessUnitframesDB` once and
-subscribes the addon to shared profile changes, copies and resets. Core's Profiles controls and
-slash-command profile resets operate on the whole suite. Character/global data stay in the
-namespace; the old standalone database is retained only for migration.

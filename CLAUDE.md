@@ -1,42 +1,19 @@
 # CLAUDE.md
 
-Guidance for Claude Code in this repository. This file holds the map and the rules that apply
-everywhere; each addon folder has its own `CLAUDE.md` with its load order and file map.
+Repository-wide guidance. Read the applicable nested `CLAUDE.md` before changing an addon
+or the custom configuration window.
 
 ## What this is
 
-Seamless is a modular World of Warcraft addon suite (Lua 5.1 / Ace3) for the client in the TOCs
-(`16001` = WoW Forever). Each direct child folder with a same-named TOC is an independently
-selectable addon:
+Seamless is a modular WoW Forever addon suite (Lua 5.1 / Ace3; client version in the TOCs).
+`Seamless/` is the required core; the other `Seamless*/` folders are independently selectable
+feature addons. `src/` holds Node 20+ / TypeScript tooling; `docs/` holds design references.
 
-- `Seamless/`: the required core: shared libraries, logger, locales, core settings and shared
-  profiles, minimap launcher, `/seamless`, the shared options layout, the custom configuration
-  window and the shared Edit Mode API.
-- `SeamlessUnitframes/`: health colors, name display, class icons, PvP and quest icons, an
-  optional legacy layout and positions (including movable target of target/focus) on the game's
-  unit frames.
-- `SeamlessTooltip/`: switchable tooltip enhancements.
-- `SeamlessChat/`: the same chat setup on every character, history, copy/log windows and chat
-  enhancements.
-- `SeamlessDamageMeter/`: damage/threat meter windows on a shared live/archive combat-data service.
-- `SeamlessUI/`: general UI improvements: XP bar tooltip, FPS display and extensions of the game's
-  Edit Mode settings windows (position controls, other addons' Style sections).
-- `SeamlessDarkmode/`: one shared tint for unit frame, minimap, action bar, gryphon and
-  XP/reputation borders.
-- `SeamlessActionBars/`: range/mana icon colors and short keybind labels on the game's action buttons.
-- `SeamlessCastbar/`: cast time, spell rank, channel ticks and hold time on the game's cast bars.
-
-Also at the root: `src/` (Node 20+ / TypeScript tooling, never shipped), `docs/`, `.github/`
-(release workflows).
-
-Every feature addon declares `## Dependencies: Seamless` and stores settings in a namespace of Core's `SeamlessDB`, sharing its AceDB profiles. Core works without any feature addon enabled; users enable or disable features
-in the game's AddOns screen and reload. Tooling discovers addons automatically, but every addon
-must be added to `.pkgmeta` `move-folders` (or its `ignore` list, to keep it out of releases).
-
-## Session environment
-
-At the start of every session, check whether it runs in a Claude Code cloud session
-(`CLAUDE_CODE_REMOTE=true`). If it does not, tell the user so in your first reply.
+Every feature declares `## Dependencies: Seamless` and uses an AceDB namespace in Core's
+`SeamlessDB`. Core works with all features disabled. Profile changes and slash-command resets
+apply to the whole suite. Keep legacy SavedVariables for one-time migration; new settings use
+namespaces. Read `app.db.profile` at use time, never cache it across profile changes.
+See `Seamless/CLAUDE.md` for database registration.
 
 ## Working on the code
 
@@ -64,26 +41,15 @@ addon's `CLAUDE.md` names its own), plus `npx tsx src/tests/sync-locales.ts`. Lu
 (`lua-language-server --check`, `.luarc.json`) is used ad hoc; `lib/` is excluded from LuaLS,
 StyLua and Prettier.
 
-## Tooling (`src/`)
+## Tooling and packaging
 
-ESM with `.js` extensions in relative imports; `tsx` runs the `.ts` directly; strict `tsc`.
+TypeScript uses strict ESM with `.js` extensions in relative imports; `tsx` runs `.ts` directly.
+`src/addons.ts` discovers addons; `src/config.ts` owns shared paths and package configuration.
 
-- `config.ts`: `ROOT`, `CLIENT_LOCALES`, `CORE_ADDON`, `packageName()` (`.pkgmeta` `package-as`).
-- `addons.ts`: `addonDirectories()`, `addonVersion`, `walkFiles`.
-- One script per `npm run` command above; `zip.ts` is shared by the two packaging scripts.
-- `generate-*.py`: regenerate the unit frame atlas tables and the damage meter bar texture.
-
-## Releases
-
-`.github/workflows/` runs the BigWigs packager on a pushed `v*` tag (`release-tag.yml`) and from
-Actions > Run workflow (`release.yml`, `beta.yml`, `alpha.yml`, which tag the head of `main`
-first); all call `package.yml`. `v1.1.0-beta1` is a beta, `v1.1.0-alpha1` an alpha, anything
-else a release. The packager fills in `@project-version@` in the TOCs.
-
-`.pkgmeta` decides what ships: **a new root file or folder that is not an addon must be added to
-its `ignore` list**, or it ships inside the core's folder. Each site needs its repository secret
-(`CF_API_KEY`, `WAGO_API_TOKEN`, `WOWI_API_TOKEN`) and its project id in `Seamless.toc`
-(`## X-Curse-Project-ID`, `## X-Wago-ID`, `## X-WoWI-ID`); a site missing either is skipped.
+`.pkgmeta` controls releases: add each addon to `move-folders` (or `ignore` if unshipped).
+**Add new non-addon root files/folders to `ignore`**, or they ship inside Core. Release workflows
+use the BigWigs packager, which substitutes `@project-version@` in TOCs. Never publish a release
+unless requested.
 
 ## Options: two settings panels in parallel
 
@@ -163,11 +129,6 @@ Untranslated entries fall back to English.
 Every XML file starts with `<Ui xmlns="http://www.blizzard.com/wow/ui/">` and **no**
 `xsi:schemaLocation`. Validation comes from `.vscode/settings.json` and `npm run check:xml`. Lua
 mixin files are listed in the TOC _before_ the XML that uses them.
-
-## Files with backslashes
-
-Texture paths in Lua need `\\` (`"Interface\\Icons\\INV_Misc_Bag_10"`). Shell heredocs and inline
-Python strip the doubled backslash; write such files with the Write/Edit tools.
 
 ## Blizzard's UI source and art (optional, read-only)
 

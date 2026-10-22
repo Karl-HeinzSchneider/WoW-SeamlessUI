@@ -2,6 +2,21 @@
 unpack = unpack or table.unpack
 local pending, combat, geometryWrites, artworkWrites, hookCount = {}, false, 0, 0, 0
 local anchorWrites = 0
+local editModeActive, libraryEditing = false, false
+local editModeCallbacks = {}
+EditModeManagerFrame = {
+    IsEditModeActive = function()
+        return editModeActive
+    end,
+}
+local editModeLibrary = {
+    IsInEditMode = function()
+        return libraryEditing
+    end,
+    RegisterCallback = function(_, event, callback)
+        editModeCallbacks[event] = callback
+    end,
+}
 local secret = setmetatable({}, {
     __index = function()
         error("indexed a secret")
@@ -396,6 +411,11 @@ Path(party, "PetFrame.Flash")
 Path(party, "PetFrame.HealthBar", true)
 local warnings = {}
 local app = {
+    core = {
+        GetEditModeLibrary = function()
+            return editModeLibrary
+        end,
+    },
     logger = {
         warn = function(_, fmt, ...)
             warnings[#warnings + 1] = string.format(fmt, ...)
@@ -522,6 +542,35 @@ for index, roots in ipairs(repaired) do
     assert(#roots == 1 and roots[1] == PlayerFrame and recolored[index] == PlayerFrame)
 end
 assert(ComboFrame.point == comboPoint, "player repairs must not reposition the target's combo points")
+local beforeOpening, colorsBeforeOpening = #repaired, #recolored
+editModeActive, libraryEditing = true, false
+for _ = 1, 88 do
+    UnitFrameManaBar_UpdateType(mana)
+end
+FocusFrame:CheckClassification()
+assert(#repaired == beforeOpening and #recolored == colorsBeforeOpening, "entry setup must deduplicate owner repairs")
+libraryEditing = true
+editModeCallbacks.enter()
+assert(#repaired == beforeOpening + 1, "native entry must flush one scoped refresh synchronously")
+local openingRoots = repaired[#repaired]
+assert(#openingRoots == 2 and openingRoots[1] == PlayerFrame and openingRoots[2] == FocusFrame)
+assert(#recolored == colorsBeforeOpening + 2, "entry flush must recolor each affected frame once")
+assert(
+    scans == 0 and fullColorRefreshes == 0 and #pending == 0,
+    "entry flush must not scan the suite or use next-frame timers"
+)
+local afterOpening = #repaired
+UnitFrameManaBar_UpdateType(mana)
+assert(#repaired == afterOpening + 1, "updates after entry must still repair immediately")
+libraryEditing = false
+UnitFrameManaBar_UpdateType(mana)
+local beforeCancelledOpening = #repaired
+editModeCallbacks.exit()
+libraryEditing = true
+editModeCallbacks.enter()
+assert(#repaired == beforeCancelledOpening, "exit must discard unflushed entry work")
+editModeActive, libraryEditing = false, false
+editModeCallbacks.exit()
 local beforeUnrelated = #repaired
 UnitFrame_Initialize(Object())
 UnitFrame_Initialize(secret)
@@ -737,8 +786,16 @@ PlayerFrame.PlayerFrameContainer = saved
 Mode("current")
 assert(PlayerName.width == 116)
 Mode("legacy")
+editModeActive, libraryEditing = true, false
+UnitFrameManaBar_UpdateType(mana)
 layout:OnDisable()
 assert(PlayerName.width == 116, "module disable must restore Current")
+local writesAfterDisable = geometryWrites
+libraryEditing = true
+editModeCallbacks.enter()
+assert(geometryWrites == writesAfterDisable, "disabled entry work must not repaint restored frames")
+editModeActive, libraryEditing = false, false
+editModeCallbacks.exit()
 print(
     "Fixed layout contracts passed: no render snapshots, both modes, colors, styles, secret inputs, combat deferral, diagnostics"
 )

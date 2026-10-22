@@ -128,6 +128,12 @@ Rules:
   player-art hooks use PlayerFrame, and unrelated/secret owners are ignored. Full
   refreshes remain for settings and roster/lifecycle events. Never rebuild all
   frames or recolor the entire suite in response to one frame's native update.
+- During native Edit Mode entry (`manager:IsEditModeActive()` before the shared
+  library enters), deduplicate affected owners and flush one scoped refresh from
+  the library's synchronous `enter` callback. The client's `EnterEditMode` fires
+  that event after native frame setup, in the same call stack and before drawing.
+  No next-frame timer is used. Exit/disable clear pending owners; all ordinary
+  native updates still repair immediately.
 - Treat gameplay values and frame fields as possibly secret: check access before comparing,
   branching, concatenating or indexing.
 

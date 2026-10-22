@@ -122,3 +122,23 @@ for identifying native hook triggers rather than comparing frame benchmarks.
 The normal `/seamless trace` command includes these caller blocks automatically;
 capture and share them along with the method rows. If `debugstack` is unavailable,
 the timing capture still works without caller information.
+
+## Caller evidence and synchronous entry consolidation
+
+Caller stacks identify boss `SetShown` updates and nested party art/name/mana
+updates during the native Edit Mode setup. Party updates repeatedly reset and
+repair the same frame within one `ToPlayerArt`/`UpdateArt` operation.
+
+The native manager marks Edit Mode active before that setup and fires
+`EditMode.Enter` synchronously after it. Before the shared library receives that
+event, affected owners are now collected in a set. The library's `enter` callback
+flushes one scoped layout refresh, applying geometry and health color once per
+affected frame before the first rendered frame. Direct atlas repair hooks stay
+in place. No native methods or scripts are replaced and no timer is used.
+Updates after entry and ordinary gameplay updates still repair immediately.
+
+The legacy harness simulates 88 player updates plus nested focus updates during
+setup and verifies one scoped flush for the two owners, one color refresh per
+owner, no global scan or next-frame timer, immediate updates after entry, and
+queue cleanup on exit/disable. The in-game reduction in the recurring repair
+count and the remaining hitch still require a follow-up capture.

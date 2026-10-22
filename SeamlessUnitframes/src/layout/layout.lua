@@ -9,6 +9,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = {}
 local layout = app.addon:NewModule("LegacyLayout", module, "AceEvent-3.0")
 app.legacyLayout = layout
+local lib = app.core:GetEditModeLibrary()
 
 -- Definitions own atlas names and geometry. Never snapshot live rendering state:
 -- even out of combat GetAtlas/GetPoint/GetWidth can return secret values.
@@ -20,6 +21,7 @@ local visualBars = {}
 local lossColored = false
 local enabled, applied, writing, initialized = false, false, false, false
 local legacyMode = false
+local openingFrames, openingSeen = {}, {}
 
 function module:Readable(value)
     return not canaccessvalue or canaccessvalue(value)
@@ -455,6 +457,16 @@ local function RequestFrame(frame)
     if not knownRoots[frame] and not app.unitFrames:KeyOf(frame) then
         return
     end
+    local manager = EditModeManagerFrame
+    if manager and manager:IsEditModeActive() and not lib:IsInEditMode() then
+        -- The manager is still setting up native frames. Its EditMode.Enter
+        -- event fires synchronously after setup, before the first rendered frame.
+        if not openingSeen[frame] then
+            openingSeen[frame] = true
+            openingFrames[#openingFrames + 1] = frame
+        end
+        return
+    end
     -- A native update invalidates this frame, not every unit frame in the suite.
     -- Keep the repair synchronous so the native art never draws with old geometry.
     layout:Refresh(false, frame)
@@ -509,7 +521,7 @@ local function Initialize()
     end
 end
 
-function module:Refresh(restore, frame)
+function module:Refresh(restore, frame, selectedRoots)
     if (not enabled and not restore) or not app.db then
         return
     end
@@ -518,7 +530,7 @@ function module:Refresh(restore, frame)
         -- target-family visual regions are repaired; Edit checks protection.
         if enabled and applied and not writing then
             writing = true
-            self:RepairTargets(frame and { frame } or app.unitFrames:All())
+            self:RepairTargets(selectedRoots or (frame and { frame } or app.unitFrames:All()))
             writing = false
         end
         return
@@ -529,8 +541,9 @@ function module:Refresh(restore, frame)
     end
     Initialize()
     legacyMode = legacy
-    local roots = frame and { frame } or app.unitFrames:All()
-    if not frame then
+    local scoped = frame ~= nil or selectedRoots ~= nil
+    local roots = selectedRoots or (frame and { frame } or app.unitFrames:All())
+    if not scoped then
         for i = 1, 5 do
             local boss = _G["Boss" .. i .. "TargetFrame"]
             if boss then
@@ -577,8 +590,10 @@ function module:Refresh(restore, frame)
         self:HideLegacyBackgrounds()
     end
     if app.healthColor then
-        if frame then
-            app.healthColor:RefreshFrame(frame)
+        if scoped then
+            for _, root in ipairs(roots) do
+                app.healthColor:RefreshFrame(root)
+            end
         else
             app.healthColor:Refresh()
         end
@@ -604,6 +619,7 @@ end
 
 function module:OnDisable()
     enabled = false
+    openingFrames, openingSeen = {}, {}
     if not applied then
         return
     end
@@ -626,3 +642,14 @@ end
 function module:OnProfileRefresh()
     Request()
 end
+
+lib:RegisterCallback("enter", function()
+    local roots = openingFrames
+    openingFrames, openingSeen = {}, {}
+    if enabled and #roots > 0 then
+        layout:Refresh(false, nil, roots)
+    end
+end)
+lib:RegisterCallback("exit", function()
+    openingFrames, openingSeen = {}, {}
+end)

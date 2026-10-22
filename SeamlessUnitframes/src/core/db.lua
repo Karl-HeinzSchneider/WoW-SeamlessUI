@@ -36,6 +36,10 @@ local profile = {
     layout = "current",
     unitFrames = unitFrames,
     targetQuestIcon = { enabled = false, scale = 1.7, x = -30, y = 25 },
+    -- src/totposition. Moved ToT frames: totPositions[key][Edit Mode layout name] = position.
+    -- A layout without one keeps the client's anchor.
+    ---@type table<string, table<string, SeamlessUnitframes.ToTPosition.Position>>
+    totPositions = { ["*"] = {} },
 }
 
 -- Data tied to one character.

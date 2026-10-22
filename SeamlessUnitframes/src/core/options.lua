@@ -43,8 +43,24 @@ local function Option(row, order)
     return option
 end
 
--- Frames with their own Edit Mode position and Frame Size get a Position and scale group.
-local POSITIONED = { player = true, target = true, focus = true }
+-- Frames with their own Edit Mode position and Frame Size get a native Position and scale group.
+local NATIVE = { player = true, target = true, focus = true }
+
+---The frame's Position and scale group, or nil when it has none.
+---@param entry SeamlessUnitframes.UnitFrame
+---@return table?
+local function PositionGroup(entry)
+    if not NATIVE[entry.key] then
+        return app.totPosition:GetOptions(entry.key)
+    end
+    local function getFrame()
+        return _G[entry.frameName]
+    end
+    return app.core:GetNativePositionOptions(
+        getFrame,
+        app.core:GetNativeSettingScale(getFrame, Enum.EditModeUnitFrameSetting.FrameSize)
+    )
+end
 
 -- Standalone style rows need no heading; keep groups for related controls.
 ---@param entry SeamlessUnitframes.UnitFrame
@@ -63,15 +79,10 @@ local function FrameTab(entry, order)
             args["group" .. i] = { type = "group", inline = true, order = i * 10, name = group.name, args = groupArgs }
         end
     end
-    if POSITIONED[entry.key] then
-        local function getFrame()
-            return _G[entry.frameName]
-        end
+    local position = PositionGroup(entry)
+    if position then
         args = {
-            position = app.core:GetNativePositionOptions(
-                getFrame,
-                app.core:GetNativeSettingScale(getFrame, Enum.EditModeUnitFrameSetting.FrameSize)
-            ),
+            position = position,
             style = { type = "group", inline = true, order = 20, name = L["Style"], args = args },
         }
     end
@@ -142,7 +153,7 @@ function module:OnEnable()
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
     self.positionHooked = self.positionHooked or {}
     for _, entry in ipairs(app.unitFrames.list) do
-        local frame = POSITIONED[entry.key] and _G[entry.frameName]
+        local frame = NATIVE[entry.key] and _G[entry.frameName]
         if frame and not self.positionHooked[frame] then
             self.positionHooked[frame] = true
             for _, method in ipairs({ "ApplySystemAnchor", "UpdateSystemSettingFrameSize" }) do

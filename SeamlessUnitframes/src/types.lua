@@ -24,6 +24,8 @@
 ---@field legacyAtlases table<string, table>
 ---@field questIcons SeamlessUnitframes.QuestIcons
 ---@field targetQuestIcon SeamlessUnitframes.TargetQuestIcon
+---@field totPosition SeamlessUnitframes.ToTPosition  # moved target of target / target of focus frames
+---@field totMover SeamlessUnitframes.ToTMover  # their Edit Mode stand-ins
 
 -- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
 -- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.

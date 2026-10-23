@@ -149,8 +149,6 @@ Run `lua src/tests/editmode-panel.lua`.
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).
-- `core:HookEditModeDragStart(frame, onStart)`: `onStart(frame)` runs when a mouse drag of the
-  frame begins (after it starts moving), never for nudges or Reset Position.
 - The settings list scrolls past 400 pixels or 60% of the screen height. The dialog opens
   16 pixels beside its frame (the side with more room), grows downward only and never changes
   width.

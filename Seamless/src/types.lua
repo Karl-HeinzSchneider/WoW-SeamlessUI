@@ -97,7 +97,6 @@
 ---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
 ---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
----@field HookEditModeDragStart fun(self: SeamlessCore.Addon, frame: table, onStart: fun(frame: table)) Called when an Edit Mode drag of the frame begins.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
 ---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.

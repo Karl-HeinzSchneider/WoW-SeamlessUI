@@ -209,7 +209,7 @@ local function RegisterControls(frame)
                 return
             end
             if key == "relativeTo" then
-                app:SetWindowAnchor(frame.config, tonumber(value))
+                frame.config.anchorTo = tonumber(value)
             else
                 frame.config.overrides[key] = value
             end
@@ -221,7 +221,7 @@ local function RegisterControls(frame)
         anchorFrames = function()
             local values = { { text = L["Screen (UIParent)"], value = "screen" } }
             for _, candidate in ipairs(app.db.profile.windows) do
-                if candidate.id ~= frame.config.id then
+                if app:CanAnchorTo(frame.config, candidate.id) then
                     values[#values + 1] = { text = L["Window %d"]:format(candidate.id), value = tostring(candidate.id) }
                 end
             end
@@ -366,100 +366,6 @@ local function RegisterControls(frame)
     })
 end
 
--- Dragging a window in Edit Mode moves only that window: windows anchored to it are released
--- where they are, unless Shift is held, which moves them along.
-local function StartDrag(frame)
-    if not app:IsEditingWindows() or frame.syncingEditMode then
-        return
-    end
-    frame.editModeDragging = true
-    if IsShiftKeyDown() then
-        return
-    end
-    for _, config in ipairs(app.db.profile.windows) do
-        if config.anchorTo == frame.config.id then
-            app:DetachWindow(config)
-            SaveLayout(config, activeLayout)
-        end
-    end
-end
-
--- Distance in UIParent units at which a dropped window snaps to another window's edge.
-local SNAP_DISTANCE = 12
-
-local function Bounds(frame)
-    local scale = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
-    if not left or not right or not top or not bottom then
-        return
-    end
-    return { left = left * scale, right = right * scale, top = top * scale, bottom = bottom * scale }
-end
-
--- Aligns the edges along the shared side: start ("LEFT"/"TOP"), finish ("RIGHT"/"BOTTOM") or centers.
--- Returns the point suffix and the offset (in UIParent units) when nothing lines up.
-local function Align(startA, finishA, startB, finishB, startPoint, finishPoint)
-    if math.abs(startA - startB) <= SNAP_DISTANCE then
-        return startPoint, 0
-    elseif math.abs(finishA - finishB) <= SNAP_DISTANCE then
-        return finishPoint, 0
-    elseif math.abs((startA + finishA) - (startB + finishB)) / 2 <= SNAP_DISTANCE then
-        return "", 0
-    end
-    return startPoint, startA - startB
-end
-
--- After a drag, attach the window to the nearest edge of another visible window within reach,
--- like Blizzard's Edit Mode snapping; otherwise anchor it to the screen.
-local function SnapWindow(frame)
-    local bounds = Bounds(frame)
-    if not bounds then
-        return
-    end
-    local best
-    for _, candidate in ipairs(app.windows) do
-        local config = candidate.config
-        local target = config and config.id ~= frame.config.id and candidate:IsVisible() and Bounds(candidate)
-        if target and app:CanAnchorTo(frame.config, config.id) then
-            local overlapX = bounds.left < target.right + SNAP_DISTANCE and bounds.right > target.left - SNAP_DISTANCE
-            local overlapY = bounds.bottom < target.top + SNAP_DISTANCE and bounds.top > target.bottom - SNAP_DISTANCE
-            local sides = {
-                { overlapX, bounds.top - target.bottom, "TOP", "BOTTOM" },
-                { overlapX, bounds.bottom - target.top, "BOTTOM", "TOP" },
-                { overlapY, bounds.left - target.right, "LEFT", "RIGHT" },
-                { overlapY, bounds.right - target.left, "RIGHT", "LEFT" },
-            }
-            for _, side in ipairs(sides) do
-                local distance = math.abs(side[2])
-                if side[1] and distance <= SNAP_DISTANCE and (not best or distance < best.distance) then
-                    best =
-                        { distance = distance, frame = candidate, bounds = target, point = side[3], relative = side[4] }
-                end
-            end
-        end
-    end
-    if not best then
-        return
-    end
-    local target, point, relative, suffix = best.bounds, best.point, best.relative
-    local x, y = 0, 0
-    if point == "TOP" or point == "BOTTOM" then
-        suffix, x = Align(bounds.left, bounds.right, target.left, target.right, "LEFT", "RIGHT")
-        point, relative = point .. suffix, relative .. suffix
-    else
-        suffix, y = Align(bounds.top, bounds.bottom, target.top, target.bottom, "TOP", "BOTTOM")
-        point, relative = suffix .. point, suffix .. relative
-    end
-    -- Offsets are in the window's own scale.
-    local ratio = UIParent:GetEffectiveScale() / frame:GetEffectiveScale()
-    local overrides = frame.config.overrides
-    overrides.point, overrides.relativePoint = point, relative
-    overrides.x, overrides.y = x * ratio, y * ratio
-    frame.config.anchorTo = best.frame.config.id
-    frame.anchorTarget = best.frame
-    return true
-end
-
 function app:IsEditingWindows()
     return lib:IsInEditMode()
 end
@@ -479,21 +385,13 @@ function app:SyncWindowEditMode(frame)
                     return
                 end
                 -- Lock position applies outside Edit Mode only; Edit Mode moves always persist.
-                local dragged = movedFrame.editModeDragging
-                movedFrame.editModeDragging = nil
-                if dragged and SnapWindow(movedFrame) then
-                    -- Snapped to another window's edge.
-                elseif dragged or not movedFrame.config.anchorTo then
-                    -- A drag releases the window's own anchor, like Blizzard's Edit Mode.
-                    local overrides = movedFrame.config.overrides
-                    movedFrame.config.anchorTo = nil
-                    movedFrame.anchorTarget = UIParent
-                    overrides.point, overrides.relativePoint = point, point
-                    overrides.x, overrides.y = x, y
-                else
-                    -- Linked anchors use independent points: convert the resulting screen position.
-                    app:SaveWindowPosition(movedFrame, true)
-                end
+                -- Like Blizzard's Edit Mode, a moved window leaves its anchor window and stays where
+                -- the library placed it on UIParent; windows anchored to it keep following it.
+                local overrides = movedFrame.config.overrides
+                overrides.point, overrides.relativePoint = point, point
+                overrides.x, overrides.y = x, y
+                movedFrame.config.anchorTo = nil
+                movedFrame.anchorTarget = UIParent
                 SaveLayout(movedFrame.config, layoutName)
                 app:PositionWindow(movedFrame)
                 -- Reset Position does not refresh the dialog itself; keep the Position values current.
@@ -503,7 +401,6 @@ function app:SyncWindowEditMode(frame)
             { point = app.windowDefaults.point, x = app.windowDefaults.x, y = app.windowDefaults.y },
             L["Seamless Damage %d"]:format(frame.windowID)
         )
-        app.core:HookEditModeDragStart(frame, StartDrag)
         RegisterControls(frame)
     end
     frame:SetScale(self:GetWindowSetting(frame.config, "scale"))
@@ -532,9 +429,6 @@ function app:WindowShouldBeShown(frame)
 end
 
 local function RefreshEditMode()
-    for _, frame in pairs(app.windowFrames or {}) do
-        frame.editModeDragging = nil
-    end
     if app.db and not InCombatLockdown() then
         app:RebuildWindows()
     end

@@ -1220,18 +1220,6 @@ end
 app.core.GetEditModeLibrary = function()
     return lem
 end
-local dragStarts = {}
-app.core.HookEditModeDragStart = function(_, frame, onStart)
-    assert(not dragStarts[frame], "Drag hooks are registered once per frame")
-    dragStarts[frame] = onStart
-end
-local shiftDown = false
-function IsShiftKeyDown()
-    return shiftDown
-end
-function methods:IsVisible()
-    return self.shown
-end
 local positionSpecs = {}
 app.core.GetEditModePositionSettings = function(_, spec)
     positionSpecs[#positionSpecs + 1] = spec
@@ -1395,81 +1383,6 @@ setting("Lock size").set("Modern", false)
 setting("Frame width").set("Modern", 615)
 setting("Lock size").set("Modern", true)
 assert(registered == 10, "Layouts and profiles must reuse registered frames")
-
--- Dragging releases dependent windows, and dropping beside another window snaps and anchors to it.
-local first, second = app.windowFrames[1], app.windowFrames[2]
-local secondWasEnabled = second.config.enabled
-second.config.enabled = true
-first.config.anchorTo, second.config.anchorTo = 2, nil
-first.config.overrides.point, first.config.overrides.relativePoint = "TOP", "BOTTOM"
-app:RebuildWindows()
-assert(first.anchorTarget == second and second:IsShown())
-local function place(frame, left, top)
-    rawset(frame, "GetLeft", function()
-        return left
-    end)
-    rawset(frame, "GetRight", function()
-        return left + 400
-    end)
-    rawset(frame, "GetTop", function()
-        return top
-    end)
-    rawset(frame, "GetBottom", function()
-        return top - 200
-    end)
-    rawset(frame, "GetCenter", function()
-        return left + 200, top - 100
-    end)
-    rawset(frame, "GetEffectiveScale", function()
-        return 1
-    end)
-end
-place(second, 0, 500)
-place(first, 0, 300)
-dragStarts[second](second)
-assert(first.config.anchorTo == nil and first.anchorTarget == UIParent, "Dragging never drags anchored windows along")
-assert(first.config.overrides.relativePoint == "TOP", "A released window is placed relative to the screen")
-assert(first.config.editModeLayouts.Modern.anchorTo == nil)
-place(second, 1000, 500)
-moves[second](second, "Modern", "CENTER", 500, 0)
-assert(second.config.anchorTo == nil and second.config.overrides.x == 500, "A free drop anchors to the screen")
-dragStarts[first](first)
-place(first, 1006, 296)
-moves[first](first, "Modern", "CENTER", 0, 0)
-assert(first.config.anchorTo == 2 and first.anchorTarget == second, "Dropping below a window snaps to it")
-assert(first.config.overrides.point == "TOPLEFT" and first.config.overrides.relativePoint == "BOTTOMLEFT")
-assert(first.config.overrides.x == 0 and first.config.overrides.y == 0)
-assert(first.config.editModeLayouts.Modern.anchorTo == 2)
-dragStarts[first](first)
-place(first, 1404, 430)
-moves[first](first, "Modern", "CENTER", 0, 0)
-assert(first.config.overrides.point == "TOPLEFT" and first.config.overrides.relativePoint == "TOPRIGHT")
-assert(first.config.overrides.x == 0 and first.config.overrides.y == -70, "Side snaps keep the vertical offset")
-moves[first](first, "Modern", "CENTER", 1, 1)
-assert(first.config.anchorTo == 2, "Arrow-key nudges keep the anchor")
-shiftDown = true
-dragStarts[second](second)
-assert(first.config.anchorTo == 2, "Shift drags anchored windows along")
-moves[second](second, "Modern", "CENTER", 500, 0)
-shiftDown = false
-local secondSpec = positionSpecs[2]
-local offersFirst = false
-for _, entry in ipairs(secondSpec.anchorFrames()) do
-    offersFirst = offersFirst or entry.value == "1"
-end
-assert(offersFirst, "A window anchored to this one is still offered as a target")
-secondSpec.set("relativeTo", "1")
-assert(second.config.anchorTo == 1 and first.config.anchorTo == nil, "Anchoring back releases the other link")
-for _, frame in ipairs({ first, second }) do
-    for _, key in ipairs({ "GetLeft", "GetRight", "GetTop", "GetBottom", "GetCenter", "GetEffectiveScale" }) do
-        rawset(frame, key, nil)
-    end
-end
-second.config.anchorTo = nil
-second.config.enabled = secondWasEnabled
-first.config.overrides.point, first.config.overrides.relativePoint = nil, nil
-first.config.overrides.x, first.config.overrides.y = 80, -90
-app:RebuildWindows()
 local liveAPIForPreview = C_DamageMeter
 C_DamageMeter = setmetatable({}, {
     __index = function(_, key)

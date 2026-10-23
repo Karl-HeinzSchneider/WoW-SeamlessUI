@@ -441,20 +441,6 @@ function addon:SetEditModeFrameFixed(frame)
     selection:SetScript("OnDragStop", nil)
 end
 
----Call `onStart(frame)` when a drag of a frame registered with AddFrame begins, after the library
----has started moving it. Arrow-key nudges and Reset Position never call it.
----@param frame table
----@param onStart fun(frame: table)
-function addon:HookEditModeDragStart(frame, onStart)
-    local selection = lib.frameSelections[frame]
-    assert(selection, "Register the frame with AddFrame first")
-    selection:HookScript("OnDragStart", function()
-        if not InCombatLockdown() and not fixedFrames[frame] then
-            onStart(frame)
-        end
-    end)
-end
-
 function addon:GetEditModePositionSectionKey()
     return POSITION_SECTION
 end

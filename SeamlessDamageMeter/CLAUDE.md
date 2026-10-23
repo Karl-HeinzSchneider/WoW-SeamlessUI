@@ -62,8 +62,8 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
   addons; the ID is the fixed slot), keep their positions while inactive and can be anchor
   targets. Deactivating keeps all settings.
 - Geometry: `profile.windowDefaults` plus explicit `config.overrides` (nil inherits, false is a
-  valid override). `config.anchorTo` is a window ID or nil for UIParent; set it through
-  `app:SetWindowAnchor`, which releases a window that would close a cycle (it stays in place). Old window IDs, geometry fields and appearance settings are migrated idempotently;
+  valid override). `config.anchorTo` is a window ID or nil for UIParent; circular anchors are
+  rejected. Old window IDs, geometry fields and appearance settings are migrated idempotently;
   excess windows from old profiles stay in `profile.legacyWindows`.
 - Skins: `profile.skins` holds named appearances, selected by `config.skin` (`default`).
   `config.modifyGlobalStyle` (default true) edits the shared skin; when false,
@@ -97,10 +97,6 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - One Frames checkbox ("Seamless Damage Meter", via `core:RegisterEditModeOptions` with
   `section = "frames"`) previews active slots without changing activation. Previews use local
   sample sessions only, never live combat data, and expand collapsed windows visually.
-- Dragging a window (`core:HookEditModeDragStart`) releases the windows anchored to it where they
-  are (Shift moves them along) and its own anchor; on drop it snaps to an edge of another visible
-  window within 12 UI units and anchors to it, aligning matching edges. Arrow-key nudges keep
-  anchors.
 - Reuse Core's Position section; window and Style settings follow it.
 - Callbacks ignore calls outside Edit Mode or in combat. Never read or alter library-owned state
   (Selection, pools) or native layout containers.

@@ -172,17 +172,22 @@ DISABLED_FONT_COLOR = WHITE_FONT_COLOR
 SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
 function PlaySound() end
 local core = {}
--- Collapse helpers come from editmodelib.lua (covered by editmode-dialog.lua).
+-- Collapse helpers come from editmodelib.lua (covered by editmode-dialog.lua), where the Frames
+-- header starts collapsed.
 local collapsedSections = {}
 local app = {
     IsEditModeSectionCollapsed = function(key)
-        return collapsedSections[key] == true
+        if collapsedSections[key] == nil then
+            return key == "panel:frames"
+        end
+        return collapsedSections[key]
     end,
     SetEditModeSectionCollapsed = function(key, value)
-        collapsedSections[key] = value or nil
+        collapsedSections[key] = value
     end,
     CreateEditModeHeader = function(parent, onClick)
         local header = object(parent, "Header")
+        header.height = 28
         header.Toggle = onClick
         function header:SetHeaderText(text)
             self.headerText = text
@@ -233,6 +238,17 @@ assert(not pcall(function()
 end))
 editing = true
 callbacks.enter()
+-- The Frames header starts collapsed: no checkboxes until it is opened.
+local heading
+for _, frame in ipairs(frames) do
+    assert(frame.template ~= "UICheckButtonTemplate", "Collapsed Frames must not build its checkboxes")
+    if frame.headerText == "Frames" then
+        heading = frame
+    end
+end
+assert(heading and heading.template == "Header" and heading:IsShown() and heading.collapsed)
+heading.Toggle()
+assert(collapsedSections["panel:frames"] == false and not heading.collapsed)
 local panel, toggle, border
 for _, frame in ipairs(frames) do
     if frame.points.TOPRIGHT and frame.points.TOPRIGHT[1] == EditModeManagerFrame then
@@ -252,7 +268,7 @@ assert(toggle.parent.Label:GetWidth() == 194, "Unresolved panel anchors must use
 anchorsReady = true
 local pending = panel.scripts.OnUpdate
 pending(panel)
-assert(panel:GetWidth() == 510 and panel:GetHeight() == 124 and panel:IsShown())
+assert(panel:GetWidth() == 510 and panel:GetHeight() == 126 and panel:IsShown())
 local scroll
 for _, frame in ipairs(frames) do
     if frame.template == "ScrollFrameTemplate" then
@@ -261,7 +277,8 @@ for _, frame in ipairs(frames) do
 end
 assert(scroll and scroll.parent == panel and scroll.ScrollBar.hideIfUnscrollable)
 assert(toggle.parent.parent == scroll.scrollChild, "Rows live in the scroll child")
-assert(scroll.scrollChild:GetHeight() == 124 - 44 - 16 and scroll:GetHeight() == 124 - 44 - 16)
+assert(scroll.scrollChild:GetHeight() == 28 + 6 + 32 and scroll:GetHeight() == 28 + 6 + 32)
+assert(heading:GetWidth() == 462 and heading.points.TOPLEFT[3] == 0, "Frames header spans the full width")
 assert(panel.scripts.OnUpdate == nil, "Settled layout must stop updating")
 assert(panel.points.TOPLEFT[3] == 0 and panel.points.TOPLEFT[4] == -8)
 local foundTitle = false
@@ -317,13 +334,7 @@ for _, frame in ipairs(frames) do
     end
 end
 assert(custom.points.TOPLEFT[4] <= 0 and custom.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
-local heading
-for _, frame in ipairs(frames) do
-    if frame.text == "Frames" then
-        heading = frame
-    end
-end
-assert(heading and heading:IsShown())
+assert(heading:IsShown())
 assert(custom.points.TOPLEFT[4] > heading.points.TOPLEFT[4], "Options must precede Frames regardless of order")
 assert(heading.points.TOPLEFT[4] > toggle.parent.points.TOPLEFT[4])
 local expanded = panel:GetHeight()
@@ -374,6 +385,12 @@ assert(third.points.TOPLEFT[3] == 236 and panel:GetHeight() == expanded, "Hidden
 third.option.hidden = true
 core:RefreshEditModeOptions()
 assert(panel:GetHeight() == expanded)
+-- Collapsing Frames hides every frames row but keeps the header and the options.
+heading.Toggle()
+assert(heading.collapsed and heading:IsShown() and not toggle.parent:IsShown() and not second:IsShown())
+assert(custom:IsShown() and panel:GetHeight() == expanded - 38)
+heading.Toggle()
+assert(not heading.collapsed and toggle.parent:IsShown() and panel:GetHeight() == expanded)
 -- Headers are section titles inside a group, sized like the Frames heading.
 core:RegisterEditModeOptions("sections", {
     order = 200,

@@ -120,8 +120,9 @@ core:RegisterEditModeOptions("MyAddon", {
 })
 ```
 
-- `section = "frames"` rows go under the shared **Frames** heading, two checkbox columns like the
-  native window. Register the movable frame itself through `core:GetEditModeLibrary()`.
+- `section = "frames"` rows go under the shared **Frames** header, two checkbox columns like the
+  native window. The header is collapsible like the Position headers (key `"panel:frames"`) and
+  starts collapsed. Register the movable frame itself through `core:GetEditModeLibrary()`.
 - Options always come before Frames. Groups sort by `order` (default 100), then ID; rows by
   `order`, then array position. IDs are unique; row keys are unique within a group.
 - `hidden`/`disabled` take booleans or functions. Getters always read current state; Core stores

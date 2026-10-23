@@ -7,13 +7,15 @@ local addon = app.addon
 local lib = app.LibEditMode
 local registrations = {}
 local panel, scroll, content
-local framesTitle
+local framesHeader
 local refreshing = false
 local PADDING, HEADER, BOTTOM, GAP = 24, 44, 16, 6
 -- Frames checkboxes sit in two columns, filled row by row, like the native Edit Mode window.
 local COLUMNS, COLUMN_GAP = 2, 10
 -- Minimum gap to the screen bottom and smallest list height before the panel scrolls.
 local SCREEN_MARGIN, MIN_VISIBLE = 8, 96
+-- Collapse key of the Frames header; editmodelib.lua starts it collapsed.
+local FRAMES_SECTION = "panel:frames"
 
 local function Evaluate(value)
     if type(value) == "function" then
@@ -64,11 +66,15 @@ local function EnsurePanel()
     content = CreateFrame("Frame", nil, scroll)
     content:SetSize(1, 1)
     scroll:SetScrollChild(content)
-    framesTitle = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    framesTitle:SetJustifyH("LEFT")
-    framesTitle:SetWordWrap(true)
-    framesTitle:SetText(L["Frames"])
-    framesTitle:Hide()
+    -- Collapsible like the Position header of the frame settings window, across the full width.
+    framesHeader = app.CreateEditModeHeader(content, function()
+        if lib:IsInEditMode() then
+            app.SetEditModeSectionCollapsed(FRAMES_SECTION, not app.IsEditModeSectionCollapsed(FRAMES_SECTION))
+        end
+        addon:RefreshEditModeOptions()
+    end)
+    framesHeader:SetHeaderText(L["Frames"])
+    framesHeader:Hide()
     panel:SetScript("OnShow", QueueRefresh)
     panel:SetScript("OnSizeChanged", QueueRefresh)
 end
@@ -187,6 +193,7 @@ function addon:RefreshEditModeOptions()
     local width = math.max(1, panelWidth - PADDING * 2)
     local y, count = 0, 0
     local framesStarted = false
+    local framesCollapsed = app.IsEditModeSectionCollapsed(FRAMES_SECTION)
     local columnWidth = math.max(1, math.floor((width - COLUMN_GAP * (COLUMNS - 1)) / COLUMNS))
     -- Next free column of the current Frames grid line, its top and its tallest cell so far.
     local column, lineTop, lineHeight = 0, 0, 0
@@ -196,8 +203,8 @@ function addon:RefreshEditModeOptions()
             column, lineHeight = 0, 0
         end
     end
-    if framesTitle then
-        framesTitle:Hide()
+    if framesHeader then
+        framesHeader:Hide()
     end
     for _, group in ipairs(groups) do
         local registration = group.registration
@@ -228,11 +235,17 @@ function addon:RefreshEditModeOptions()
             if count > 0 then
                 y = y + GAP
             end
-            framesTitle:ClearAllPoints()
-            framesTitle:SetPoint("TOPLEFT", content, "TOPLEFT", 5, -y)
-            framesTitle:SetWidth(math.max(1, width - 5))
-            framesTitle:Show()
-            y = y + math.max(32, framesTitle:GetStringHeight() + GAP)
+            framesHeader:ClearAllPoints()
+            framesHeader:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+            framesHeader:SetWidth(width)
+            framesHeader:UpdateCollapsedState(framesCollapsed)
+            framesHeader:Show()
+            y = y + framesHeader:GetHeight() + GAP
+            count = count + 1
+        end
+        -- A collapsed Frames header hides every frames group, titles included.
+        if spec.section == "frames" and framesCollapsed then
+            visible, hasRows = false, false
         end
         if hasRows and spec.name then
             if not registration.title then

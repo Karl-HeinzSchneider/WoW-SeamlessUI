@@ -44,6 +44,9 @@ local function tooltip(frame, row)
                 if perCharacter then
                     GameTooltip:AddLine(L["\n\n|cff8080ff[Per-character setting]|r"], nil, nil, nil, true)
                 end
+                if row.option:InEditModeLayout() then
+                    GameTooltip:AddLine(L["\n\n|cff8080ff[Saved in the Edit Mode layout]|r"], nil, nil, nil, true)
+                end
             end
             GameTooltip:Show()
         end
@@ -85,7 +88,7 @@ function Row:Refresh(option)
     if self.Update then
         self:Update()
     end
-    local tags = { new = option:Read("new"), blizzard = option:Read("blizzard") }
+    local tags = { new = option:Read("new"), blizzard = option:Read("blizzard"), editMode = option:Read("editMode") }
     config:UpdateFeatureTags(self, self.tagAnchor or self.Label, tags)
     if self.Control then
         self.Control:SetEnabled(self.enabled)
@@ -409,6 +412,7 @@ end
 function creators.group(page)
     local row = Row:New(page)
     row.rowHeight = 45
+    row.tagTrailing = true
     row.Label:ClearAllPoints()
     row.Label:SetPoint("TOPLEFT", 7, -16)
     row.Label:SetWidth(page:GetWidth() - 50)

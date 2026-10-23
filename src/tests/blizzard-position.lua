@@ -617,6 +617,7 @@ local group = app.core:GetNativePositionOptions(function()
     return player
 end)
 assert(group.name == "Position and scale" and group.type == "group" and group.inline)
+assert(group.editMode, "native layout groups carry the EDIT MODE tag")
 local config = group.args
 assert(config.point.get() == position:Read(player).point)
 assert(config.relativePoint.get() == position:Read(player).relativePoint)
@@ -725,6 +726,7 @@ local generic = app.core:GetPositionOptions({
     anchorFrames = {},
 })
 assert(generic.args.scale.disabled() and generic.args.scale.get() == 1)
+assert(not generic.editMode, "profile-stored positions are not tagged")
 generic.args.scale.set(nil, 1.2)
 print("Optional position scale binding OK")
 

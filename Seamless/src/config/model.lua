@@ -119,7 +119,7 @@ function Option:Read(member, ...)
     if not inherited[member] then
         value = group[member]
     end
-    if member == "new" or member == "blizzard" or member == "default" then
+    if member == "new" or member == "blizzard" or member == "editMode" or member == "default" then
         return app.config:GetOptionTags(group)[member]
     end
     info.option, info.type, info.arg, info.handler = group, group.type, group.arg, handler
@@ -130,6 +130,22 @@ function Option:Read(member, ...)
         return handler[value](handler, info, ...)
     end
     return value
+end
+
+-- True when this option or one of its groups is tagged `editMode`: its value lives
+-- in the Edit Mode layout, not the profile.
+function Option:InEditModeLayout()
+    local group = self.root
+    for _, key in ipairs(self.path) do
+        group = group.args and group.args[key]
+        if not group then
+            return false
+        end
+        if app.config:GetOptionTags(group).editMode then
+            return true
+        end
+    end
+    return false
 end
 
 function Option:Children()

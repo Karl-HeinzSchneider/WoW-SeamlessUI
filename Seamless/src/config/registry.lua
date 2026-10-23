@@ -8,29 +8,34 @@ app.config = config
 
 function config:GetOptionTags(option)
     local saved = self.optionTags[option] or {}
-    local new, blizzard = option.new, option.blizzard
+    local new, blizzard, editMode = option.new, option.blizzard, option.editMode
     if new == nil then
         new = saved.new
     end
     if blizzard == nil then
         blizzard = saved.blizzard
     end
+    if editMode == nil then
+        editMode = saved.editMode
+    end
     local default = option.default
     if default == nil then
         default = saved.default
     end
-    return { new = new, blizzard = blizzard, default = default }
+    return { new = new, blizzard = blizzard, editMode = editMode, default = default }
 end
 
--- These convenience flags are ours, not AceConfig schema fields. `default` is the
+-- These convenience flags are ours, not AceConfig schema fields. `editMode` marks
+-- settings stored in the Edit Mode layout rather than the profile. `default` is the
 -- value (or a function returning it) the custom window's tooltip shows; it wins
 -- over the addon's `tooltip` resolver, for values only the game knows.
 function config:NormalizeOptionTags(option)
-    if option.new ~= nil or option.blizzard ~= nil or option.default ~= nil then
+    if option.new ~= nil or option.blizzard ~= nil or option.editMode ~= nil or option.default ~= nil then
         assert(option.new == nil or type(option.new) == "boolean", "Option new must be a boolean")
         assert(option.blizzard == nil or type(option.blizzard) == "boolean", "Option blizzard must be a boolean")
+        assert(option.editMode == nil or type(option.editMode) == "boolean", "Option editMode must be a boolean")
         self.optionTags[option] = self:GetOptionTags(option)
-        option.new, option.blizzard, option.default = nil, nil, nil
+        option.new, option.blizzard, option.editMode, option.default = nil, nil, nil, nil
     end
     for _, child in pairs(option.args or {}) do
         self:NormalizeOptionTags(child)
@@ -49,6 +54,7 @@ function app.addon:RegisterConfigCategory(id, spec)
     assert(not spec.refresh or type(spec.refresh) == "function", "Config refresh must be a function")
     assert(spec.new == nil or type(spec.new) == "boolean", "Config new must be a boolean")
     assert(spec.blizzard == nil or type(spec.blizzard) == "boolean", "Config blizzard must be a boolean")
+    assert(spec.editMode == nil or type(spec.editMode) == "boolean", "Config editMode must be a boolean")
     config.categories[id] = {
         id = id,
         name = spec.name,
@@ -60,6 +66,7 @@ function app.addon:RegisterConfigCategory(id, spec)
         hidden = spec.hidden,
         new = spec.new,
         blizzard = spec.blizzard,
+        editMode = spec.editMode,
     }
     if config.frame then
         config:Refresh()

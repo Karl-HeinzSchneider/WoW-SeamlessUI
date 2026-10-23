@@ -52,16 +52,23 @@ addon subview here as well.
 
 ## Feature tags
 
-Set `new = true` or `blizzard = true` on a `RegisterConfigCategory` spec, an
-individual option declaration, a `FeatureGroup` spec, or a tab in
+Set `new = true`, `blizzard = true` or `editMode = true` on a `RegisterConfigCategory` spec,
+an individual option declaration, a group (section heading), a `FeatureGroup` spec, or a tab in
 `RegisterOptions(..., { tabs = { player = { name = L["Player"], order = 10,
 new = true, args = { ... } } } })`. The tab flag marks its subcategory in the
-left list; an option flag marks that setting. Both flags together show both labels.
-Flags do not propagate to children or automatically clear on hover/open.
+left list; an option flag marks that setting or heading. Flags combine (EDIT MODE nearest the
+label, then BLIZZ, then NEW). Labels do not propagate to children or clear on hover/open.
+
+`editMode` (glowing EDIT MODE, blue glow) marks settings stored in the active Edit Mode layout
+instead of the AceDB profile. Tag only those: `GetNativePositionOptions` tags its Position and
+scale group; profile-stored positions from `GetPositionOptions` stay untagged. Settings in a
+tagged group, or tagged themselves, also get the tooltip line
+`\n\n|cff8080ff[Saved in the Edit Mode layout]|r`.
 
 `badges.lua` uses `NewFeatureLabelTemplate`. Tags are children of their rows, do not reserve
-layout space, and hide when pooled rows are reused. Let parent visibility and scrolling manage
-them; do not add per-frame visibility polling or a separate overlay.
+layout space, and hide when pooled rows are reused. Setting rows place them left of the label;
+section headings (`row.tagTrailing`) place them right of the heading text. Let parent
+visibility and scrolling manage them; do not add per-frame visibility polling or a separate overlay.
 
 `NormalizeOptionTags` removes these custom keys before passing declarations to
 AceConfigRegistry, retaining them in a weak-key side table. Dynamic declarations

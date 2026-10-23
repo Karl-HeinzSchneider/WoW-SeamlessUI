@@ -630,6 +630,16 @@ classification = "minus"
 TargetFrame:CheckClassification()
 assert(targetVisual.height == 12 and targetVisual.width == 125)
 assert(targetVisual.point[4] == 148)
+classification = "elite"
+TargetFrame:CheckClassification()
+local dragon = TargetFrame.TargetFrameContainer.BossPortraitFrameTexture
+assert(
+    dragon.point[1] == "TOPRIGHT"
+        and dragon.point[2] == TargetFrame.TargetFrameContainer
+        and dragon.point[4] == -11
+        and dragon.point[5] == -8,
+    "legacy elite dragon uses the old art's offsets"
+)
 classification = secret
 TargetFrame:CheckClassification()
 FocusFrame:CheckClassification()
@@ -706,6 +716,11 @@ assert(prediction.Fill.mask == targetContainer.HealthBarMask)
 assert(targetContainer.LeftText.point[2] == targetContainer)
 assert(targetHealth.fill.alpha == 1 and not targetVisual.HealthBar.shown)
 assert(not focusVisual.HealthBar.shown)
+classification = "elite"
+Mode("legacy")
+assert(dragon.point[4] == -11 and dragon.point[5] == -8)
+Mode("current")
+assert(dragon.point[4] == 0 and dragon.point[5] == 1, "current restores the client's elite dragon offsets")
 classification = secret
 powerToken = secret
 party.state = secret

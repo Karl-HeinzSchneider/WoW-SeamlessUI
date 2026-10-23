@@ -172,7 +172,7 @@ other. Right-click, Escape, combat, leaving Edit Mode or hiding the frame cancel
 
 `defaultlayout-data.lua` holds the in-game export string of the suite's Edit Mode layout; replace
 the whole string to update it (players keep the copy they already have). Once per character, a
-character on a preset layout switches to the account layout named "Seamless", which is added the
+character on a preset layout switches to the account layout named "SeamlessUI (Preset)", which is added the
 first time (`SeamlessDB.global.defaultLayoutCreated`, `SeamlessDB.char.defaultLayoutChecked`); a
 deleted layout comes back only through the General tab's "Use Seamless layout" button. It is not a
 real preset: never add entries to `EditModePresetLayoutManager` or write `EditModeManagerFrame`'s

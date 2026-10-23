@@ -75,6 +75,9 @@ C_EditMode = {
         assert(text == "EXPORT")
         return { systems = {} }
     end,
+    IsValidLayoutName = function(name)
+        return name ~= ""
+    end,
     SaveLayouts = function(info)
         local layouts = {}
         for _, layout in ipairs(info.layouts) do
@@ -133,7 +136,7 @@ end
 -- First character on a preset: the layout is added after the account layouts and activated.
 reset({ { layoutType = ACCOUNT, layoutName = "Mine" }, { layoutType = CHARACTER, layoutName = "Alt" } }, 1)
 login()
-assert(saved.layouts[2].layoutName == "Seamless" and saved.layouts[2].layoutType == ACCOUNT)
+assert(saved.layouts[2].layoutName == "SeamlessUI (Preset)" and saved.layouts[2].layoutType == ACCOUNT)
 assert(saved.layouts[3].layoutName == "Alt", "character layouts stay after account layouts")
 assert(calls[1] == "save" and calls[2] == "added 4" and saved.activeLayout == 4)
 assert(db.char.defaultLayoutChecked and db.global.defaultLayoutCreated)
@@ -151,7 +154,10 @@ login()
 assert(#calls == 1 and calls[1] == "active 4")
 
 -- A character on its own layout keeps it.
-reset({ { layoutType = ACCOUNT, layoutName = "Seamless" }, { layoutType = CHARACTER, layoutName = "Alt" } }, 4)
+reset(
+    { { layoutType = ACCOUNT, layoutName = "SeamlessUI (Preset)" }, { layoutType = CHARACTER, layoutName = "Alt" } },
+    4
+)
 login()
 assert(#calls == 0 and db.char.defaultLayoutChecked)
 
@@ -160,7 +166,7 @@ reset({}, 1)
 login()
 assert(#calls == 0)
 assert(module:Use())
-assert(saved.layouts[1].layoutName == "Seamless" and calls[2] == "added 3")
+assert(saved.layouts[1].layoutName == "SeamlessUI (Preset)" and calls[2] == "added 3")
 assert(module:Use(), "already active")
 assert(#calls == 2)
 

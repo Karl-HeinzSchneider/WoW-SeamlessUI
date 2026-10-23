@@ -144,7 +144,7 @@ L["Open the Seamless settings from Blizzard's addon compartment on the minimap, 
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true
 L["Right-click: config"] = true
-L["Seamless adds an account Edit Mode layout named Seamless as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."] = true
+L["Seamless adds an account Edit Mode layout named %s as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."] = true
 L["Seamless"] = true
 L["SeamlessUI"] = true
 L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = true

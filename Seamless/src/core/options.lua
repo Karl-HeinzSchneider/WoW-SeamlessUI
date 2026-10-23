@@ -354,7 +354,9 @@ function module:OnInitialize()
                     info = {
                         type = "description",
                         order = 0,
-                        name = L["Seamless adds an account Edit Mode layout named Seamless as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."],
+                        name = L["Seamless adds an account Edit Mode layout named %s as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."]:format(
+                            app.defaultLayout.LAYOUT_NAME
+                        ),
                     },
                     use = {
                         type = "execute",

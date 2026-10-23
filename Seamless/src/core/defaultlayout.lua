@@ -10,11 +10,13 @@ local log = app.logger
 -- EditModePresetLayoutManager, the client counts their indices in C, and an addon entry there would
 -- taint Blizzard's secure layout code. This module never writes EditModeManagerFrame's tables; it
 -- saves through C_EditMode and lets Blizzard reload the layouts from the event that follows.
-local LAYOUT_NAME = "Seamless"
+local LAYOUT_NAME = "SeamlessUI (Preset)"
 
 ---@class SeamlessCore.DefaultLayout : AceModule, AceEvent-3.0
+---@field LAYOUT_NAME string The layout's name in Edit Mode.
 local module = {}
 app.defaultLayout = app.addon:NewModule("DefaultLayout", module, "AceEvent-3.0") --[[@as SeamlessCore.DefaultLayout]]
+module.LAYOUT_NAME = LAYOUT_NAME
 
 -- The saved layouts with a copy of Blizzard's presets in front, indexed like SetActiveLayout.
 local function LoadLayouts()
@@ -63,7 +65,7 @@ local function Create(info)
         return false, L["All account layout slots are in use. Delete one in Edit Mode to add the Seamless layout."]
     end
     local ok, layout = pcall(C_EditMode.ConvertStringToLayoutInfo, app.defaultLayoutString)
-    if not ok or type(layout) ~= "table" then
+    if not ok or type(layout) ~= "table" or not C_EditMode.IsValidLayoutName(LAYOUT_NAME) then
         return false, L["The Seamless layout could not be read."]
     end
     layout.layoutType = Enum.EditModeLayoutType.Account

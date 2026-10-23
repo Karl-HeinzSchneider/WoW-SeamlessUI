@@ -147,7 +147,7 @@ end
 -- L["Open the Seamless settings from the minimap."] = "Open the Seamless settings from the minimap."
 -- L["Quick anchor to frame"] = "Quick anchor to frame"
 -- L["Right-click: config"] = "Right-click: config"
--- L["Seamless adds an account Edit Mode layout named Seamless as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."] = "Seamless adds an account Edit Mode layout named Seamless as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."
+-- L["Seamless adds an account Edit Mode layout named %s as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."] = "Seamless adds an account Edit Mode layout named %s as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."
 -- L["Seamless"] = "Seamless"
 -- L["SeamlessUI"] = "SeamlessUI"
 -- L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = "Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."

@@ -3,6 +3,12 @@
 Repository-wide guidance. Read the applicable nested `CLAUDE.md` before changing an addon
 or the custom configuration window.
 
+## `description.md` is human-only
+
+`description.md` in the repo root belongs to the maintainer. Agents must never write to it:
+don't create, edit, format, rename, move or delete it, even when asked to update docs. Reading it
+is fine. It is excluded from packaging (`.pkgmeta`) and from `npm run format` (`.prettierignore`).
+
 ## What this is
 
 Seamless is a modular WoW Forever addon suite (Lua 5.1 / Ace3; client version in the TOCs).

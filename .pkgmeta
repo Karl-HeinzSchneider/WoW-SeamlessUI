@@ -26,6 +26,8 @@ ignore:
   # Claude Code guidance: the root one and the one in every addon.
   - CLAUDE.md
   - "*/CLAUDE.md"
+  # Human-only project description; never shipped.
+  - description.md
   # Any other Markdown, at any depth.
   - "*.md"
   # LuaLS annotation files; no TOC loads them.

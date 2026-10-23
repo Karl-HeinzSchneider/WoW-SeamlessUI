@@ -334,8 +334,11 @@ app:RebuildWindows()
 assert(not frame.timer:IsShown(), "A skin edit hides the combat timer")
 app.db.profile.skins.default.settings.hideCombatTimer = false
 app:RebuildWindows()
-assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
-for id = 2, 10 do
+assert(
+    #app.windows == app.MAX_WINDOWS and #app.db.profile.windows == app.MAX_WINDOWS,
+    "Every slot must exist from startup"
+)
+for id = 2, app.MAX_WINDOWS do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
 end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
@@ -1071,7 +1074,7 @@ assert(
 app:RebuildWindows()
 assert(app.windows[2] == second)
 app:SetWindowEnabled(app.db.profile.windows[2], false)
-assert(#app.db.profile.windows == 10 and not frame:IsShown() and not second:IsShown())
+assert(#app.db.profile.windows == app.MAX_WINDOWS and not frame:IsShown() and not second:IsShown())
 app:RebuildWindows()
 assert(
     app:GetUnusedWindowSlot() == 1 and not frame:IsShown() and not second:IsShown(),
@@ -1121,7 +1124,7 @@ app.core = { logger = { chat = function() end } }
 for _ = 1, 12 do
     app:AddWindow()
 end
-assert(#app.db.profile.windows == 10, "All creation paths must enforce the window limit")
+assert(#app.db.profile.windows == app.MAX_WINDOWS, "All creation paths must enforce the window limit")
 local slot = app.windowFrames[3]
 slot.config.hidden = true
 slot.config.collapsed = true
@@ -1149,7 +1152,7 @@ for id in pairs(app.windowFrames) do
     assert(id >= 1 and id <= 10)
     allocated = allocated + 1
 end
-assert(allocated == 10, "Repeated removal and creation must not grow the frame pool")
+assert(allocated == app.MAX_WINDOWS, "Repeated removal and creation must not grow the frame pool")
 print("Damage meter window regressions OK")
 
 -- Exercise LibEditMode's public settings and movement callback contract.
@@ -1247,7 +1250,7 @@ dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
 combat = false
 app:RebuildWindows()
-assert(registered == 10)
+assert(registered == app.MAX_WINDOWS)
 callbacks.layout("Modern")
 local meter = app.windowFrames[1]
 local function setting(name)
@@ -1354,7 +1357,7 @@ assert(app:GetWindowSetting(meter.config, "width") == 530)
 app.db.profile = originalProfile
 app:ApplyEditModeLayout()
 app:RebuildWindows()
-assert(setting("Frame width").get() == 615 and registered == 10)
+assert(setting("Frame width").get() == 615 and registered == app.MAX_WINDOWS)
 callbacks.layout("Modern")
 assert(setting("Frame width").default == app.windowDefaults.width)
 assert(setting("Bar height").default == 24, "Defaults must not capture customized skin values")
@@ -1382,7 +1385,7 @@ assert(setting("Frame width").get() == app.windowDefaults.width, "Reset must byp
 setting("Lock size").set("Modern", false)
 setting("Frame width").set("Modern", 615)
 setting("Lock size").set("Modern", true)
-assert(registered == 10, "Layouts and profiles must reuse registered frames")
+assert(registered == app.MAX_WINDOWS, "Layouts and profiles must reuse registered frames")
 local liveAPIForPreview = C_DamageMeter
 C_DamageMeter = setmetatable({}, {
     __index = function(_, key)
@@ -1703,7 +1706,7 @@ app.core = {
     end,
 }
 menuRoot.entries[1].choose()
-assert(opened == "SeamlessDamageMeter:windows")
+assert(opened == "SeamlessDamageMeter:window1")
 SettingsPanel = {
     Close = function(_, skip)
         assert(skip)

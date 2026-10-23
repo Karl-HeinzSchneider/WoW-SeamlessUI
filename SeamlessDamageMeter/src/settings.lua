@@ -3,7 +3,10 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
-app.MAX_WINDOWS = 10
+-- Number of window slots. Every slot shares the same settings, frames and options, so only this
+-- value limits them; slots above it are parked in `profile.parkedWindows` and return if it grows.
+app.MAX_WINDOWS = 6
+
 function app:GetWindowSetting(config, key)
     if key == "height" and self:GetWindowSetting(config, "fixedHeight") then
         local lines = self:GetWindowSetting(config, "visibleLines")
@@ -58,6 +61,27 @@ function app:AddSkin(name)
     return key
 end
 
+-- Default can't be removed; windows using the removed skin fall back to it.
+function app:RemoveSkin(key)
+    local skins = self.db.profile.skins
+    if key == "default" or not skins[key] then
+        return false
+    end
+    skins[key] = nil
+    for _, config in ipairs(self.db.profile.windows) do
+        if config.skin == key then
+            config.skin = "default"
+        end
+    end
+    for _, config in pairs(self.db.profile.parkedWindows or {}) do
+        if config.skin == key then
+            config.skin = "default"
+        end
+    end
+    self:RebuildWindows()
+    return true
+end
+
 function app:PrepareWindowSettings()
     local profile = self.db.profile
     profile.skins = profile.skins or {}
@@ -109,7 +133,7 @@ function app:PrepareWindowSettings()
         for index = #profile.windows, 1, -1 do
             local config = profile.windows[index]
             if not assigned[config] then
-                -- Very old profiles could have more than ten windows; retain excess data.
+                -- Very old profiles could have more windows than slots; retain excess data.
                 profile.legacyWindows = profile.legacyWindows or {}
                 table.insert(profile.legacyWindows, 1, table.remove(profile.windows, index))
             elseif config.anchorTo then
@@ -119,19 +143,29 @@ function app:PrepareWindowSettings()
         profile.fixedWindowSlots = true
         profile.nextID = nil
     end
-    local slots = {}
+    local slots, parked = {}, profile.parkedWindows or {}
     for _, config in ipairs(profile.windows) do
         if config.enabled == nil then
             config.enabled = true
         end
-        slots[config.id] = config
+        if config.id > self.MAX_WINDOWS then
+            parked[config.id] = config
+        else
+            slots[config.id] = config
+        end
     end
     for id = 1, self.MAX_WINDOWS do
         if not slots[id] then
-            slots[id] = { id = id, enabled = false, statistic = "DamageDone", session = "Current", overrides = {} }
+            slots[id] = parked[id]
+                or { id = id, enabled = false, statistic = "DamageDone", session = "Current", overrides = {} }
+            parked[id] = nil
         end
         profile.windows[id] = slots[id]
     end
+    for index = #profile.windows, self.MAX_WINDOWS + 1, -1 do
+        profile.windows[index] = nil
+    end
+    profile.parkedWindows = next(parked) and parked or nil
     if not profile.initialized then
         profile.windows[1].enabled = true
         profile.initialized = true

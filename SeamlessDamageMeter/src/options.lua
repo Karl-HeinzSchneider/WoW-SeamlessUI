@@ -208,42 +208,16 @@ local function AppearanceOptions(config)
     return args
 end
 
+-- Window defaults and one tab per slot; the tab tables stay registered, only their args are rebuilt.
 function app:BuildWindowOptions()
     self:PrepareWindowSettings()
-    local args = {
-        defaults = { type = "group", name = L["Defaults"], order = 1, args = AppearanceOptions() },
-        add = {
-            type = "group",
-            name = L["Activate window"],
-            order = 1000,
-            args = {
-                info = {
-                    type = "description",
-                    name = L["Use up to %d permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets."]:format(
-                        self.MAX_WINDOWS
-                    ),
-                    order = 1,
-                },
-                add = {
-                    type = "execute",
-                    name = L["Activate next window"],
-                    order = 2,
-                    disabled = function()
-                        return self:GetUnusedWindowSlot() == nil
-                    end,
-                    func = function()
-                        self:AddWindow()
-                    end,
-                },
-            },
-        },
-    }
-    for index, config in ipairs(self.db.profile.windows) do
+    self.windowOptions.args = AppearanceOptions()
+    for _, config in ipairs(self.db.profile.windows) do
         local windowArgs = AppearanceOptions(config)
         windowArgs.management = {
             type = "group",
             inline = true,
-            name = L["Window %d"]:format(config.id),
+            name = L["Window"],
             order = 1,
             args = {
                 hidden = {
@@ -328,15 +302,8 @@ function app:BuildWindowOptions()
                 },
             },
         }
-        args["window" .. config.id] = {
-            type = "group",
-            name = config.enabled and not config.hidden and (L["Window %d"]:format(config.id))
-                or ("|cff808080" .. L["Window %d"]:format(config.id) .. "|r"),
-            order = index + 1,
-            args = windowArgs,
-        }
+        self.windowTabs["window" .. config.id].args = windowArgs
     end
-    self.windowOptions.args = args
 end
 
 function app:BuildSkinOptions()
@@ -366,6 +333,17 @@ function app:BuildSkinOptions()
                 controls[definition.key] = SettingControl(definition, nil, nil, skin)
                 controls[definition.key].order = order * 10
             end
+        end
+        if key ~= "default" then
+            controls.remove = {
+                type = "execute",
+                name = L["Delete skin"],
+                order = 1,
+                confirm = L["Delete the skin %s? Windows using it switch to Default."]:format(skin.name),
+                func = function()
+                    self:RemoveSkin(key)
+                end,
+            }
         end
         args[key] = { type = "group", name = skin.name, order = index, args = controls }
     end
@@ -410,7 +388,7 @@ function app:HistoryOptions()
     return {
         name = L["History"],
         hidden = not self.combatService.saveSessions,
-        order = 20,
+        order = 60,
         args = {
             info = {
                 type = "description",
@@ -522,10 +500,18 @@ end
 
 function app:RegisterOptions()
     self:PrepareWindowSettings()
-    self.windowOptions = { name = L["Windows"], order = 10, childGroups = "tree", args = {} }
-    self.skinOptions = { name = L["Skin"], order = 15, childGroups = "tree", args = {} }
+    self.windowOptions = { name = L["Window defaults"], order = 10, args = {} }
+    self.windowTabs = {}
+    for id = 1, self.MAX_WINDOWS do
+        self.windowTabs["window" .. id] = { name = L["Window %d"]:format(id), order = 10 + id, args = {} }
+    end
+    self.skinOptions = { name = L["Skin"], order = 50, childGroups = "tree", args = {} }
     self:BuildWindowOptions()
     self:BuildSkinOptions()
+    local tabs = { windows = self.windowOptions, skin = self.skinOptions, history = self:HistoryOptions() }
+    for key, tab in pairs(self.windowTabs) do
+        tabs[key] = tab
+    end
     self.core:RegisterOptions(appName, {
         tooltip = function(path)
             local key = path[#path]
@@ -550,7 +536,7 @@ function app:RegisterOptions()
                 end
                 return self.skinDefaults[key]
             end
-            if path[1] == "windows" then
+            if path[1] == "windows" or path[1]:match("^window%d+$") then
                 if key == "override" or key == "hidden" then
                     return false
                 end
@@ -561,7 +547,7 @@ function app:RegisterOptions()
                     return "screen"
                 end
                 if key == "enabled" then
-                    return path[2] == "window1"
+                    return path[1] == "window1"
                 end
                 if key == "default" or key == "value" then
                     return self.db.profile.windowDefaults[path[#path - 1]]
@@ -582,6 +568,13 @@ function app:RegisterOptions()
                         type = "description",
                         order = 0,
                         name = L["Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Sessions, Current and Overall come from Blizzard's damage meter; addon session saving is temporarily disabled. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n"],
+                    },
+                    limit = {
+                        type = "description",
+                        order = 5,
+                        name = L["Use up to %d permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets."]:format(
+                            self.MAX_WINDOWS
+                        ) .. "\n",
                     },
                     add = {
                         type = "execute",
@@ -675,41 +668,6 @@ function app:RegisterOptions()
                 },
             },
         },
-        tabs = {
-            windows = self.windowOptions,
-            skin = self.skinOptions,
-            history = self:HistoryOptions(),
-            credits = {
-                name = L["Credits"],
-                order = 30,
-                args = {
-                    teelo = {
-                        type = "description",
-                        order = 10,
-                        name = L["Thanks to p3lim for creating LibEditMode, which powers Edit Mode integration for all ten meter windows."],
-                    },
-                    github = {
-                        type = "input",
-                        order = 20,
-                        width = "full",
-                        name = L["GitHub (select and copy)"],
-                        get = function()
-                            return "https://github.com/p3lim-wow/LibEditMode"
-                        end,
-                        set = function() end,
-                    },
-                    curseforge = {
-                        type = "input",
-                        order = 30,
-                        width = "full",
-                        name = L["CurseForge (select and copy)"],
-                        get = function()
-                            return "https://www.curseforge.com/wow/addons/edit-mode-expanded"
-                        end,
-                        set = function() end,
-                    },
-                },
-            },
-        },
+        tabs = tabs,
     })
 end

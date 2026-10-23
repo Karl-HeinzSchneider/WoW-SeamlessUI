@@ -81,8 +81,8 @@ end
 local favoriteLimit = app.optionSpec.general.windows.args.maxVisibleFavorites
 favoriteLimit.set(nil, 3)
 assert(favoriteLimit.get() == 3 and refreshed == 1 and app.db.profile.favorites[2] == "HealingDone")
-local values = app.windowOptions.args.window2.args
-local defaults = app.windowOptions.args.defaults.args
+local values = app.windowTabs.window2.args
+local defaults = app.windowOptions.args
 assert(defaults.fixedHeight.get() == true and defaults.visibleLines.get() == 7)
 assert(defaults.visibleLines.step == 0.25 and defaults.showResizeHandle.get() == true)
 fresh.overrides.fixedHeight = true
@@ -102,6 +102,8 @@ assert(values.classColors == nil and defaults.fontSize == nil)
 skinControls.classColors.set(nil, false)
 assert(app:GetWindowSetting(fresh, "classColors") == false)
 local skinID = app:AddSkin("Custom")
+assert(app.skinOptions.args.default.args.remove == nil, "Default skin can't be deleted")
+assert(app.skinOptions.args[skinID].args.remove)
 fresh.skin = skinID
 app.db.profile.skins[skinID].settings.textColor[1] = 0.25
 assert(app.db.profile.skins.default.settings.textColor[1] == 1)
@@ -111,25 +113,27 @@ assert(app:GetWindowSetting(old, "rowHeight") == 24)
 app:PrepareWindowSettings()
 assert(fresh.skin == skinID and app:GetWindowSetting(fresh, "rowHeight") == 30)
 assert(app:AddSkin("  ") == nil)
+local removedID = app:AddSkin("Removed")
+old.skin = removedID
+app.skinOptions.args[removedID].args.remove.func()
+assert(app.db.profile.skins[removedID] == nil and old.skin == "default")
+assert(not app:RemoveSkin("default") and app.db.profile.skins.default)
 assert(values.x.args.value.validate(nil, "12.125") == true)
 assert(type(values.x.args.value.validate(nil, "no")) == "string")
 app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
 app:BuildWindowOptions()
-assert(app.windowOptions.args.window1.name == "Window 1")
-for id = 2, 10 do
-    local group = app.windowOptions.args["window" .. id]
-    assert(group and group.name == "|cff808080Window " .. id .. "|r")
-    assert(not group.disabled, "Inactive settings must remain editable")
+assert(#app.db.profile.windows == app.MAX_WINDOWS and app.MAX_WINDOWS == 6)
+for id = 1, app.MAX_WINDOWS do
+    local tab = app.optionSpec.tabs["window" .. id]
+    assert(tab == app.windowTabs["window" .. id] and tab.name == "Window " .. id, "Every slot has its own tab")
+    assert(tab.args.management.args.enabled.get() == (id == 1))
 end
-assert(app:CanAnchorTo(app.db.profile.windows[1], 10), "Inactive windows must remain anchor targets")
-local targets = app.windowOptions.args.window1.args.management.args.anchorTo.values()
-assert(targets["10"] == "Window 10")
-app.db.profile.windows[10].enabled = true
-app:BuildWindowOptions()
-assert(app.windowOptions.args.window10.name == "Window 10")
-app.db.profile.windows[10].hidden = true
-app:BuildWindowOptions()
-assert(app.windowOptions.args.window10.name == "|cff808080Window 10|r")
+assert(app.optionSpec.tabs.window7 == nil and app.optionSpec.tabs.credits == nil)
+assert(app:CanAnchorTo(app.db.profile.windows[1], 6), "Inactive windows must remain anchor targets")
+local targets = app.windowTabs.window1.args.management.args.anchorTo.values()
+assert(targets["6"] == "Window 6" and targets["7"] == nil)
+local enabledDefault = app.optionSpec.tooltip({ "window1", "management", "enabled" })
+assert(enabledDefault == true and app.optionSpec.tooltip({ "window2", "management", "enabled" }) == false)
 assert(defaults.width.get() == 400)
 local highID = { id = 18, anchorTo = 27, overrides = { fontSize = 19 } }
 local anchor = { id = 27, overrides = {} }
@@ -152,8 +156,25 @@ for id = 1, 12 do
     table.insert(app.db.profile.windows, { id = id + 20, overrides = {} })
 end
 app:PrepareWindowSettings()
-assert(#app.db.profile.windows == 10 and #app.db.profile.legacyWindows == 2)
+assert(#app.db.profile.windows == 6 and #app.db.profile.legacyWindows == 6)
 assert(app:GetUnusedWindowSlot() == nil)
+-- Slots above the limit (from a profile made with more windows) are parked and come back.
+app.db.profile = { windows = {}, fixedWindowSlots = true, windowDefaults = copy(app.windowDefaults) }
+for id = 1, 10 do
+    table.insert(
+        app.db.profile.windows,
+        { id = id, enabled = id == 8, overrides = {}, anchorTo = id == 2 and 9 or nil }
+    )
+end
+app:PrepareWindowSettings()
+assert(#app.db.profile.windows == 6 and app.db.profile.parkedWindows[8].enabled)
+assert(not app:CanAnchorTo(app.db.profile.windows[2], 9), "Parked windows are not anchor targets")
+app:PrepareWindowSettings()
+assert(#app.db.profile.windows == 6 and app.db.profile.parkedWindows[10], "Parking must be idempotent")
+app.MAX_WINDOWS = 10
+app:PrepareWindowSettings()
+assert(#app.db.profile.windows == 10 and app.db.profile.windows[8].enabled and app.db.profile.parkedWindows == nil)
+app.MAX_WINDOWS = 6
 print(
     "PASS: migration, inheritance, false overrides, independent colors, anchor cycles, numeric validation, profile switching and AceConfig schema"
 )

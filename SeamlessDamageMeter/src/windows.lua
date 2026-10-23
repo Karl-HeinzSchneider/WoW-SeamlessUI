@@ -1261,7 +1261,7 @@ function app:CreateWindow(id)
     local menu = Button(frame, "", 27, function(button)
         local dropdown = OpenMenuAbove(button, function(_, root)
             root:CreateButton(L["Settings"], function()
-                self.core:OpenOptions("SeamlessDamageMeter", "windows")
+                self.core:OpenOptions("SeamlessDamageMeter", "window" .. id)
             end)
             local editmode = root:CreateButton(L["Editmode"], function()
                 if not InCombatLockdown() then

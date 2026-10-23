@@ -452,6 +452,11 @@ local function LayoutRecords(callback)
                 callback(config.editModeLayouts)
             end
         end
+        for _, config in pairs(profile.parkedWindows or {}) do
+            if config.editModeLayouts then
+                callback(config.editModeLayouts)
+            end
+        end
     end
 end
 lib:RegisterCallback("create", function(name, _, sourceName)

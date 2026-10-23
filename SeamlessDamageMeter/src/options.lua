@@ -542,9 +542,6 @@ function app:RegisterOptions()
                 return nil, true
             end
             if path[1] == "general" then
-                if key == "tracking" then
-                    return self.core:GetCVarOptionInfo("damageMeterEnabled")
-                end
                 return self.dbDefaults.profile[key]
             end
             if path[1] == "skin" then
@@ -649,34 +646,16 @@ function app:RegisterOptions()
                 order = 20,
                 name = L["Game meter"],
                 args = {
-                    tracking = {
-                        type = "toggle",
+                    gameSettings = {
+                        type = "execute",
                         order = 10,
-                        width = "full",
-                        name = L["Enable the game's damage meter UI"],
-                        desc = L["Controls Blizzard's own meter window. Seamless queries the combat API independently of this setting."],
-                        descStyle = "inline",
-                        hidden = C_CVar.GetCVar("damageMeterEnabled") == nil,
-                        get = function()
-                            return C_CVar.GetCVarBool("damageMeterEnabled")
+                        name = L["Game damage meter settings"],
+                        desc = L["Open the game's settings to turn its own damage meter on or off. Seamless reads combat data either way."],
+                        disabled = function()
+                            return Settings.ADVANCED_OPTIONS_CATEGORY_ID == nil
                         end,
-                        set = function(_, value)
-                            self:SetCombatTracking(value)
-                        end,
-                    },
-                    hideBlizzard = {
-                        type = "toggle",
-                        order = 20,
-                        width = "full",
-                        name = L["Hide the game's damage meter"],
-                        desc = L["Keeps the game's own meter window hidden while this addon is enabled. It still appears in Edit Mode."],
-                        descStyle = "inline",
-                        get = function()
-                            return self.db.profile.hideBlizzard
-                        end,
-                        set = function(_, value)
-                            self.db.profile.hideBlizzard = value
-                            self:UpdateBlizzardMeter()
+                        func = function()
+                            self:OpenBlizzardMeterSettings()
                         end,
                     },
                 },

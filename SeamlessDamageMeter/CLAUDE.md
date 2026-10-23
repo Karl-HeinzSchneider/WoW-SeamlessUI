@@ -40,9 +40,11 @@ architecture, limits and in-game acceptance checks.
   selections must not revive after a reset or reload; duplicate updates replace snapshots.
   History keeps 50 fights per character by default (1–1,000, pins count); the oldest goes first,
   removed fights never return, and clearing the archive doesn't reset the client meter.
-- Native meter visibility (`blizzard.lua`) uses an OnShow hook, never a hook of its timer.
-  Native Hide, UpdateShownState and the tracking CVar go through `securecallfunction` with the
-  original functions only; never run the native timer pipeline or change Blizzard methods/state.
+- Blizzard's own meter compares secret values in its code, so addon code never runs inside it:
+  no hooks, no calls to its methods or scripts, no writes to its state or to the
+  `damageMeterEnabled` CVar (CVar callbacks run inside the caller). `securecallfunction` does
+  not clear taint, and we don't hide or reparent it either. Its on/off CVar is changed only in
+  the game's settings, which our General option opens (`blizzard.lua`).
 
 ### Threat
 

@@ -419,8 +419,19 @@ local function Target(frame, old)
     module:Art(art.Flash, P .. (minus and "Target-MinusMob-PortraitOn-InCombat" or "Target-PortraitOn-InCombat"), true)
     local boss = UnitIsBossMob(frame.unit)
     if module:Readable(boss) and (boss or rare or classification == "elite") then
-        local decoration = boss and "Boss-Gold-Winged" or (rare and "Boss-Rare-Silver-Winged" or "Boss-Gold")
+        -- The client anchors the decoration with Camelot offsets after setting
+        -- its atlas; the old art is smaller and needs the 70374 offsets instead.
+        local decoration, x, y
+        if boss then
+            decoration, x, y = "Boss-Gold-Winged", old and 8 or 11, old and -8 or -4
+        elseif rare then
+            decoration, x, y =
+                old and "Boss-Rare-Silver" or "Boss-Rare-Silver-Winged", old and -11 or 8, old and -8 or -7
+        else
+            decoration, x, y = "Boss-Gold", old and -11 or 0, old and -8 or 1
+        end
         module:Art(art.BossPortraitFrameTexture, P .. "Target-PortraitOn-" .. decoration, true)
+        Point(art.BossPortraitFrameTexture, "TOPRIGHT", art, "TOPRIGHT", x, y)
     end
     module:Art(main.ReputationColor, P .. "Target-PortraitOn-Type", true)
     -- Source bindings own the selected health tint; Paint mirrors that same

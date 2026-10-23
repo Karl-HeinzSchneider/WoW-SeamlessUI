@@ -19,11 +19,13 @@ local function UpdateInteraction(frame)
     frame.resize:EnableMouse(enabled and not app:GetWindowSetting(frame.config, "lockSize"))
 end
 
-local function OpenMenuAbove(owner, generator)
+-- Opens a dropdown above its selector, aligned to the selector's right edge or, with `side`
+-- "LEFT", its left edge; the menu manager flips/clamps at screen edges.
+local function OpenMenuAbove(owner, generator, side)
     local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
     Menu.PopulateDescription(generator, owner, root)
-    -- Prefer above the selector; the menu manager flips/clamps at screen edges.
-    local anchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", owner, "TOPRIGHT", 0, 2)
+    side = side or "RIGHT"
+    local anchor = AnchorUtil.CreateAnchor("BOTTOM" .. side, owner, "TOP" .. side, 0, 2)
     local menu = Menu.GetManager():OpenMenu(owner, root, anchor)
     if menu then
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -199,9 +201,10 @@ function app:SetWindowEnabled(config, enabled)
     self:RebuildWindows()
 end
 
+-- The type selector opens its menu like the other window dropdowns; favorite rows open it at the cursor.
 function app:ShowStatisticMenu(frame, favoriteSlot, owner)
     local config = frame.config
-    MenuUtil.CreateContextMenu(owner or frame.statistic, function(_, root)
+    local function GenerateMenu(_, root)
         local categories = {
             {
                 L["Damage"],
@@ -250,7 +253,12 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                 end
             end)
         end
-    end)
+    end
+    if owner then
+        MenuUtil.CreateContextMenu(owner, GenerateMenu)
+    else
+        OpenMenuAbove(frame.statistic, GenerateMenu, "LEFT")
+    end
 end
 
 function app:UpdateFavorites(frame)

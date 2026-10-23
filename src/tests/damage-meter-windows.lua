@@ -803,6 +803,8 @@ MenuUtil = {
     end,
 }
 MenuVariants = { GetDefaultContextMenuMixin = function() end }
+SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
+PlaySound = function() end
 AnchorUtil = {
     CreateAnchor = function(...)
         return { ... }
@@ -822,8 +824,19 @@ Menu = {
                 openTypeMenu = nil
             end,
             OpenMenu = function(_, owner, root, anchor)
+                assert(root == menuRoot and anchor[2] == owner and anchor[5] > 0)
+                if owner == frame.statistic then
+                    -- The type selector's menu opens above it, left-aligned like the other dropdowns.
+                    assert(anchor[1] == "BOTTOMLEFT" and anchor[3] == "TOPLEFT")
+                    openTypeMenu = {
+                        GetOwnerRegion = function()
+                            return owner
+                        end,
+                    }
+                    return openTypeMenu
+                end
                 openTypeMenu = nil -- Opening another menu replaces the type menu.
-                assert(owner == frame.session and root == menuRoot)
+                assert(owner == frame.session)
                 assert(anchor[1] == "BOTTOMRIGHT" and anchor[2] == owner and anchor[3] == "TOPRIGHT")
                 assert(anchor[5] > 0, "Session menu must prefer opening above the selector")
             end,

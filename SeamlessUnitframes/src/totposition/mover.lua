@@ -6,7 +6,8 @@ local appName, app = ...
 -- client's layout cache) or turned into Edit Mode systems. Each stand-in is an addon-owned
 -- UIParent child with the frame's art, size and effective scale, registered with LibEditMode and
 -- shown only in Edit Mode. Dragging it, its Position section or Reset Position store a position
--- through app.totPosition, which then moves the real frame.
+-- through app.totPosition, which then moves the real frame. Each is a documented public frame,
+-- SeamlessUnitframes<frameName>Preview, so SeamlessDarkmode can tint its border like the real one.
 
 local lib = app.core:GetEditModeLibrary()
 
@@ -113,7 +114,7 @@ end
 ---@param key string
 local function Create(key)
     local entry = app.unitFrames:Get(key)
-    local frame = CreateFrame("Frame", nil, UIParent)
+    local frame = CreateFrame("Frame", appName .. entry.frameName .. "Preview", UIParent)
     frame:Hide()
     frame:SetSize(WIDTH, HEIGHT)
     frame:SetClampedToScreen(true)

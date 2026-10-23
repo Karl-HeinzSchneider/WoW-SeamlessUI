@@ -88,6 +88,10 @@ TargetFrame = {
     TargetFrameContainer = { FrameTexture = targetFrame },
     TargetFrameContent = { TargetFrameContentMain = { LevelBackgroundCircle = targetCircle } },
 }
+local totPreview = texture()
+SeamlessUnitframesTargetFrameToTPreview = { FrameTexture = totPreview }
+local focusTotPreview = texture()
+SeamlessUnitframesFocusFrameToTPreview = { FrameTexture = focusTotPreview }
 MinimapCompassTexture = texture()
 MinimapCluster = { ZoneTextButton = {} }
 AddonCompartmentFrame = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
@@ -180,6 +184,8 @@ equal(circle.color, { 0.2, 0.3, 0.4, 1 }, "player level circle tinted")
 equal(portrait.color, { 1, 1, 1, 1 }, "portrait untouched")
 equal(targetFrame.color, { 0.2, 0.3, 0.4, 1 }, "target frame tinted")
 equal(targetCircle.color, { 0.2, 0.3, 0.4, 1 }, "target level circle tinted")
+equal(totPreview.color, { 0.2, 0.3, 0.4, 1 }, "ToT Edit Mode preview tinted")
+equal(focusTotPreview.color, { 0.2, 0.3, 0.4, 1 }, "focus ToT Edit Mode preview tinted")
 equal(MinimapCompassTexture.color, { 0.2, 0.3, 0.4, 1 }, "minimap ring tinted")
 equal(ring.color, { 0.2, 0.3, 0.4, 1 }, "minimap button border tinted")
 equal(iconTexture.color, { 1, 1, 1, 1 }, "minimap button icon untouched")
@@ -202,6 +208,8 @@ checkControls(0.1, "minimap group on tints controls again")
 app.db.profile.groups.unitframes = false
 addon:Refresh()
 equal(frame.color, { 1, 1, 1, 0.5 }, "unit frames off restores")
+equal(totPreview.color, { 1, 1, 1, 1 }, "unit frames off restores the ToT preview")
+equal(focusTotPreview.color, { 1, 1, 1, 1 }, "unit frames off restores the focus ToT preview")
 equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "other groups stay tinted")
 app.db.profile.groups.unitframes = true
 

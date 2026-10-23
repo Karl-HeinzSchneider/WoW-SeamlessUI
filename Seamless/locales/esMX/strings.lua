@@ -389,7 +389,7 @@ end
 -- L["Add skin"] = "Add skin"
 -- L["All %d meter windows are already active."] = "All %d meter windows are already active."
 -- L["All supported categories and source details captured."] = "All supported categories and source details captured."
--- L["Anchor to the screen or another meter window. Circular anchors are excluded."] = "Anchor to the screen or another meter window. Circular anchors are excluded."
+-- L["Anchor to the screen or another meter window. A window anchored to this one is released and stays in place."] = "Anchor to the screen or another meter window. A window anchored to this one is released and stays in place."
 -- L["Anchored to"] = "Anchored to"
 -- L["Appearance settings apply to every window using this skin. New skins start with a copy of Default."] = "Appearance settings apply to every window using this skin. New skins start with a copy of Default."
 -- L["Available contributions only; totals do not fully reconcile."] = "Available contributions only; totals do not fully reconcile."

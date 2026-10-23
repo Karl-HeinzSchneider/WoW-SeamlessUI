@@ -308,11 +308,11 @@ function app:BuildWindowOptions()
                     name = L["Anchored to"],
                     order = 4,
                     width = "full",
-                    desc = L["Anchor to the screen or another meter window. Circular anchors are excluded."],
+                    desc = L["Anchor to the screen or another meter window. A window anchored to this one is released and stays in place."],
                     values = function()
                         local values = { screen = L["Screen (UIParent)"] }
                         for _, candidate in ipairs(self.db.profile.windows) do
-                            if self:CanAnchorTo(config, candidate.id) then
+                            if candidate.id ~= config.id then
                                 values[tostring(candidate.id)] = L["Window %d"]:format(candidate.id)
                             end
                         end
@@ -322,7 +322,7 @@ function app:BuildWindowOptions()
                         return config.anchorTo and tostring(config.anchorTo) or "screen"
                     end,
                     set = function(_, value)
-                        config.anchorTo = tonumber(value)
+                        self:SetWindowAnchor(config, tonumber(value))
                         self:RebuildWindows()
                     end,
                 },

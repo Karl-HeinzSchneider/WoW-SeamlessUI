@@ -80,7 +80,13 @@ function methods:SetScript(event, callback)
     self.scripts[event] = callback
 end
 function methods:HookScript(event, callback)
-    self.scripts[event] = callback
+    local original = self.scripts[event]
+    self.scripts[event] = function(...)
+        if original then
+            original(...)
+        end
+        callback(...)
+    end
 end
 function methods:CreateFontString(_, _, font)
     local text = object("FontString", self)
@@ -459,6 +465,26 @@ assert(not dialog.Buttons:IsShown(), "an empty button list is left out of the wi
 dialog:Update({ parent = rightFrame, system = selection.system })
 assert(dialog.Buttons:IsShown() and dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
 print("PASS: fixed frames are selectable but never move")
+
+-- Drag-start hooks run after the library starts moving the frame, only for mouse drags.
+local dragFrame, started, dragged = object("Frame", UIParent), false, nil
+dragFrame.left, dragFrame.right, dragFrame.top = 100, 250, 500
+dragFrame.GetPoint = frame.GetPoint
+dragFrame.StartMoving = function()
+    started = true
+end
+lib.layoutCache, lib.isEditing = nil, false
+lib:AddFrame(dragFrame, function() end, { point = "CENTER", x = 0, y = 0 }, "Drag")
+lib.layoutCache, lib.isEditing = layoutCache, isEditing
+app.addon:HookEditModeDragStart(dragFrame, function(hooked)
+    assert(started, "the hook runs after the frame starts moving")
+    dragged = hooked
+end)
+local dragSelection = lib.frameSelections[dragFrame]
+dragSelection.RegisterEvent = function() end
+dragSelection.scripts.OnDragStart(dragSelection)
+assert(dragged == dragFrame, "drag start hooks receive the frame")
+print("PASS: drag start hooks")
 
 -- A held slider keeps its drag: refreshes of the same selection wait until it is released.
 local sliderKind = "test-slider"

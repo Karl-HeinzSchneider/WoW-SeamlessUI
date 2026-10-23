@@ -1,5 +1,7 @@
 ---@class SeamlessDamageMeter
 ---@field ApplyEditModeLayout fun(self: SeamlessDamageMeter) Restore the current native layout in the active profile.
+---@field DetachWindow fun(self: SeamlessDamageMeter, config: table) Anchor a window to the screen where it currently is.
+---@field SetWindowAnchor fun(self: SeamlessDamageMeter, config: table, targetID: number?) Anchor a window, releasing a window that anchors back to it.
 ---@field RefreshThreatWindows fun(self: SeamlessDamageMeter) Refresh visible threat windows immediately from client events.
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0

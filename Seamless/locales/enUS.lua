@@ -386,7 +386,7 @@ L["Activates the first inactive meter window, preserving its settings. Same as /
 L["Add skin"] = true
 L["All %d meter windows are already active."] = true
 L["All supported categories and source details captured."] = true
-L["Anchor to the screen or another meter window. Circular anchors are excluded."] = true
+L["Anchor to the screen or another meter window. A window anchored to this one is released and stays in place."] = true
 L["Anchored to"] = true
 L["Appearance settings apply to every window using this skin. New skins start with a copy of Default."] = true
 L["Available contributions only; totals do not fully reconcile."] = true

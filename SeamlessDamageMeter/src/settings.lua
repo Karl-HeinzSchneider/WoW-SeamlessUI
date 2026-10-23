@@ -217,6 +217,44 @@ function app:CanAnchorTo(config, targetID)
     return true
 end
 
+local function FindWindowConfig(id)
+    for _, config in ipairs(app.db.profile.windows) do
+        if config.id == id then
+            return config
+        end
+    end
+end
+
+-- Anchor the window to the screen instead, where it currently is.
+function app:DetachWindow(config)
+    local frame = self.windowFrames and self.windowFrames[config.id]
+    config.anchorTo = nil
+    if not frame or frame.config ~= config or not frame:GetLeft() then
+        return
+    end
+    config.overrides.relativePoint = self:GetWindowSetting(config, "point")
+    frame.anchorTarget = UIParent
+    self:SaveWindowPosition(frame)
+    self:PositionWindow(frame)
+end
+
+-- Anchoring to a window that already depends on this one releases that window's link first.
+function app:SetWindowAnchor(config, targetID)
+    if targetID == config.id then
+        return
+    end
+    if targetID and not self:CanAnchorTo(config, targetID) then
+        local target = FindWindowConfig(targetID)
+        while target and target.anchorTo ~= config.id do
+            target = FindWindowConfig(target.anchorTo)
+        end
+        if target then
+            self:DetachWindow(target)
+        end
+    end
+    config.anchorTo = targetID
+end
+
 function app:UpdateWindowOptions()
     if self.windowOptions then
         self:BuildWindowOptions()

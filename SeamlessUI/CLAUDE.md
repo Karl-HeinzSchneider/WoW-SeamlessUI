@@ -22,8 +22,8 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   stance/pet/possess bars, auras, XP/reputation containers, minimap and the other native systems),
   grouped as Unit frames, Action bars, Auras and Other frames. Entries stay hidden until the
   client's `registeredSystemFrames` has the frame; missing enums are safe.
-- Profile `blizzardEditMode`: global `enabled` (default on), `addPosition` and `addMoreOptions`
-  (default off; the latter only stores a preference for future controls), and per frame
+- Profile `blizzardEditMode`: global `enabled`, `addPosition` and `addMoreOptions` (all default
+  on; the latter only stores a preference for future controls), and per frame
   `enabled`, `addPosition`, `addMoreOptions` (all default on). A frame's effective value is the
   global switch and its own value. Options show only the global switches and one
   "<frame> - Extend Edit Mode" toggle per frame under its category header; the per-frame

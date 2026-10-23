@@ -26,8 +26,8 @@ local profile = {
         enabled = true,
         -- Global switches for every frame's extension; combined with the internal per-frame
         -- values below (addMoreOptions only stores a preference for future controls).
-        addPosition = false,
-        addMoreOptions = false,
+        addPosition = true,
+        addMoreOptions = true,
         frames = {
             ["*"] = { enabled = true, addPosition = true, addMoreOptions = true },
         },

@@ -218,7 +218,8 @@ setmetatable(app.db.profile.blizzardEditMode.frames, {
 local config = module:Options().args
 -- Position and more options are global; each frame only has its own Extend Edit Mode switch.
 assert(config.addPosition.type == "toggle" and config.addMoreOptions.type == "toggle")
-assert(not config.addPosition.get() and not config.addMoreOptions.get())
+assert(config.addPosition.get() and config.addMoreOptions.get())
+config.addPosition.set(nil, false)
 assert(config.player.type == "toggle" and config.player.name == "Player frame - Extend Edit Mode")
 assert(config.player.order > config.unitsHeading.order and config.player.order < config.barsHeading.order)
 for _, key in ipairs({ "player", "target", "pet", "focus" }) do

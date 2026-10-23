@@ -203,20 +203,20 @@ local function WindowPositionOptions(config)
             if key == "relativeTo" then
                 return "screen"
             end
-            return app.windowDefaults[key]
+            return app.positionDefaults[key]
         end,
         isDefault = function()
-            for key in pairs(app.POSITION_KEYS) do
-                if key ~= "scale" and app:GetWindowSetting(config, key) ~= app.windowDefaults[key] then
+            for key in pairs(app.positionDefaults) do
+                if key ~= "scale" and app:GetWindowSetting(config, key) ~= app.positionDefaults[key] then
                     return false
                 end
             end
             return config.anchorTo == nil
         end,
         reset = function()
-            for key in pairs(app.POSITION_KEYS) do
+            for key in pairs(app.positionDefaults) do
                 if key ~= "scale" then
-                    app:SetWindowValue(config, key, app.windowDefaults[key])
+                    app:SetWindowValue(config, key, app.positionDefaults[key])
                 end
             end
             config.anchorTo = nil
@@ -240,7 +240,7 @@ local function WindowPositionOptions(config)
                 app:RebuildWindows()
             end,
             default = function()
-                return app.windowDefaults.scale
+                return app.positionDefaults.scale
             end,
         },
     })

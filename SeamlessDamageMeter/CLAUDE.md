@@ -59,17 +59,15 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 
 - `app.MAX_WINDOWS` (`settings.lua`) is the only limit on window slots: frames, Edit Mode
   registration, options tabs and tests all follow it. Every profile has slots 1–`MAX_WINDOWS`; a
-  fresh profile activates slot 1. Slots above the limit (profiles from the old ten-window limit)
-  move to `profile.parkedWindows` by ID, untouched, and return if the limit grows. `config.enabled` activates a
-  slot, `config.hidden` hides it temporarily (`/sdm show` brings hidden windows back). All slot
+  fresh profile activates slot 1. `config.enabled` activates a slot, `config.hidden` hides it temporarily (`/sdm show` brings hidden windows back). All slot
   frames always exist (globals `SeamlessDamageMeterWindow<ID>`, an authorized exception for other
   addons; the ID is the fixed slot), keep their positions while inactive and can be anchor
   targets. Deactivating keeps all settings.
 - Size and layout: `profile.windowDefaults` plus explicit `config.overrides` (nil inherits, false
   is a valid override).
-- Position and scale (`app.POSITION_KEYS`: point, relativePoint, x, y, scale) are each window's own
-  values in `config.position`, never overrides; `windowDefaults` only seeds new windows and
-  Reset to default position. Write them with `app:SetWindowValue`. Each window's options tab
+- Position and scale (point, relativePoint, x, y, scale) are each window's own values in
+  `config.position`, never overrides; `app.positionDefaults` only seeds new windows and Reset to
+  default position. Write them with `app:SetWindowValue`. Each window's options tab
   shows them in Core's standard Position and scale section (`core:GetPositionOptions`).
   `config.anchorTo` is a window ID or nil for UIParent; circular anchors are rejected. Old window IDs, geometry fields and appearance settings are migrated idempotently;
   excess windows from old profiles stay in `profile.legacyWindows`.

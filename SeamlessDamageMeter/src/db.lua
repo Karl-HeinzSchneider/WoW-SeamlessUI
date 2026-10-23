@@ -10,11 +10,15 @@ app.windowDefaults = {
     lockSize = false,
     lockPosition = false,
     numbers = "complete",
-    scale = 1,
+}
+
+-- Position and scale are each window's own values (`config.position`), never inherited.
+app.positionDefaults = {
     point = "CENTER",
     relativePoint = "CENTER",
     x = 0,
     y = 0,
+    scale = 1,
 }
 
 app.skinDefaults = {

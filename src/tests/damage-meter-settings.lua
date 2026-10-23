@@ -20,7 +20,7 @@ local function copy(t)
     end
     return result
 end
-local old = { id = 1, width = 450, height = 230, x = 12.5, y = -25, favorites = { "Dps" } }
+local old = { id = 1, width = 450, height = 230, favorites = { "Dps" } }
 local fresh = { id = 2, overrides = {}, favorites = { "DamageDone", "HealingDone" } }
 app.db = { profile = { windows = { old, fresh }, windowDefaults = copy(app.windowDefaults) } }
 app.db.profile.windowDefaults.fontSize = 15
@@ -147,7 +147,6 @@ assert(not app:RemoveSkin("default") and app.db.profile.skins.default)
 -- Position and scale are the window's own values in the standard section, not overrides.
 assert(values.x == nil and values.point == nil and values.scale == nil and defaults.x == nil)
 local position = values.position.args
-assert(old.position.x == 12.5 and old.position.y == -25 and old.overrides.x == nil, "Old offsets are migrated")
 assert(fresh.position.point == "CENTER" and fresh.position.x == 0 and fresh.position.scale == 1)
 position.x.set(nil, 40)
 position.point.set(nil, "TOPLEFT")
@@ -198,23 +197,13 @@ end
 app:PrepareWindowSettings()
 assert(#app.db.profile.windows == 6 and #app.db.profile.legacyWindows == 6)
 assert(app:GetUnusedWindowSlot() == nil)
--- Slots above the limit (from a profile made with more windows) are parked and come back.
-app.db.profile = { windows = {}, fixedWindowSlots = true, windowDefaults = copy(app.windowDefaults) }
-for id = 1, 10 do
-    table.insert(
-        app.db.profile.windows,
-        { id = id, enabled = id == 8, overrides = {}, anchorTo = id == 2 and 9 or nil }
-    )
-end
+-- Raising MAX_WINDOWS is all it takes to add slots.
+app.MAX_WINDOWS = 8
 app:PrepareWindowSettings()
-assert(#app.db.profile.windows == 6 and app.db.profile.parkedWindows[8].enabled)
-assert(not app:CanAnchorTo(app.db.profile.windows[2], 9), "Parked windows are not anchor targets")
-app:PrepareWindowSettings()
-assert(#app.db.profile.windows == 6 and app.db.profile.parkedWindows[10], "Parking must be idempotent")
-app.MAX_WINDOWS = 10
-app:PrepareWindowSettings()
-assert(#app.db.profile.windows == 10 and app.db.profile.windows[8].enabled and app.db.profile.parkedWindows == nil)
+assert(#app.db.profile.windows == 8 and app.db.profile.windows[8].position.point == "CENTER")
 app.MAX_WINDOWS = 6
+app:PrepareWindowSettings()
+assert(#app.db.profile.windows == 6)
 print(
     "PASS: migration, inheritance, false overrides, independent colors, anchor cycles, numeric validation, profile switching and AceConfig schema"
 )

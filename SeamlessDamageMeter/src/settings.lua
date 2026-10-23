@@ -4,12 +4,8 @@ local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- Number of window slots. Every slot shares the same settings, frames and options, so only this
--- value limits them; slots above it are parked in `profile.parkedWindows` and return if it grows.
+-- value limits them.
 app.MAX_WINDOWS = 6
-
--- Position and scale are plain per-window values in `config.position` (anchor window: `config.anchorTo`),
--- never inherited overrides; `windowDefaults` only seeds them.
-app.POSITION_KEYS = { point = true, relativePoint = true, x = true, y = true, scale = true }
 
 function app:GetWindowSetting(config, key)
     if key == "height" and self:GetWindowSetting(config, "fixedHeight") then
@@ -17,12 +13,8 @@ function app:GetWindowSetting(config, key)
         local spacing = self:GetWindowSetting(config, "rowSpacing")
         return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
     end
-    if self.POSITION_KEYS[key] then
-        local value = config.position and config.position[key]
-        if value ~= nil then
-            return value
-        end
-        return self.db.profile.windowDefaults[key]
+    if self.positionDefaults[key] ~= nil then
+        return config.position[key]
     end
     if self.skinDefaults[key] ~= nil then
         local override = config.styleOverrides and config.styleOverrides[key]
@@ -46,12 +38,19 @@ end
 
 -- Writes a window's own value: position keys to `config.position`, the rest as overrides.
 function app:SetWindowValue(config, key, value)
-    if self.POSITION_KEYS[key] then
-        config.position = config.position or {}
+    if self.positionDefaults[key] ~= nil then
         config.position[key] = value
     else
         config.overrides[key] = value
     end
+end
+
+function app:NewWindowPosition()
+    local position = {}
+    for key, value in pairs(self.positionDefaults) do
+        position[key] = value
+    end
+    return position
 end
 
 local function CopySettings(source)
@@ -90,11 +89,6 @@ function app:RemoveSkin(key)
     end
     skins[key] = nil
     for _, config in ipairs(self.db.profile.windows) do
-        if config.skin == key then
-            config.skin = "default"
-        end
-    end
-    for _, config in pairs(self.db.profile.parkedWindows or {}) do
         if config.skin == key then
             config.skin = "default"
         end
@@ -164,35 +158,27 @@ function app:PrepareWindowSettings()
         profile.fixedWindowSlots = true
         profile.nextID = nil
     end
-    local slots, parked = {}, profile.parkedWindows or {}
+    local slots = {}
     for _, config in ipairs(profile.windows) do
         if config.enabled == nil then
             config.enabled = true
         end
-        if config.id > self.MAX_WINDOWS then
-            parked[config.id] = config
-        else
-            slots[config.id] = config
-        end
+        slots[config.id] = config
     end
     for id = 1, self.MAX_WINDOWS do
-        if not slots[id] then
-            slots[id] = parked[id]
-                or { id = id, enabled = false, statistic = "DamageDone", session = "Current", overrides = {} }
-            parked[id] = nil
-        end
+        slots[id] = slots[id] or { id = id, enabled = false, statistic = "DamageDone", session = "Current" }
         profile.windows[id] = slots[id]
     end
     for index = #profile.windows, self.MAX_WINDOWS + 1, -1 do
         profile.windows[index] = nil
     end
-    profile.parkedWindows = next(parked) and parked or nil
     if not profile.initialized then
         profile.windows[1].enabled = true
         profile.initialized = true
     end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
+        config.position = config.position or self:NewWindowPosition()
         if not config.skin then
             config.skin = "default"
             local customized = false
@@ -225,23 +211,11 @@ function app:PrepareWindowSettings()
             config.favorites = nil
         end
         -- Keep old layouts while all new windows inherit the profile defaults.
-        for _, key in ipairs({ "width", "height", "x", "y" }) do
+        for _, key in ipairs({ "width", "height" }) do
             if config[key] ~= nil then
                 config.overrides[key] = config[key]
                 config[key] = nil
             end
-        end
-        -- Position overrides become the window's own values; inherited ones take the default.
-        config.position = config.position or {}
-        for key in pairs(self.POSITION_KEYS) do
-            if config.position[key] == nil then
-                local value = config.overrides[key]
-                if value == nil then
-                    value = profile.windowDefaults[key]
-                end
-                config.position[key] = value
-            end
-            config.overrides[key] = nil
         end
     end
     if not profile.nativeBarFont then

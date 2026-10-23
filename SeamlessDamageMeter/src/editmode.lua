@@ -17,7 +17,7 @@ local function SaveLayout(config, name)
     end
     local record = { anchorTo = config.anchorTo }
     for _, key in ipairs(layoutKeys) do
-        record[key] = app.POSITION_KEYS[key] and app:GetWindowSetting(config, key) or config.overrides[key]
+        record[key] = app.positionDefaults[key] ~= nil and config.position[key] or config.overrides[key]
     end
     config.editModeLayouts = config.editModeLayouts or {}
     config.editModeLayouts[name] = record
@@ -32,12 +32,7 @@ function app:ApplyEditModeLayout()
         local record = config.editModeLayouts and config.editModeLayouts[activeLayout]
         if record then
             for _, key in ipairs(layoutKeys) do
-                local value = record[key]
-                -- Records saved while position was inherited hold nil: that was the default.
-                if value == nil and self.POSITION_KEYS[key] then
-                    value = self.db.profile.windowDefaults[key]
-                end
-                self:SetWindowValue(config, key, value)
+                self:SetWindowValue(config, key, record[key])
             end
             config.anchorTo = record.anchorTo
         else
@@ -157,7 +152,11 @@ local function RegisterControls(frame)
             end
             return kind == lib.SettingType.Slider and SliderValue(value * multiplier, step) or value
         end
-        local default = (skin and app.skinDefaults or app.windowDefaults)[key]
+        local default = (
+            skin and app.skinDefaults
+            or app.positionDefaults[key] ~= nil and app.positionDefaults
+            or app.windowDefaults
+        )[key]
         if key == "backgroundColor" then
             default = default[4]
         end
@@ -403,7 +402,7 @@ function app:SyncWindowEditMode(frame)
                 lib:RefreshFrameSettings(movedFrame)
                 app.core:RefreshOptions("SeamlessDamageMeter")
             end,
-            { point = app.windowDefaults.point, x = app.windowDefaults.x, y = app.windowDefaults.y },
+            { point = app.positionDefaults.point, x = app.positionDefaults.x, y = app.positionDefaults.y },
             L["Seamless Damage %d"]:format(frame.windowID)
         )
         RegisterControls(frame)
@@ -453,11 +452,6 @@ local function LayoutRecords(callback)
     -- Native layout names are shared across AceDB profiles, including inactive profiles.
     for _, profile in pairs(app.db.profiles) do
         for _, config in ipairs(profile.windows or {}) do
-            if config.editModeLayouts then
-                callback(config.editModeLayouts)
-            end
-        end
-        for _, config in pairs(profile.parkedWindows or {}) do
             if config.editModeLayouts then
                 callback(config.editModeLayouts)
             end

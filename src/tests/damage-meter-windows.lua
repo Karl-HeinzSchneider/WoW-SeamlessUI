@@ -1118,7 +1118,7 @@ inherited.title.scripts.OnDragStop(inherited.title)
 assert(inherited.config.anchorTo == nil and inherited.anchorTarget == UIParent, "A dragged window leaves its anchor")
 assert(app:GetWindowSetting(inherited.config, "relativePoint") == app:GetWindowSetting(inherited.config, "point"))
 inherited.config.anchorTo = second.config.id
-inherited.config.position.relativePoint, inherited.config.position.x, inherited.config.position.y = nil, nil, nil
+inherited.config.position = app:NewWindowPosition()
 app:SetWindowEnabled(second.config, false)
 app.core = { logger = { chat = function() end } }
 for _ = 1, 12 do

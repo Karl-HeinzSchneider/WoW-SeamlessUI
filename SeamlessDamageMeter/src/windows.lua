@@ -20,8 +20,7 @@ local function UpdateInteraction(frame)
 end
 
 -- Toggles a dropdown above its selector, aligned to the selector's right edge or, with `side`
--- "LEFT", its left edge; the menu manager flips/clamps at screen edges. Selectors toggle on mouse
--- down, before the menu manager dismisses outside clicks.
+-- "LEFT", its left edge; the menu manager flips/clamps at screen edges.
 local function OpenMenuAbove(owner, generator, side)
     local manager = Menu.GetManager()
     local open = manager:GetOpenMenu()
@@ -38,6 +37,11 @@ local function OpenMenuAbove(owner, generator, side)
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end
     return menu
+end
+
+-- GLOBAL_MOUSE_DOWN closes open menus unless the frame under the cursor claims the press.
+local function HandlesMenuToggle(_, buttonName, event)
+    return event == "GLOBAL_MOUSE_DOWN" and buttonName == "LeftButton"
 end
 
 local function ScrollOffsetKey(frame)
@@ -1350,9 +1354,11 @@ function app:CreateWindow(id)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end, true)
-    -- Dropdown selectors toggle their menu on mouse down (see OpenMenuAbove).
+    -- Dropdown selectors toggle their menu on mouse down. Like the client's dropdown buttons, they
+    -- claim that press so the menu manager doesn't close the menu before the click reopens it.
     for _, selector in ipairs({ frame.statistic, frame.session, menu }) do
         selector:RegisterForClicks("LeftButtonDown")
+        selector.HandlesGlobalMouseEvent = HandlesMenuToggle
     end
     frame.session:SetSize(math.max(#L["O"], #L["C"]) > 1 and 32 or 18, 18)
     frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)

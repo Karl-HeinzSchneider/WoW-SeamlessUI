@@ -867,6 +867,13 @@ local current, overall = menuRoot.entries[4], menuRoot.entries[5]
 assert(openTypeMenu and openTypeMenu:GetOwnerRegion() == frame.session)
 frame.session.scripts.OnClick()
 assert(openTypeMenu == nil, "A second session click closes its menu")
+for _, selector in ipairs({ frame.statistic, frame.session, frame.settings }) do
+    assert(
+        selector:HandlesGlobalMouseEvent("LeftButton", "GLOBAL_MOUSE_DOWN"),
+        "The menu manager leaves the press to us"
+    )
+    assert(not selector:HandlesGlobalMouseEvent("RightButton", "GLOBAL_MOUSE_DOWN"))
+end
 assert(fight.label == "Combat 42 (live)" and otherFight.label == "Boss (live)")
 local menuButton = object()
 menuButton.fontString = object(menuButton)

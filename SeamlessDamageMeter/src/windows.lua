@@ -141,18 +141,13 @@ function app:PositionWindow(frame)
     frame.positioning = nil
 end
 
-function app:SaveWindowPosition(frame, onlyChanged)
+function app:SaveWindowPosition(frame)
     local config = frame.config
     local x, y = AnchorCoordinates(frame, app:GetWindowSetting(config, "point"))
     local targetX, targetY =
         AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
     x, y = (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale() - CollapseOffset(config)
-    if not onlyChanged or math.abs(x - app:GetWindowSetting(config, "x")) > 0.001 then
-        config.overrides.x = x
-    end
-    if not onlyChanged or math.abs(y - app:GetWindowSetting(config, "y")) > 0.001 then
-        config.overrides.y = y
-    end
+    config.overrides.x, config.overrides.y = x, y
 end
 
 local function SaveGeometry(frame, resizing)
@@ -162,6 +157,12 @@ local function SaveGeometry(frame, resizing)
     end
     frame.editing = nil
     local config = frame.config
+    if not resizing and config.anchorTo then
+        -- A moved window leaves its anchor window and stays where it was dropped.
+        config.anchorTo = nil
+        config.overrides.relativePoint = app:GetWindowSetting(config, "point")
+        frame.anchorTarget = UIParent
+    end
     app:SaveWindowPosition(frame)
     if resizing and not app:IsWindowCollapsed(config) then
         config.overrides.width = frame:GetWidth()

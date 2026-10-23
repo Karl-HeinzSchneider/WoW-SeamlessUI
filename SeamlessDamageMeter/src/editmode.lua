@@ -385,14 +385,13 @@ function app:SyncWindowEditMode(frame)
                     return
                 end
                 -- Lock position applies outside Edit Mode only; Edit Mode moves always persist.
-                if movedFrame.config.anchorTo then
-                    -- Linked anchors use independent points: convert the resulting screen position.
-                    app:SaveWindowPosition(movedFrame, true)
-                else
-                    local overrides = movedFrame.config.overrides
-                    overrides.point, overrides.relativePoint = point, point
-                    overrides.x, overrides.y = x, y
-                end
+                -- Like Blizzard's Edit Mode, a moved window leaves its anchor window and stays where
+                -- the library placed it on UIParent; windows anchored to it keep following it.
+                local overrides = movedFrame.config.overrides
+                overrides.point, overrides.relativePoint = point, point
+                overrides.x, overrides.y = x, y
+                movedFrame.config.anchorTo = nil
+                movedFrame.anchorTarget = UIParent
                 SaveLayout(movedFrame.config, layoutName)
                 app:PositionWindow(movedFrame)
                 -- Reset Position does not refresh the dialog itself; keep the Position values current.

@@ -1109,6 +1109,14 @@ for index = 1, 5 do
     assert(inherited.point[index] == anchorPoint[index], "Deactivation must preserve the dependent's anchor geometry")
 end
 assert(inherited.config.overrides.width == nil, "Deactivating an anchor must not override the inherited size")
+app:SetWindowEnabled(second.config, true)
+inherited.title.scripts.OnDragStart(inherited.title)
+inherited.title.scripts.OnDragStop(inherited.title)
+assert(inherited.config.anchorTo == nil and inherited.anchorTarget == UIParent, "A dragged window leaves its anchor")
+assert(app:GetWindowSetting(inherited.config, "relativePoint") == app:GetWindowSetting(inherited.config, "point"))
+inherited.config.anchorTo = second.config.id
+inherited.config.overrides.relativePoint, inherited.config.overrides.x, inherited.config.overrides.y = nil, nil, nil
+app:SetWindowEnabled(second.config, false)
 app.core = { logger = { chat = function() end } }
 for _ = 1, 12 do
     app:AddWindow()
@@ -1314,10 +1322,22 @@ assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock position outside Edit Mode").set(nil, true)
 meter:SetPoint("CENTER", UIParent, "CENTER", 250, 150)
 moves[meter](meter, "Modern", "CENTER", 250, 150)
-assert(
-    meter.config.overrides.x == 250 or meter.config.anchorTo,
-    "Edit Mode moves persist while locked outside Edit Mode"
-)
+assert(meter.config.overrides.x == 250, "Edit Mode moves persist while locked outside Edit Mode")
+-- An Edit Mode move releases the moved window's anchor; windows anchored to it keep theirs.
+local follower = app.windowFrames[2]
+local followerEnabled = follower.config.enabled
+follower.config.enabled = true
+meter.config.anchorTo, follower.config.anchorTo = 3, 1
+app:RebuildWindows()
+assert(meter.anchorTarget == app.windowFrames[3] and follower.anchorTarget == meter)
+moves[meter](meter, "Modern", "TOPLEFT", 40, -60)
+assert(meter.config.anchorTo == nil and meter.anchorTarget == UIParent, "A moved window leaves its anchor")
+assert(meter.config.overrides.point == "TOPLEFT" and meter.config.overrides.relativePoint == "TOPLEFT")
+assert(meter.config.overrides.x == 40 and meter.config.overrides.y == -60)
+assert(meter.config.editModeLayouts.Modern.anchorTo == nil, "The released anchor is saved in the layout")
+assert(follower.config.anchorTo == 1 and follower.anchorTarget == meter, "Dependents keep following")
+follower.config.anchorTo, follower.config.enabled = nil, followerEnabled
+app:RebuildWindows()
 setting("Lock position outside Edit Mode").set(nil, false)
 setting("Bar height").set(nil, 29)
 assert(app:GetWindowSetting(meter.config, "rowHeight") == 29)

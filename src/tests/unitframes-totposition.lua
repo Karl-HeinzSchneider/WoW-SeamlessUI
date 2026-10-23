@@ -358,20 +358,12 @@ frames.options[1].set(false)
 assert(not targetMover.frame.shown)
 frames.options[1].set(true)
 
--- A drag keeps the anchor frame and point: offsets are measured from TargetFrame's BOTTOMRIGHT.
-targetMover.frame.rect = { left = 1100, right = 1196, top = 300, bottom = 261 }
-targetMover.callback(targetMover.frame, "Custom", "BOTTOMLEFT", 1100, 261)
-stored = app.db.profile.totPositions.targettarget.Custom
-assert(stored.point == "TOPRIGHT" and stored.relativeTo == "TargetFrame" and stored.relativePoint == "BOTTOMRIGHT")
--- TOPRIGHT (1196, 300) * 0.8 minus BOTTOMRIGHT (1200, 320) * 1, in the stand-in's 0.8 scale.
-assert(math.abs(stored.x - (1196 * 0.8 - 1200) / 0.8) < 1e-9 and math.abs(stored.y - (300 * 0.8 - 320) / 0.8) < 1e-9)
-assert(last(TargetFrameToT)[4] == stored.x, "the real frame follows")
-
--- Unknown geometry falls back to LibEditMode's UIParent position.
-TargetFrame.rect = nil
+-- A drag releases the anchor frame: the ToT is stored where LibEditMode placed it on UIParent.
 targetMover.callback(targetMover.frame, "Custom", "BOTTOMLEFT", 40, 30)
 stored = app.db.profile.totPositions.targettarget.Custom
-assert(stored.point == "BOTTOMLEFT" and stored.relativeTo == "UIParent" and stored.x == 40 and stored.y == 30)
+assert(stored.point == "BOTTOMLEFT" and stored.relativeTo == "UIParent" and stored.relativePoint == "BOTTOMLEFT")
+assert(stored.x == 40 and stored.y == 30)
+assert(last(TargetFrameToT)[2] == UIParent and last(TargetFrameToT)[4] == 40, "the real frame follows")
 
 -- Reset Position reports LibEditMode's default: back to the client's anchor.
 local reset = targetMover.default

@@ -211,29 +211,6 @@ function module:Reset(key)
     self:Changed()
 end
 
----The offsets that put `frame`'s `point` where it is now, measured from `relativeTo`'s
----`relativePoint`, in `frame`'s scale. Nil while either rectangle is unknown.
----@return number? x, number? y
-function module:MeasureOffsets(frame, point, relativeTo, relativePoint)
-    local function at(region, anchor)
-        local left, right, top, bottom = region:GetLeft(), region:GetRight(), region:GetTop(), region:GetBottom()
-        local scale = region:GetEffectiveScale()
-        if not (app.Known(left) and app.Known(right) and app.Known(top) and app.Known(bottom) and app.Known(scale)) then
-            return nil
-        end
-        local x = anchor:find("LEFT") and left or anchor:find("RIGHT") and right or (left + right) / 2
-        local y = anchor:find("TOP") and top or anchor:find("BOTTOM") and bottom or (top + bottom) / 2
-        return x * scale, y * scale
-    end
-    local fx, fy = at(frame, point)
-    local rx, ry = at(relativeTo, relativePoint)
-    local scale = frame:GetEffectiveScale()
-    if not fx or not rx then
-        return nil
-    end
-    return (fx - rx) / scale, (fy - ry) / scale
-end
-
 ---The bar's options tab Position and scale group; nil for bars that can't move.
 ---@param key string
 ---@return table?

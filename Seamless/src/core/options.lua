@@ -21,6 +21,7 @@ local PROFILE_EVENTS = { "OnProfileChanged", "OnProfileCopied", "OnProfileReset"
 ---@field tooltip? fun(path: string[]): any, boolean? Default value and whether the setting is per-character.
 ---@field new? boolean Tag the addon's category header.
 ---@field blizzard? boolean Tag the addon's category header.
+---@field editMode? boolean Tag the addon's category header.
 
 ---@class SeamlessCore.OptionsPanel
 ---@field title string
@@ -42,11 +43,12 @@ local function RegisterConfigPages(name, title, args, flags)
     if name == appName then
         app.config.categories[name].new = flags.new
         app.config.categories[name].blizzard = flags.blizzard
+        app.config.categories[name].editMode = flags.editMode
     end
     if name ~= appName and not isTweaks then
         app.addon:RegisterConfigCategory(
             name,
-            { name = title, header = true, new = flags.new, blizzard = flags.blizzard }
+            { name = title, header = true, new = flags.new, blizzard = flags.blizzard, editMode = flags.editMode }
         )
     end
     for key, tab in pairs(args) do
@@ -59,6 +61,7 @@ local function RegisterConfigPages(name, title, args, flags)
             hidden = tab.hidden,
             new = tags.new,
             blizzard = tags.blizzard,
+            editMode = tags.editMode,
             create = function(page)
                 local root = AceConfigRegistry:GetOptionsTable(name, "dialog", "SeamlessConfig-1.0")
                 app.config:CreateOptionsPage(page, root, key, name)
@@ -89,6 +92,9 @@ local function RegisterConfigPages(name, title, args, flags)
             end
             if spec.blizzard == nil then
                 spec.blizzard = existing.blizzard
+            end
+            if spec.editMode == nil then
+                spec.editMode = existing.editMode
             end
             app.config.categories[id] = spec
             spec.id = id
@@ -160,6 +166,7 @@ end
 ---@field order? number
 ---@field new? boolean Show a glowing NEW label beside this feature.
 ---@field blizzard? boolean Show a glowing BLIZZ label beside this feature.
+---@field editMode? boolean Show a glowing EDIT MODE label: its settings live in the Edit Mode layout.
 ---@field options? table<string, table> AceConfig args; each key is the setting it stores.
 ---@field settings fun(): table The current profile's settings table; `enabled` is the switch.
 ---@field toggled fun() After `enabled` changed.
@@ -177,6 +184,7 @@ function module.FeatureGroup(spec)
             type = "toggle",
             new = spec.new,
             blizzard = spec.blizzard,
+            editMode = spec.editMode,
             order = spec.order,
             width = "full",
             name = spec.name,
@@ -212,6 +220,7 @@ function module.FeatureGroup(spec)
         type = "group",
         new = spec.new,
         blizzard = spec.blizzard,
+        editMode = spec.editMode,
         inline = true,
         order = spec.order,
         name = spec.name,

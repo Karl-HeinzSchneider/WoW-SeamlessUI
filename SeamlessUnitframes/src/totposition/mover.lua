@@ -32,8 +32,8 @@ local function IsReset(point, x, y)
     return point == RESET.point and x == RESET.x and y == RESET.y
 end
 
--- LibEditMode anchored the stand-in to UIParent; keep the stored point and anchor frame and
--- measure the new offsets from there, so a ToT anchored to its unit frame stays attached to it.
+-- Like Blizzard's Edit Mode, a moved ToT leaves its anchor frame: it is stored where LibEditMode
+-- placed the stand-in on UIParent.
 local function OnMoved(key, point, x, y)
     local position = app.totPosition
     if IsReset(point, x, y) then
@@ -41,13 +41,7 @@ local function OnMoved(key, point, x, y)
         return
     end
     local current = position:Get(key)
-    local relative = position:RelativeFrame(key, current.relativeTo)
-    local offsetX, offsetY = position:MeasureOffsets(mover.movers[key], current.point, relative, current.relativePoint)
-    if offsetX then
-        current.relativeTo, current.x, current.y = relative:GetName(), offsetX, offsetY
-    else
-        current.point, current.relativeTo, current.relativePoint, current.x, current.y = point, "UIParent", point, x, y
-    end
+    current.point, current.relativeTo, current.relativePoint, current.x, current.y = point, "UIParent", point, x, y
     position:SetPosition(key, current)
 end
 

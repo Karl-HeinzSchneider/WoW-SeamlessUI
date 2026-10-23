@@ -39,9 +39,8 @@ BOTTOMRIGHT (12, 10; the small focus frame 20, 8 from `FocusFrameMixin:SetSmallS
   Position group (Scale disabled: the ToT takes its unit frame's Frame Size).
 - `mover.lua`, `app.totMover`: an addon-owned UIParent stand-in per frame with the ToT art, size
   and effective scale, registered with LibEditMode and shown only in Edit Mode (a Frames checkbox
-  each, on for the session), with Core's Position section. A drag keeps the stored point and
-  anchor frame and measures new offsets from it, so a ToT anchored to its unit frame follows that
-  frame. LibEditMode's Reset Position reports the registered default (`RESET`), which means
+  each, on for the session), with Core's Position section. A drag releases the anchor frame: the
+  ToT is stored on UIParent where it was dropped, like Blizzard's Edit Mode. LibEditMode's Reset Position reports the registered default (`RESET`), which means
   Reset.
   The stand-ins show live player name, portrait, health and power. They reuse the layout's fixed
   ToT geometry and the name, class icon and health color modules' `ApplyPreview` methods with

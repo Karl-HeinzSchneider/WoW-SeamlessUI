@@ -64,7 +64,7 @@ Every option exists in two places, built from one declaration:
 Declare an option once, as plain AceConfig args through `core:RegisterOptions` (or
 `core.FeatureGroup` inside it); Core registers it in both. Never add an option to only one panel,
 build controls for one of them by hand, or use AceConfig keys our window can't render without
-checking `Seamless/src/config/CLAUDE.md`. Custom-window-only extras (`new`/`blizzard` tags,
+checking `Seamless/src/config/CLAUDE.md`. Custom-window-only extras (`new`/`blizzard`/`editMode` tags,
 `tooltip` defaults) are stripped before AceConfig sees them. Settings a frame shows in Edit Mode
 are also offered on its addon's options tab, built from the same rows (see Castbar, Unitframes).
 Test a new option in both panels.
@@ -82,6 +82,10 @@ Terms for every Edit Mode request:
   These are not the frame's settings.
 - **Edit Mode settings** / "add an option to Edit Mode": the settings window of the selected
   frame. Put the option there unless the user says otherwise.
+
+Moving a frame always breaks its anchor: when the user drags a frame away (Edit Mode or otherwise),
+store it on UIParent exactly where it was dropped, like Blizzard's Edit Mode. Never keep the old
+anchor frame and re-measure offsets from it. Frames anchored to the moved frame keep following it.
 
 `Seamless/CLAUDE.md` documents the APIs, row types and callbacks.
 

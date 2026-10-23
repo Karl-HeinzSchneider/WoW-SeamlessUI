@@ -1,3 +1,5 @@
 Seamless/lib/
 package-lock.json
 docs/atlas/AtlasInfo.*.json
+# Human-only file; agents never write to it (see CLAUDE.md).
+description.md

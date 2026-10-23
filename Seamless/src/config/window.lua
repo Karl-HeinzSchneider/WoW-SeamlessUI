@@ -6,6 +6,7 @@ local config = app.config
 local NAVIGATION_PANE_WIDTH, SCROLLBAR_GUTTER = 199, 24
 local NAVIGATION_WIDTH = NAVIGATION_PANE_WIDTH - SCROLLBAR_GUTTER
 local NAVIGATION_ROW_GAP = 1
+local NAVIGATION_PAGE_HEIGHT, NAVIGATION_HEADER_HEIGHT = 20, 30
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -13,6 +14,13 @@ local function label(parent, font, text, point, relative, relativePoint, x, y)
     textRegion:SetPoint(point, relative, relativePoint, x, y)
     textRegion:SetJustifyH("LEFT")
     return textRegion
+end
+
+-- Takes up a page row's space without showing anything.
+local function spacer(parent)
+    local frame = CreateFrame("Frame", nil, parent)
+    frame:SetSize(NAVIGATION_WIDTH, NAVIGATION_PAGE_HEIGHT)
+    return frame
 end
 
 local function scroll(parent, x, width)
@@ -251,14 +259,15 @@ function config:Refresh()
         row.id = category.id
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", 0, -y)
-        row:SetHeight(category.header and 30 or 20)
+        row:SetHeight(category.header and NAVIGATION_HEADER_HEIGHT or NAVIGATION_PAGE_HEIGHT)
         row.text:SetText(category.name)
         row.text:SetFontObject(
             category.header and "GameFontHighlightMedium"
                 or (category.id == self.selected and "GameFontHighlight" or "GameFontNormal")
         )
         row.text:ClearAllPoints()
-        row.text:SetPoint("LEFT", (category.header and 20 or 36) + depth * 12, category.header and -1 or 1)
+        -- Pages start at 36 below their header (depth 1), like Blizzard's list; deeper levels indent 12 more.
+        row.text:SetPoint("LEFT", (category.header and 20 or 24) + depth * 12, category.header and -1 or 1)
         row.text:SetPoint("RIGHT", category.header and -30 or -4, 0)
         self:UpdateFeatureTags(row, row.text, category)
         row.background:SetShown(category.header == true)
@@ -276,7 +285,7 @@ function config:Refresh()
         if category.header then
             row.toggle:SetPoint("RIGHT", -6, 0)
         else
-            row.toggle:SetPoint("LEFT", 9 + depth * 12, 0)
+            row.toggle:SetPoint("LEFT", -3 + depth * 12, 0)
         end
         local atlas = self.collapsed[category.id] and "common-button-list-plus" or "common-button-list-minus"
         row.toggle.icon:SetAtlas(atlas, true)
@@ -289,6 +298,9 @@ function config:Refresh()
     for index = #visible + 1, #self.rows do
         self.rows[index]:Hide()
     end
+    self.listEnd = self.listEnd or spacer(self.list)
+    self.listEnd:SetPoint("TOPLEFT", 0, -(y + NAVIGATION_ROW_GAP))
+    y = y + NAVIGATION_ROW_GAP + self.listEnd:GetHeight()
     self.list:SetHeight(math.max(1, y))
     self.navigation:SetVerticalScroll(
         math.min(self.navigation:GetVerticalScroll(), math.max(0, y - self.navigation:GetHeight()))

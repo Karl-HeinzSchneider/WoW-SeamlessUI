@@ -266,9 +266,13 @@ for _, row in ipairs(config.rows) do
     if row.id == "Page" then
         assert(row.featureTags.new:IsShown() and row.featureTags.blizzard:IsShown())
         assert(row.featureTags.blizzard.Label.text == "BLIZZ")
-        assert(row.text.points.LEFT[2] == 36, "tags must not shift category labels")
+        assert(row.text.points.LEFT[2] == 24, "tags must not shift category labels")
     end
 end
+-- An empty, page-high spacer ends the category list.
+local lastRow = config.rows[#config:GetVisibleCategories()]
+assert(config.listEnd and config.listEnd:GetHeight() == 20)
+assert(config.list:GetHeight() == -lastRow.points.TOPLEFT[3] + lastRow:GetHeight() + 1 + 20)
 local headerRight, dividerX = 18 + config.navigation:GetWidth(), 18 + 199
 local scrollbarCenter = headerRight + config.navigationBar.points.TOP[4]
 assert(scrollbarCenter - headerRight == dividerX - scrollbarCenter)

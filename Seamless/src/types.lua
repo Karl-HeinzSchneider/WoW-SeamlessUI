@@ -31,6 +31,7 @@
 ---@field collapsed table<string, boolean>
 ---@field pages table<string, table>
 ---@field rows table[]
+---@field listEnd? table Empty spacer below the last category row.
 ---@field frame? table
 ---@field selected? string
 ---@field minimized? boolean

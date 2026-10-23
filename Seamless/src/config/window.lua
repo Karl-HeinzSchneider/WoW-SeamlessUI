@@ -6,6 +6,7 @@ local config = app.config
 local NAVIGATION_PANE_WIDTH, SCROLLBAR_GUTTER = 199, 24
 local NAVIGATION_WIDTH = NAVIGATION_PANE_WIDTH - SCROLLBAR_GUTTER
 local NAVIGATION_ROW_GAP = 1
+local NAVIGATION_PAGE_HEIGHT, NAVIGATION_HEADER_HEIGHT = 20, 30
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -13,6 +14,13 @@ local function label(parent, font, text, point, relative, relativePoint, x, y)
     textRegion:SetPoint(point, relative, relativePoint, x, y)
     textRegion:SetJustifyH("LEFT")
     return textRegion
+end
+
+-- Takes up a page row's space without showing anything.
+local function spacer(parent)
+    local frame = CreateFrame("Frame", nil, parent)
+    frame:SetSize(NAVIGATION_WIDTH, NAVIGATION_PAGE_HEIGHT)
+    return frame
 end
 
 local function scroll(parent, x, width)
@@ -251,7 +259,7 @@ function config:Refresh()
         row.id = category.id
         row:ClearAllPoints()
         row:SetPoint("TOPLEFT", 0, -y)
-        row:SetHeight(category.header and 30 or 20)
+        row:SetHeight(category.header and NAVIGATION_HEADER_HEIGHT or NAVIGATION_PAGE_HEIGHT)
         row.text:SetText(category.name)
         row.text:SetFontObject(
             category.header and "GameFontHighlightMedium"
@@ -290,6 +298,9 @@ function config:Refresh()
     for index = #visible + 1, #self.rows do
         self.rows[index]:Hide()
     end
+    self.listEnd = self.listEnd or spacer(self.list)
+    self.listEnd:SetPoint("TOPLEFT", 0, -(y + NAVIGATION_ROW_GAP))
+    y = y + NAVIGATION_ROW_GAP + self.listEnd:GetHeight()
     self.list:SetHeight(math.max(1, y))
     self.navigation:SetVerticalScroll(
         math.min(self.navigation:GetVerticalScroll(), math.max(0, y - self.navigation:GetHeight()))

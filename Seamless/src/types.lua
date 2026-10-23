@@ -75,6 +75,8 @@
 ---@field options SeamlessCore.Options
 ---@field minimapButton SeamlessCore.MinimapButton
 ---@field tweaks SeamlessCore.Tweaks
+---@field defaultLayout SeamlessCore.DefaultLayout
+---@field defaultLayoutString string Edit Mode export string of the Seamless layout.
 
 ---@class SeamlessCore.Addon
 ---@field RegisterPreviewCharacter fun(self: SeamlessCore.Addon, id: string, record: SeamlessCore.PreviewCharacter)

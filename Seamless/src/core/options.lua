@@ -345,6 +345,31 @@ function module:OnInitialize()
                     },
                 },
             },
+            editModeLayout = {
+                type = "group",
+                inline = true,
+                order = 15,
+                name = L["Edit Mode layout"],
+                args = {
+                    info = {
+                        type = "description",
+                        order = 0,
+                        name = L["Seamless adds an account Edit Mode layout named Seamless as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."],
+                    },
+                    use = {
+                        type = "execute",
+                        order = 10,
+                        name = L["Use Seamless layout"],
+                        desc = L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."],
+                        func = function()
+                            local ok, err = app.defaultLayout:Use()
+                            if not ok then
+                                app.logger:warn(err)
+                            end
+                        end,
+                    },
+                },
+            },
             -- Filled by RegisterAddon: one button per enabled feature addon.
             addons = {
                 type = "group",

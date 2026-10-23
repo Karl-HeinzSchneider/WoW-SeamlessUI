@@ -168,6 +168,17 @@ markers on the selected frame's anchor points, then on the smallest hovered fram
 other. Right-click, Escape, combat, leaving Edit Mode or hiding the frame cancel. Run
 `lua src/tests/anchor-picker.lua`.
 
+## Seamless Edit Mode layout (`defaultlayout.lua`)
+
+`defaultlayout-data.lua` holds the in-game export string of the suite's Edit Mode layout; replace
+the whole string to update it (players keep the copy they already have). Once per character, a
+character on a preset layout switches to the account layout named "Seamless", which is added the
+first time (`SeamlessDB.global.defaultLayoutCreated`, `SeamlessDB.char.defaultLayoutChecked`); a
+deleted layout comes back only through the General tab's "Use Seamless layout" button. It is not a
+real preset: never add entries to `EditModePresetLayoutManager` or write `EditModeManagerFrame`'s
+tables (index shift and taint). Save through `C_EditMode` like the native import, outside combat
+and Edit Mode. Run `lua src/tests/default-layout.lua`.
+
 ## Settings for Blizzard systems (`systemoptions.lua`)
 
 `core:RegisterEditModeSystemOptions(id, spec)` adds a section to a Blizzard Edit Mode system's

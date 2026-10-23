@@ -119,12 +119,17 @@ L["%s = {"] = true
 L["%s |cff%s[%s]|r %s"] = true
 L["/kb starts Quick Keybind Mode"] = true
 L["/rl reloads the interface"] = true
+L["Added the Seamless Edit Mode layout. Choose another layout in Edit Mode at any time."] = true
 L["Addon compartment entry"] = true
 L["Addons"] = true
+L["All account layout slots are in use. Delete one in Edit Mode to add the Seamless layout."] = true
 L["Click an anchor point on another frame. Right-click or Escape cancels."] = true
 L["Click an anchor point on the selected frame. Right-click or Escape cancels."] = true
+L["Close Edit Mode first."] = true
 L["Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"] = true
 L["Completed: %d  |  %s XP"] = true
+L["Edit Mode is not ready yet."] = true
+L["Edit Mode layout"] = true
 L["format error: "] = true
 L["How much Seamless writes to chat. Also /seamless loglevel <level>."] = true
 L["Interface"] = true
@@ -139,13 +144,18 @@ L["Open the Seamless settings from Blizzard's addon compartment on the minimap, 
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true
 L["Right-click: config"] = true
+L["Seamless adds an account Edit Mode layout named Seamless as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."] = true
 L["Seamless"] = true
 L["SeamlessUI"] = true
+L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = true
+L["Switched to the Seamless Edit Mode layout."] = true
 L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = true
+L["The Seamless layout could not be read."] = true
 L["Tweaks"] = true
 L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] = true
 L["Type /rl in chat to reload the user interface, just like /reload."] = true
 L["Unknown log level: %s"] = true
+L["Use Seamless layout"] = true
 
 -- SeamlessActionBars
 L["Action Bars"] = true

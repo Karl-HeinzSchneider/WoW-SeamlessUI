@@ -14,19 +14,13 @@ function module:OnInitialize()
                 return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
             end
             local defaults = app.dbDefaults.profile.blizzardEditMode
-            if #path == 2 then
+            if defaults[path[2]] ~= nil then
                 return defaults[path[2]]
             end
-            return app.core:GetOptionDefault(defaults.frames, { path[2], path[3] })
+            return app.core:GetOptionDefault(defaults.frames, { path[2], "enabled" })
         end,
         title = L["UI"],
         general = {
-            description = {
-                type = "description",
-                order = 10,
-                name = L["General UI improvements for the Seamless suite."],
-                fontSize = "medium",
-            },
             xpBarTooltip = app.xpBarTooltip:Options(),
         },
         tabs = {

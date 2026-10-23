@@ -22,9 +22,12 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   stance/pet/possess bars, auras, XP/reputation containers, minimap and the other native systems),
   grouped as Unit frames, Action bars, Auras and Other frames. Entries stay hidden until the
   client's `registeredSystemFrames` has the frame; missing enums are safe.
-- Profile `blizzardEditMode`: a global `enabled` and per frame `enabled` (default on),
-  `addPosition` and `addMoreOptions` (default off; the latter only stores a preference for
-  future controls). AceDB wildcard defaults cover new registry keys.
+- Profile `blizzardEditMode`: global `enabled`, `addPosition` and `addMoreOptions` (all default
+  on; the latter only stores a preference for future controls), and per frame
+  `enabled`, `addPosition`, `addMoreOptions` (all default on). A frame's effective value is the
+  global switch and its own value. Options show only the global switches and one
+  "<frame> - Extend Edit Mode" toggle per frame under its category header; the per-frame
+  position/more-options values are internal. AceDB wildcard defaults cover new registry keys.
 - An addon-owned UIParent panel below the dialog, attached with removable AceHook post-hooks
   (LibEditMode has no API to unregister system extensions). `panel:LayoutContent()` stacks
   Position and the registered sections and sizes the panel. Never join native layout containers

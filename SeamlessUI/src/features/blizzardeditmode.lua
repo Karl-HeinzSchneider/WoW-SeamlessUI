@@ -183,6 +183,12 @@ local function settings()
     return app.db.profile.blizzardEditMode
 end
 
+-- The global switches apply to every frame; the per-frame values stay internal (on by default)
+-- so single frames can be excluded later without a migration.
+local function frameOption(spec, field)
+    return settings()[field] and settings().frames[spec.key][field]
+end
+
 local function hidePanel()
     if panel then
         panel:Hide()
@@ -274,13 +280,14 @@ function module:RefreshPanel()
     title:SetText(string.format(L["SeamlessUI - %s"], spec.name))
     panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
     local collapsed = app.core:IsEditModeSectionCollapsed(app.core:GetEditModePositionSectionKey())
-    if settings().frames[spec.key].addPosition then
+    local addPosition = frameOption(spec, "addPosition")
+    if addPosition then
         positionHeader:UpdateCollapsedState(collapsed)
         positionHeader:Show()
     else
         positionHeader:Hide()
     end
-    if settings().frames[spec.key].addPosition and not collapsed then
+    if addPosition and not collapsed then
         positionView = positionView or app.blizzardPosition:Create(panel)
         positionView:Refresh(system)
         positionView:Show()
@@ -332,22 +339,49 @@ function module:OnProfileRefresh()
 end
 
 function module:Options()
-    local args = {
-        enabled = {
+    local function globalToggle(order, key, name, desc)
+        return {
             type = "toggle",
-            order = 1,
+            order = order,
             width = "full",
-            name = L["Enable Blizzard Edit Mode extensions"],
-            desc = L["Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."],
+            name = name,
+            desc = desc,
             descStyle = "inline",
+            disabled = order > 1 and function()
+                return not settings().enabled
+            end or nil,
             get = function()
-                return settings().enabled
+                return settings()[key]
             end,
             set = function(_, value)
-                settings().enabled = value
-                module:OnProfileRefresh()
+                settings()[key] = value
+                if key == "enabled" then
+                    module:OnProfileRefresh()
+                else
+                    module:RefreshPanel()
+                end
             end,
-        },
+        }
+    end
+    local args = {
+        enabled = globalToggle(
+            1,
+            "enabled",
+            L["Enable Blizzard Edit Mode extensions"],
+            L["Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."]
+        ),
+        addPosition = globalToggle(
+            2,
+            "addPosition",
+            L["Add position"],
+            L["Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."]
+        ),
+        addMoreOptions = globalToggle(
+            3,
+            "addMoreOptions",
+            L["Add more options"],
+            L["Reserved for future frame options. This setting has no effect yet."]
+        ),
     }
     for categoryOrder, category in ipairs(categories) do
         args[category.key .. "Heading"] = {
@@ -373,50 +407,24 @@ function module:Options()
             end
         end
         args[key] = {
-            type = "group",
-            inline = true,
+            type = "toggle",
             order = categoryOrder * 1000 + order,
+            width = "full",
+            name = string.format(L["%s - Extend Edit Mode"], spec.name),
+            desc = L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."],
             hidden = function()
                 return not available(spec)
             end,
-            name = spec.name,
             disabled = function()
                 return not settings().enabled
             end,
-            get = function(info)
-                return settings().frames[key][info[#info]]
+            get = function()
+                return settings().frames[key].enabled
             end,
-            set = function(info, value)
-                settings().frames[key][info[#info]] = value
+            set = function(_, value)
+                settings().frames[key].enabled = value
                 module:RefreshPanel()
             end,
-            args = {
-                enabled = {
-                    type = "toggle",
-                    order = 1,
-                    width = "full",
-                    name = L["Extend Edit Mode"],
-                    desc = L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."],
-                },
-                addPosition = {
-                    type = "toggle",
-                    order = 2,
-                    name = L["Add position"],
-                    desc = L["Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to this frame's Edit Mode extension."],
-                    disabled = function()
-                        return not settings().enabled or not settings().frames[key].enabled
-                    end,
-                },
-                addMoreOptions = {
-                    type = "toggle",
-                    order = 3,
-                    name = L["Add more options"],
-                    desc = L["Reserved for future frame options. This setting has no effect yet."],
-                    disabled = function()
-                        return not settings().enabled or not settings().frames[key].enabled
-                    end,
-                },
-            },
         }
     end
     return { order = 30, name = L["Blizzard Edit Mode Extensions"], args = args }

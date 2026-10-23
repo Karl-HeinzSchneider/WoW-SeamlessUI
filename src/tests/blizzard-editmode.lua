@@ -205,27 +205,6 @@ function EditModeManagerFrame:IsEditModeActive()
 end
 module:InstallHooks()
 assert(module:IsHooked(EditModeSystemSettingsDialog, "AttachToSystemFrame"))
-local config = module:Options().args
-for _, key in ipairs({ "player", "target", "pet", "focus" }) do
-    local group = config[key]
-    local index = Enum.EditModeUnitFrameSystemIndices[key:sub(1, 1):upper() .. key:sub(2)]
-    EditModeSystemSettingsDialog.attachedToSystem = { system = 1, systemIndex = index }
-    module:RefreshPanel()
-    assert(panel:IsShown(), key)
-    group.set({ "enabled" }, false)
-    assert(not panel:IsShown() and group.args.addPosition.disabled())
-    group.set({ "enabled" }, true)
-    group.set({ "addPosition" }, true)
-    group.set({ "addMoreOptions" }, true)
-    assert(panel:IsShown() and group.get({ "addPosition" }) and group.get({ "addMoreOptions" }))
-end
--- Add position appears as an expanded Position header that collapses like every other header.
-assert(header.shown and header.text == "Position" and not header.collapsed and positionView.shown)
-header.onClick()
-assert(header.collapsed and not positionView.shown and panel.height == 92 and panel:IsShown())
-header.onClick()
-assert(not header.collapsed and positionView.shown)
-local originalPanel = panel
 -- Simulate AceDB's per-entry wildcard defaults for newly introduced frame keys.
 setmetatable(app.db.profile.blizzardEditMode.frames, {
     __index = function(t, key)
@@ -236,6 +215,45 @@ setmetatable(app.db.profile.blizzardEditMode.frames, {
         return value
     end,
 })
+local config = module:Options().args
+-- Position and more options are global; each frame only has its own Extend Edit Mode switch.
+assert(config.addPosition.type == "toggle" and config.addMoreOptions.type == "toggle")
+assert(config.addPosition.get() and config.addMoreOptions.get())
+config.addPosition.set(nil, false)
+assert(config.player.type == "toggle" and config.player.name == "Player frame - Extend Edit Mode")
+assert(config.player.order > config.unitsHeading.order and config.player.order < config.barsHeading.order)
+for _, key in ipairs({ "player", "target", "pet", "focus" }) do
+    local toggle = config[key]
+    local index = Enum.EditModeUnitFrameSystemIndices[key:sub(1, 1):upper() .. key:sub(2)]
+    EditModeSystemSettingsDialog.attachedToSystem = { system = 1, systemIndex = index }
+    module:RefreshPanel()
+    assert(panel:IsShown() and toggle.get(), key)
+    assert(not header.shown, "Position stays off until the global switch is on")
+    toggle.set(nil, false)
+    assert(not panel:IsShown() and not toggle.get())
+    toggle.set(nil, true)
+    assert(panel:IsShown())
+end
+config.addPosition.set(nil, true)
+config.addMoreOptions.set(nil, true)
+assert(config.addPosition.get() and config.addMoreOptions.get())
+config.enabled.set(nil, false)
+assert(config.addPosition.disabled() and config.player.disabled())
+config.enabled.set(nil, true)
+assert(not config.addPosition.disabled() and not config.player.disabled())
+-- The internal per-frame values still gate the global switch.
+app.db.profile.blizzardEditMode.frames.focus.addPosition = false
+module:RefreshPanel()
+assert(not header.shown)
+app.db.profile.blizzardEditMode.frames.focus.addPosition = true
+module:RefreshPanel()
+-- Add position appears as an expanded Position header that collapses like every other header.
+assert(header.shown and header.text == "Position" and not header.collapsed and positionView.shown)
+header.onClick()
+assert(header.collapsed and not positionView.shown and panel.height == 92 and panel:IsShown())
+header.onClick()
+assert(not header.collapsed and positionView.shown)
+local originalPanel = panel
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
 Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
 Enum.EditModeSystem.ObjectiveTracker = 6
@@ -291,11 +309,10 @@ for _, sample in ipairs(samples) do
     module:RefreshPanel()
     local selected, spec = module:GetSelectedFrame()
     assert(selected == native and spec.key == key and panel:IsShown(), key)
-    assert(config[key].get({ "enabled" }) and not config[key].get({ "addPosition" }))
-    config[key].set({ "addPosition" }, true)
-    config[key].set({ "enabled" }, false)
+    assert(config[key].get() and header.shown and header.text == "Position", key)
+    config[key].set(nil, false)
     assert(not panel:IsShown())
-    config[key].set({ "enabled" }, true)
+    config[key].set(nil, true)
     assert(panel:IsShown())
 end
 assert(not config.barsHeading.hidden() and not config.aurasHeading.hidden())
@@ -316,13 +333,13 @@ local function anchorMap()
     return result
 end
 local targets = anchorMap()
-assert(targets.NativeAnchor5 == config.actionBar1.name)
-assert(targets.NativeAnchor14 == config.petBar.name)
-assert(targets.NativeAnchor16 == config.buffs.name)
-assert(targets.NativeAnchor18 == config.statusBar1.name)
+assert(targets.NativeAnchor5 == "Action bar 1")
+assert(targets.NativeAnchor14 == "Pet action bar")
+assert(targets.NativeAnchor16 == "Buffs")
+assert(targets.NativeAnchor18 == "XP / reputation bar 1")
 assert(targets.NativeAnchor20 == nil, "Minimap keeps its existing dedicated anchor")
-config.buffs.set({ "enabled" }, false)
-assert(anchorMap().NativeAnchor16 == config.buffs.name)
+config.buffs.set(nil, false)
+assert(anchorMap().NativeAnchor16 == "Buffs")
 _G.NativeAnchor18 = nil
 assert(anchorMap().NativeAnchor18 == nil, "Unresolvable names cannot persist as anchors")
 EditModeManagerFrame.registeredSystemFrames[#EditModeManagerFrame.registeredSystemFrames + 1] = {
@@ -333,7 +350,7 @@ EditModeManagerFrame.registeredSystemFrames[#EditModeManagerFrame.registeredSyst
 }
 assert(anchorMap().UnknownAnchor == nil)
 assert(config.swingMainHand.hidden(), "Missing enum groups must be hidden safely")
-config.buffs.set({ "enabled" }, false)
+config.buffs.set(nil, false)
 assert(config.debuffs.get({ "enabled" }), "Different systems/indices must keep independent switches")
 EditModeSystemSettingsDialog.attachedToSystem = { system = 2, systemIndex = 999 }
 module:RefreshPanel()
@@ -374,6 +391,7 @@ module:OnProfileRefresh()
 assert(panel:IsShown())
 -- Sections other addons register for a system stack below Position under their own header.
 Enum.EditModeSystem.CastBar = 7
+config.addPosition.set(nil, false)
 local castBar = { system = 7 }
 table.insert(EditModeManagerFrame.registeredSystemFrames, castBar)
 EditModeSystemSettingsDialog.attachedToSystem = castBar

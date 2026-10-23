@@ -24,12 +24,12 @@ local profile = {
     },
     blizzardEditMode = {
         enabled = true,
+        -- Global switches for every frame's extension; combined with the internal per-frame
+        -- values below (addMoreOptions only stores a preference for future controls).
+        addPosition = true,
+        addMoreOptions = true,
         frames = {
-            ["*"] = { enabled = true, addPosition = false, addMoreOptions = false },
-            player = { enabled = true, addPosition = false, addMoreOptions = false },
-            target = { enabled = true, addPosition = false, addMoreOptions = false },
-            pet = { enabled = true, addPosition = false, addMoreOptions = false },
-            focus = { enabled = true, addPosition = false, addMoreOptions = false },
+            ["*"] = { enabled = true, addPosition = true, addMoreOptions = true },
         },
     },
 }

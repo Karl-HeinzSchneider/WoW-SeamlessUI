@@ -57,8 +57,32 @@ C_CVar = {
         return "1"
     end,
 }
+UIParent = {
+    GetWidth = function()
+        return 1920
+    end,
+    GetHeight = function()
+        return 1080
+    end,
+}
+InCombatLockdown = function()
+    return false
+end
+local coreApp = { addon = {} }
+dofile("src/tests/locale-support.lua")
+assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
+-- Core strips its custom `default` key before AceConfig sees an option.
+local function StripDefaults(option)
+    option.default = nil
+    for _, child in pairs(option.args or {}) do
+        StripDefaults(child)
+    end
+end
 app.core = {
     RefreshOptions = function() end,
+    GetPositionOptions = function(_, spec)
+        return coreApp.addon:GetPositionOptions(spec)
+    end,
     RegisterOptions = function(_, name, spec)
         app.optionSpec = spec
         local args =
@@ -68,7 +92,9 @@ app.core = {
             tab.type = "group"
             args[key] = tab
         end
-        registry:ValidateOptionsTable({ type = "group", name = "Test", args = args }, name)
+        local root = { type = "group", name = "Test", args = args }
+        StripDefaults(root)
+        registry:ValidateOptionsTable(root, name)
     end,
 }
 dofile("src/tests/locale-support.lua")
@@ -118,8 +144,22 @@ old.skin = removedID
 app.skinOptions.args[removedID].args.remove.func()
 assert(app.db.profile.skins[removedID] == nil and old.skin == "default")
 assert(not app:RemoveSkin("default") and app.db.profile.skins.default)
-assert(values.x.args.value.validate(nil, "12.125") == true)
-assert(type(values.x.args.value.validate(nil, "no")) == "string")
+-- Position and scale are the window's own values in the standard section, not overrides.
+assert(values.x == nil and values.point == nil and values.scale == nil and defaults.x == nil)
+local position = values.position.args
+assert(old.position.x == 12.5 and old.position.y == -25 and old.overrides.x == nil, "Old offsets are migrated")
+assert(fresh.position.point == "CENTER" and fresh.position.x == 0 and fresh.position.scale == 1)
+position.x.set(nil, 40)
+position.point.set(nil, "TOPLEFT")
+position.scale.set(nil, 1.25)
+assert(fresh.position.x == 40 and fresh.position.point == "TOPLEFT" and fresh.overrides.x == nil)
+assert(app:GetWindowSetting(fresh, "scale") == 1.25 and position.scale.get() == 1.25)
+assert(position.relativeTo.get() == "1" and position.relativeTo.values()["1"] == "Window 1")
+assert(app.windowTabs.window1.args.position.args.relativeTo.values()["2"] == nil, "Circular anchors are excluded")
+assert(not position.reset.disabled())
+position.reset.func()
+assert(fresh.position.x == 0 and fresh.position.point == "CENTER" and fresh.position.scale == 1.25)
+assert(position.reset.disabled() and fresh.anchorTo == nil, "Reset to default clears offsets and anchor, not scale")
 app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
 app:BuildWindowOptions()
 assert(#app.db.profile.windows == app.MAX_WINDOWS and app.MAX_WINDOWS == 6)
@@ -130,7 +170,7 @@ for id = 1, app.MAX_WINDOWS do
 end
 assert(app.optionSpec.tabs.window7 == nil and app.optionSpec.tabs.credits == nil)
 assert(app:CanAnchorTo(app.db.profile.windows[1], 6), "Inactive windows must remain anchor targets")
-local targets = app.windowTabs.window1.args.management.args.anchorTo.values()
+local targets = app.windowTabs.window1.args.position.args.relativeTo.values()
 assert(targets["6"] == "Window 6" and targets["7"] == nil)
 local enabledDefault = app.optionSpec.tooltip({ "window1", "management", "enabled" })
 assert(enabledDefault == true and app.optionSpec.tooltip({ "window2", "management", "enabled" }) == false)

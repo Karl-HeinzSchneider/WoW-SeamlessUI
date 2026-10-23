@@ -65,9 +65,13 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
   frames always exist (globals `SeamlessDamageMeterWindow<ID>`, an authorized exception for other
   addons; the ID is the fixed slot), keep their positions while inactive and can be anchor
   targets. Deactivating keeps all settings.
-- Geometry: `profile.windowDefaults` plus explicit `config.overrides` (nil inherits, false is a
-  valid override). `config.anchorTo` is a window ID or nil for UIParent; circular anchors are
-  rejected. Old window IDs, geometry fields and appearance settings are migrated idempotently;
+- Size and layout: `profile.windowDefaults` plus explicit `config.overrides` (nil inherits, false
+  is a valid override).
+- Position and scale (`app.POSITION_KEYS`: point, relativePoint, x, y, scale) are each window's own
+  values in `config.position`, never overrides; `windowDefaults` only seeds new windows and
+  Reset to default position. Write them with `app:SetWindowValue`. Each window's options tab
+  shows them in Core's standard Position and scale section (`core:GetPositionOptions`).
+  `config.anchorTo` is a window ID or nil for UIParent; circular anchors are rejected. Old window IDs, geometry fields and appearance settings are migrated idempotently;
   excess windows from old profiles stay in `profile.legacyWindows`.
 - Skins: `profile.skins` holds named appearances, selected by `config.skin` (`default`).
   `app:RemoveSkin` deletes any skin but Default; windows using it fall back to Default.

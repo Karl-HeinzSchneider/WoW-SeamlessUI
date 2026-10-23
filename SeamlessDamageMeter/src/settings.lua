@@ -7,11 +7,22 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- value limits them; slots above it are parked in `profile.parkedWindows` and return if it grows.
 app.MAX_WINDOWS = 6
 
+-- Position and scale are plain per-window values in `config.position` (anchor window: `config.anchorTo`),
+-- never inherited overrides; `windowDefaults` only seeds them.
+app.POSITION_KEYS = { point = true, relativePoint = true, x = true, y = true, scale = true }
+
 function app:GetWindowSetting(config, key)
     if key == "height" and self:GetWindowSetting(config, "fixedHeight") then
         local lines = self:GetWindowSetting(config, "visibleLines")
         local spacing = self:GetWindowSetting(config, "rowSpacing")
         return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
+    end
+    if self.POSITION_KEYS[key] then
+        local value = config.position and config.position[key]
+        if value ~= nil then
+            return value
+        end
+        return self.db.profile.windowDefaults[key]
     end
     if self.skinDefaults[key] ~= nil then
         local override = config.styleOverrides and config.styleOverrides[key]
@@ -31,6 +42,16 @@ function app:GetWindowSetting(config, key)
         return value
     end
     return self.db.profile.windowDefaults[key]
+end
+
+-- Writes a window's own value: position keys to `config.position`, the rest as overrides.
+function app:SetWindowValue(config, key, value)
+    if self.POSITION_KEYS[key] then
+        config.position = config.position or {}
+        config.position[key] = value
+    else
+        config.overrides[key] = value
+    end
 end
 
 local function CopySettings(source)
@@ -209,6 +230,18 @@ function app:PrepareWindowSettings()
                 config.overrides[key] = config[key]
                 config[key] = nil
             end
+        end
+        -- Position overrides become the window's own values; inherited ones take the default.
+        config.position = config.position or {}
+        for key in pairs(self.POSITION_KEYS) do
+            if config.position[key] == nil then
+                local value = config.overrides[key]
+                if value == nil then
+                    value = profile.windowDefaults[key]
+                end
+                config.position[key] = value
+            end
+            config.overrides[key] = nil
         end
     end
     if not profile.nativeBarFont then

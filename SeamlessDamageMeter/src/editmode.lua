@@ -17,7 +17,7 @@ local function SaveLayout(config, name)
     end
     local record = { anchorTo = config.anchorTo }
     for _, key in ipairs(layoutKeys) do
-        record[key] = config.overrides[key]
+        record[key] = app.POSITION_KEYS[key] and app:GetWindowSetting(config, key) or config.overrides[key]
     end
     config.editModeLayouts = config.editModeLayouts or {}
     config.editModeLayouts[name] = record
@@ -32,7 +32,12 @@ function app:ApplyEditModeLayout()
         local record = config.editModeLayouts and config.editModeLayouts[activeLayout]
         if record then
             for _, key in ipairs(layoutKeys) do
-                config.overrides[key] = record[key]
+                local value = record[key]
+                -- Records saved while position was inherited hold nil: that was the default.
+                if value == nil and self.POSITION_KEYS[key] then
+                    value = self.db.profile.windowDefaults[key]
+                end
+                self:SetWindowValue(config, key, value)
             end
             config.anchorTo = record.anchorTo
         else
@@ -90,7 +95,7 @@ local function ResizeWindow(frame, key, value, fromReset)
     if value == app:GetWindowSetting(frame.config, key) then
         return
     end
-    frame.config.overrides[key] = value
+    app:SetWindowValue(frame.config, key, value)
     frame.applyingLayout = true
     frame:SetSize(app:GetWindowSetting(frame.config, "width"), app:GetWindowSetting(frame.config, "height"))
     frame.applyingLayout = nil
@@ -106,7 +111,7 @@ local function SetWindowOption(frame, key, value)
     if app:GetWindowSetting(frame.config, key) == value then
         return
     end
-    frame.config.overrides[key] = value
+    app:SetWindowValue(frame.config, key, value)
     app:RebuildWindows()
 end
 
@@ -211,7 +216,7 @@ local function RegisterControls(frame)
             if key == "relativeTo" then
                 frame.config.anchorTo = tonumber(value)
             else
-                frame.config.overrides[key] = value
+                app:SetWindowValue(frame.config, key, value)
             end
             app:RebuildWindows()
         end,
@@ -387,9 +392,9 @@ function app:SyncWindowEditMode(frame)
                 -- Lock position applies outside Edit Mode only; Edit Mode moves always persist.
                 -- Like Blizzard's Edit Mode, a moved window leaves its anchor window and stays where
                 -- the library placed it on UIParent; windows anchored to it keep following it.
-                local overrides = movedFrame.config.overrides
-                overrides.point, overrides.relativePoint = point, point
-                overrides.x, overrides.y = x, y
+                local position = movedFrame.config.position
+                position.point, position.relativePoint = point, point
+                position.x, position.y = x, y
                 movedFrame.config.anchorTo = nil
                 movedFrame.anchorTarget = UIParent
                 SaveLayout(movedFrame.config, layoutName)

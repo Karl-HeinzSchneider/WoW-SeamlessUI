@@ -1101,7 +1101,7 @@ app.db.profile.windowDefaults.width = 520
 app:RebuildWindows()
 assert(inherited:GetWidth() == 520 and second:GetWidth() == 400)
 inherited.config.anchorTo = second.config.id
-inherited.config.overrides.scale = 1.5
+inherited.config.position.scale = 1.5
 app:RebuildWindows()
 assert(inherited.anchorTarget == second and inherited:GetEffectiveScale() == 1.5)
 assert(not app:CanAnchorTo(second.config, inherited.config.id))
@@ -1118,7 +1118,7 @@ inherited.title.scripts.OnDragStop(inherited.title)
 assert(inherited.config.anchorTo == nil and inherited.anchorTarget == UIParent, "A dragged window leaves its anchor")
 assert(app:GetWindowSetting(inherited.config, "relativePoint") == app:GetWindowSetting(inherited.config, "point"))
 inherited.config.anchorTo = second.config.id
-inherited.config.overrides.relativePoint, inherited.config.overrides.x, inherited.config.overrides.y = nil, nil, nil
+inherited.config.position.relativePoint, inherited.config.position.x, inherited.config.position.y = nil, nil, nil
 app:SetWindowEnabled(second.config, false)
 app.core = { logger = { chat = function() end } }
 for _ = 1, 12 do
@@ -1274,7 +1274,7 @@ local positionSpec = positionSpecs[1]
 assert(positionSpec.get("relativeTo") == (meter.config.anchorTo and tostring(meter.config.anchorTo) or "screen"))
 assert(positionSpec.get("point") == app:GetWindowSetting(meter.config, "point"))
 positionSpec.set("x", 123)
-assert(meter.config.overrides.x == 123, "Position X edits the window offset")
+assert(meter.config.position.x == 123, "Position X edits the window offset")
 assert(positionSpec.anchorFrames()[1].value == "screen")
 for _, entry in ipairs(positionSpec.anchorFrames()) do
     assert(entry.value ~= tostring(meter.config.id), "a window never anchors to itself")
@@ -1325,7 +1325,7 @@ assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock position outside Edit Mode").set(nil, true)
 meter:SetPoint("CENTER", UIParent, "CENTER", 250, 150)
 moves[meter](meter, "Modern", "CENTER", 250, 150)
-assert(meter.config.overrides.x == 250, "Edit Mode moves persist while locked outside Edit Mode")
+assert(meter.config.position.x == 250, "Edit Mode moves persist while locked outside Edit Mode")
 -- An Edit Mode move releases the moved window's anchor; windows anchored to it keep theirs.
 local follower = app.windowFrames[2]
 local followerEnabled = follower.config.enabled
@@ -1335,8 +1335,8 @@ app:RebuildWindows()
 assert(meter.anchorTarget == app.windowFrames[3] and follower.anchorTarget == meter)
 moves[meter](meter, "Modern", "TOPLEFT", 40, -60)
 assert(meter.config.anchorTo == nil and meter.anchorTarget == UIParent, "A moved window leaves its anchor")
-assert(meter.config.overrides.point == "TOPLEFT" and meter.config.overrides.relativePoint == "TOPLEFT")
-assert(meter.config.overrides.x == 40 and meter.config.overrides.y == -60)
+assert(meter.config.position.point == "TOPLEFT" and meter.config.position.relativePoint == "TOPLEFT")
+assert(meter.config.position.x == 40 and meter.config.position.y == -60)
 assert(meter.config.editModeLayouts.Modern.anchorTo == nil, "The released anchor is saved in the layout")
 assert(follower.config.anchorTo == 1 and follower.anchorTarget == meter, "Dependents keep following")
 follower.config.anchorTo, follower.config.enabled = nil, followerEnabled
@@ -1363,7 +1363,7 @@ assert(setting("Frame width").default == app.windowDefaults.width)
 assert(setting("Bar height").default == 24, "Defaults must not capture customized skin values")
 meter.config.anchorTo = nil
 moves[meter](meter, "Modern", "TOPLEFT", 80, -90)
-assert(meter.config.overrides.point == "TOPLEFT" and meter.config.overrides.x == 80)
+assert(meter.config.position.point == "TOPLEFT" and meter.config.position.x == 80)
 assert(meter.config.editModeLayouts.Modern.x == 80)
 callbacks.create("Copied", 4, "Modern")
 assert(meter.config.editModeLayouts.Copied.x == 80)

@@ -147,7 +147,7 @@ function app:SaveWindowPosition(frame)
     local targetX, targetY =
         AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
     x, y = (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale() - CollapseOffset(config)
-    config.overrides.x, config.overrides.y = x, y
+    config.position.x, config.position.y = x, y
 end
 
 local function SaveGeometry(frame, resizing)
@@ -160,7 +160,7 @@ local function SaveGeometry(frame, resizing)
     if not resizing and config.anchorTo then
         -- A moved window leaves its anchor window and stays where it was dropped.
         config.anchorTo = nil
-        config.overrides.relativePoint = app:GetWindowSetting(config, "point")
+        config.position.relativePoint = app:GetWindowSetting(config, "point")
         frame.anchorTarget = UIParent
     end
     app:SaveWindowPosition(frame)

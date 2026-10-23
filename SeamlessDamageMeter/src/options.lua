@@ -3,19 +3,8 @@ local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
-local anchors = {
-    TOPLEFT = L["Top left"],
-    TOP = L["Top"],
-    TOPRIGHT = L["Top right"],
-    LEFT = L["Left"],
-    CENTER = L["Center"],
-    RIGHT = L["Right"],
-    BOTTOMLEFT = L["Bottom left"],
-    BOTTOM = L["Bottom"],
-    BOTTOMRIGHT = L["Bottom right"],
-}
-
--- Layout controls inherit window defaults; appearance controls belong to skins.
+-- Layout controls inherit window defaults; appearance controls belong to skins. Position and scale
+-- are each window's own values (`WindowPositionOptions`).
 local settings = {
     { key = "width", name = L["Width"], type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = L["Height"], type = "range", min = 120, max = 900, step = 1 },
@@ -52,7 +41,6 @@ local settings = {
         type = "toggle",
         desc = L["Prevent dragging the window outside Edit Mode. Edit Mode can still move it."],
     },
-    { key = "scale", name = L["Scale"], type = "range", min = 0.5, max = 2, step = 0.01 },
     {
         key = "font",
         name = L["Font"],
@@ -83,10 +71,6 @@ local settings = {
     { key = "headerColor", name = L["Header tint"], type = "color" },
     { key = "rowHeight", name = L["Row height"], type = "range", min = 16, max = 40, step = 1 },
     { key = "rowSpacing", name = L["Row spacing"], type = "range", min = 0, max = 12, step = 1 },
-    { key = "point", name = L["Window anchor"], type = "select", values = anchors },
-    { key = "relativePoint", name = L["Target anchor"], type = "select", values = anchors },
-    { key = "x", name = L["X offset"], type = "input" },
-    { key = "y", name = L["Y offset"], type = "input" },
 }
 
 local function CopyValue(value)
@@ -119,8 +103,6 @@ local function SettingControl(definition, config, inherited, skin)
             end
             if definition.type == "color" then
                 return unpack(value)
-            elseif definition.type == "input" then
-                return tostring(value)
             end
             return value
         end,
@@ -128,8 +110,6 @@ local function SettingControl(definition, config, inherited, skin)
             local target = skin and skin.settings or (config and config.overrides or app.db.profile.windowDefaults)
             if definition.type == "color" then
                 target[key] = { value, g, b, a }
-            elseif definition.type == "input" then
-                target[key] = tonumber(value)
             else
                 target[key] = value
             end
@@ -138,13 +118,6 @@ local function SettingControl(definition, config, inherited, skin)
     }
     if definition.type == "color" then
         control.hasAlpha = true
-    elseif definition.type == "input" then
-        control.desc = L["Offset in window units. Positive X moves right; positive Y moves up. Decimals are supported."]
-        control.validate = function(_, value)
-            local number = tonumber(value)
-            return number and number == number and math.abs(number) <= 10000
-                or L["Enter a number between -10000 and 10000."]
-        end
     end
     if config then
         control.disabled = function()
@@ -160,8 +133,8 @@ local function AppearanceOptions(config)
             type = "description",
             order = 0,
             name = config
-                    and L["Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Dragging sets X/Y overrides; resizing also sets width/height overrides.\n"]
-                or L["Shared settings for every window without an override, including newly created windows. Offsets are measured at the window's scale.\n"],
+                    and L["Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Resizing sets width/height overrides.\n"]
+                or L["Shared settings for every window without an override, including newly created windows.\n"],
         },
     }
     for order, definition in ipairs(settings) do
@@ -208,12 +181,80 @@ local function AppearanceOptions(config)
     return args
 end
 
+-- The standard Position and scale section, on the window's own values. Moving or re-anchoring
+-- keeps the offsets; dragging the window measures them again.
+local function WindowPositionOptions(config)
+    local group = app.core:GetPositionOptions({
+        get = function(key)
+            if key == "relativeTo" then
+                return config.anchorTo and tostring(config.anchorTo) or "screen"
+            end
+            return app:GetWindowSetting(config, key)
+        end,
+        set = function(key, value)
+            if key == "relativeTo" then
+                config.anchorTo = tonumber(value)
+            else
+                app:SetWindowValue(config, key, value)
+            end
+            app:RebuildWindows()
+        end,
+        default = function(key)
+            if key == "relativeTo" then
+                return "screen"
+            end
+            return app.windowDefaults[key]
+        end,
+        isDefault = function()
+            for key in pairs(app.POSITION_KEYS) do
+                if key ~= "scale" and app:GetWindowSetting(config, key) ~= app.windowDefaults[key] then
+                    return false
+                end
+            end
+            return config.anchorTo == nil
+        end,
+        reset = function()
+            for key in pairs(app.POSITION_KEYS) do
+                if key ~= "scale" then
+                    app:SetWindowValue(config, key, app.windowDefaults[key])
+                end
+            end
+            config.anchorTo = nil
+            app:RebuildWindows()
+        end,
+        anchorFrames = function()
+            local values = { { text = L["Screen (UIParent)"], value = "screen" } }
+            for _, candidate in ipairs(app.db.profile.windows) do
+                if app:CanAnchorTo(config, candidate.id) then
+                    values[#values + 1] = { text = L["Window %d"]:format(candidate.id), value = tostring(candidate.id) }
+                end
+            end
+            return values
+        end,
+        scale = {
+            get = function()
+                return app:GetWindowSetting(config, "scale")
+            end,
+            set = function(value)
+                app:SetWindowValue(config, "scale", value)
+                app:RebuildWindows()
+            end,
+            default = function()
+                return app.windowDefaults.scale
+            end,
+        },
+    })
+    group.order = 2
+    return group
+end
+
 -- Window defaults and one tab per slot; the tab tables stay registered, only their args are rebuilt.
 function app:BuildWindowOptions()
     self:PrepareWindowSettings()
     self.windowOptions.args = AppearanceOptions()
     for _, config in ipairs(self.db.profile.windows) do
         local windowArgs = AppearanceOptions(config)
+        windowArgs.position = WindowPositionOptions(config)
         windowArgs.management = {
             type = "group",
             inline = true,
@@ -241,7 +282,6 @@ function app:BuildWindowOptions()
                         config.overrides = {}
                         config.styleOverrides = nil
                         config.modifyGlobalStyle = nil
-                        config.anchorTo = nil
                         self:RebuildWindows()
                     end,
                 },
@@ -274,29 +314,6 @@ function app:BuildWindowOptions()
                     end,
                     set = function(_, value)
                         config.skin = value
-                        self:RebuildWindows()
-                    end,
-                },
-                anchorTo = {
-                    type = "select",
-                    name = L["Anchored to"],
-                    order = 4,
-                    width = "full",
-                    desc = L["Anchor to the screen or another meter window. Circular anchors are excluded."],
-                    values = function()
-                        local values = { screen = L["Screen (UIParent)"] }
-                        for _, candidate in ipairs(self.db.profile.windows) do
-                            if self:CanAnchorTo(config, candidate.id) then
-                                values[tostring(candidate.id)] = L["Window %d"]:format(candidate.id)
-                            end
-                        end
-                        return values
-                    end,
-                    get = function()
-                        return config.anchorTo and tostring(config.anchorTo) or "screen"
-                    end,
-                    set = function(_, value)
-                        config.anchorTo = tonumber(value)
                         self:RebuildWindows()
                     end,
                 },
@@ -542,9 +559,6 @@ function app:RegisterOptions()
                 end
                 if key == "skin" then
                     return "default"
-                end
-                if key == "anchorTo" then
-                    return "screen"
                 end
                 if key == "enabled" then
                     return path[1] == "window1"

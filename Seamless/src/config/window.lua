@@ -258,7 +258,8 @@ function config:Refresh()
                 or (category.id == self.selected and "GameFontHighlight" or "GameFontNormal")
         )
         row.text:ClearAllPoints()
-        row.text:SetPoint("LEFT", (category.header and 20 or 36) + depth * 12, category.header and -1 or 1)
+        -- Pages start at 36 below their header (depth 1), like Blizzard's list; deeper levels indent 12 more.
+        row.text:SetPoint("LEFT", (category.header and 20 or 24) + depth * 12, category.header and -1 or 1)
         row.text:SetPoint("RIGHT", category.header and -30 or -4, 0)
         self:UpdateFeatureTags(row, row.text, category)
         row.background:SetShown(category.header == true)
@@ -276,7 +277,7 @@ function config:Refresh()
         if category.header then
             row.toggle:SetPoint("RIGHT", -6, 0)
         else
-            row.toggle:SetPoint("LEFT", 9 + depth * 12, 0)
+            row.toggle:SetPoint("LEFT", -3 + depth * 12, 0)
         end
         local atlas = self.collapsed[category.id] and "common-button-list-plus" or "common-button-list-minus"
         row.toggle.icon:SetAtlas(atlas, true)

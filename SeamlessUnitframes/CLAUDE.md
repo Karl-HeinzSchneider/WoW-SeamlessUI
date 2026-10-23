@@ -42,6 +42,9 @@ BOTTOMRIGHT (12, 10; the small focus frame 20, 8 from `FocusFrameMixin:SetSmallS
   each, on for the session), with Core's Position section. A drag releases the anchor frame: the
   ToT is stored on UIParent where it was dropped, like Blizzard's Edit Mode. LibEditMode's Reset Position reports the registered default (`RESET`), which means
   Reset.
+  The stand-ins are public frames named `SeamlessUnitframes<frameName>Preview` (e.g.
+  `SeamlessUnitframesTargetFrameToTPreview`) so SeamlessDarkmode tints their `FrameTexture`; keep
+  those names and that key.
   The stand-ins show live player name, portrait, health and power. They reuse the layout's fixed
   ToT geometry and the name, class icon and health color modules' `ApplyPreview` methods with
   their own ToT settings key. Hooks on those modules' `Refresh` keep visible previews in sync.

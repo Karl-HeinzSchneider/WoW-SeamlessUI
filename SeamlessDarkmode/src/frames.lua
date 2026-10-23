@@ -10,6 +10,8 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- named here.
 --
 -- Frame names that may be missing in this client are looked up through _G and skipped when nil.
+-- That includes SeamlessUnitframes' Edit Mode stand-ins for the ToT frames, which follow the
+-- real frames' tint.
 
 ---@alias SeamlessDarkmode.Paint fun(texture: Texture?)
 
@@ -41,12 +43,14 @@ end
 local function TargetFrame(paint)
     TargetFrameTemplate(paint, _G.TargetFrame)
     paint(_G.TargetFrameToT and _G.TargetFrameToT.FrameTexture)
+    paint(_G.SeamlessUnitframesTargetFrameToTPreview and _G.SeamlessUnitframesTargetFrameToTPreview.FrameTexture)
 end
 
 ---@param paint SeamlessDarkmode.Paint
 local function FocusFrame(paint)
     TargetFrameTemplate(paint, _G.FocusFrame)
     paint(_G.FocusFrameToT and _G.FocusFrameToT.FrameTexture)
+    paint(_G.SeamlessUnitframesFocusFrameToTPreview and _G.SeamlessUnitframesFocusFrameToTPreview.FrameTexture)
 end
 
 ---@param paint SeamlessDarkmode.Paint

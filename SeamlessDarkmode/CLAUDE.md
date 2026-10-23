@@ -7,7 +7,9 @@ reputation border).
 - `src/frames.lua`: one function per frame naming the exact textures of that frame and its
   subframes, and `app.groups`, the option groups listing those functions:
   - Unit frames: `PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, `PartyFrame`,
-    `BossFrames` (frame texture, level background circle).
+    `BossFrames` (frame texture, level background circle). Target and focus also paint their
+    ToT frames and SeamlessUnitframes' public Edit Mode stand-ins for them
+    (`SeamlessUnitframesTargetFrameToTPreview`, `SeamlessUnitframesFocusFrameToTPreview`).
   - Minimap: `Minimap` (`MinimapCompassTexture`, its rotating underlay, the zone header) and
     `AddonCompartmentButton` (its `StateTexture`, leaving text, notifications and additive
     interaction highlights untouched), and `MinimapButtons`

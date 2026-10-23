@@ -43,8 +43,8 @@ system, so they are not part of this addon.
   Mode Scale slider.
 - `src/preview.lua`: target/focus Edit Mode stand-ins using client art: addon-owned UIParent
   children at the bar's position and effective scale, registered with LibEditMode with Core's
-  Position section and the Style rows. A drag keeps the stored anchor frame and measures offsets
-  from it; Reset Position reports the registered default (`RESET`). Preview Frames checkboxes are
+  Position section and the Style rows. A drag releases the anchor frame (stored on UIParent where
+  dropped, like Blizzard's Edit Mode); Reset Position reports the registered default (`RESET`). Preview Frames checkboxes are
   session-only.
 
 ## Rules

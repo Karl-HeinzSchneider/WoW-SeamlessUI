@@ -452,39 +452,19 @@ TargetFrameSpellBar:AdjustPosition()
 hooks[TargetFrameSpellBar].AdjustPosition(TargetFrameSpellBar)
 assert(TargetFrameSpellBar.point[2] == "client" and not app.position:IsMoved("target"))
 
--- A drag keeps the anchor frame and stores offsets measured from it.
-target.GetLeft, target.GetRight = function()
-    return 100
-end, function()
-    return 250
-end
-target.GetTop, target.GetBottom = function()
-    return 300
-end, function()
-    return 290
-end
-target.scale = 1.5
-TargetFrame.GetLeft, TargetFrame.GetRight = function()
-    return 60
-end, function()
-    return 260
-end
-TargetFrame.GetTop, TargetFrame.GetBottom = function()
-    return 420
-end, function()
-    return 340
-end
-moved[target](target, layout, "TOPLEFT", 1, 2)
+-- A drag releases the anchor frame: the bar is stored where LibEditMode placed it on UIParent.
+moved[target](target, layout, "TOPLEFT", 40, -40)
 local stored = app.db.profile.positions.target.Modern
 assert(
-    stored and stored.relativeTo == "TargetFrame" and stored.x == 40 and stored.y == -40,
-    "offsets from the unit frame"
+    stored and stored.point == "TOPLEFT" and stored.relativeTo == "UIParent" and stored.relativePoint == "TOPLEFT",
+    "a drag leaves the unit frame"
 )
-assert(TargetFrameSpellBar.point[2] == TargetFrame and TargetFrameSpellBar.point[4] == 40, "the real bar moves")
+assert(stored.x == 40 and stored.y == -40)
+assert(TargetFrameSpellBar.point[2] == UIParent and TargetFrameSpellBar.point[4] == 40, "the real bar moves")
 -- The client placing the bar again (new target, cast start) puts it back at the stored position.
 TargetFrameSpellBar:AdjustPosition()
 hooks[TargetFrameSpellBar].OnShow(TargetFrameSpellBar)
-assert(TargetFrameSpellBar.point[2] == TargetFrame and TargetFrameSpellBar.point[5] == -40)
+assert(TargetFrameSpellBar.point[2] == UIParent and TargetFrameSpellBar.point[5] == -40)
 assert(rawget(FocusFrameSpellBar, "point") == nil, "the focus bar is left alone")
 
 -- Positions belong to the layout and follow copies, renames and deletes.

@@ -91,6 +91,9 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - Each window's `editModeLayouts[layoutName]` in the profile snapshots position, size, scale and
   anchor overrides; layout and profile switches restore it, and layout create/copy/rename/delete
   updates every profile. Edit Mode moves always save, even with Lock position on.
+- Moving a window (Edit Mode drag, nudge or Reset Position, or a header drag outside Edit Mode)
+  releases its `anchorTo` and anchors it to UIParent where it was dropped, like Blizzard's Edit
+  Mode; windows anchored to it keep following it.
 - One Frames checkbox ("Seamless Damage Meter", via `core:RegisterEditModeOptions` with
   `section = "frames"`) previews active slots without changing activation. Previews use local
   sample sessions only, never live combat data, and expand collapsed windows visually.

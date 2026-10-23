@@ -52,14 +52,11 @@ local function NewAccountLayoutIndex(info)
     return last + 1, count
 end
 
-local function IsPreset(info)
-    local active = info.layouts[info.activeLayout]
-    return active == nil or active.layoutType == Enum.EditModeLayoutType.Preset
-end
-
--- Adds the layout and activates it, the same calls the native import makes.
+-- Adds the layout with the same calls the native import makes. Blizzard reloads its layout list
+-- only when the active layout changes, so the new layout is activated even when `activate` is
+-- false; the previous layout is then selected again, shifted past the inserted index.
 ---@return boolean ok, string? err
-local function Create(info)
+local function Create(info, activate)
     local index, count = NewAccountLayoutIndex(info)
     if count >= Constants.EditModeConsts.EditModeMaxLayoutsPerType then
         return false, L["All account layout slots are in use. Delete one in Edit Mode to add the Seamless layout."]
@@ -68,11 +65,18 @@ local function Create(info)
     if not ok or type(layout) ~= "table" or not C_EditMode.IsValidLayoutName(LAYOUT_NAME) then
         return false, L["The Seamless layout could not be read."]
     end
+    local previous = info.activeLayout
+    if previous >= index then
+        previous = previous + 1
+    end
     layout.layoutType = Enum.EditModeLayoutType.Account
     layout.layoutName = LAYOUT_NAME
     table.insert(info.layouts, index, layout)
     C_EditMode.SaveLayouts(info)
     C_EditMode.OnLayoutAdded(index, true, true)
+    if not activate then
+        C_EditMode.SetActiveLayout(previous)
+    end
     return true
 end
 
@@ -90,7 +94,7 @@ local function CanChange()
     return true
 end
 
--- Switches to the Seamless layout, adding it again if it was deleted.
+-- Switches to the Seamless layout, adding it again if it is missing.
 ---@return boolean ok, string? err
 function module:Use()
     local ok, err = CanChange()
@@ -105,20 +109,12 @@ function module:Use()
         end
         return true
     end
-    ok, err = Create(info)
-    if ok then
-        app.db.global.defaultLayoutCreated = true
-    end
-    return ok, err
+    return Create(info, true)
 end
 
--- Once per character: a character still on a preset layout switches to the Seamless layout,
--- which is added the first time. A layout the player chose is never replaced, and once the
--- account has had the layout, deleting it is respected.
-function module:CheckFirstLogin()
-    if app.db.char.defaultLayoutChecked then
-        return
-    end
+-- Once per session: adds the account layout when it is missing, without switching to it.
+-- Players choose it in Edit Mode, or copy it to make their own.
+function module:Check()
     local ok = CanChange()
     if not ok then
         if InCombatLockdown() then
@@ -128,41 +124,27 @@ function module:CheckFirstLogin()
         return
     end
     self:UnregisterAllEvents()
-    app.db.char.defaultLayoutChecked = true
     local info = LoadLayouts()
-    if not IsPreset(info) then
+    if FindLayout(info) then
         return
     end
-    local index = FindLayout(info)
-    if index then
-        app.db.global.defaultLayoutCreated = true
-        C_EditMode.SetActiveLayout(index)
-        log:info(L["Switched to the Seamless Edit Mode layout."])
-        return
-    end
-    if app.db.global.defaultLayoutCreated then
-        return
-    end
-    local created, err = Create(info)
+    local created, err = Create(info, false)
     if created then
-        app.db.global.defaultLayoutCreated = true
-        log:info(L["Added the Seamless Edit Mode layout. Choose another layout in Edit Mode at any time."])
+        log:info(L["Added the %s Edit Mode layout. Choose it in Edit Mode, or copy it to make your own."], LAYOUT_NAME)
     else
-        log:warn(err)
+        -- Full slots are the player's choice; say so only when they ask through the options.
+        log:debug(err)
     end
 end
 
 -- Next frame: Blizzard's own EDIT_MODE_LAYOUTS_UPDATED handler has to run first.
 function module:Schedule()
     C_Timer.After(0, function()
-        self:CheckFirstLogin()
+        self:Check()
     end)
 end
 
 function module:OnEnable()
-    if app.db.char.defaultLayoutChecked then
-        return
-    end
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", "Schedule")
     if EditModeManagerFrame and EditModeManagerFrame:IsInitialized() then
         self:Schedule()

@@ -119,7 +119,7 @@ L["%s = {"] = true
 L["%s |cff%s[%s]|r %s"] = true
 L["/kb starts Quick Keybind Mode"] = true
 L["/rl reloads the interface"] = true
-L["Added the Seamless Edit Mode layout. Choose another layout in Edit Mode at any time."] = true
+L["Added the %s Edit Mode layout. Choose it in Edit Mode, or copy it to make your own."] = true
 L["Addon compartment entry"] = true
 L["Addons"] = true
 L["All account layout slots are in use. Delete one in Edit Mode to add the Seamless layout."] = true
@@ -144,11 +144,10 @@ L["Open the Seamless settings from Blizzard's addon compartment on the minimap, 
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true
 L["Right-click: config"] = true
-L["Seamless adds an account Edit Mode layout named %s as a starting point. Characters on the Modern or Classic layout switch to it once; edit it or choose another layout in Edit Mode."] = true
+L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."] = true
 L["Seamless"] = true
 L["SeamlessUI"] = true
 L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = true
-L["Switched to the Seamless Edit Mode layout."] = true
 L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = true
 L["The Seamless layout could not be read."] = true
 L["Tweaks"] = true

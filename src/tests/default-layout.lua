@@ -122,79 +122,81 @@ local app = {
         warn = function(_, text)
             messages[#messages + 1] = "warn: " .. text
         end,
+        debug = function(_, text)
+            messages[#messages + 1] = "debug: " .. text
+        end,
     },
 }
 assert(loadfile("Seamless/src/core/defaultlayout.lua"))("Seamless", app)
 local module = app.defaultLayout
 
+local NAME = "SeamlessUI (Preset)"
 local function login()
-    db.char = {}
     module:OnEnable()
     flush()
 end
 
--- First character on a preset: the layout is added after the account layouts and activated.
-reset({ { layoutType = ACCOUNT, layoutName = "Mine" }, { layoutType = CHARACTER, layoutName = "Alt" } }, 1)
+-- Missing on a character with its own layout: added after the account layouts, then the
+-- character's layout (shifted by one) is selected again.
+reset({ { layoutType = ACCOUNT, layoutName = "Mine" }, { layoutType = CHARACTER, layoutName = "Alt" } }, 4)
 login()
-assert(saved.layouts[2].layoutName == "SeamlessUI (Preset)" and saved.layouts[2].layoutType == ACCOUNT)
+assert(saved.layouts[2].layoutName == NAME and saved.layouts[2].layoutType == ACCOUNT)
 assert(saved.layouts[3].layoutName == "Alt", "character layouts stay after account layouts")
-assert(calls[1] == "save" and calls[2] == "added 4" and saved.activeLayout == 4)
-assert(db.char.defaultLayoutChecked and db.global.defaultLayoutCreated)
+assert(calls[1] == "save" and calls[2] == "added 4" and calls[3] == "active 5")
+assert(saved.activeLayout == 5, "the character keeps its layout")
 assert(next(module.events) == nil)
 
--- Checked characters are left alone.
-saved.activeLayout = 2
+-- On a preset: added, the preset stays active.
+reset({}, 2)
+login()
+assert(saved.layouts[1].layoutName == NAME and calls[2] == "added 3" and saved.activeLayout == 2)
+
+-- Present: nothing changes, also on later logins.
 calls = {}
-module:OnEnable()
-flush()
+login()
 assert(#calls == 0)
 
--- Another character on a preset switches to the existing layout.
+-- Deleted: added again on the next login.
+reset({ { layoutType = CHARACTER, layoutName = "Alt" } }, 3)
 login()
-assert(#calls == 1 and calls[1] == "active 4")
+assert(saved.layouts[1].layoutName == NAME and calls[2] == "added 3" and saved.activeLayout == 4)
 
--- A character on its own layout keeps it.
-reset(
-    { { layoutType = ACCOUNT, layoutName = "SeamlessUI (Preset)" }, { layoutType = CHARACTER, layoutName = "Alt" } },
-    4
-)
-login()
-assert(#calls == 0 and db.char.defaultLayoutChecked)
-
--- Deleted after creation: not added again on login, but the options button restores it.
+-- The options button switches to it, adding it if needed.
 reset({}, 1)
-login()
-assert(#calls == 0)
 assert(module:Use())
-assert(saved.layouts[1].layoutName == "SeamlessUI (Preset)" and calls[2] == "added 3")
+assert(saved.layouts[1].layoutName == NAME and calls[2] == "added 3" and #calls == 2)
+assert(saved.activeLayout == 3)
+saved.activeLayout = 1
+assert(module:Use())
+assert(calls[3] == "active 3")
 assert(module:Use(), "already active")
-assert(#calls == 2)
+assert(#calls == 3)
 
--- Combat and Edit Mode postpone the first-login check.
-db.global = {}
+-- Combat and Edit Mode postpone the check.
 reset({}, 1)
 combat = true
 login()
-assert(#calls == 0 and not db.char.defaultLayoutChecked and module.events.PLAYER_REGEN_ENABLED)
+assert(#calls == 0 and module.events.PLAYER_REGEN_ENABLED)
 assert(not module:Use())
 combat = false
 editing = true
 module:Schedule()
 flush()
-assert(#calls == 0 and not db.char.defaultLayoutChecked)
+assert(#calls == 0)
 editing = false
 module:Schedule()
 flush()
 assert(calls[2] == "added 3")
 
--- Full account slots: warn and leave the layouts unchanged.
+-- Full account slots: no layout change; only the options button warns.
 local full = {}
 for i = 1, 5 do
     full[i] = { layoutType = ACCOUNT, layoutName = "Account " .. i }
 end
-db.global = {}
 reset(full, 1)
 login()
-assert(#calls == 0 and messages[#messages]:find("^warn: All account layout slots"))
+assert(#calls == 0 and messages[#messages]:find("^debug: All account layout slots"))
+local ok, err = module:Use()
+assert(not ok and err:find("^All account layout slots"))
 
 print("default-layout: ok")

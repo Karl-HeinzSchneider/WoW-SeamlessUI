@@ -354,6 +354,33 @@ function module:OnInitialize()
                     },
                 },
             },
+            editModeLayout = {
+                type = "group",
+                inline = true,
+                order = 15,
+                name = L["Edit Mode layout"],
+                args = {
+                    info = {
+                        type = "description",
+                        order = 0,
+                        name = L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."]:format(
+                            app.defaultLayout.LAYOUT_NAME
+                        ),
+                    },
+                    use = {
+                        type = "execute",
+                        order = 10,
+                        name = L["Use Seamless layout"],
+                        desc = L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."],
+                        func = function()
+                            local ok, err = app.defaultLayout:Use()
+                            if not ok then
+                                app.logger:warn(err)
+                            end
+                        end,
+                    },
+                },
+            },
             -- Filled by RegisterAddon: one button per enabled feature addon.
             addons = {
                 type = "group",

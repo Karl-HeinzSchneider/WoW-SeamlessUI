@@ -658,27 +658,6 @@ function app:RegisterOptions()
                             self:OpenBlizzardMeterSettings()
                         end,
                     },
-                    hideBlizzard = {
-                        type = "toggle",
-                        order = 20,
-                        width = "full",
-                        name = L["Hide the game's damage meter"],
-                        desc = L["Keeps the game's own meter window hidden, Edit Mode included. Showing it again takes a reload."],
-                        descStyle = "inline",
-                        get = function()
-                            return self.db.profile.hideBlizzard
-                        end,
-                        set = function(_, value)
-                            self.db.profile.hideBlizzard = value
-                            if value then
-                                self:HideBlizzardMeter()
-                            elseif self:IsBlizzardMeterHidden() then
-                                self.core.logger:chat(
-                                    L["Reload the interface (/reload) to show the game's damage meter again."]
-                                )
-                            end
-                        end,
-                    },
                 },
             },
         },

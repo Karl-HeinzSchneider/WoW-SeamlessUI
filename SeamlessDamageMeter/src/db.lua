@@ -44,7 +44,6 @@ app.dbDefaults = {
         windows = {},
         initialized = false,
         locked = false,
-        hideBlizzard = true,
         windowDefaults = app.windowDefaults,
         favorites = {},
         maxVisibleFavorites = 6,

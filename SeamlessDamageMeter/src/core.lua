@@ -25,7 +25,6 @@ function addon:RefreshProfile()
     app:ApplyEditModeLayout()
     app.core:RefreshEditModeOptions()
     app:RebuildWindows()
-    app:HideBlizzardMeter()
     app.core:RefreshOptions(appName)
 end
 

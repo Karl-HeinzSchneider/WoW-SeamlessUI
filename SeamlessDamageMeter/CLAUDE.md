@@ -43,9 +43,8 @@ architecture, limits and in-game acceptance checks.
 - Blizzard's own meter compares secret values in its code, so addon code never runs inside it:
   no hooks, no calls to its methods or scripts, no writes to its state or to the
   `damageMeterEnabled` CVar (CVar callbacks run inside the caller). `securecallfunction` does
-  not clear taint. Hiding it (`blizzard.lua`) only reparents `DamageMeter` under a hidden frame,
-  once per session; showing it again takes a reload. Its on/off CVar is changed only in the
-  game's settings, which our option opens.
+  not clear taint, and we don't hide or reparent it either. Its on/off CVar is changed only in
+  the game's settings, which our General option opens (`blizzard.lua`).
 
 ### Threat
 

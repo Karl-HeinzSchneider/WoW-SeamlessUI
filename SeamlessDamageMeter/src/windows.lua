@@ -19,14 +19,21 @@ local function UpdateInteraction(frame)
     frame.resize:EnableMouse(enabled and not app:GetWindowSetting(frame.config, "lockSize"))
 end
 
--- Opens a dropdown above its selector, aligned to the selector's right edge or, with `side`
--- "LEFT", its left edge; the menu manager flips/clamps at screen edges.
+-- Toggles a dropdown above its selector, aligned to the selector's right edge or, with `side`
+-- "LEFT", its left edge; the menu manager flips/clamps at screen edges. Selectors toggle on mouse
+-- down, before the menu manager dismisses outside clicks.
 local function OpenMenuAbove(owner, generator, side)
+    local manager = Menu.GetManager()
+    local open = manager:GetOpenMenu()
+    if open and open:GetOwnerRegion() == owner then
+        manager:CloseMenu(open)
+        return nil
+    end
     local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
     Menu.PopulateDescription(generator, owner, root)
     side = side or "RIGHT"
     local anchor = AnchorUtil.CreateAnchor("BOTTOM" .. side, owner, "TOP" .. side, 0, 2)
-    local menu = Menu.GetManager():OpenMenu(owner, root, anchor)
+    local menu = manager:OpenMenu(owner, root, anchor)
     if menu then
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end
@@ -1332,17 +1339,9 @@ function app:CreateWindow(id)
             frame.offset = frame.sourceOffset or 0
             self:RefreshWindows()
         else
-            local manager = Menu.GetManager()
-            local menu = manager:GetOpenMenu()
-            if menu and menu:GetOwnerRegion() == frame.statistic then
-                manager:CloseMenu(menu)
-            else
-                self:ShowStatisticMenu(frame)
-            end
+            self:ShowStatisticMenu(frame)
         end
     end)
-    -- Toggle on mouse down before the menu manager dismisses outside clicks.
-    frame.statistic:RegisterForClicks("LeftButtonDown")
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()
     -- Match the settings button's center; both use the same dropdown atlas family.
@@ -1351,6 +1350,10 @@ function app:CreateWindow(id)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end, true)
+    -- Dropdown selectors toggle their menu on mouse down (see OpenMenuAbove).
+    for _, selector in ipairs({ frame.statistic, frame.session, menu }) do
+        selector:RegisterForClicks("LeftButtonDown")
+    end
     frame.session:SetSize(math.max(#L["O"], #L["C"]) > 1 and 32 or 18, 18)
     frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
     frame.session.normalWidth = frame.session:GetWidth()

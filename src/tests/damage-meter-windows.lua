@@ -835,8 +835,12 @@ Menu = {
                     }
                     return openTypeMenu
                 end
-                openTypeMenu = nil -- Opening another menu replaces the type menu.
-                assert(owner == frame.session)
+                assert(owner == frame.session or owner == frame.settings)
+                openTypeMenu = { -- Opening another menu replaces the type menu.
+                    GetOwnerRegion = function()
+                        return owner
+                    end,
+                }
                 assert(anchor[1] == "BOTTOMRIGHT" and anchor[2] == owner and anchor[3] == "TOPRIGHT")
                 assert(anchor[5] > 0, "Session menu must prefer opening above the selector")
             end,
@@ -860,6 +864,9 @@ history = { { sessionID = 42, name = "", durationSeconds = 15 }, { sessionID = 4
 frame.session.scripts.OnClick()
 local fight, otherFight = menuRoot.entries[1], menuRoot.entries[2]
 local current, overall = menuRoot.entries[4], menuRoot.entries[5]
+assert(openTypeMenu and openTypeMenu:GetOwnerRegion() == frame.session)
+frame.session.scripts.OnClick()
+assert(openTypeMenu == nil, "A second session click closes its menu")
 assert(fight.label == "Combat 42 (live)" and otherFight.label == "Boss (live)")
 local menuButton = object()
 menuButton.fontString = object(menuButton)
@@ -1646,7 +1653,7 @@ print("Damage meter threat event window regressions OK")
 -- Settings menu ordering, actions and reversible noninteractive state.
 local oldManager = Menu.GetManager
 Menu.GetManager = function()
-    return { OpenMenu = function() end }
+    return { GetOpenMenu = function() end, OpenMenu = function() end }
 end
 local oldDescription = MenuUtil.CreateRootMenuDescription
 MenuUtil.CreateRootMenuDescription = function()

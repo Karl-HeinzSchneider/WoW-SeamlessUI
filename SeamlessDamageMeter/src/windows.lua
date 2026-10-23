@@ -19,16 +19,29 @@ local function UpdateInteraction(frame)
     frame.resize:EnableMouse(enabled and not app:GetWindowSetting(frame.config, "lockSize"))
 end
 
-local function OpenMenuAbove(owner, generator)
+-- Toggles a dropdown above its selector, aligned to the selector's right edge or, with `side`
+-- "LEFT", its left edge; the menu manager flips/clamps at screen edges.
+local function OpenMenuAbove(owner, generator, side)
+    local manager = Menu.GetManager()
+    local open = manager:GetOpenMenu()
+    if open and open:GetOwnerRegion() == owner then
+        manager:CloseMenu(open)
+        return nil
+    end
     local root = MenuUtil.CreateRootMenuDescription(MenuVariants.GetDefaultContextMenuMixin())
     Menu.PopulateDescription(generator, owner, root)
-    -- Prefer above the selector; the menu manager flips/clamps at screen edges.
-    local anchor = AnchorUtil.CreateAnchor("BOTTOMRIGHT", owner, "TOPRIGHT", 0, 2)
-    local menu = Menu.GetManager():OpenMenu(owner, root, anchor)
+    side = side or "RIGHT"
+    local anchor = AnchorUtil.CreateAnchor("BOTTOM" .. side, owner, "TOP" .. side, 0, 2)
+    local menu = manager:OpenMenu(owner, root, anchor)
     if menu then
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
     end
     return menu
+end
+
+-- GLOBAL_MOUSE_DOWN closes open menus unless the frame under the cursor claims the press.
+local function HandlesMenuToggle(_, buttonName, event)
+    return event == "GLOBAL_MOUSE_DOWN" and buttonName == "LeftButton"
 end
 
 local function ScrollOffsetKey(frame)
@@ -147,7 +160,7 @@ function app:SaveWindowPosition(frame)
     local targetX, targetY =
         AnchorCoordinates(frame.anchorTarget or UIParent, app:GetWindowSetting(config, "relativePoint"))
     x, y = (x - targetX) / frame:GetEffectiveScale(), (y - targetY) / frame:GetEffectiveScale() - CollapseOffset(config)
-    config.overrides.x, config.overrides.y = x, y
+    config.position.x, config.position.y = x, y
 end
 
 local function SaveGeometry(frame, resizing)
@@ -160,7 +173,7 @@ local function SaveGeometry(frame, resizing)
     if not resizing and config.anchorTo then
         -- A moved window leaves its anchor window and stays where it was dropped.
         config.anchorTo = nil
-        config.overrides.relativePoint = app:GetWindowSetting(config, "point")
+        config.position.relativePoint = app:GetWindowSetting(config, "point")
         frame.anchorTarget = UIParent
     end
     app:SaveWindowPosition(frame)
@@ -199,9 +212,10 @@ function app:SetWindowEnabled(config, enabled)
     self:RebuildWindows()
 end
 
+-- The type selector opens its menu like the other window dropdowns; favorite rows open it at the cursor.
 function app:ShowStatisticMenu(frame, favoriteSlot, owner)
     local config = frame.config
-    MenuUtil.CreateContextMenu(owner or frame.statistic, function(_, root)
+    local function GenerateMenu(_, root)
         local categories = {
             {
                 L["Damage"],
@@ -250,7 +264,12 @@ function app:ShowStatisticMenu(frame, favoriteSlot, owner)
                 end
             end)
         end
-    end)
+    end
+    if owner then
+        MenuUtil.CreateContextMenu(owner, GenerateMenu)
+    else
+        OpenMenuAbove(frame.statistic, GenerateMenu, "LEFT")
+    end
 end
 
 function app:UpdateFavorites(frame)
@@ -1261,7 +1280,7 @@ function app:CreateWindow(id)
     local menu = Button(frame, "", 27, function(button)
         local dropdown = OpenMenuAbove(button, function(_, root)
             root:CreateButton(L["Settings"], function()
-                self.core:OpenOptions("SeamlessDamageMeter", "windows")
+                self.core:OpenOptions("SeamlessDamageMeter", "window" .. id)
             end)
             local editmode = root:CreateButton(L["Editmode"], function()
                 if not InCombatLockdown() then
@@ -1324,17 +1343,9 @@ function app:CreateWindow(id)
             frame.offset = frame.sourceOffset or 0
             self:RefreshWindows()
         else
-            local manager = Menu.GetManager()
-            local menu = manager:GetOpenMenu()
-            if menu and menu:GetOwnerRegion() == frame.statistic then
-                manager:CloseMenu(menu)
-            else
-                self:ShowStatisticMenu(frame)
-            end
+            self:ShowStatisticMenu(frame)
         end
     end)
-    -- Toggle on mouse down before the menu manager dismisses outside clicks.
-    frame.statistic:RegisterForClicks("LeftButtonDown")
     frame.statistic:SetSize(25, 25)
     frame.statistic.arrow:ClearAllPoints()
     -- Match the settings button's center; both use the same dropdown atlas family.
@@ -1343,6 +1354,12 @@ function app:CreateWindow(id)
     frame.session = Selector(frame, function()
         self:ShowSessionMenu(frame)
     end, true)
+    -- Dropdown selectors toggle their menu on mouse down. Like the client's dropdown buttons, they
+    -- claim that press so the menu manager doesn't close the menu before the click reopens it.
+    for _, selector in ipairs({ frame.statistic, frame.session, menu }) do
+        selector:RegisterForClicks("LeftButtonDown")
+        selector.HandlesGlobalMouseEvent = HandlesMenuToggle
+    end
     frame.session:SetSize(math.max(#L["O"], #L["C"]) > 1 and 32 or 18, 18)
     frame.session:SetPoint("RIGHT", menu, "LEFT", -2, 3)
     frame.session.normalWidth = frame.session:GetWidth()

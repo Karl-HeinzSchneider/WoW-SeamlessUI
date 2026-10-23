@@ -334,8 +334,11 @@ app:RebuildWindows()
 assert(not frame.timer:IsShown(), "A skin edit hides the combat timer")
 app.db.profile.skins.default.settings.hideCombatTimer = false
 app:RebuildWindows()
-assert(#app.windows == 10 and #app.db.profile.windows == 10, "Every slot must exist from startup")
-for id = 2, 10 do
+assert(
+    #app.windows == app.MAX_WINDOWS and #app.db.profile.windows == app.MAX_WINDOWS,
+    "Every slot must exist from startup"
+)
+for id = 2, app.MAX_WINDOWS do
     assert(app.windowFrames[id] and not app.windowFrames[id]:IsShown())
 end
 assert(SeamlessDamageMeterWindow1 == frame and frame.windowID == 1)
@@ -800,6 +803,8 @@ MenuUtil = {
     end,
 }
 MenuVariants = { GetDefaultContextMenuMixin = function() end }
+SOUNDKIT = { IG_MAINMENU_OPTION_CHECKBOX_ON = 1 }
+PlaySound = function() end
 AnchorUtil = {
     CreateAnchor = function(...)
         return { ... }
@@ -819,8 +824,23 @@ Menu = {
                 openTypeMenu = nil
             end,
             OpenMenu = function(_, owner, root, anchor)
-                openTypeMenu = nil -- Opening another menu replaces the type menu.
-                assert(owner == frame.session and root == menuRoot)
+                assert(root == menuRoot and anchor[2] == owner and anchor[5] > 0)
+                if owner == frame.statistic then
+                    -- The type selector's menu opens above it, left-aligned like the other dropdowns.
+                    assert(anchor[1] == "BOTTOMLEFT" and anchor[3] == "TOPLEFT")
+                    openTypeMenu = {
+                        GetOwnerRegion = function()
+                            return owner
+                        end,
+                    }
+                    return openTypeMenu
+                end
+                assert(owner == frame.session or owner == frame.settings)
+                openTypeMenu = { -- Opening another menu replaces the type menu.
+                    GetOwnerRegion = function()
+                        return owner
+                    end,
+                }
                 assert(anchor[1] == "BOTTOMRIGHT" and anchor[2] == owner and anchor[3] == "TOPRIGHT")
                 assert(anchor[5] > 0, "Session menu must prefer opening above the selector")
             end,
@@ -844,6 +864,16 @@ history = { { sessionID = 42, name = "", durationSeconds = 15 }, { sessionID = 4
 frame.session.scripts.OnClick()
 local fight, otherFight = menuRoot.entries[1], menuRoot.entries[2]
 local current, overall = menuRoot.entries[4], menuRoot.entries[5]
+assert(openTypeMenu and openTypeMenu:GetOwnerRegion() == frame.session)
+frame.session.scripts.OnClick()
+assert(openTypeMenu == nil, "A second session click closes its menu")
+for _, selector in ipairs({ frame.statistic, frame.session, frame.settings }) do
+    assert(
+        selector:HandlesGlobalMouseEvent("LeftButton", "GLOBAL_MOUSE_DOWN"),
+        "The menu manager leaves the press to us"
+    )
+    assert(not selector:HandlesGlobalMouseEvent("RightButton", "GLOBAL_MOUSE_DOWN"))
+end
 assert(fight.label == "Combat 42 (live)" and otherFight.label == "Boss (live)")
 local menuButton = object()
 menuButton.fontString = object(menuButton)
@@ -1071,7 +1101,7 @@ assert(
 app:RebuildWindows()
 assert(app.windows[2] == second)
 app:SetWindowEnabled(app.db.profile.windows[2], false)
-assert(#app.db.profile.windows == 10 and not frame:IsShown() and not second:IsShown())
+assert(#app.db.profile.windows == app.MAX_WINDOWS and not frame:IsShown() and not second:IsShown())
 app:RebuildWindows()
 assert(
     app:GetUnusedWindowSlot() == 1 and not frame:IsShown() and not second:IsShown(),
@@ -1098,7 +1128,7 @@ app.db.profile.windowDefaults.width = 520
 app:RebuildWindows()
 assert(inherited:GetWidth() == 520 and second:GetWidth() == 400)
 inherited.config.anchorTo = second.config.id
-inherited.config.overrides.scale = 1.5
+inherited.config.position.scale = 1.5
 app:RebuildWindows()
 assert(inherited.anchorTarget == second and inherited:GetEffectiveScale() == 1.5)
 assert(not app:CanAnchorTo(second.config, inherited.config.id))
@@ -1115,13 +1145,13 @@ inherited.title.scripts.OnDragStop(inherited.title)
 assert(inherited.config.anchorTo == nil and inherited.anchorTarget == UIParent, "A dragged window leaves its anchor")
 assert(app:GetWindowSetting(inherited.config, "relativePoint") == app:GetWindowSetting(inherited.config, "point"))
 inherited.config.anchorTo = second.config.id
-inherited.config.overrides.relativePoint, inherited.config.overrides.x, inherited.config.overrides.y = nil, nil, nil
+inherited.config.position = app:NewWindowPosition()
 app:SetWindowEnabled(second.config, false)
 app.core = { logger = { chat = function() end } }
 for _ = 1, 12 do
     app:AddWindow()
 end
-assert(#app.db.profile.windows == 10, "All creation paths must enforce the window limit")
+assert(#app.db.profile.windows == app.MAX_WINDOWS, "All creation paths must enforce the window limit")
 local slot = app.windowFrames[3]
 slot.config.hidden = true
 slot.config.collapsed = true
@@ -1149,7 +1179,7 @@ for id in pairs(app.windowFrames) do
     assert(id >= 1 and id <= 10)
     allocated = allocated + 1
 end
-assert(allocated == 10, "Repeated removal and creation must not grow the frame pool")
+assert(allocated == app.MAX_WINDOWS, "Repeated removal and creation must not grow the frame pool")
 print("Damage meter window regressions OK")
 
 -- Exercise LibEditMode's public settings and movement callback contract.
@@ -1247,7 +1277,7 @@ dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/editmode.lua"))("SeamlessDamageMeter", app)
 combat = false
 app:RebuildWindows()
-assert(registered == 10)
+assert(registered == app.MAX_WINDOWS)
 callbacks.layout("Modern")
 local meter = app.windowFrames[1]
 local function setting(name)
@@ -1271,7 +1301,7 @@ local positionSpec = positionSpecs[1]
 assert(positionSpec.get("relativeTo") == (meter.config.anchorTo and tostring(meter.config.anchorTo) or "screen"))
 assert(positionSpec.get("point") == app:GetWindowSetting(meter.config, "point"))
 positionSpec.set("x", 123)
-assert(meter.config.overrides.x == 123, "Position X edits the window offset")
+assert(meter.config.position.x == 123, "Position X edits the window offset")
 assert(positionSpec.anchorFrames()[1].value == "screen")
 for _, entry in ipairs(positionSpec.anchorFrames()) do
     assert(entry.value ~= tostring(meter.config.id), "a window never anchors to itself")
@@ -1322,7 +1352,7 @@ assert(app:GetWindowSetting(meter.config, "width") == 615)
 setting("Lock position outside Edit Mode").set(nil, true)
 meter:SetPoint("CENTER", UIParent, "CENTER", 250, 150)
 moves[meter](meter, "Modern", "CENTER", 250, 150)
-assert(meter.config.overrides.x == 250, "Edit Mode moves persist while locked outside Edit Mode")
+assert(meter.config.position.x == 250, "Edit Mode moves persist while locked outside Edit Mode")
 -- An Edit Mode move releases the moved window's anchor; windows anchored to it keep theirs.
 local follower = app.windowFrames[2]
 local followerEnabled = follower.config.enabled
@@ -1332,8 +1362,8 @@ app:RebuildWindows()
 assert(meter.anchorTarget == app.windowFrames[3] and follower.anchorTarget == meter)
 moves[meter](meter, "Modern", "TOPLEFT", 40, -60)
 assert(meter.config.anchorTo == nil and meter.anchorTarget == UIParent, "A moved window leaves its anchor")
-assert(meter.config.overrides.point == "TOPLEFT" and meter.config.overrides.relativePoint == "TOPLEFT")
-assert(meter.config.overrides.x == 40 and meter.config.overrides.y == -60)
+assert(meter.config.position.point == "TOPLEFT" and meter.config.position.relativePoint == "TOPLEFT")
+assert(meter.config.position.x == 40 and meter.config.position.y == -60)
 assert(meter.config.editModeLayouts.Modern.anchorTo == nil, "The released anchor is saved in the layout")
 assert(follower.config.anchorTo == 1 and follower.anchorTarget == meter, "Dependents keep following")
 follower.config.anchorTo, follower.config.enabled = nil, followerEnabled
@@ -1354,13 +1384,13 @@ assert(app:GetWindowSetting(meter.config, "width") == 530)
 app.db.profile = originalProfile
 app:ApplyEditModeLayout()
 app:RebuildWindows()
-assert(setting("Frame width").get() == 615 and registered == 10)
+assert(setting("Frame width").get() == 615 and registered == app.MAX_WINDOWS)
 callbacks.layout("Modern")
 assert(setting("Frame width").default == app.windowDefaults.width)
 assert(setting("Bar height").default == 24, "Defaults must not capture customized skin values")
 meter.config.anchorTo = nil
 moves[meter](meter, "Modern", "TOPLEFT", 80, -90)
-assert(meter.config.overrides.point == "TOPLEFT" and meter.config.overrides.x == 80)
+assert(meter.config.position.point == "TOPLEFT" and meter.config.position.x == 80)
 assert(meter.config.editModeLayouts.Modern.x == 80)
 callbacks.create("Copied", 4, "Modern")
 assert(meter.config.editModeLayouts.Copied.x == 80)
@@ -1382,7 +1412,7 @@ assert(setting("Frame width").get() == app.windowDefaults.width, "Reset must byp
 setting("Lock size").set("Modern", false)
 setting("Frame width").set("Modern", 615)
 setting("Lock size").set("Modern", true)
-assert(registered == 10, "Layouts and profiles must reuse registered frames")
+assert(registered == app.MAX_WINDOWS, "Layouts and profiles must reuse registered frames")
 local liveAPIForPreview = C_DamageMeter
 C_DamageMeter = setmetatable({}, {
     __index = function(_, key)
@@ -1630,7 +1660,7 @@ print("Damage meter threat event window regressions OK")
 -- Settings menu ordering, actions and reversible noninteractive state.
 local oldManager = Menu.GetManager
 Menu.GetManager = function()
-    return { OpenMenu = function() end }
+    return { GetOpenMenu = function() end, OpenMenu = function() end }
 end
 local oldDescription = MenuUtil.CreateRootMenuDescription
 MenuUtil.CreateRootMenuDescription = function()
@@ -1703,7 +1733,7 @@ app.core = {
     end,
 }
 menuRoot.entries[1].choose()
-assert(opened == "SeamlessDamageMeter:windows")
+assert(opened == "SeamlessDamageMeter:window1")
 SettingsPanel = {
     Close = function(_, skip)
         assert(skip)

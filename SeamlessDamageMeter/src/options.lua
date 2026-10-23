@@ -3,19 +3,8 @@ local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
-local anchors = {
-    TOPLEFT = L["Top left"],
-    TOP = L["Top"],
-    TOPRIGHT = L["Top right"],
-    LEFT = L["Left"],
-    CENTER = L["Center"],
-    RIGHT = L["Right"],
-    BOTTOMLEFT = L["Bottom left"],
-    BOTTOM = L["Bottom"],
-    BOTTOMRIGHT = L["Bottom right"],
-}
-
--- Layout controls inherit window defaults; appearance controls belong to skins.
+-- Layout controls inherit window defaults; appearance controls belong to skins. Position and scale
+-- are each window's own values (`WindowPositionOptions`).
 local settings = {
     { key = "width", name = L["Width"], type = "range", min = 200, max = 800, step = 1 },
     { key = "height", name = L["Height"], type = "range", min = 120, max = 900, step = 1 },
@@ -52,7 +41,6 @@ local settings = {
         type = "toggle",
         desc = L["Prevent dragging the window outside Edit Mode. Edit Mode can still move it."],
     },
-    { key = "scale", name = L["Scale"], type = "range", min = 0.5, max = 2, step = 0.01 },
     {
         key = "font",
         name = L["Font"],
@@ -83,10 +71,6 @@ local settings = {
     { key = "headerColor", name = L["Header tint"], type = "color" },
     { key = "rowHeight", name = L["Row height"], type = "range", min = 16, max = 40, step = 1 },
     { key = "rowSpacing", name = L["Row spacing"], type = "range", min = 0, max = 12, step = 1 },
-    { key = "point", name = L["Window anchor"], type = "select", values = anchors },
-    { key = "relativePoint", name = L["Target anchor"], type = "select", values = anchors },
-    { key = "x", name = L["X offset"], type = "input" },
-    { key = "y", name = L["Y offset"], type = "input" },
 }
 
 local function CopyValue(value)
@@ -119,8 +103,6 @@ local function SettingControl(definition, config, inherited, skin)
             end
             if definition.type == "color" then
                 return unpack(value)
-            elseif definition.type == "input" then
-                return tostring(value)
             end
             return value
         end,
@@ -128,8 +110,6 @@ local function SettingControl(definition, config, inherited, skin)
             local target = skin and skin.settings or (config and config.overrides or app.db.profile.windowDefaults)
             if definition.type == "color" then
                 target[key] = { value, g, b, a }
-            elseif definition.type == "input" then
-                target[key] = tonumber(value)
             else
                 target[key] = value
             end
@@ -138,13 +118,6 @@ local function SettingControl(definition, config, inherited, skin)
     }
     if definition.type == "color" then
         control.hasAlpha = true
-    elseif definition.type == "input" then
-        control.desc = L["Offset in window units. Positive X moves right; positive Y moves up. Decimals are supported."]
-        control.validate = function(_, value)
-            local number = tonumber(value)
-            return number and number == number and math.abs(number) <= 10000
-                or L["Enter a number between -10000 and 10000."]
-        end
     end
     if config then
         control.disabled = function()
@@ -160,8 +133,8 @@ local function AppearanceOptions(config)
             type = "description",
             order = 0,
             name = config
-                    and L["Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Dragging sets X/Y overrides; resizing also sets width/height overrides.\n"]
-                or L["Shared settings for every window without an override, including newly created windows. Offsets are measured at the window's scale.\n"],
+                    and L["Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Resizing sets width/height overrides.\n"]
+                or L["Shared settings for every window without an override, including newly created windows.\n"],
         },
     }
     for order, definition in ipairs(settings) do
@@ -208,42 +181,84 @@ local function AppearanceOptions(config)
     return args
 end
 
+-- The standard Position and scale section, on the window's own values. Moving or re-anchoring
+-- keeps the offsets; dragging the window measures them again.
+local function WindowPositionOptions(config)
+    local group = app.core:GetPositionOptions({
+        get = function(key)
+            if key == "relativeTo" then
+                return config.anchorTo and tostring(config.anchorTo) or "screen"
+            end
+            return app:GetWindowSetting(config, key)
+        end,
+        set = function(key, value)
+            if key == "relativeTo" then
+                config.anchorTo = tonumber(value)
+            else
+                app:SetWindowValue(config, key, value)
+            end
+            app:RebuildWindows()
+        end,
+        default = function(key)
+            if key == "relativeTo" then
+                return "screen"
+            end
+            return app.positionDefaults[key]
+        end,
+        isDefault = function()
+            for key in pairs(app.positionDefaults) do
+                if key ~= "scale" and app:GetWindowSetting(config, key) ~= app.positionDefaults[key] then
+                    return false
+                end
+            end
+            return config.anchorTo == nil
+        end,
+        reset = function()
+            for key in pairs(app.positionDefaults) do
+                if key ~= "scale" then
+                    app:SetWindowValue(config, key, app.positionDefaults[key])
+                end
+            end
+            config.anchorTo = nil
+            app:RebuildWindows()
+        end,
+        anchorFrames = function()
+            local values = { { text = L["Screen (UIParent)"], value = "screen" } }
+            for _, candidate in ipairs(app.db.profile.windows) do
+                if app:CanAnchorTo(config, candidate.id) then
+                    values[#values + 1] = { text = L["Window %d"]:format(candidate.id), value = tostring(candidate.id) }
+                end
+            end
+            return values
+        end,
+        scale = {
+            get = function()
+                return app:GetWindowSetting(config, "scale")
+            end,
+            set = function(value)
+                app:SetWindowValue(config, "scale", value)
+                app:RebuildWindows()
+            end,
+            default = function()
+                return app.positionDefaults.scale
+            end,
+        },
+    })
+    group.order = 2
+    return group
+end
+
+-- Window defaults and one tab per slot; the tab tables stay registered, only their args are rebuilt.
 function app:BuildWindowOptions()
     self:PrepareWindowSettings()
-    local args = {
-        defaults = { type = "group", name = L["Defaults"], order = 1, args = AppearanceOptions() },
-        add = {
-            type = "group",
-            name = L["Activate window"],
-            order = 1000,
-            args = {
-                info = {
-                    type = "description",
-                    name = L["Use up to %d permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets."]:format(
-                        self.MAX_WINDOWS
-                    ),
-                    order = 1,
-                },
-                add = {
-                    type = "execute",
-                    name = L["Activate next window"],
-                    order = 2,
-                    disabled = function()
-                        return self:GetUnusedWindowSlot() == nil
-                    end,
-                    func = function()
-                        self:AddWindow()
-                    end,
-                },
-            },
-        },
-    }
-    for index, config in ipairs(self.db.profile.windows) do
+    self.windowOptions.args = AppearanceOptions()
+    for _, config in ipairs(self.db.profile.windows) do
         local windowArgs = AppearanceOptions(config)
+        windowArgs.position = WindowPositionOptions(config)
         windowArgs.management = {
             type = "group",
             inline = true,
-            name = L["Window %d"]:format(config.id),
+            name = L["Window"],
             order = 1,
             args = {
                 hidden = {
@@ -267,7 +282,6 @@ function app:BuildWindowOptions()
                         config.overrides = {}
                         config.styleOverrides = nil
                         config.modifyGlobalStyle = nil
-                        config.anchorTo = nil
                         self:RebuildWindows()
                     end,
                 },
@@ -303,40 +317,10 @@ function app:BuildWindowOptions()
                         self:RebuildWindows()
                     end,
                 },
-                anchorTo = {
-                    type = "select",
-                    name = L["Anchored to"],
-                    order = 4,
-                    width = "full",
-                    desc = L["Anchor to the screen or another meter window. Circular anchors are excluded."],
-                    values = function()
-                        local values = { screen = L["Screen (UIParent)"] }
-                        for _, candidate in ipairs(self.db.profile.windows) do
-                            if self:CanAnchorTo(config, candidate.id) then
-                                values[tostring(candidate.id)] = L["Window %d"]:format(candidate.id)
-                            end
-                        end
-                        return values
-                    end,
-                    get = function()
-                        return config.anchorTo and tostring(config.anchorTo) or "screen"
-                    end,
-                    set = function(_, value)
-                        config.anchorTo = tonumber(value)
-                        self:RebuildWindows()
-                    end,
-                },
             },
         }
-        args["window" .. config.id] = {
-            type = "group",
-            name = config.enabled and not config.hidden and (L["Window %d"]:format(config.id))
-                or ("|cff808080" .. L["Window %d"]:format(config.id) .. "|r"),
-            order = index + 1,
-            args = windowArgs,
-        }
+        self.windowTabs["window" .. config.id].args = windowArgs
     end
-    self.windowOptions.args = args
 end
 
 function app:BuildSkinOptions()
@@ -366,6 +350,17 @@ function app:BuildSkinOptions()
                 controls[definition.key] = SettingControl(definition, nil, nil, skin)
                 controls[definition.key].order = order * 10
             end
+        end
+        if key ~= "default" then
+            controls.remove = {
+                type = "execute",
+                name = L["Delete skin"],
+                order = 1,
+                confirm = L["Delete the skin %s? Windows using it switch to Default."]:format(skin.name),
+                func = function()
+                    self:RemoveSkin(key)
+                end,
+            }
         end
         args[key] = { type = "group", name = skin.name, order = index, args = controls }
     end
@@ -410,7 +405,7 @@ function app:HistoryOptions()
     return {
         name = L["History"],
         hidden = not self.combatService.saveSessions,
-        order = 20,
+        order = 60,
         args = {
             info = {
                 type = "description",
@@ -522,10 +517,18 @@ end
 
 function app:RegisterOptions()
     self:PrepareWindowSettings()
-    self.windowOptions = { name = L["Windows"], order = 10, childGroups = "tree", args = {} }
-    self.skinOptions = { name = L["Skin"], order = 15, childGroups = "tree", args = {} }
+    self.windowOptions = { name = L["Window defaults"], order = 10, args = {} }
+    self.windowTabs = {}
+    for id = 1, self.MAX_WINDOWS do
+        self.windowTabs["window" .. id] = { name = L["Window %d"]:format(id), order = 10 + id, args = {} }
+    end
+    self.skinOptions = { name = L["Skin"], order = 50, childGroups = "tree", args = {} }
     self:BuildWindowOptions()
     self:BuildSkinOptions()
+    local tabs = { windows = self.windowOptions, skin = self.skinOptions, history = self:HistoryOptions() }
+    for key, tab in pairs(self.windowTabs) do
+        tabs[key] = tab
+    end
     self.core:RegisterOptions(appName, {
         tooltip = function(path)
             local key = path[#path]
@@ -550,18 +553,15 @@ function app:RegisterOptions()
                 end
                 return self.skinDefaults[key]
             end
-            if path[1] == "windows" then
+            if path[1] == "windows" or path[1]:match("^window%d+$") then
                 if key == "override" or key == "hidden" then
                     return false
                 end
                 if key == "skin" then
                     return "default"
                 end
-                if key == "anchorTo" then
-                    return "screen"
-                end
                 if key == "enabled" then
-                    return path[2] == "window1"
+                    return path[1] == "window1"
                 end
                 if key == "default" or key == "value" then
                     return self.db.profile.windowDefaults[path[#path - 1]]
@@ -582,6 +582,13 @@ function app:RegisterOptions()
                         type = "description",
                         order = 0,
                         name = L["Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Sessions, Current and Overall come from Blizzard's damage meter; addon session saving is temporarily disabled. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n"],
+                    },
+                    limit = {
+                        type = "description",
+                        order = 5,
+                        name = L["Use up to %d permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets."]:format(
+                            self.MAX_WINDOWS
+                        ) .. "\n",
                     },
                     add = {
                         type = "execute",
@@ -675,41 +682,6 @@ function app:RegisterOptions()
                 },
             },
         },
-        tabs = {
-            windows = self.windowOptions,
-            skin = self.skinOptions,
-            history = self:HistoryOptions(),
-            credits = {
-                name = L["Credits"],
-                order = 30,
-                args = {
-                    teelo = {
-                        type = "description",
-                        order = 10,
-                        name = L["Thanks to p3lim for creating LibEditMode, which powers Edit Mode integration for all ten meter windows."],
-                    },
-                    github = {
-                        type = "input",
-                        order = 20,
-                        width = "full",
-                        name = L["GitHub (select and copy)"],
-                        get = function()
-                            return "https://github.com/p3lim-wow/LibEditMode"
-                        end,
-                        set = function() end,
-                    },
-                    curseforge = {
-                        type = "input",
-                        order = 30,
-                        width = "full",
-                        name = L["CurseForge (select and copy)"],
-                        get = function()
-                            return "https://www.curseforge.com/wow/addons/edit-mode-expanded"
-                        end,
-                        set = function() end,
-                    },
-                },
-            },
-        },
+        tabs = tabs,
     })
 end

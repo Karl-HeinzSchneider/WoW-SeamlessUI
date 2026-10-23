@@ -20,7 +20,7 @@ instead of replacing it: each part is a separate addon you can switch on or off.
   character, input history, timestamps, saved message history, copy and searchable log windows,
   clickable URLs, short channel names, class colors, fading, backgrounds, unread counts on tabs
   and a restyled chat button bar.
-- **SeamlessDamageMeter**: up to ten movable, resizable meter windows on the client's combat
+- **SeamlessDamageMeter**: up to six movable, resizable meter windows on the client's combat
   statistics (damage, DPS, healing, HPS, absorbs, interrupts, dispels, damage taken, deaths) and a
   live threat meter, with spell breakdowns on hover or click, shared skins and favorites.
 - **SeamlessUI**: general improvements: a fuller XP bar tooltip, an FPS display with optional

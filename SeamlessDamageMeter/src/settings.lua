@@ -3,12 +3,18 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
-app.MAX_WINDOWS = 10
+-- Number of window slots. Every slot shares the same settings, frames and options, so only this
+-- value limits them.
+app.MAX_WINDOWS = 6
+
 function app:GetWindowSetting(config, key)
     if key == "height" and self:GetWindowSetting(config, "fixedHeight") then
         local lines = self:GetWindowSetting(config, "visibleLines")
         local spacing = self:GetWindowSetting(config, "rowSpacing")
         return 32 + 8 + lines * (self:GetWindowSetting(config, "rowHeight") + spacing) - spacing
+    end
+    if self.positionDefaults[key] ~= nil then
+        return config.position[key]
     end
     if self.skinDefaults[key] ~= nil then
         local override = config.styleOverrides and config.styleOverrides[key]
@@ -28,6 +34,23 @@ function app:GetWindowSetting(config, key)
         return value
     end
     return self.db.profile.windowDefaults[key]
+end
+
+-- Writes a window's own value: position keys to `config.position`, the rest as overrides.
+function app:SetWindowValue(config, key, value)
+    if self.positionDefaults[key] ~= nil then
+        config.position[key] = value
+    else
+        config.overrides[key] = value
+    end
+end
+
+function app:NewWindowPosition()
+    local position = {}
+    for key, value in pairs(self.positionDefaults) do
+        position[key] = value
+    end
+    return position
 end
 
 local function CopySettings(source)
@@ -56,6 +79,22 @@ function app:AddSkin(name)
     skins[key] = { name = name, settings = CopySettings(skins.default.settings) }
     self:UpdateWindowOptions()
     return key
+end
+
+-- Default can't be removed; windows using the removed skin fall back to it.
+function app:RemoveSkin(key)
+    local skins = self.db.profile.skins
+    if key == "default" or not skins[key] then
+        return false
+    end
+    skins[key] = nil
+    for _, config in ipairs(self.db.profile.windows) do
+        if config.skin == key then
+            config.skin = "default"
+        end
+    end
+    self:RebuildWindows()
+    return true
 end
 
 function app:PrepareWindowSettings()
@@ -109,7 +148,7 @@ function app:PrepareWindowSettings()
         for index = #profile.windows, 1, -1 do
             local config = profile.windows[index]
             if not assigned[config] then
-                -- Very old profiles could have more than ten windows; retain excess data.
+                -- Very old profiles could have more windows than slots; retain excess data.
                 profile.legacyWindows = profile.legacyWindows or {}
                 table.insert(profile.legacyWindows, 1, table.remove(profile.windows, index))
             elseif config.anchorTo then
@@ -127,10 +166,11 @@ function app:PrepareWindowSettings()
         slots[config.id] = config
     end
     for id = 1, self.MAX_WINDOWS do
-        if not slots[id] then
-            slots[id] = { id = id, enabled = false, statistic = "DamageDone", session = "Current", overrides = {} }
-        end
+        slots[id] = slots[id] or { id = id, enabled = false, statistic = "DamageDone", session = "Current" }
         profile.windows[id] = slots[id]
+    end
+    for index = #profile.windows, self.MAX_WINDOWS + 1, -1 do
+        profile.windows[index] = nil
     end
     if not profile.initialized then
         profile.windows[1].enabled = true
@@ -138,6 +178,7 @@ function app:PrepareWindowSettings()
     end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
+        config.position = config.position or self:NewWindowPosition()
         if not config.skin then
             config.skin = "default"
             local customized = false
@@ -170,7 +211,7 @@ function app:PrepareWindowSettings()
             config.favorites = nil
         end
         -- Keep old layouts while all new windows inherit the profile defaults.
-        for _, key in ipairs({ "width", "height", "x", "y" }) do
+        for _, key in ipairs({ "width", "height" }) do
             if config[key] ~= nil then
                 config.overrides[key] = config[key]
                 config[key] = nil

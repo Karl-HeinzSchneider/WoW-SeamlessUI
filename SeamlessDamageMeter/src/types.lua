@@ -16,7 +16,9 @@
 ---@field skinOptions table
 ---@field newSkinName string?
 ---@field windowDefaults table
----@field windowOptions table
+---@field positionDefaults table Seeds each window's own `config.position` (point, relativePoint, x, y, scale).
+---@field windowOptions table Window defaults tab.
+---@field windowTabs table<string, table> One options tab per window slot, keyed window<ID>.
 ---@field detailTooltip table? Currently active hover panel; never saved.
 ---@field combatSpellTooltip table? Pooled combat spell-only hover panel.
 ---@field postCombatTooltip table? Pooled post-combat hover panel with target analysis.

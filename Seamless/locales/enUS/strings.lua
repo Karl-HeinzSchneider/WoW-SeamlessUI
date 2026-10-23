@@ -7,6 +7,7 @@ end
 -- Common / shared
 -- L["\n(Default: |cff8080ff%s|r)"] = "\n(Default: |cff8080ff%s|r)"
 -- L["\n\n|cff8080ff[Per-character setting]|r"] = "\n\n|cff8080ff[Per-character setting]|r"
+-- L["\n\n|cff8080ff[Saved in the Edit Mode layout]|r"] = "\n\n|cff8080ff[Saved in the Edit Mode layout]|r"
 -- L["%dd %dh %dm"] = "%dd %dh %dm"
 -- L["Accept"] = "Accept"
 -- L["Apply this change?"] = "Apply this change?"
@@ -24,6 +25,7 @@ end
 -- L["Default"] = "Default"
 -- L["Defaults"] = "Defaults"
 -- L["Disabled"] = "Disabled"
+-- L["EDIT MODE"] = "EDIT MODE"
 -- L["Enable"] = "Enable"
 -- L["Enabled"] = "Enabled"
 -- L["Error"] = "Error"

@@ -116,7 +116,8 @@ function app.addon:GetPositionOptions(spec)
     return { type = "group", inline = true, name = L["Position and scale"], order = 10, args = args }
 end
 
----A native frame's active layout is the only source of position values.
+---A native frame's active layout is the only source of position values, so the group
+---carries the EDIT MODE tag.
 ---@param getFrame fun(): table?
 ---@param scale? SeamlessCore.PositionScale Explicit scale binding; omitted means read-only.
 ---@return table
@@ -138,7 +139,7 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
             app.logger:warn("%s", err)
         end
     end
-    return self:GetPositionOptions({
+    local group = self:GetPositionOptions({
         scale = scaleOptions,
         default = function(key)
             local values = service:GetDefault(getFrame())
@@ -175,6 +176,8 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
             return anchorFrames
         end,
     })
+    group.editMode = true
+    return group
 end
 
 ---Scale bound to a native Edit Mode percentage setting, such as the unit frames'

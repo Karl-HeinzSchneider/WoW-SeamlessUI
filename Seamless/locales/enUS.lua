@@ -4,6 +4,7 @@ local L = LibStub("AceLocale-3.0"):NewLocale("Seamless", "enUS", true)
 -- Common / shared
 L["\n(Default: |cff8080ff%s|r)"] = true
 L["\n\n|cff8080ff[Per-character setting]|r"] = true
+L["\n\n|cff8080ff[Saved in the Edit Mode layout]|r"] = true
 L["%dd %dh %dm"] = true
 L["Accept"] = true
 L["Apply this change?"] = true
@@ -21,6 +22,7 @@ L["Debug"] = true
 L["Default"] = true
 L["Defaults"] = true
 L["Disabled"] = true
+L["EDIT MODE"] = true
 L["Enable"] = true
 L["Enabled"] = true
 L["Error"] = true

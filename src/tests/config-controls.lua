@@ -96,6 +96,12 @@ end
 function methods:GetStringHeight()
     return 14
 end
+function methods:GetStringWidth()
+    return 60
+end
+function methods:SetVertexColor(...)
+    self.vertexColor = { ... }
+end
 function methods:SetText(value)
     self.text = value
 end
@@ -226,7 +232,7 @@ function CreateFrame(_, _, parent, template)
         object.RightText = frame()
     end
     if template == "NewFeatureLabelTemplate" then
-        object.Label, object.BGLabel = frame(), frame()
+        object.Label, object.BGLabel, object.Glow = frame(), frame(), frame()
     end
     return object
 end
@@ -371,6 +377,31 @@ assert(toggle.featureTags.new.ignoreInLayout and toggle.featureTags.blizzard.ign
 root.args.general.args.enabled.new, root.args.general.args.enabled.blizzard = nil, nil
 app.config:RefreshOptionsPage(page)
 assert(not toggle.featureTags.new:IsShown() and not toggle.featureTags.blizzard:IsShown())
+-- EDIT MODE marks settings stored in the Edit Mode layout: nearest the label, a blue glow,
+-- and a tooltip line on the setting and on every setting inside a tagged group.
+root.args.general.args.enabled.editMode, root.args.general.args.enabled.new = true, true
+app.config:RefreshOptionsPage(page)
+local editTag = toggle.featureTags.editMode
+assert(editTag:IsShown() and editTag.Label.text == "EDIT MODE" and editTag.BGLabel.text == "EDIT MODE")
+assert(editTag.Glow.vertexColor and editTag.Glow.vertexColor[3] == 1)
+assert(editTag.points.BOTTOMRIGHT[2] == toggle.Label)
+assert(toggle.featureTags.new.points.RIGHT[2] == editTag.Label)
+toggle.scripts.OnEnter()
+assert(GameTooltip.lines[#GameTooltip.lines] == "\n\n|cff8080ff[Saved in the Edit Mode layout]|r")
+root.args.general.args.enabled.editMode, root.args.general.args.enabled.new = nil, nil
+root.args.general.args.heading.editMode = true
+app.config:RefreshOptionsPage(page)
+assert(not editTag:IsShown())
+local heading = page.controlPools.group[1]
+local headingTag = heading.featureTags.editMode
+assert(headingTag:IsShown() and headingTag.points.LEFT[2] == heading.Label)
+assert(headingTag.points.LEFT[3] == "LEFT" and headingTag.points.LEFT[4] == (60 + 8) / 0.8)
+assert(headingTag.Label.points.LEFT, "heading tags extend right of the heading text")
+toggle.scripts.OnEnter()
+assert(GameTooltip.lines[#GameTooltip.lines] ~= "\n\n|cff8080ff[Saved in the Edit Mode layout]|r")
+root.args.general.args.heading.editMode = nil
+app.config:RefreshOptionsPage(page)
+assert(not headingTag:IsShown())
 toggle.scripts.OnEnter()
 assert(GameTooltip.owner == toggle and GameTooltip.anchor == "ANCHOR_NONE")
 assert(GameTooltip.point[1] == "BOTTOMLEFT" and GameTooltip.point[2] == toggle.Label)

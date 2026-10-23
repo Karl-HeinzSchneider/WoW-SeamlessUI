@@ -35,7 +35,7 @@
 ---@field selected? string
 ---@field minimized? boolean
 ---@field optionInfo table<string, fun(path: string[]): any, boolean?>
----@field optionTags table<table, { new?: boolean, blizzard?: boolean, default?: any }> `default`: tooltip default value or a function returning it.
+---@field optionTags table<table, { new?: boolean, blizzard?: boolean, editMode?: boolean, default?: any }> `default`: tooltip default value or a function returning it.
 ---@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
 ---@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
 ---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
@@ -53,6 +53,7 @@
 ---@field header? boolean Styled heading; clicking it collapses its children.
 ---@field new? boolean Show the native glowing NEW label.
 ---@field blizzard? boolean Show a glowing BLIZZ label.
+---@field editMode? boolean Show a glowing EDIT MODE label: the page's settings live in the Edit Mode layout.
 ---@field hidden? boolean|fun(): boolean Omit unavailable pages from navigation.
 ---@field create? fun(page: table) Called once with an owned content frame; set its height for scrolling.
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.

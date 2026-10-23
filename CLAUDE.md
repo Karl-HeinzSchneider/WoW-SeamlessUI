@@ -83,6 +83,10 @@ Terms for every Edit Mode request:
 - **Edit Mode settings** / "add an option to Edit Mode": the settings window of the selected
   frame. Put the option there unless the user says otherwise.
 
+Moving a frame always breaks its anchor: when the user drags a frame away (Edit Mode or otherwise),
+store it on UIParent exactly where it was dropped, like Blizzard's Edit Mode. Never keep the old
+anchor frame and re-measure offsets from it. Frames anchored to the moved frame keep following it.
+
 `Seamless/CLAUDE.md` documents the APIs, row types and callbacks.
 
 ## Localization

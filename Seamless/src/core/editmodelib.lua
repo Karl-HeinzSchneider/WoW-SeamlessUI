@@ -32,8 +32,10 @@ end
 
 -- Every Position header shares this key, so it collapses in all windows at once.
 local POSITION_SECTION = "settings:position"
+-- The Frames list in the main Edit Mode window (editmode.lua).
+local FRAMES_SECTION = "panel:frames"
 -- Sections that start collapsed until the user opens them; opening one is saved as false.
-local COLLAPSED_BY_DEFAULT = { [POSITION_SECTION] = true }
+local COLLAPSED_BY_DEFAULT = { [POSITION_SECTION] = true, [FRAMES_SECTION] = true }
 
 ---@param key string
 ---@return boolean

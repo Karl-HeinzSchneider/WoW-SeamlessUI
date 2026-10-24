@@ -147,7 +147,7 @@ so it returns this window. The vendored file stays untouched.
 
 - The window is drawn by the shared renderer (`core:LayoutEditModeSections`): it splits the
   frame's settings into sections at each Header, appends Reset To Default, and lists the frame's
-  buttons plus Reset Position below. Fixed width (370), the list scrolls past 400 pixels or 60%
+  buttons plus Reset Position below, under a divider, outside the scrolling list. Fixed width (370), the list scrolls past 400 pixels or 60%
   of the screen height, grows downward only and keeps its scroll offset across refreshes.
 - Supported kinds: Checkbox, Dropdown (`values`, `height` scrolls the menu), Slider (`minValue`,
   `maxValue`, `valueStep`, `formatter`), `lib.SettingType.Header` and `lib.SettingType.Button`.

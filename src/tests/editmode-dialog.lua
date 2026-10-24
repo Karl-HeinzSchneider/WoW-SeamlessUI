@@ -479,6 +479,16 @@ local feature, resetPosition = Row(buttons, "Feature button"), Row(buttons, "Res
 assert(buttons:IsShown() and feature and resetPosition and not resetPosition.Button.enabled)
 feature.Button.click()
 assert(buttonClicks == 1)
+-- The divider above them is static too: it opens the button area, never the scrolling list.
+local function Divider(parent)
+    for _, row in ipairs(ShownRows(parent)) do
+        if row.option.type == "divider" then
+            return row
+        end
+    end
+end
+assert(Divider(buttons) and not Divider(list), "the divider stays with the buttons")
+assert(-Divider(buttons).points.TOPLEFT[2] < -feature.points.TOPLEFT[2], "above the buttons")
 
 -- Settings write the active layout; disabled states follow.
 on:OnCheckButtonClick()

@@ -32,7 +32,10 @@ function app:ApplyEditModeLayout()
         local record = config.editModeLayouts and config.editModeLayouts[activeLayout]
         if record then
             for _, key in ipairs(layoutKeys) do
-                self:SetWindowValue(config, key, record[key])
+                -- nil is an inherited override, but a position value the record lacks stays as is.
+                if record[key] ~= nil or self.positionDefaults[key] == nil then
+                    self:SetWindowValue(config, key, record[key])
+                end
             end
             config.anchorTo = record.anchorTo
         else

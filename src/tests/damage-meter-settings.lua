@@ -197,6 +197,12 @@ end
 app:PrepareWindowSettings()
 assert(#app.db.profile.windows == 6 and #app.db.profile.legacyWindows == 6)
 assert(app:GetUnusedWindowSlot() == nil)
+app.db.profile.windows[3].position = { x = 5 }
+app:PrepareWindowSettings()
+assert(
+    app.db.profile.windows[3].position.scale == 1 and app.db.profile.windows[3].position.x == 5,
+    "Missing keys default"
+)
 -- Raising MAX_WINDOWS is all it takes to add slots.
 app.MAX_WINDOWS = 8
 app:PrepareWindowSettings()

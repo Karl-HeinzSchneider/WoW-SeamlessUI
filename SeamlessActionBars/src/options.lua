@@ -24,6 +24,18 @@ local frames = {
     { key = "petBar", frame = "PetActionBar", size = "ActionBar", name = L["Pet action bar"] },
     { key = "vehicleLeave", frame = "MainMenuBarVehicleLeaveButton", name = L["Leave vehicle button"] },
 }
+-- The gryphons have no global name and no native size setting: their Scale is our own, kept in
+-- the profile (see endcaps.lua), and their tab adds the native Hidden setting.
+for _, entry in ipairs(app.endCaps) do
+    frames[#frames + 1] = {
+        key = "endCap" .. entry.key:gsub("^%l", string.upper),
+        name = entry.name,
+        endCap = entry,
+        get = function()
+            return app.EndCapFrame(entry)
+        end,
+    }
+end
 for i = 1, 8 do
     frames[i].name = string.format(L["Action bar %d"], i)
 end
@@ -41,11 +53,19 @@ local function sizeSetting(size)
     end
 end
 
-local function frameTab(entry, order)
-    local function getFrame()
+local function frameGetter(entry)
+    return entry.get or function()
         return _G[entry.frame]
     end
+end
+
+local function frameTab(entry, order)
+    local getFrame = frameGetter(entry)
     local setting = sizeSetting(entry.size)
+    local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
+    if entry.endCap then
+        scale = app.EndCapScale(entry.endCap)
+    end
     return {
         order = order,
         name = entry.name,
@@ -53,10 +73,8 @@ local function frameTab(entry, order)
             return getFrame() == nil
         end,
         args = {
-            position = app.core:GetNativePositionOptions(
-                getFrame,
-                setting and app.core:GetNativeSettingScale(getFrame, setting) or nil
-            ),
+            hidden = entry.endCap and app.EndCapHiddenOption(entry.endCap) or nil,
+            position = app.core:GetNativePositionOptions(getFrame, scale or nil),
         },
     }
 end
@@ -87,7 +105,7 @@ function options:OnInitialize()
     end
     app.core:RegisterOptions(appName, {
         tooltip = function(path)
-            -- Position rows carry their own game defaults.
+            -- Position rows and the endcaps' Hide carry their own game defaults.
             if path[1] ~= "general" then
                 return nil
             end
@@ -147,7 +165,7 @@ function options:OnEnable()
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
     self.positionHooked = self.positionHooked or {}
     for _, entry in ipairs(frames) do
-        local frame = _G[entry.frame]
+        local frame = frameGetter(entry)()
         if frame and not self.positionHooked[frame] then
             self.positionHooked[frame] = true
             for _, method in ipairs({ "ApplySystemAnchor", "UpdateSystemSetting" }) do

@@ -10,6 +10,18 @@
 ---@field ShortKeyLabel fun(key: string): string
 ---@field UpdateHotkey fun(button: CheckButton)
 ---@field RestoreHotkey fun(button: CheckButton)
+---@field endCaps SeamlessActionBars.EndCap[]
+---@field EndCapFrame fun(entry: SeamlessActionBars.EndCap): table?
+---@field ApplyEndCapScales fun(restore?: boolean)
+---@field EndCapScale fun(entry: SeamlessActionBars.EndCap): SeamlessCore.PositionScale
+---@field EndCapHiddenOption fun(entry: SeamlessActionBars.EndCap): table
+---@field RegisterEndCapScales fun()
+
+---@class SeamlessActionBars.EndCap
+---@field key "left"|"right" Profile key under `endCaps`.
+---@field index string `Enum.EditModeMainActionBarEndCapSystemIndices` key.
+---@field parentKey string Key under `MainActionBar.EndCaps`.
+---@field name string
 
 ---@class SeamlessActionBars.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessActionBars.Addon)

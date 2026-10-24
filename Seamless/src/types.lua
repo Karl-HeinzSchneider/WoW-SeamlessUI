@@ -103,6 +103,8 @@
 ---@field GetEditModeSystemOptions fun(self: SeamlessCore.Addon, system: table): SeamlessCore.EditModeSystemOptions[]
 ---@field RefreshEditModeSystemOptions fun(self: SeamlessCore.Addon)
 ---@field GetEditModeSystemOptionsMessage fun(self: SeamlessCore.Addon): string
+---@field RegisterEditModeSystemScale fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemScale)
+---@field GetEditModeSystemScale fun(self: SeamlessCore.Addon, system: table): SeamlessCore.PositionScale?
 ---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
 ---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
@@ -184,6 +186,13 @@
 ---@field order number? Section order; ties use the registration id.
 ---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
 ---@field options SeamlessCore.EditModeSystemOption[]
+
+---@class SeamlessCore.EditModeSystemScale
+---@field id string? Set by RegisterEditModeSystemScale.
+---@field system integer `Enum.EditModeSystem` value.
+---@field systemIndex integer? Only this subsystem, such as one endcap.
+---@field enabled boolean|fun(): boolean|nil Whether the feature provides the scale.
+---@field scale SeamlessCore.PositionScale Needs `get` and `set`; `min`, `max`, `step` default to 0.5, 2, 0.01.
 
 ---@class SeamlessCore.EditModeSystemOption
 ---@field new? boolean Optional tag in the custom config view when adapted from a style row.

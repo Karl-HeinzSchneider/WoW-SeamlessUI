@@ -74,6 +74,22 @@ add(
 add("stanceBar", L["Stance bar"], "ActionBar", "EditModeActionBarSystemIndices", "StanceBar", "bars")
 add("petBar", L["Pet action bar"], "ActionBar", "EditModeActionBarSystemIndices", "PetActionBar", "bars")
 add("possessBar", L["Possess action bar"], "ActionBar", "EditModeActionBarSystemIndices", "PossessActionBar", "bars")
+add(
+    "endCapLeft",
+    L["Left endcap"],
+    "MainActionBarEndCap",
+    "EditModeMainActionBarEndCapSystemIndices",
+    "EndCapLeft",
+    "bars"
+)
+add(
+    "endCapRight",
+    L["Right endcap"],
+    "MainActionBarEndCap",
+    "EditModeMainActionBarEndCapSystemIndices",
+    "EndCapRight",
+    "bars"
+)
 add("buffs", L["Buffs"], "AuraFrame", "EditModeAuraFrameSystemIndices", "BuffFrame", "auras")
 add("debuffs", L["Debuffs"], "AuraFrame", "EditModeAuraFrameSystemIndices", "DebuffFrame", "auras")
 add(

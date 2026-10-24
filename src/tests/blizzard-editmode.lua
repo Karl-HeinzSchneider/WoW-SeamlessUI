@@ -322,6 +322,8 @@ assert(not positionHeader.collapsed and positionRow.shown)
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
 Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
 Enum.EditModeSystem.ObjectiveTracker = 6
+Enum.EditModeSystem.MainActionBarEndCap = 7
+Enum.EditModeMainActionBarEndCapSystemIndices = { EndCapLeft = 1, EndCapRight = 2 }
 Enum.EditModeActionBarSystemIndices = {
     MainBar = 1,
     Bar2 = 2,
@@ -362,6 +364,8 @@ local samples = {
     { "statusBar2", 4, 2 },
     { "minimap", 5, 1 },
     { "objectiveTracker", 6, 1 },
+    { "endCapLeft", 7, 1 },
+    { "endCapRight", 7, 2 },
 }
 EditModeManagerFrame.registeredSystemFrames = {}
 assert(config.minimap.hidden() and config.barsHeading.hidden())

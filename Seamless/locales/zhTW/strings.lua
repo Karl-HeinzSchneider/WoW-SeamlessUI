@@ -735,7 +735,7 @@ end
 -- L["Add more options"] = "Add more options"
 -- L["Add position"] = "Add position"
 -- L["Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."] = "Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."
--- L["Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."] = "Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."
+-- L["Adds Scale, Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."] = "Adds Scale, Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."
 -- L["Adds the number of completed quests in your log and their total XP reward."] = "Adds the number of completed quests in your log and their total XP reward."
 -- L["Anchor"] = "Anchor"
 -- L["AnchorFrame must name an existing frame, such as UIParent."] = "AnchorFrame must name an existing frame, such as UIParent."

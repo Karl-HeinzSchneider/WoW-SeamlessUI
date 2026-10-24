@@ -263,9 +263,10 @@ local extraAnchorTargets = {}
 function app.blizzardEditMode:GetAnchorTargets()
     return extraAnchorTargets
 end
+local selectedSpec = { key = "player" }
 function app.blizzardEditMode:GetSelectedFrame()
     if enabled then
-        return selected, { key = "player" }
+        return selected, selectedSpec
     end
 end
 local coreApp = { addon = app.core }
@@ -608,6 +609,63 @@ view.AnchorButton.click()
 selected = frame("OtherFrame")
 picker.apply("LEFT", "TargetFrame", "RIGHT", 5, 0)
 assert(position:Read(player).point == "TOPLEFT")
+-- Scale leads the rows; without a native size setting it shows the frame's scale, greyed out.
+selected = player
+view.error = nil
+local scaleRow = view.controls.scale
+assert(scaleRow.template == "EditModeSettingSliderTemplate" and scaleRow.Label.text == "Scale")
+assert(scaleRow.points[1][3] == 0 and view.controls.point.points[1][3] == -35)
+view:Refresh(player)
+assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown and scaleRow.Slider.value == 1)
+assert(scaleRow.Slider.min == 0.5 and scaleRow.Slider.max == 2)
+-- Unit frames edit Frame Size, in the settings panel's units (1.2 = 120 %).
+local SIZE = 16
+Enum.EditModeUnitFrameSetting = { FrameSize = SIZE }
+selectedSpec.system = "UnitFrame"
+local size = 120
+player.settingDisplayInfoMap = { [SIZE] = { minValue = 100, maxValue = 200, stepSize = 5 } }
+function player:HasSetting(setting)
+    return setting == SIZE
+end
+function player:GetSettingValue(setting)
+    assert(setting == SIZE)
+    return size
+end
+function EditModeManagerFrame:OnSystemSettingChange(system, setting, value)
+    assert(system == player and setting == SIZE)
+    size = value
+end
+view:Refresh(player)
+assert(scaleRow.Slider.enabled and scaleRow.EditBox.shown)
+assert(scaleRow.Slider.value == 1.2 and scaleRow.Slider.min == 1 and scaleRow.Slider.max == 2)
+assert(scaleRow.Slider.steps == 20)
+scaleRow.Slider:SetValue(1.35)
+assert(size == 135 and saves == 0, "slider writes the native draft setting")
+scaleRow.EditBox:SetFocus()
+assert(scaleRow.EditBox:GetText() == "1.35")
+scaleRow.EditBox:SetText("1.62")
+scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
+assert(size == 160 and not view.error, "typed values snap to the native step")
+scaleRow.EditBox:SetFocus()
+scaleRow.EditBox:SetText("3")
+scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
+assert(size == 160 and view.error, "out-of-range values are rejected")
+view.error = nil
+-- A native change (the dialog's own Frame Size slider) is picked up by the poll.
+size = 180
+view:Refresh(player)
+assert(scaleRow.Slider.value == 1.8)
+preset = true
+view:Refresh(player)
+assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown)
+scaleRow.Slider:SetValue(1.5)
+assert(size == 180, "preset layouts are read-only")
+preset = false
+player.settingDisplayInfoMap, player.HasSetting, player.GetSettingValue = nil, nil, nil
+EditModeManagerFrame.OnSystemSettingChange = nil
+selectedSpec.system = nil
+view:Refresh(player)
+assert(not scaleRow.Slider.enabled)
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")
 
 -- The config view uses the shared core service without requiring SeamlessUI or a selection.

@@ -374,7 +374,7 @@ function module:Options()
             2,
             "addPosition",
             L["Add position"],
-            L["Adds Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."]
+            L["Adds Scale, Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."]
         ),
         addMoreOptions = globalToggle(
             3,

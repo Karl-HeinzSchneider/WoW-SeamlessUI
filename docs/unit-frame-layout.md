@@ -92,6 +92,8 @@ bar anchors directly to native artwork, never to a visual bar (which would propa
 protection). Native prediction segments and absorb glows also attach to the visual health bar;
 their masks redirect native health-fill anchors without inspecting native offsets.
 Current restores their native ownership, masks and status-bar references.
+Prediction fills (player, party, target and focus) use the old white health fill of their
+family; the old art has no white target fill, so target and focus use the player's.
 Native frames, events, targeting and tooltips remain in place. Layout
 repairs can resize the visuals in combat and skip every protected region.
 

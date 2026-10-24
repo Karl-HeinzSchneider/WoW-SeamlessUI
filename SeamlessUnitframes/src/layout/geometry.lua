@@ -103,6 +103,21 @@ local function Power(bar, family, unit, alternate, previewPowerType)
     module:Bar(bar, P .. family .. suffix .. "-Bar-" .. element)
 end
 
+local PREDICTION_KEYS = { "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }
+
+-- A prediction segment stretches its Fill over the whole health bar and only
+-- masks the visible part. The Camelot status atlases carry their own padding and
+-- rounded end, which shrinks the fill inside the taller Legacy bars; their
+-- "-Status" names resolve to the old white health fills instead.
+local function PredictionFills(bar, atlas)
+    for _, key in ipairs(PREDICTION_KEYS) do
+        local segment = bar[key]
+        if module:CheckRegion(segment, "prediction fill") then
+            module:Art(segment.Fill, atlas)
+        end
+    end
+end
+
 local function Player(frame, old)
     if
         not module:CheckPaths(frame, "Player", {
@@ -140,6 +155,7 @@ local function Player(frame, old)
     module:Art(art.PlayerPortraitMask, P .. "Player-Portrait-Mask")
     module:Edit(art.PlayerPortraitMask, { width = 60, height = 60 })
     module:Bar(health, P .. "Player-PortraitOn-Bar-Health", true)
+    PredictionFills(health, P .. "Player-PortraitOn-Bar-Health-Status")
     module:Bar(container.PlayerFrameTempMaxHealthLoss, P .. "Player-PortraitOn-Bar-TempHPLoss")
     module:Art(
         container.HealthBarMask,
@@ -257,7 +273,9 @@ local function PredictionVisuals(source, visual, old, nativeMask, visualMask)
         return
     end
     local owner, mask = old and visual or source, old and visualMask or nativeMask
-    for _, key in ipairs({ "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }) do
+    -- The old art has no white target fill; the player's has the same 20 px bar.
+    PredictionFills(source, P .. (old and "Player" or "Target") .. "-PortraitOn-Bar-Health-Status")
+    for _, key in ipairs(PREDICTION_KEYS) do
         local segment = source[key]
         if module:CheckRegion(segment, "target prediction", { "SetParent", "SetAllPoints", "SetStatusBar" }) then
             segment:SetParent(owner)
@@ -590,6 +608,11 @@ local function Party(frame, old)
     module:Art(frame.Flash, P .. family .. "-InCombat", true)
     module:Art(overlay.Status, P .. family .. "-Status", true)
     module:Bar(container.HealthBar, P .. family .. "-Bar-Health", true)
+    -- The client keeps the plain party fill in a vehicle, like its own templates.
+    PredictionFills(
+        container.HealthBar,
+        P .. (character and "CharacterFrameOnParty-PortraitOn" or "Party-PortraitOn") .. "-Bar-Health-Status"
+    )
     module:Art(
         container.HealthBarMask,
         healthOnly and "plunderstorm-ui-hud-unitframe-party-portraiton-bar-health-mask"

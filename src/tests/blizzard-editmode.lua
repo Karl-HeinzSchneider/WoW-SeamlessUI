@@ -107,7 +107,15 @@ function IsLoggedIn()
 end
 local app = { addon = {}, db = { profile = {} } }
 local collapsedSections, header, positionView = {}, nil, nil
+local beside, placedDialog
 app.core = {
+    SetEditModeDialogsBesideManager = function(_, enabled)
+        beside = enabled
+    end,
+    PlaceBesideEditModeManager = function(_, dialog)
+        placedDialog = dialog
+        return true
+    end,
     CreateEditModeHeader = function(_, _, onClick)
         header = frame()
         header.onClick = onClick
@@ -206,45 +214,25 @@ function EditModeManagerFrame:IsEditModeActive()
 end
 module:InstallHooks()
 assert(module:IsHooked(EditModeSystemSettingsDialog, "AttachToSystemFrame") == "OnDialogAttached")
--- Selecting a frame snaps the native dialog right of the Edit Mode window in absolute
--- coordinates (converted between the two scales); it only re-anchors, never writes fields.
+-- Selecting a frame snaps the native dialog right of the Edit Mode window through Core (which
+-- only re-anchors it), and Core's dialog for suite frames follows the same option.
 do
-    local dialog, manager = EditModeSystemSettingsDialog, EditModeManagerFrame
-    local point
-    function dialog:SetPoint(...)
-        point = { ... }
-    end
-    function dialog:GetEffectiveScale()
-        return 0.5
-    end
-    function manager:GetEffectiveScale()
-        return 1
-    end
-    function manager:GetRight()
-        return 300
-    end
-    function manager:GetTop()
-        return 700
-    end
-    local fields = {}
-    for key in pairs(dialog) do
-        fields[key] = true
-    end
-    module:SnapDialog()
-    assert(point[1] == "TOPLEFT" and point[2] == UIParent and point[3] == "BOTTOMLEFT")
-    assert(point[4] == 604 and point[5] == 1400, "scaled into the dialog's units plus the gap")
-    for key in pairs(dialog) do
-        assert(fields[key], "the dialog gains no fields: " .. key)
-    end
-    point = nil
-    app.db.profile.blizzardEditMode.snapSettingsDialog = false
-    module:SnapDialog()
-    assert(point == nil, "the option leaves the dialog where Blizzard or the player put it")
-    app.db.profile.blizzardEditMode.snapSettingsDialog = true
-    manager.shown = false
-    module:SnapDialog()
-    assert(point == nil, "nothing to snap to while the Edit Mode window is hidden")
-    manager.shown = true
+    local dialog = EditModeSystemSettingsDialog
+    assert(beside == true, "enabling the extensions turns it on for suite frames")
+    module:OnDialogAttached()
+    assert(placedDialog == dialog)
+    placedDialog = nil
+    local config = module:Options().args
+    config.snapSettingsDialog.set(nil, false)
+    assert(beside == false and not config.snapSettingsDialog.get())
+    module:OnDialogAttached()
+    assert(placedDialog == nil, "the option leaves the dialog where Blizzard or the player put it")
+    config.snapSettingsDialog.set(nil, true)
+    assert(beside == true)
+    config.enabled.set(nil, false)
+    assert(beside == false, "disabling the extensions restores Core's default")
+    config.enabled.set(nil, true)
+    assert(beside == true)
 end
 -- Simulate AceDB's per-entry wildcard defaults for newly introduced frame keys.
 setmetatable(app.db.profile.blizzardEditMode.frames, {

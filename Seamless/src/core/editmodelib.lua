@@ -221,6 +221,37 @@ end
 local SCROLL_BAR_GAP = 2
 -- Space between the selected frame and its settings window.
 local DIALOG_GAP = 16
+-- Gap to Blizzard's Edit Mode window when settings dialogs open beside it.
+local MANAGER_GAP = 4
+
+-- Set by a feature (SeamlessUI): open settings dialogs beside Blizzard's Edit Mode window instead
+-- of beside their frame.
+local besideManager = false
+
+-- Places a settings dialog right of Blizzard's Edit Mode window, aligned with its top and kept on
+-- screen, in absolute coordinates like a drop after dragging, so it never follows the window.
+-- Returns whether it was placed. Only re-anchors: Blizzard's dialog is an unprotected frame that
+-- nothing reads the position of.
+local function PlaceBesideManager(dialog)
+    local manager = EditModeManagerFrame
+    if not manager or not manager:IsShown() then
+        return false
+    end
+    local right, top = manager:GetRight(), manager:GetTop()
+    local width, height = dialog:GetWidth(), dialog:GetHeight()
+    if not right or not top or not width or not height then
+        return false
+    end
+    local scale = dialog:GetEffectiveScale()
+    local ratio = manager:GetEffectiveScale() / scale
+    local screenWidth = UIParent:GetWidth() * UIParent:GetEffectiveScale() / scale
+    local screenHeight = UIParent:GetHeight() * UIParent:GetEffectiveScale() / scale
+    local x = math.max(math.min(right * ratio + MANAGER_GAP, screenWidth - width), 0)
+    local y = math.max(math.min(top * ratio, screenHeight), math.min(height, screenHeight))
+    dialog:ClearAllPoints()
+    dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+    return true
+end
 
 -- Put the selected frame's settings list in a scroll frame, built like Blizzard's own
 -- Edit Mode settings container (ResizeLayoutFrame + ScrollFrameTemplate with a maximum height).
@@ -393,7 +424,7 @@ local function AddScrolling(dialog)
         HookSliders()
         ApplyCollapsed(self)
         LayoutDialog()
-        if newSelection and selection.parent then
+        if newSelection and selection.parent and not (besideManager and PlaceBesideManager(self)) then
             PlaceBesideFrame(selection.parent)
         end
     end
@@ -451,6 +482,21 @@ function addon:SetEditModeFrameFixed(frame)
     fixedFrames[frame] = true
     selection:SetScript("OnDragStart", nil)
     selection:SetScript("OnDragStop", nil)
+end
+
+---Open the settings dialog of a newly selected frame beside Blizzard's Edit Mode window instead
+---of beside the frame. Off by default; the player can still drag the dialog.
+---@param enabled boolean
+function addon:SetEditModeDialogsBesideManager(enabled)
+    besideManager = enabled and true or false
+end
+
+---Moves a settings dialog (also Blizzard's `EditModeSystemSettingsDialog`) right of Blizzard's
+---Edit Mode window, top-aligned and on screen. Only re-anchors it; returns whether it was placed.
+---@param dialog table
+---@return boolean placed
+function addon:PlaceBesideEditModeManager(dialog)
+    return PlaceBesideManager(dialog)
 end
 
 function addon:GetEditModePositionSectionKey()

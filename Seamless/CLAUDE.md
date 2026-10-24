@@ -153,6 +153,10 @@ Run `lua src/tests/editmode-panel.lua`.
 - The settings list scrolls past 400 pixels or 60% of the screen height. The dialog opens
   16 pixels beside its frame (the side with more room), grows downward only and never changes
   width.
+- `core:SetEditModeDialogsBesideManager(enabled)` (off by default, SeamlessUI sets it) opens the
+  dialog of a new selection 4 pixels right of Blizzard's Edit Mode window instead;
+  `core:PlaceBesideEditModeManager(dialog)` does that placement for any dialog (SeamlessUI uses it
+  for Blizzard's `EditModeSystemSettingsDialog`). Both only re-anchor, in absolute coordinates.
 - While a slider is held, `RefreshFrameSettings` of the same frame only refreshes rows in place
   (a full rebuild would end the drag); one full update follows when it is released. Setters may
   keep refreshing the dialog.

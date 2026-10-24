@@ -189,9 +189,6 @@ local function frameOption(spec, field)
     return settings()[field] and settings().frames[spec.key][field]
 end
 
--- Space between the Edit Mode window and the settings dialog snapped next to it.
-local DIALOG_GAP = 4
-
 local function hidePanel()
     if panel then
         panel:Hide()
@@ -304,22 +301,18 @@ function module:RefreshPanel()
 end
 
 -- Puts the native settings dialog right of the Edit Mode window whenever a frame is selected;
--- the player can still drag it anywhere until the next selection. The dialog is a plain,
--- unprotected frame that nothing reads the position of, so only re-anchor it: never write its
--- fields or replace its methods, which Blizzard's selection code reads.
+-- the player can still drag it anywhere until the next selection. Core only re-anchors it: the
+-- dialog is unprotected and nothing reads its position. Never write its fields or replace its
+-- methods, which Blizzard's selection code reads.
 function module:SnapDialog()
-    local dialog, manager = EditModeSystemSettingsDialog, EditModeManagerFrame
-    if not settings().snapSettingsDialog or not dialog or not manager or not manager:IsShown() then
-        return
+    if settings().snapSettingsDialog and EditModeSystemSettingsDialog then
+        app.core:PlaceBesideEditModeManager(EditModeSystemSettingsDialog)
     end
-    local right, top = manager:GetRight(), manager:GetTop()
-    if not right or not top then
-        return
-    end
-    -- Absolute coordinates, like a drop after dragging, so the dialog never follows the window.
-    local scale = manager:GetEffectiveScale() / dialog:GetEffectiveScale()
-    dialog:ClearAllPoints()
-    dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", right * scale + DIALOG_GAP, top * scale)
+end
+
+-- Core's dialog for suite frames (not part of Blizzard's Edit Mode) follows the same option.
+local function syncSuiteDialogs(enabled)
+    app.core:SetEditModeDialogsBesideManager(enabled and settings().snapSettingsDialog)
 end
 
 -- Runs after Blizzard's AttachToSystemFrame, which re-anchors the dialog when the system type
@@ -342,6 +335,7 @@ function module:InstallHooks()
 end
 
 function module:OnEnable()
+    syncSuiteDialogs(true)
     self:RegisterEvent("ADDON_LOADED", "InstallHooks")
     self:RegisterEvent("PLAYER_REGEN_DISABLED", hidePanel)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "RefreshPanel")
@@ -350,6 +344,7 @@ function module:OnEnable()
 end
 
 function module:OnDisable()
+    syncSuiteDialogs(false)
     hidePanel()
     self:UnhookAll()
     self:UnregisterAllEvents()
@@ -361,6 +356,7 @@ function module:OnProfileRefresh()
         self:SetEnabledState(settings().enabled)
     elseif settings().enabled then
         self:Enable()
+        syncSuiteDialogs(true)
         self:RefreshPanel()
     else
         self:Disable()
@@ -387,6 +383,7 @@ function module:Options()
                 if key == "enabled" then
                     module:OnProfileRefresh()
                 else
+                    syncSuiteDialogs(module:IsEnabled())
                     module:RefreshPanel()
                 end
             end,

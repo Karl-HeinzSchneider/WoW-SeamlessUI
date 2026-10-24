@@ -28,9 +28,10 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   global switch and its own value. Options show only the global switches and one
   "<frame> - Extend Edit Mode" toggle per frame under its category header; the per-frame
   position/more-options values are internal. AceDB wildcard defaults cover new registry keys.
-- Global `snapSettingsDialog` (default on): a post-hook on `AttachToSystemFrame` moves the
-  native settings dialog to the right of `EditModeManagerFrame` with absolute coordinates on each
-  selection; dragging stays native. Only `ClearAllPoints`/`SetPoint` on the dialog (it is
+- Global `snapSettingsDialog` (default on): on each selection, a post-hook on
+  `AttachToSystemFrame` moves the native settings dialog right of `EditModeManagerFrame` through
+  `core:PlaceBesideEditModeManager`, and `core:SetEditModeDialogsBesideManager` does the same for
+  Core's dialog of suite frames; dragging stays native. Only re-anchor the native dialog (it is
   unprotected and nothing reads its position): never write its fields or replace its methods.
 - An addon-owned UIParent panel below the dialog, attached with removable AceHook post-hooks
   (LibEditMode has no API to unregister system extensions). `panel:LayoutContent()` stacks

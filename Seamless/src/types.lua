@@ -69,7 +69,9 @@
 ---@field StartAnchorPicker fun(spec: SeamlessCore.AnchorPicker): boolean
 ---@field StopAnchorPicker fun()
 ---@field IsAnchorPickerActive fun(): boolean
----@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (SettingType.Header, scrolling dialog).
+---@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (Header and Button settings, Core's settings window as its dialog).
+---@field EditModePoints string[] Anchor points in dropdown order.
+---@field EditModePointLabels table<string, string> Localized label of each anchor point.
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema

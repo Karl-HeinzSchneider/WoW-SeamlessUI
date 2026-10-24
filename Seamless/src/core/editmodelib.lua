@@ -627,7 +627,6 @@ function addon:SetEditModeSectionCollapsed(key, collapsed)
     app.SetEditModeSectionCollapsed(key, collapsed)
 end
 
----@return string
 ---Keep a frame registered with LibEditMode's AddFrame selectable, with its settings, but never
 ---movable: for a preview of a frame the client places itself.
 ---@param frame table
@@ -669,22 +668,10 @@ function addon:DetachEditModeSettingsWindow()
     end
 end
 
+---@return string
 function addon:GetEditModePositionSectionKey()
     return POSITION_SECTION
 end
-
-local POINTS = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
-local POINT_LABELS = {
-    TOPLEFT = L["Top left"],
-    TOP = L["Top"],
-    TOPRIGHT = L["Top right"],
-    LEFT = L["Left"],
-    CENTER = L["Center"],
-    RIGHT = L["Right"],
-    BOTTOMLEFT = L["Bottom left"],
-    BOTTOM = L["Bottom"],
-    BOTTOMRIGHT = L["Bottom right"],
-}
 
 ---LibEditMode settings for a collapsible Position section: Scale, Anchor, AnchorParent, AnchorFrame,
 ---X, Y and an "Quick anchor to frame" button that starts the anchor picker. Scale uses the same
@@ -712,9 +699,10 @@ function addon:GetEditModePositionSettings(spec)
             return spec.get(key)
         end
     end
+    -- Defined by editmodeposition.lua, which loads after this file.
     local points = {}
-    for _, point in ipairs(POINTS) do
-        points[#points + 1] = { text = POINT_LABELS[point], value = point }
+    for _, point in ipairs(app.EditModePoints) do
+        points[#points + 1] = { text = app.EditModePointLabels[point], value = point }
     end
     local function offset(name, key, extent)
         extent = math.max(1, math.ceil(extent))

@@ -310,8 +310,9 @@ assert(tocAce < tocExtension and tocExtension < tocPanel, "Extension loads befor
 assert(loadfile("Seamless/src/core/editmodelib.lua"))("Seamless", app)
 local lib = app.LibEditMode
 assert(lib.SettingType.Header == "seamless-header" and lib.SettingType.Button == "seamless-button")
--- Core's real row renderer draws the window.
+-- Core's real row renderer draws the window; the Position section file defines the anchor points.
 assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", app)
+assert(loadfile("Seamless/src/core/editmodeposition.lua"))("Seamless", app)
 
 -- Second load must refuse silently overriding a library-defined Header.
 assert(not pcall(assert(loadfile("Seamless/src/core/editmodelib.lua")), "Seamless", app))

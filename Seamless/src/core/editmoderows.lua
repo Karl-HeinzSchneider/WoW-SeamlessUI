@@ -260,10 +260,10 @@ function creators.text(parent)
     return row
 end
 
-local function state(parent, changed)
+local function state(parent)
     local current = states[parent]
     if not current then
-        current = { headers = {}, rows = {}, changed = changed }
+        current = { headers = {}, rows = {} }
         states[parent] = current
     end
     return current
@@ -316,7 +316,7 @@ end
 ---@param changed fun() Redraws the window after a click or a collapse.
 ---@return number bottom
 function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
-    local current = state(parent, changed)
+    local current = state(parent)
     -- The latest callback wins: one window can show different owners' sections.
     current.changed = changed
     -- Only hide what this pass leaves out: hiding a shown header or row, even for a moment,

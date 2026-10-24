@@ -23,8 +23,10 @@ local POINT_LABELS = {
 }
 app.EditModePoints, app.EditModePointLabels = POINTS, POINT_LABELS
 
+-- At most two decimals: a dragged frame's offsets carry long float tails.
 local function formatNumber(value)
-    return string.format("%.12g", value)
+    value = tonumber(value) or 0
+    return string.format("%.12g", math.floor(value * 100 + 0.5) / 100)
 end
 
 ---@class SeamlessCore.EditModePositionBinding

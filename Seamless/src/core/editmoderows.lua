@@ -53,8 +53,9 @@ local function defaultText(option)
     return value == "" and L["None"] or tostring(value)
 end
 
--- Anchored to the hovered row, not the cursor: the tooltip's bottom-left corner on the row's
--- top-right corner.
+-- Anchored like the config window's tooltips, not to the cursor: bottom-left corner on the top-right
+-- of the row's name (a button row's button), padded 12 pixels right and 8 up, so on a dropdown or
+-- slider row it sits above the control.
 local function showTooltip(row)
     local option = row.option
     if not option then
@@ -67,7 +68,7 @@ local function showTooltip(row)
     end
     GameTooltip:SetOwner(row, "ANCHOR_NONE")
     GameTooltip:ClearAllPoints()
-    GameTooltip:SetPoint("BOTTOMLEFT", row, "TOPRIGHT")
+    GameTooltip:SetPoint("BOTTOMLEFT", row.Label or row.Button or row, "TOPRIGHT", 12, 8)
     GameTooltip:SetText(option.name or "", 1, 1, 1)
     if desc and desc ~= "" then
         GameTooltip:AddLine(desc, nil, nil, nil, true)

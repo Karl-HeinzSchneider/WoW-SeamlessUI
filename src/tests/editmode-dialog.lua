@@ -512,7 +512,10 @@ assert(on.Hover and on.Hover.shown and GameTooltip.shown and GameTooltip.owner =
 assert(GameTooltip.lines[1] == "On" and GameTooltip.lines[2] == "Tip")
 assert(GameTooltip.lines[3] == "\n(Default: |cff8080ffDisabled|r)", GameTooltip.lines[3])
 local tipPoint = GameTooltip.points.BOTTOMLEFT
-assert(tipPoint[1] == on and tipPoint[2] == "TOPRIGHT", "the tooltip sits on the row's top-right corner")
+assert(
+    tipPoint[1] == on.Label and tipPoint[2] == "TOPRIGHT" and tipPoint[3] == 12 and tipPoint[4] == 8,
+    "anchored to the name"
+)
 -- Moving onto the checkbox keeps both; leaving the row ends them.
 on.Button.scripts.OnLeave()
 assert(on.Hover.shown and GameTooltip.shown)
@@ -525,7 +528,7 @@ style.Dropdown.scripts.OnLeave()
 assert(not style.Hover.shown and not GameTooltip.shown)
 size.Slider.scripts.OnEnter()
 assert(GameTooltip.lines[2] == "\n(Default: |cff8080ff5|r)" and size.Hover.shown)
-assert(GameTooltip.points.BOTTOMLEFT[1] == size)
+assert(GameTooltip.points.BOTTOMLEFT[1] == size.Label)
 doIt.scripts.OnEnter(doIt)
 assert(not doIt.Hover and GameTooltip.owner ~= doIt, "buttons without a description have no tooltip")
 local reset = Row(list, "Reset To Default")

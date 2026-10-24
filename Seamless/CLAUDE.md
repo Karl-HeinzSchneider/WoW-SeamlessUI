@@ -229,9 +229,10 @@ section gets the shared collapsible header. Rows (`key`, `type`, `name`, optiona
 Tooltips match the config window's: name, `desc`, then for `toggle`, `select` and `range` the
 localized `\n(Default: |cff8080ff%s|r)` line from `default` (a value or a function; booleans as
 Enabled/Disabled, choices by label, numbers through `format`, nil as Not applicable). Buttons
-show one only with a `desc`. The tooltip never follows the cursor: its bottom-left corner sits on
-the hovered row's top-right corner. Setting rows light up as a whole, like the config rows, while the cursor is over
-the row or any of its controls (also disabled ones). LibEditMode settings pass their `default`;
+show one only with a `desc`. The tooltip never follows the cursor: like the config window's, its
+bottom-left corner sits on the top-right of the row's name (a button row's button), padded 12
+pixels right and 8 up. Setting rows light up as a whole, like the config rows, while the cursor
+is over the row or any of its controls (also disabled ones). LibEditMode settings pass their `default`;
 Position rows take theirs from the binding's optional `default(key)` (Reset Position's target for
 suite frames, the preset layout for Blizzard frames).
 

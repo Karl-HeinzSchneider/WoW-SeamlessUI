@@ -2,7 +2,8 @@
 local _, app = ...
 
 -- Suite-only additions to the namespaced LibEditMode instance: our own settings window as its
--- dialog, Header and Button settings, and fixed frames. The vendored files stay untouched; this
+-- dialog (also attached below Blizzard's settings dialog), Header and Button settings, and fixed
+-- frames. The vendored files stay untouched; this
 -- relies on lib.internal, so recheck it whenever the library is updated.
 local lib = app.LibEditMode
 local internal = lib.internal
@@ -154,6 +155,14 @@ local DIALOG_GAP = 16
 local MANAGER_GAP = 4
 -- Arrow-key nudges, in pixels (with and without Shift), as in the library's dialog.
 local BIG_STEP, SMALL_STEP = 10, 1
+-- Space between the dialog the window attaches below and the window, and the frame levels the
+-- window keeps above it.
+local ATTACH_GAP, ATTACH_LEVELS = 8, 10
+-- The window's own frame level, above the library's selection overlays.
+local FRAME_LEVEL = 200
+-- How often an attached window picks up changes made outside it (dragging, nudges, the other
+-- dialog's own controls, Revert).
+local POLL = 0.15
 
 -- Set by a feature (SeamlessUI): open settings dialogs beside Blizzard's Edit Mode window instead
 -- of beside their frame.
@@ -282,17 +291,28 @@ local function ConvertSetting(data, index, frame)
     return row
 end
 
+---@class SeamlessCore.EditModeAttachedSettings
+---@field anchor table The dialog the window attaches below; the window takes its width.
+---@field title string
+---@field key any What is shown (a Blizzard system); the list scrolls back to the top when it changes.
+---@field sections fun(): SeamlessCore.EditModeSection[] Built again on every layout.
+---@field changed? fun() Called after a row changed a value (default: lay the window out again).
+
 ---@class SeamlessCore.EditModeSettingsWindow : Frame
 ---@field selection table? LibEditMode's selection of the frame whose settings are shown.
+---@field attached SeamlessCore.EditModeAttachedSettings? Set while attached below another dialog.
 
 -- The settings window of suite frames. LibEditMode shows it as its dialog: the library keeps
 -- selecting, dragging and calling Update/Reset/Hide, and the window draws the selected frame's
 -- settings with the shared row renderer (editmoderows.lua) instead of the library's widgets.
+-- For a Blizzard frame, a feature attaches the same window below Blizzard's settings dialog with
+-- its own sections (AttachEditModeSettingsWindow); it then has no close button, buttons or
+-- dragging, and follows that dialog.
 local function CreateSettingsWindow()
     local window = CreateFrame("Frame", "SeamlessEditModeSettingsDialog", UIParent) --[[@as SeamlessCore.EditModeSettingsWindow]]
     window:SetSize(WIDTH, 350)
     window:SetFrameStrata("DIALOG")
-    window:SetFrameLevel(200)
+    window:SetFrameLevel(FRAME_LEVEL)
     window:Hide()
     -- Draggable like the library's dialog; arrow keys nudge the selected frame.
     window:EnableMouse(true)
@@ -300,7 +320,11 @@ local function CreateSettingsWindow()
     window:SetClampedToScreen(true)
     window:SetDontSavePosition(true)
     window:RegisterForDrag("LeftButton")
-    window:SetScript("OnDragStart", window.StartMoving)
+    window:SetScript("OnDragStart", function(self)
+        if not self.attached then
+            self:StartMoving()
+        end
+    end)
     window:SetScript("OnDragStop", window.StopMovingOrSizing)
 
     local border = CreateFrame("Frame", nil, window, "DialogBorderTranslucentTemplate")
@@ -313,6 +337,7 @@ local function CreateSettingsWindow()
     close:HookScript("OnClick", function()
         window:Reset()
     end)
+    window.Close = close
 
     -- The settings list scrolls; the buttons below it always stay in view.
     local scroll = CreateFrame("ScrollFrame", nil, window, "ScrollFrameTemplate")
@@ -333,9 +358,18 @@ local function CreateSettingsWindow()
     window.Scroll, window.List, window.Buttons = scroll, list, buttons
 
     local function Redraw()
-        if window.selection then
+        if window.selection or window.attached then
             window:LayoutContent()
         end
+    end
+
+    -- Back from the attached placement to the library dialog's own look.
+    local function Detach()
+        window.attached = nil
+        window.Close:Show()
+        window:SetFrameLevel(FRAME_LEVEL)
+        window:ClearAllPoints()
+        window:SetWidth(WIDTH)
     end
 
     local function ResetSettings()
@@ -407,21 +441,37 @@ local function CreateSettingsWindow()
         return { { id = "buttons", options = options } }
     end
 
-    ---Draw the selected frame's settings and size the window to them, growing downward only.
+    ---Draw the selected frame's settings (or the attached sections) and size the window to them,
+    ---growing downward only.
     function window:LayoutContent()
-        -- Pin the top edge where it is now, so resizing only moves the bottom edge.
-        local left, top = self:GetLeft(), self:GetTop()
-        if left and top then
-            self:ClearAllPoints()
-            self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+        local attached, frame = self.attached, self.selection and self.selection.parent
+        if not attached then
+            -- Pin the top edge where it is now, so resizing only moves the bottom edge.
+            local left, top = self:GetLeft(), self:GetTop()
+            if left and top then
+                self:ClearAllPoints()
+                self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+            end
         end
-        local frame = self.selection.parent
-        local listHeight = addon:LayoutEditModeSections(list, ListSections(frame), 0, false, Redraw)
+        -- Attached, the window takes the width of the dialog above it.
+        local width = self:GetWidth()
+        if not width or width <= 0 then
+            width = WIDTH
+        end
+        scroll:SetWidth(width)
+        list:SetWidth(width)
+        buttons:SetWidth(width)
+        local sections = attached and attached.sections() or ListSections(frame)
+        local changed = attached and attached.changed or Redraw
+        local listHeight = addon:LayoutEditModeSections(list, sections, 0, false, changed)
         list:SetHeight(math.max(1, listHeight))
         local maximum = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
         local scrollHeight = math.min(listHeight, maximum)
         scroll:SetHeight(math.max(1, scrollHeight))
-        local buttonsHeight = addon:LayoutEditModeSections(buttons, ButtonSections(frame), 0, false, Redraw)
+        local buttonsHeight = 0
+        if not attached then
+            buttonsHeight = addon:LayoutEditModeSections(buttons, ButtonSections(frame), 0, false, Redraw)
+        end
         -- An empty button list is left out of the window.
         buttons:SetShown(buttonsHeight > 0)
         buttons:SetHeight(math.max(1, buttonsHeight))
@@ -439,6 +489,9 @@ local function CreateSettingsWindow()
 
     -- Called by the library on selection and whenever a feature refreshes the frame's settings.
     function window:Update(selection)
+        if self.attached then
+            Detach()
+        end
         local newSelection = selection ~= self.selection
         self.selection = selection
         self.Title:SetText(selection.system:GetSystemName())
@@ -456,13 +509,61 @@ local function CreateSettingsWindow()
         Redraw()
     end
 
-    -- Called by the library before showing another frame's settings; never hide here, the
-    -- library's OnHide hook clears the selection.
+    -- Called by the library before showing another frame's settings and when a Blizzard frame is
+    -- selected; never hide here, the library's OnHide hook clears the selection.
     function window:Reset()
+        if self.attached then
+            Detach()
+        end
         self.selection = nil
         self:ClearAllPoints()
         self:SetPoint("BOTTOMRIGHT", UIParent, -250, 250)
     end
+
+    ---Show `spec.sections` below `spec.anchor` instead of a suite frame's settings.
+    ---@param spec SeamlessCore.EditModeAttachedSettings
+    function window:Attach(spec)
+        local new = not self.attached or self.attached.key ~= spec.key
+        self.selection = nil
+        self.attached = spec
+        self.Title:SetText(spec.title)
+        self.Close:Hide()
+        self:ClearAllPoints()
+        self:SetPoint("TOPLEFT", spec.anchor, "BOTTOMLEFT", 0, -ATTACH_GAP)
+        self:SetPoint("TOPRIGHT", spec.anchor, "BOTTOMRIGHT", 0, -ATTACH_GAP)
+        self:SetFrameLevel(spec.anchor:GetFrameLevel() + ATTACH_LEVELS)
+        if new then
+            scroll:SetVerticalScroll(0)
+        end
+        self:Show()
+        self:LayoutContent()
+    end
+
+    ---Hide the window if it is attached; a suite frame's settings stay as they are.
+    function window:Detach()
+        if self.attached then
+            Detach()
+            self:Hide()
+            self:Reset()
+        end
+    end
+
+    -- Attached, poll while shown and refresh the rows in place: laying the window out again each
+    -- time would interrupt clicks, so that only happens when rows appear, disappear or change
+    -- height. Suite frames refresh through the library instead.
+    local elapsed = 0
+    window:SetScript("OnUpdate", function(self, delta)
+        if not self.attached then
+            return
+        end
+        elapsed = elapsed + delta
+        if elapsed >= POLL then
+            elapsed = 0
+            if addon:RefreshEditModeSections(list) then
+                self:LayoutContent()
+            end
+        end
+    end)
 
     window:SetScript("OnKeyDown", function(self, key)
         if InCombatLockdown() then
@@ -492,10 +593,16 @@ local function CreateSettingsWindow()
     return window
 end
 
+local settingsWindow
+local function GetSettingsWindow()
+    settingsWindow = settingsWindow or CreateSettingsWindow()
+    return settingsWindow
+end
+
 -- The one replacement in the library: its dialog is our window. Nothing else in it changes.
 assert(not internal.dialog, "LibEditMode created its dialog before Core could replace it")
 function internal:CreateDialog()
-    return CreateSettingsWindow()
+    return GetSettingsWindow()
 end
 
 -- Public API for feature addons: the same header, collapse state and Position section in every window.
@@ -545,6 +652,21 @@ end
 ---@return boolean placed
 function addon:PlaceBesideEditModeManager(dialog)
     return PlaceBesideManager(dialog)
+end
+
+---Show the settings window below another dialog (Blizzard's `EditModeSystemSettingsDialog`) with
+---the given sections, until DetachEditModeSettingsWindow or a suite frame is selected. Call it
+---again to refresh. While shown it polls `RefreshEditModeSections` for changes made elsewhere.
+---@param spec SeamlessCore.EditModeAttachedSettings
+function addon:AttachEditModeSettingsWindow(spec)
+    GetSettingsWindow():Attach(spec)
+end
+
+---Hide the settings window if it is attached; it is left alone while it shows a suite frame.
+function addon:DetachEditModeSettingsWindow()
+    if settingsWindow then
+        settingsWindow:Detach()
+    end
 end
 
 function addon:GetEditModePositionSectionKey()

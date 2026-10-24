@@ -173,14 +173,6 @@ function module:GetAnchorTargets()
     return targets
 end
 
-local panel, title
-
--- Panel height with the title only, where the first header starts and the space below the last
--- section.
-local TITLE_HEIGHT, TOP, BOTTOM = 60, 44, 20
--- How often native changes (dragging, nudges, the dialog's own sliders, Revert) are picked up.
-local POLL = 0.15
-
 local function settings()
     return app.db.profile.blizzardEditMode
 end
@@ -191,59 +183,10 @@ local function frameOption(spec, field)
     return settings()[field] and settings().frames[spec.key][field]
 end
 
+-- Core's settings window shows our sections below the native dialog; it is left alone while it
+-- shows a suite frame's settings.
 local function hidePanel()
-    if panel then
-        panel:Hide()
-    end
-end
-
-local function ensurePanel()
-    if panel then
-        return
-    end
-    -- LibEditMode has no public unregister/hide API for system extensions. Own this
-    -- panel so the recovery switches can remove it without library internals. Public name for
-    -- other addons, macros and /fstack, after the Blizzard dialog it extends.
-    panel = CreateFrame("Frame", "SeamlessUIEditModeSystemSettingsDialog", UIParent)
-    panel:Hide()
-    panel:SetHeight(TITLE_HEIGHT)
-    panel:SetFrameStrata("DIALOG")
-    panel:EnableMouse(true)
-    panel:SetPoint("TOPLEFT", EditModeSystemSettingsDialog, "BOTTOMLEFT", 0, -8)
-    panel:SetPoint("TOPRIGHT", EditModeSystemSettingsDialog, "BOTTOMRIGHT", 0, -8)
-    local border = CreateFrame("Frame", nil, panel, "DialogBorderTranslucentTemplate")
-    border:SetAllPoints()
-    border:SetFrameLevel(panel:GetFrameLevel())
-    title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    title:SetPoint("TOPLEFT", 24, -20)
-    title:SetPoint("TOPRIGHT", -24, -20)
-    -- Stacks Position and the sections other addons register, all drawn by Core's row renderer.
-    function panel:LayoutContent()
-        local sections = {}
-        if self.addPosition then
-            sections[1] = app.blizzardPosition:GetSection(self.system)
-        end
-        for _, section in ipairs(app.systemOptions:GetSections(self.system)) do
-            sections[#sections + 1] = section
-        end
-        local y = app.core:LayoutEditModeSections(self, sections, TOP, false, function()
-            module:RefreshPanel()
-        end)
-        self:SetHeight(y == TOP and TITLE_HEIGHT or y + BOTTOM)
-    end
-    -- Native dragging, arrow nudges, size changes and Revert all update the same draft. Poll only
-    -- while shown and refresh the rows in place: laying the window out again each time would
-    -- interrupt clicks, so that only happens when rows appear, disappear or change height.
-    local elapsed = 0
-    panel:SetScript("OnUpdate", function(self, delta)
-        elapsed = elapsed + delta
-        if elapsed >= POLL and self.system then
-            elapsed = 0
-            if app.core:RefreshEditModeSections(self) then
-                self:LayoutContent()
-            end
-        end
-    end)
+    app.core:DetachEditModeSettingsWindow()
 end
 
 function module:GetSelectedFrame()
@@ -271,19 +214,34 @@ function module:GetSelectedFrame()
     end
 end
 
+local function refresh()
+    module:RefreshPanel()
+end
+
+-- Attaches Core's settings window below the native dialog, with Position and the sections other
+-- addons register, all drawn by Core's row renderer. Calling it again refreshes the window.
 function module:RefreshPanel()
     local system, spec = self:GetSelectedFrame()
     if not system then
         hidePanel()
         return
     end
-    ensurePanel()
-    panel.system = system
-    title:SetText(string.format(L["SeamlessUI - %s"], spec.name))
-    panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
-    panel.addPosition = frameOption(spec, "addPosition")
-    panel:LayoutContent()
-    panel:Show()
+    app.core:AttachEditModeSettingsWindow({
+        anchor = EditModeSystemSettingsDialog,
+        key = system,
+        title = string.format(L["SeamlessUI - %s"], spec.name),
+        sections = function()
+            local sections = {}
+            if frameOption(spec, "addPosition") then
+                sections[1] = app.blizzardPosition:GetSection(system)
+            end
+            for _, section in ipairs(app.systemOptions:GetSections(system)) do
+                sections[#sections + 1] = section
+            end
+            return sections
+        end,
+        changed = refresh,
+    })
 end
 
 -- Puts the native settings dialog right of the Edit Mode window whenever a frame is selected;
@@ -314,6 +272,9 @@ function module:InstallHooks()
         return
     end
     self:SecureHook(dialog, "AttachToSystemFrame", "OnDialogAttached")
+    -- LibEditMode hides and resets Core's window after every native selection (its own hook on
+    -- SelectSystem, installed when Core loaded and so run before this one); attach it again.
+    self:SecureHook(EditModeManagerFrame, "SelectSystem", "RefreshPanel")
     self:SecureHookScript(dialog, "OnShow", "RefreshPanel")
     self:SecureHookScript(dialog, "OnHide", hidePanel)
     self:SecureHookScript(EditModeManagerFrame, "OnHide", hidePanel)

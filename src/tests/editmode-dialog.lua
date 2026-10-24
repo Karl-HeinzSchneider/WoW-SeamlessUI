@@ -760,4 +760,88 @@ dialog:Update({ parent = rightFrame, system = selection.system })
 assert(buttons:IsShown() and Row(buttons, "Reset Position"), "other frames keep Reset Position")
 print("PASS: fixed frames are selectable but never move")
 
+-- Attached below Blizzard's settings dialog, the same window shows a feature's sections: no close
+-- button, frame buttons or dragging, and it polls for changes made elsewhere.
+do
+    local native = object("Frame", UIParent)
+    native.GetFrameLevel = function()
+        return 50
+    end
+    function dialog:SetFrameLevel(level)
+        self.frameLevel = level
+    end
+    local dragged = false
+    function dialog:StartMoving()
+        dragged = true
+    end
+    local on, changes = true, 0
+    local spec = {
+        anchor = native,
+        key = "system",
+        title = "SeamlessUI - Player frame",
+        sections = function()
+            return {
+                {
+                    id = "style",
+                    name = "Style",
+                    key = "settings:style",
+                    options = {
+                        {
+                            key = "on",
+                            type = "toggle",
+                            name = "Attached on",
+                            get = function()
+                                return on
+                            end,
+                            set = function(value)
+                                on = value
+                            end,
+                        },
+                    },
+                },
+            }
+        end,
+        changed = function()
+            changes = changes + 1
+        end,
+    }
+    dialog:Update({ parent = frame, system = selection.system })
+    app.addon:AttachEditModeSettingsWindow(spec)
+    assert(dialog:IsShown() and dialog.attached == spec and dialog.selection == nil)
+    assert(dialog.Title.text == "SeamlessUI - Player frame" and not dialog.Close:IsShown())
+    local top = dialog.points.TOPLEFT
+    assert(top[1] == native and top[2] == "BOTTOMLEFT" and top[4] == -8, "below the native dialog")
+    assert(dialog.points.TOPRIGHT[1] == native, "as wide as the native dialog")
+    assert(dialog.frameLevel == 60, "above the native dialog")
+    local row = Row(list, "Attached on")
+    assert(row and row.Button.checked == true and Header(list, "Style"))
+    assert(not buttons:IsShown(), "no frame buttons")
+    row:OnCheckButtonClick()
+    assert(on == false and changes == 1, "rows write through the feature's sections")
+    on = true
+    dialog.scripts.OnUpdate(dialog, 0.2)
+    assert(row.Button.checked == true, "the poll picks up changes made elsewhere")
+    dialog.scripts.OnDragStart(dialog)
+    assert(not dragged, "it follows the native dialog")
+    -- Selecting a suite frame takes the window back; detaching then leaves it alone.
+    dialog:Update({ parent = frame, system = selection.system })
+    assert(dialog.attached == nil and dialog.Close:IsShown() and dialog.width == 370)
+    assert(dialog.frameLevel == 200 and Row(buttons, "Reset Position"))
+    dialog.scripts.OnDragStart(dialog)
+    assert(dragged, "draggable again")
+    app.addon:DetachEditModeSettingsWindow()
+    assert(dialog:IsShown() and dialog.selection, "a suite frame's settings stay")
+    -- A native selection: the library hides and resets the window, then the feature attaches it.
+    app.addon:AttachEditModeSettingsWindow(spec)
+    dialog:Hide()
+    dialog:Reset()
+    assert(dialog.attached == nil and dialog.Close:IsShown())
+    app.addon:AttachEditModeSettingsWindow(spec)
+    assert(dialog:IsShown() and dialog.attached == spec)
+    app.addon:DetachEditModeSettingsWindow()
+    assert(not dialog:IsShown() and dialog.attached == nil and dialog.selection == nil)
+    dialog.SetFrameLevel, dialog.StartMoving = nil, nil
+end
+print("PASS: the window attaches below Blizzard's settings dialog")
+
 print("PASS: suite frame settings window")

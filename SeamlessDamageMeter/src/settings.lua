@@ -178,7 +178,13 @@ function app:PrepareWindowSettings()
     end
     for _, config in ipairs(self.db.profile.windows) do
         config.overrides = config.overrides or {}
-        config.position = config.position or self:NewWindowPosition()
+        -- Every position key always has a value, even if a layout record lacked it.
+        config.position = config.position or {}
+        for key, value in pairs(self.positionDefaults) do
+            if config.position[key] == nil then
+                config.position[key] = value
+            end
+        end
         if not config.skin then
             config.skin = "default"
             local customized = false

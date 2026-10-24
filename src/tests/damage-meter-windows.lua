@@ -1392,6 +1392,10 @@ meter.config.anchorTo = nil
 moves[meter](meter, "Modern", "TOPLEFT", 80, -90)
 assert(meter.config.position.point == "TOPLEFT" and meter.config.position.x == 80)
 assert(meter.config.editModeLayouts.Modern.x == 80)
+-- A record saved before position kept scale has none: switching to it keeps the window's scale.
+meter.config.editModeLayouts.Modern.scale = nil
+callbacks.layout("Modern")
+assert(app:GetWindowSetting(meter.config, "scale") == app.positionDefaults.scale and meter.config.position.x == 80)
 callbacks.create("Copied", 4, "Modern")
 assert(meter.config.editModeLayouts.Copied.x == 80)
 callbacks.layout("Copied")

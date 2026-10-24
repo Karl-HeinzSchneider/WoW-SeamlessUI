@@ -10,7 +10,7 @@ local addon = app.addon
 -- Header and row heights, the gap between blocks and between rows, and the rows' inset.
 local HEADER, ROW, GAP, ROW_GAP, INSET = 28, 32, 8, 3, 24
 -- Width of a slider, leaving room for its typed value on the right.
-local SLIDER_WIDTH = 160
+local SLIDER_WIDTH = 175
 
 local states = {}
 

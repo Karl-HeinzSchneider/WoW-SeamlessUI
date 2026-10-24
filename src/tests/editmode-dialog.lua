@@ -521,7 +521,7 @@ assert(store.size == 14 and refreshes == 1 and inits == 0, "the dragged slider i
 assert(Row(list, "Size") == size, "rows are reused, never rebuilt")
 size.Slider.Init = init
 -- Every slider takes a typed value: clamped to its range and snapped to its step.
-assert(size.EditBox and size.Slider.width == 160, "plain sliders have the input box too")
+assert(size.EditBox and size.Slider.width == 175, "plain sliders have the input box too")
 local function typeSize(text)
     size.EditBox.scripts.OnEditFocusGained(size.EditBox)
     size.EditBox:SetText(text)
@@ -701,7 +701,7 @@ do
     assert(xRow.option.get() == 5 and xRow.option.editable)
     -- Values show at most two decimals, and the slider leaves room for them inside the row.
     assert(xRow.option.format(-314.799987792969) == "-314.8" and xRow.option.format(1.006) == "1.01")
-    assert(xRow.Slider.width == 160 and Row(list, "Scale").Slider.width == 160)
+    assert(xRow.Slider.width == 175 and Row(list, "Scale").Slider.width == 175)
     xRow.value = -314.799987792969
     xRow.EditBox.scripts.OnEditFocusGained(xRow.EditBox)
     assert(xRow.EditBox.text == "-314.8", "typing starts from the shown value")

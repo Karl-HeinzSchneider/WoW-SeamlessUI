@@ -317,6 +317,8 @@ end
 ---@return number bottom
 function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
     local current = state(parent, changed)
+    -- The latest callback wins: one window can show different owners' sections.
+    current.changed = changed
     -- Only hide what this pass leaves out: hiding a shown header or row, even for a moment,
     -- cancels a click or drag in progress on it.
     local used, shown = {}, {}
@@ -349,7 +351,8 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
             local gap = GAP
             for _, option in ipairs(section.options) do
                 if not evaluate(option.hidden) then
-                    local id = section.id .. ":" .. option.key
+                    -- With the type, so another owner's row of the same key is never reused.
+                    local id = section.id .. ":" .. option.type .. ":" .. option.key
                     local row = current.rows[id]
                     if not row then
                         row = creators[option.type](parent, function()

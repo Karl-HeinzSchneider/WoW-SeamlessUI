@@ -13,7 +13,7 @@ here without a migration.
   position service.
 - `systemoptions.lua`: places sections registered through `RegisterEditModeSystemOptions`, drawn by
   Core's `LayoutEditModeSections`.
-- `blizzardeditmode.lua`: extension panel below native per-frame settings.
+- `blizzardeditmode.lua`: our sections below native per-frame settings, in Core's settings window.
 - `fpsdisplay.lua`: FPS/latency overlay and Edit Mode integration.
 
 Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
@@ -35,12 +35,14 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   `core:PlaceBesideEditModeManager`, and `core:SetEditModeDialogsBesideManager` does the same for
   Core's dialog of suite frames; dragging stays native. Only re-anchor the native dialog (it is
   unprotected and nothing reads its position): never write its fields or replace its methods.
-- An addon-owned UIParent panel below the dialog, the public frame
-  `SeamlessUIEditModeSystemSettingsDialog`, attached with removable AceHook post-hooks
-  (LibEditMode has no API to unregister system extensions). `panel:LayoutContent()` draws
-  Position and the registered sections with Core's `LayoutEditModeSections` and sizes the panel;
-  every 0.15 s while shown, `RefreshEditModeSections` picks up native changes in place. Never join native layout containers
-  or access LibEditMode internals.
+- Our sections (Position and the registered system options) show in Core's settings window
+  (`SeamlessEditModeSettingsDialog`), attached below the dialog with
+  `core:AttachEditModeSettingsWindow` and hidden with `core:DetachEditModeSettingsWindow`. Core
+  draws them with its row renderer and polls native changes; this module only builds the
+  sections. Removable AceHook post-hooks drive it: `AttachToSystemFrame`, the dialog's
+  OnShow/OnHide, and `EditModeManagerFrame.SelectSystem`, which runs after LibEditMode's own hook
+  (that one hides and resets Core's window on every native selection). Never join native layout
+  containers or access LibEditMode internals.
 - Hides on dialog close, Edit Mode exit and combat; supports Blizzard_EditMode loading late.
 
 Run `lua src/tests/blizzard-editmode.lua`.

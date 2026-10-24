@@ -170,6 +170,14 @@ so it returns this window. The vendored file stays untouched.
   does that placement for any dialog. Both only re-anchor, in absolute coordinates.
 - Rows are converted once per setting and reused, so refreshes while a slider is held never end
   the drag.
+- `core:AttachEditModeSettingsWindow(spec)` shows the same window below another dialog
+  (`spec.anchor`, SeamlessUI passes Blizzard's `EditModeSystemSettingsDialog`) with `spec.title`
+  and the renderer sections `spec.sections()`, built again on every layout; `spec.key` names what
+  is shown (the list scrolls to the top when it changes) and `spec.changed` runs after a row
+  changes a value. Attached, it takes the anchor's width, sits above it, has no close button,
+  frame buttons or dragging, and polls `RefreshEditModeSections` every 0.15 s. Call it again to
+  refresh. `core:DetachEditModeSettingsWindow()` hides it, but only while attached. Selecting a
+  suite frame, or the library's Reset on a native selection, ends the attached placement.
 
 It asserts on the library internals it relies on: rerun `lua src/tests/editmode-dialog.lua`
 whenever LibEditMode is updated.

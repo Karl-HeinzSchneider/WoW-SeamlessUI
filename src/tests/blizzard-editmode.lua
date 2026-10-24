@@ -69,10 +69,6 @@ end
 local created = {}
 function CreateFrame(_, name, parent, template)
     local f = frame()
-    if parent == UIParent then
-        assert(name == "SeamlessUIEditModeSystemSettingsDialog", "the panel is a public frame")
-        panel = f
-    end
     if template == "EditModeSettingCheckboxTemplate" then
         f.Button, f.Label = frame(), frame()
     elseif template == "EditModeSettingSliderTemplate" then
@@ -150,6 +146,18 @@ end
 assert(loadfile("Seamless/src/core/systemoptions.lua"))("Seamless", { addon = app.core })
 -- Core's real row renderer draws the registered sections.
 assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", { addon = app.core })
+-- A stand-in for Core's settings window in its attached placement (editmode-dialog.lua tests the
+-- real one): it lays the sections out with the renderer, and its height is theirs.
+panel = frame()
+panel.shown = false
+function app.core:AttachEditModeSettingsWindow(spec)
+    panel.spec = spec
+    panel:Show()
+    panel.height = self:LayoutEditModeSections(panel, spec.sections(), 0, false, spec.changed)
+end
+function app.core:DetachEditModeSettingsWindow()
+    panel:Hide()
+end
 -- A stand-in Position section with one row; blizzard-position.lua tests the real one.
 local positionSystem
 app.blizzardPosition = {
@@ -235,6 +243,7 @@ function EditModeManagerFrame:IsEditModeActive()
 end
 module:InstallHooks()
 assert(module:IsHooked(EditModeSystemSettingsDialog, "AttachToSystemFrame") == "OnDialogAttached")
+assert(module:IsHooked(EditModeManagerFrame, "SelectSystem") == "RefreshPanel", "re-attach after LibEditMode")
 -- Selecting a frame snaps the native dialog right of the Edit Mode window through Core (which
 -- only re-anchors it), and Core's dialog for suite frames follows the same option.
 do
@@ -301,13 +310,15 @@ module:RefreshPanel()
 local positionHeader, positionRow = headers.Position, created.EditModeSettingCheckboxTemplate
 assert(positionShown() and not positionHeader.collapsed and positionRow.shown)
 assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)
--- Title, header, one row: 44 + 28 + 8 + 32 + 20.
-assert(panel.height == 132, panel.height)
+-- Attached below the native dialog, titled after the frame.
+assert(panel.spec.anchor == EditModeSystemSettingsDialog and panel.spec.key == positionSystem)
+assert(panel.spec.title == "SeamlessUI - Focus frame", panel.spec.title)
+-- Header, one row: 28 + 8 + 32.
+assert(panel.height == 68, panel.height)
 positionHeader.onClick()
-assert(positionHeader.collapsed and not positionRow.shown and panel.height == 92 and panel:IsShown())
+assert(positionHeader.collapsed and not positionRow.shown and panel.height == 28 and panel:IsShown())
 positionHeader.onClick()
 assert(not positionHeader.collapsed and positionRow.shown)
-local originalPanel = panel
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
 Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
 Enum.EditModeSystem.ObjectiveTracker = 6
@@ -434,7 +445,7 @@ assert(not panel:IsShown() and next(module.hooks) == nil and next(module.events)
 module:RefreshPanel()
 assert(not panel:IsShown())
 config.enabled.set(nil, true)
-assert(panel:IsShown() and panel == originalPanel)
+assert(panel:IsShown())
 -- Profile accessors must follow the active profile rather than capture its table.
 local oldProfile = app.db.profile
 app.db.profile = { blizzardEditMode = { enabled = false, frames = {} } }
@@ -495,8 +506,8 @@ app.core:RegisterEditModeSystemOptions("Test", {
     },
 })
 assert(panel:IsShown() and header.text == "Style" and not header.collapsed)
--- Title, header, then three rows: 44 + 28 + 8 + 32 + 3 + 32 + 3 + 32 + 20.
-assert(panel.height == 202, panel.height)
+-- Header, then three rows: 28 + 8 + 32 + 3 + 32 + 3 + 32.
+assert(panel.height == 138, panel.height)
 local toggle = created.EditModeSettingCheckboxTemplate
 local slider = created.EditModeSettingSliderTemplate
 local dropdown = created.WowStyle1DropdownTemplate
@@ -513,17 +524,17 @@ radios.Beta()
 assert(style.format == "B" and dropdown.defaultText == "Beta")
 toggle:OnCheckButtonClick()
 assert(style.on == false and toggle.Button.checked == false and dropdown.enabled == false)
-assert(not slider.shown and panel.height == 167, "hidden rows take no space")
+assert(not slider.shown and panel.height == 103, "hidden rows take no space")
 -- Re-stacking the window (the Position poll does it) must not hide what stays shown: a hidden
 -- button loses the press in progress, so its click never arrives.
 local headerHides, toggleHides = header.hides, toggle.hides
 module:RefreshPanel()
 assert(header.hides == headerHides and toggle.hides == toggleHides, "shown sections stay shown")
 header.onClick()
-assert(header.collapsed and not toggle.shown and panel.height == 92)
+assert(header.collapsed and not toggle.shown and panel.height == 28)
 sectionEnabled = false
 app.core:RefreshEditModeSystemOptions()
-assert(not header.shown and panel.height == 60, "a disabled feature's section leaves")
+assert(not header.shown and panel.height == 0, "a disabled feature's section leaves")
 module:OnDisable()
 assert(not panel:IsShown() and next(module.hooks) == nil)
 print("Blizzard Edit Mode extensions OK")

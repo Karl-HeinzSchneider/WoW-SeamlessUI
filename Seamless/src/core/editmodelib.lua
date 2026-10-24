@@ -438,13 +438,20 @@ local function AddScrolling(dialog)
     end
 end
 
+-- Public reference for other addons and macros, like SeamlessUIEditModeSystemSettingsDialog for
+-- Blizzard frames. The library creates the dialog without a name, so GetName() stays nil.
+local function SetUpDialog(dialog)
+    AddScrolling(dialog)
+    SeamlessEditModeSettingsDialog = dialog
+end
+
 if internal.dialog then
-    AddScrolling(internal.dialog)
+    SetUpDialog(internal.dialog)
 else
     local createDialog = internal.CreateDialog
     function internal:CreateDialog()
         local dialog = createDialog(self)
-        AddScrolling(dialog)
+        SetUpDialog(dialog)
         return dialog
     end
 end

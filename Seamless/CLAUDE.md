@@ -161,6 +161,9 @@ Run `lua src/tests/editmode-panel.lua`.
   (a full rebuild would end the drag); one full update follows when it is released. Setters may
   keep refreshing the dialog.
 
+The dialog is published as the global `SeamlessEditModeSettingsDialog` once the library creates it.
+The library creates it unnamed, so `GetName()` stays nil; never patch the vendored file to name it.
+
 It asserts on the library internals it relies on: rerun `lua src/tests/editmode-dialog.lua`
 whenever LibEditMode is updated.
 

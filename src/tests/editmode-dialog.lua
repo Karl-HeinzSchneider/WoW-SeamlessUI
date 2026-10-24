@@ -261,6 +261,7 @@ assert(lib.SettingType.Button == "seamless-button" and lib.internal:GetPool(lib.
 assert(not pcall(assert(loadfile("Seamless/src/core/editmodelib.lua")), "Seamless", app))
 
 local dialog = lib.internal:CreateDialog()
+assert(SeamlessEditModeSettingsDialog == dialog, "the settings dialog is public as SeamlessEditModeSettingsDialog")
 local scroll = dialog.SettingsScroll
 assert(scroll and scroll.template == "ResizeLayoutFrame, ScrollFrameTemplate" and scroll.parent == dialog)
 assert(scroll.points.TOP[1] == dialog.Title and scroll.points.TOP[4] == -12)

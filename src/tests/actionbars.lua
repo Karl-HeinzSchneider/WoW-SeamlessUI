@@ -262,4 +262,87 @@ MainActionBar = nil
 assert(toggle.disabled() and app.EndCapFrame(leftEntry) == nil, "missing bar is safe")
 app.ApplyEndCapScales()
 
-print("PASS: short labels, range/mana tints, native restore, hotkey restore and endcaps")
+-- Micro menu: layout settings use the native service; artwork follows the current profile.
+local microModule = { enabled = true }
+function microModule:IsEnabled()
+    return self.enabled
+end
+function microModule:RegisterEvent() end
+function microModule:UnregisterAllEvents() end
+function addon:NewModule()
+    return microModule
+end
+Enum.EditModeMicroMenuSetting = { Orientation = 0, Order = 1, Size = 2 }
+Enum.MicroMenuOrientation = { Horizontal = 0, Vertical = 1 }
+Enum.MicroMenuOrder = { Default = 0, Reverse = 1 }
+MicroMenuContainer = {}
+local native = { [0] = 0, [1] = 0, [2] = 100 }
+function service:ReadSetting(frame, setting)
+    return frame and native[setting]
+end
+function service:ApplySetting(frame, setting, value)
+    assert(frame == MicroMenuContainer and canEdit)
+    native[setting] = value
+    return true
+end
+function service:GetDefaultSetting(_, setting)
+    return setting == 2 and 100 or 0
+end
+function app.core:GetNativeSettingScale(getFrame, setting)
+    return {
+        min = 0.7,
+        max = 2,
+        step = 0.05,
+        get = function()
+            return service:ReadSetting(getFrame(), setting) / 100
+        end,
+        set = function(value)
+            service:ApplySetting(getFrame(), setting, value * 100)
+        end,
+        default = function()
+            return 1
+        end,
+        disabled = function()
+            return not getFrame()
+        end,
+    }
+end
+local function Art(alpha)
+    return {
+        alpha = alpha,
+        GetAlpha = function(self)
+            return self.alpha
+        end,
+        SetAlpha = function(self, value)
+            self.alpha = value
+        end,
+    }
+end
+MicroMenu = { BorderArt = Art(0.8), BackgroundArt = Art(1), button = Art(1) }
+app.db.profile.microMenu = { hideArtwork = false }
+load("micromenu.lua")
+local menu = app.MicroMenuOptions().args
+assert(menu.orientation.get() == 0 and menu.order.default() == 0)
+assert(menu.size.min == 70 and menu.size.max == 200 and menu.size.step == 5)
+menu.orientation.set(nil, 1)
+menu.order.set(nil, 1)
+menu.size.set(nil, 125)
+assert(native[0] == 1 and native[1] == 1 and native[2] == 125)
+canEdit = false
+assert(menu.orientation.disabled() and menu.order.disabled() and menu.size.disabled())
+canEdit = true
+menu.hideArtwork.set(nil, true)
+app.RefreshMicroMenu()
+assert(MicroMenu.BorderArt.alpha == 0 and MicroMenu.BackgroundArt.alpha == 0 and MicroMenu.button.alpha == 1)
+app.db.profile = { microMenu = { hideArtwork = false } }
+app.RefreshMicroMenu()
+assert(MicroMenu.BorderArt.alpha == 0.8 and MicroMenu.BackgroundArt.alpha == 1, "profile change restores art")
+menu.hideArtwork.set(nil, true)
+microModule:OnDisable()
+assert(MicroMenu.BorderArt.alpha == 0.8 and MicroMenu.BackgroundArt.alpha == 1, "disable restores original alpha")
+MicroMenu = nil
+app.RefreshMicroMenu()
+MicroMenuContainer = nil
+assert(menu.orientation.get() == nil, "missing native frame is safe")
+
+print("PASS: short labels, range/mana tints, native restore, hotkey restore, endcaps and micro menu")

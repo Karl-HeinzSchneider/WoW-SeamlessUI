@@ -79,4 +79,5 @@ function app.addon:Refresh()
         app.UpdateHotkey(button)
     end
     app.ApplyEndCapScales()
+    app.RefreshMicroMenu()
 end

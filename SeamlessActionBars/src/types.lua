@@ -16,6 +16,8 @@
 ---@field EndCapScale fun(entry: SeamlessActionBars.EndCap): SeamlessCore.PositionScale
 ---@field EndCapHiddenOption fun(entry: SeamlessActionBars.EndCap): table
 ---@field RegisterEndCapScales fun()
+---@field MicroMenuOptions fun(): table
+---@field RefreshMicroMenu fun()
 
 ---@class SeamlessActionBars.EndCap
 ---@field key "left"|"right" Profile key under `endCaps`.

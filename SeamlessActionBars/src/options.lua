@@ -23,6 +23,7 @@ local frames = {
     { key = "statusBar2", frame = "SecondaryStatusTrackingBarContainer", size = "StatusTrackingBar" },
     { key = "petBar", frame = "PetActionBar", size = "ActionBar", name = L["Pet action bar"] },
     { key = "vehicleLeave", frame = "MainMenuBarVehicleLeaveButton", name = L["Leave vehicle button"] },
+    { key = "microMenu", frame = "MicroMenuContainer", size = "MicroMenu", name = L["Micro menu"] },
 }
 -- The gryphons have no global name and no native size setting: their Scale is our own, kept in
 -- the profile (see endcaps.lua), and their tab adds the native Hidden setting.
@@ -50,6 +51,8 @@ local function sizeSetting(size)
         return Enum.EditModeActionBarSetting and Enum.EditModeActionBarSetting.IconSize
     elseif size == "StatusTrackingBar" then
         return Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTrackingBarSetting.Size
+    elseif size == "MicroMenu" then
+        return Enum.EditModeMicroMenuSetting and Enum.EditModeMicroMenuSetting.Size
     end
 end
 
@@ -75,6 +78,7 @@ local function frameTab(entry, order)
         args = {
             hidden = entry.endCap and app.EndCapHiddenOption(entry.endCap) or nil,
             position = app.core:GetNativePositionOptions(getFrame, scale or nil),
+            layout = entry.key == "microMenu" and app.MicroMenuOptions() or nil,
         },
     }
 end

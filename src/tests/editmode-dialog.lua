@@ -688,8 +688,12 @@ do
     -- Anchor choices resolve through the feature; the screen counts as UIParent.
     local entries = Row(list, "AnchorFrame").option.values()
     assert(#entries == 2 and not entries[1].disabled and not entries[2].disabled)
+    -- A new button row has no width until the client lays it out; its button follows once it does.
+    local quick = Row(list, "Quick anchor to frame")
+    quick.scripts.OnSizeChanged(quick, 322)
+    assert(quick.Button.width == 161, "the button takes half the row once it has a width")
     -- The anchor picker targets resolved frames but not UIParent, and writes all five values.
-    Row(list, "Quick anchor to frame").option.click()
+    quick.option.click()
     assert(picker and picker.frame == positioned)
     local targets = picker.targets()
     assert(#targets == 1 and targets[1].frame == otherWindow and targets[1].value == "2")

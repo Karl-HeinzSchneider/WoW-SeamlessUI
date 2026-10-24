@@ -67,9 +67,10 @@ local function frame()
     return f
 end
 local created = {}
-function CreateFrame(_, _, parent, template)
+function CreateFrame(_, name, parent, template)
     local f = frame()
     if parent == UIParent then
+        assert(name == "SeamlessUIEditModeSystemSettingsDialog", "the panel is a public frame")
         panel = f
     end
     if template == "EditModeSettingCheckboxTemplate" then

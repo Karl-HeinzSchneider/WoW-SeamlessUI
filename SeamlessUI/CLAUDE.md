@@ -33,7 +33,8 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   `core:PlaceBesideEditModeManager`, and `core:SetEditModeDialogsBesideManager` does the same for
   Core's dialog of suite frames; dragging stays native. Only re-anchor the native dialog (it is
   unprotected and nothing reads its position): never write its fields or replace its methods.
-- An addon-owned UIParent panel below the dialog, attached with removable AceHook post-hooks
+- An addon-owned UIParent panel below the dialog, the public frame
+  `SeamlessUIEditModeSystemSettingsDialog`, attached with removable AceHook post-hooks
   (LibEditMode has no API to unregister system extensions). `panel:LayoutContent()` stacks
   Position and the registered sections and sizes the panel. Never join native layout containers
   or access LibEditMode internals.

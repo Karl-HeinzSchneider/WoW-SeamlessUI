@@ -200,8 +200,9 @@ local function ensurePanel()
         return
     end
     -- LibEditMode has no public unregister/hide API for system extensions. Own this
-    -- panel so the recovery switches can remove it without library internals.
-    panel = CreateFrame("Frame", nil, UIParent)
+    -- panel so the recovery switches can remove it without library internals. Public name for
+    -- other addons, macros and /fstack, after the Blizzard dialog it extends.
+    panel = CreateFrame("Frame", "SeamlessUIEditModeSystemSettingsDialog", UIParent)
     panel:Hide()
     panel:SetHeight(TITLE_HEIGHT)
     panel:SetFrameStrata("DIALOG")

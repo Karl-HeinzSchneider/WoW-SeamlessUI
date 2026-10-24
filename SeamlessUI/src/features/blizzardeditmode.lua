@@ -300,12 +300,34 @@ function module:RefreshPanel()
     panel:Show()
 end
 
+-- Puts the native settings dialog right of the Edit Mode window whenever a frame is selected;
+-- the player can still drag it anywhere until the next selection. Core only re-anchors it: the
+-- dialog is unprotected and nothing reads its position. Never write its fields or replace its
+-- methods, which Blizzard's selection code reads.
+function module:SnapDialog()
+    if settings().snapSettingsDialog and EditModeSystemSettingsDialog then
+        app.core:PlaceBesideEditModeManager(EditModeSystemSettingsDialog)
+    end
+end
+
+-- Core's dialog for suite frames (not part of Blizzard's Edit Mode) follows the same option.
+local function syncSuiteDialogs(enabled)
+    app.core:SetEditModeDialogsBesideManager(enabled and settings().snapSettingsDialog)
+end
+
+-- Runs after Blizzard's AttachToSystemFrame, which re-anchors the dialog when the system type
+-- changes, so the snapped position wins.
+function module:OnDialogAttached()
+    self:SnapDialog()
+    self:RefreshPanel()
+end
+
 function module:InstallHooks()
     local dialog = EditModeSystemSettingsDialog
     if not dialog or not EditModeManagerFrame or self:IsHooked(dialog, "AttachToSystemFrame") then
         return
     end
-    self:SecureHook(dialog, "AttachToSystemFrame", "RefreshPanel")
+    self:SecureHook(dialog, "AttachToSystemFrame", "OnDialogAttached")
     self:SecureHookScript(dialog, "OnShow", "RefreshPanel")
     self:SecureHookScript(dialog, "OnHide", hidePanel)
     self:SecureHookScript(EditModeManagerFrame, "OnHide", hidePanel)
@@ -313,6 +335,7 @@ function module:InstallHooks()
 end
 
 function module:OnEnable()
+    syncSuiteDialogs(true)
     self:RegisterEvent("ADDON_LOADED", "InstallHooks")
     self:RegisterEvent("PLAYER_REGEN_DISABLED", hidePanel)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "RefreshPanel")
@@ -321,6 +344,7 @@ function module:OnEnable()
 end
 
 function module:OnDisable()
+    syncSuiteDialogs(false)
     hidePanel()
     self:UnhookAll()
     self:UnregisterAllEvents()
@@ -332,6 +356,7 @@ function module:OnProfileRefresh()
         self:SetEnabledState(settings().enabled)
     elseif settings().enabled then
         self:Enable()
+        syncSuiteDialogs(true)
         self:RefreshPanel()
     else
         self:Disable()
@@ -358,6 +383,7 @@ function module:Options()
                 if key == "enabled" then
                     module:OnProfileRefresh()
                 else
+                    syncSuiteDialogs(module:IsEnabled())
                     module:RefreshPanel()
                 end
             end,
@@ -381,6 +407,12 @@ function module:Options()
             "addMoreOptions",
             L["Add more options"],
             L["Reserved for future frame options. This setting has no effect yet."]
+        ),
+        snapSettingsDialog = globalToggle(
+            4,
+            "snapSettingsDialog",
+            L["Move settings next to the Edit Mode window"],
+            L["Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."]
         ),
     }
     for categoryOrder, category in ipairs(categories) do

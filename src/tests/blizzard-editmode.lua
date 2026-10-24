@@ -107,7 +107,15 @@ function IsLoggedIn()
 end
 local app = { addon = {}, db = { profile = {} } }
 local collapsedSections, header, positionView = {}, nil, nil
+local beside, placedDialog
 app.core = {
+    SetEditModeDialogsBesideManager = function(_, enabled)
+        beside = enabled
+    end,
+    PlaceBesideEditModeManager = function(_, dialog)
+        placedDialog = dialog
+        return true
+    end,
     CreateEditModeHeader = function(_, _, onClick)
         header = frame()
         header.onClick = onClick
@@ -205,7 +213,27 @@ function EditModeManagerFrame:IsEditModeActive()
     return active
 end
 module:InstallHooks()
-assert(module:IsHooked(EditModeSystemSettingsDialog, "AttachToSystemFrame"))
+assert(module:IsHooked(EditModeSystemSettingsDialog, "AttachToSystemFrame") == "OnDialogAttached")
+-- Selecting a frame snaps the native dialog right of the Edit Mode window through Core (which
+-- only re-anchors it), and Core's dialog for suite frames follows the same option.
+do
+    local dialog = EditModeSystemSettingsDialog
+    assert(beside == true, "enabling the extensions turns it on for suite frames")
+    module:OnDialogAttached()
+    assert(placedDialog == dialog)
+    placedDialog = nil
+    local config = module:Options().args
+    config.snapSettingsDialog.set(nil, false)
+    assert(beside == false and not config.snapSettingsDialog.get())
+    module:OnDialogAttached()
+    assert(placedDialog == nil, "the option leaves the dialog where Blizzard or the player put it")
+    config.snapSettingsDialog.set(nil, true)
+    assert(beside == true)
+    config.enabled.set(nil, false)
+    assert(beside == false, "disabling the extensions restores Core's default")
+    config.enabled.set(nil, true)
+    assert(beside == true)
+end
 -- Simulate AceDB's per-entry wildcard defaults for newly introduced frame keys.
 setmetatable(app.db.profile.blizzardEditMode.frames, {
     __index = function(t, key)

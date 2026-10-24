@@ -437,6 +437,39 @@ dialog:Update({ parent = rightFrame, system = selection.system })
 assert(dialog.points.TOPLEFT[3] == 1300 - 16 - 340 and dialog.points.TOPLEFT[4] == 500)
 print("PASS: settings dialog opens beside the selected frame")
 
+-- With the SeamlessUI option, a new selection opens beside Blizzard's Edit Mode window instead,
+-- converted to the dialog's scale and kept on screen; Blizzard's dialog is placed the same way.
+do
+    local manager = object("Frame", UIParent)
+    manager.right, manager.top, manager.shown = 400, 800, true
+    manager.HookScript = EditModeManagerFrame.HookScript
+    local savedManager = EditModeManagerFrame
+    EditModeManagerFrame = manager
+    app.addon:SetEditModeDialogsBesideManager(true)
+    dialog:Update({ parent = frame, system = selection.system })
+    assert(dialog.points.TOPLEFT[1] == UIParent and dialog.points.TOPLEFT[3] == 404)
+    assert(dialog.points.TOPLEFT[4] == 800, "beside the Edit Mode window, aligned with its top")
+    manager.right, manager.scale = 1400, 0.5
+    dialog:Update({ parent = rightFrame, system = selection.system })
+    assert(dialog.points.TOPLEFT[3] == 704 and dialog.points.TOPLEFT[4] == 400, "converted to the dialog's scale")
+    manager.scale, manager.right = 1, 1400
+    dialog:Update({ parent = frame, system = selection.system })
+    assert(dialog.points.TOPLEFT[3] == 1500 - 340, "kept on screen")
+    manager.shown = false
+    dialog:Update({ parent = rightFrame, system = selection.system })
+    assert(dialog.points.TOPLEFT[3] == 1300 - 16 - 340, "beside the frame while the window is hidden")
+    manager.shown = true
+    local native = object("Frame", UIParent)
+    native.width, native.height = 300, 350
+    manager.right = 400
+    assert(app.addon:PlaceBesideEditModeManager(native) and native.points.TOPLEFT[3] == 404)
+    app.addon:SetEditModeDialogsBesideManager(false)
+    dialog:Update({ parent = frame, system = selection.system })
+    assert(dialog.points.TOPLEFT[3] == 316, "off again: beside the frame")
+    EditModeManagerFrame = savedManager
+end
+print("PASS: settings dialogs can open beside the Edit Mode window")
+
 -- A fixed frame can be selected with its settings but never moved.
 local fixedFrame, moved = object("Frame", UIParent), false
 fixedFrame.left, fixedFrame.right, fixedFrame.top = 100, 250, 500

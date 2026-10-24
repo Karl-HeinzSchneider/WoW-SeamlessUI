@@ -556,16 +556,19 @@ local function CreateSettingsWindow()
                     disabled = count == 0,
                     click = ResetSettings,
                 },
-                { key = "divider", type = "divider" },
             },
         }
         return sections
     end
 
-    -- The frame's own buttons, then Reset Position (left out for frames that never move).
+    -- Below a divider, outside the scrolling list: the frame's own buttons, then Reset Position
+    -- (left out for frames that never move). Without any button the divider goes too.
     local function ButtonSections(frame)
-        local options = {}
-        for index, data in ipairs((internal:GetFrameButtons(frame)) or {}) do
+        local frameButtons = (internal:GetFrameButtons(frame)) or {}
+        local options = {
+            { key = "divider", type = "divider", hidden = #frameButtons == 0 and fixedFrames[frame] == true },
+        }
+        for index, data in ipairs(frameButtons) do
             options[#options + 1] = {
                 key = "button:" .. index,
                 type = "button",

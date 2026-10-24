@@ -201,6 +201,7 @@
 ---@field type "toggle"|"select"|"range"
 ---@field name string
 ---@field desc string? Tooltip.
+---@field default? any|fun(): any Shown in the tooltip as the default; nil shows Not applicable.
 ---@field hidden boolean|fun(): boolean|nil
 ---@field disabled boolean|fun(): boolean|nil
 ---@field get fun(): any

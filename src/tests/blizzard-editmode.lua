@@ -23,6 +23,9 @@ local function frame()
     function f:CreateFontString()
         return frame()
     end
+    function f:CreateTexture()
+        return frame()
+    end
     function f:SetHeight(height)
         self.height = height
     end
@@ -70,6 +73,8 @@ local function frame()
         "SetText",
         "ClearFocus",
         "SetShown",
+        "HookScript",
+        "SetColorTexture",
     }) do
         f[method] = function() end
     end

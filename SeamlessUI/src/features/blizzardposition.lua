@@ -117,6 +117,22 @@ function position:ReadScale(system)
     return value / 100, min / 100, max / 100, (step or 1) / 100, setting
 end
 
+---The default of the Scale row in the same units: the native setting's preset, or the registered
+---binding's default. Nil when neither is known.
+---@return number?
+function position:GetDefaultScale(system)
+    local _, _, _, _, source = self:ReadScale(system)
+    if type(source) == "table" then
+        local value = source.default
+        if type(value) == "function" then
+            value = value()
+        end
+        return value
+    end
+    local value = source and base:GetDefaultSetting(system, source)
+    return value and value / 100
+end
+
 function position:ApplyScale(system, value)
     local _, min, max, step, source = self:ReadScale(system)
     value = tonumber(value)
@@ -171,6 +187,14 @@ function position:GetSection(system)
         end,
         revert = function()
             return position:Revert(system)
+        end,
+        -- The preset position native Reset To Default Position applies, and the size preset.
+        default = function(key)
+            if key == "scale" then
+                return position:GetDefaultScale(system)
+            end
+            local values = base:GetDefault(system)
+            return values and values[key]
         end,
     })
     return self.section

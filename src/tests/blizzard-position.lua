@@ -78,6 +78,9 @@ local function frame(name, parent)
     function f:CreateFontString()
         return frame()
     end
+    function f:CreateTexture()
+        return frame()
+    end
     function f:Show()
         self.shown = true
     end
@@ -105,6 +108,8 @@ local function frame(name, parent)
         "SetMaxLetters",
         "SetCursorPosition",
         "SetTextColor",
+        "HookScript",
+        "SetColorTexture",
     }) do
         f[key] = function() end
     end
@@ -976,6 +981,13 @@ assert(reset.anchorInfo.point == "BOTTOMLEFT" and reset.anchorInfo.offsetX == 30
 inDefault = true
 assert(defaults.reset.disabled(), "nothing to reset, like the native button")
 inDefault = false
+-- The Edit Mode Position rows show the same preset in their tooltips.
+local rowDefaults = {}
+for _, row in ipairs(position:GetSection(player).options) do
+    rowDefaults[row.key] = row.default and row.default()
+end
+assert(rowDefaults.point == "BOTTOMLEFT" and rowDefaults.relativePoint == "BOTTOM")
+assert(rowDefaults.relativeTo == "UIParent" and rowDefaults.offsetX == 300 and rowDefaults.offsetY == 250)
 EditModePresetLayoutManager.GetDefaultSystemAnchorInfo = nil
 assert(defaults.x.default() == nil, "clients without the preset API show Not applicable")
 assert(not native:ResetToDefault(player) and #warnings == 0)

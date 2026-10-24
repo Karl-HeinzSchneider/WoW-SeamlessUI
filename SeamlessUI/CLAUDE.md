@@ -9,7 +9,8 @@ here without a migration.
 - `src/core/`: lifecycle, defaults and options.
 - `src/features/xpbartooltip.lua`: secure post-hooks on XP/rested tooltips, with quest totals
   from Core. Owns cap/rate settings and migration of the former Core tooltip settings.
-- `blizzardposition.lua`: selected-system position view over Core's position service.
+- `blizzardposition.lua`: binds Core's Position section to the selected system, over Core's
+  position service.
 - `systemoptions.lua`: places sections registered through `RegisterEditModeSystemOptions`, drawn by
   Core's `LayoutEditModeSections`.
 - `blizzardeditmode.lua`: extension panel below native per-frame settings.
@@ -36,8 +37,9 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   unprotected and nothing reads its position): never write its fields or replace its methods.
 - An addon-owned UIParent panel below the dialog, the public frame
   `SeamlessUIEditModeSystemSettingsDialog`, attached with removable AceHook post-hooks
-  (LibEditMode has no API to unregister system extensions). `panel:LayoutContent()` stacks
-  Position and the registered sections and sizes the panel. Never join native layout containers
+  (LibEditMode has no API to unregister system extensions). `panel:LayoutContent()` draws
+  Position and the registered sections with Core's `LayoutEditModeSections` and sizes the panel;
+  every 0.15 s while shown, `RefreshEditModeSections` picks up native changes in place. Never join native layout containers
   or access LibEditMode internals.
 - Hides on dialog close, Edit Mode exit and combat; supports Blizzard_EditMode loading late.
 
@@ -45,7 +47,7 @@ Run `lua src/tests/blizzard-editmode.lua`.
 
 ## Position controls (`blizzardposition.lua`)
 
-- The position view delegates reading, validation and applying to Core's shared
+- The position binding delegates reading, validation and applying to Core's shared
   `GetFramePositionService`; its selection/addPosition guards stay in SeamlessUI.
 - Reads `GetActiveLayoutSystemInfo().anchorInfo` from the live Edit Mode draft. In default
   position, managed frames and default action bars have a placeholder anchor, so it reads the live
@@ -54,8 +56,9 @@ Run `lua src/tests/blizzard-editmode.lua`.
 - AnchorFrame lists UIParent, the original Focus/Minimap/Player/Target choices and the named frames
   of the extension registry (`GetAnchorTargets`), by real `GetName()`; invalid, self and cyclic
   targets are disabled.
-- X/Y use LibEditMode's slider template with an editable value (click to type, Enter commits,
-  Escape discards).
+- `position:GetSection(system)` binds Core's `CreateEditModePositionSection` to the selected
+  system (one section per selection); Core draws the rows. X/Y and Scale have an editable value
+  (click to type, Enter commits, Escape discards).
 - Scale is the first row, like the settings panel's "Position and scale" group: the same slider
   in the panel's units (1 = 100 %), bound to the system's native percentage setting (`FrameSize`
   for unit frames, `IconSize` for action bars and auras, `BarSize` for the cast bar, `Scale` for

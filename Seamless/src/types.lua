@@ -93,6 +93,8 @@
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)
 ---@field LayoutEditModeSections fun(self: SeamlessCore.Addon, parent: table, sections: SeamlessCore.EditModeSection[], y: number, spaced: boolean, changed: fun()): number
+---@field RefreshEditModeSections fun(self: SeamlessCore.Addon, parent: table): boolean
+---@field CreateEditModePositionSection fun(self: SeamlessCore.Addon, id: string, binding: SeamlessCore.EditModePositionBinding): SeamlessCore.EditModeSection
 ---@field RegisterEditModeSystemOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemOptions)
 ---@field GetEditModeSystemOptions fun(self: SeamlessCore.Addon, system: table): SeamlessCore.EditModeSystemOptions[]
 ---@field RefreshEditModeSystemOptions fun(self: SeamlessCore.Addon)

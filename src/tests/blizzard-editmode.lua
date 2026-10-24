@@ -107,7 +107,8 @@ function IsLoggedIn()
     return true
 end
 local app = { addon = {}, db = { profile = {} } }
-local collapsedSections, header, positionView = {}, nil, nil
+-- header is the last one created; headers holds each by its text.
+local collapsedSections, header, headers = {}, nil, {}
 local beside, placedDialog
 app.core = {
     SetEditModeDialogsBesideManager = function(_, enabled)
@@ -122,6 +123,7 @@ app.core = {
         header.onClick = onClick
         function header:SetHeaderText(text)
             self.text = text
+            headers[text] = self
         end
         function header:UpdateCollapsedState(collapsed)
             self.collapsed = collapsed
@@ -148,16 +150,32 @@ end
 assert(loadfile("Seamless/src/core/systemoptions.lua"))("Seamless", { addon = app.core })
 -- Core's real row renderer draws the registered sections.
 assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", { addon = app.core })
+-- A stand-in Position section with one row; blizzard-position.lua tests the real one.
+local positionSystem
 app.blizzardPosition = {
-    Create = function()
-        local view = frame()
-        positionView = view
-        function view:Refresh(system)
-            self.system = system
-        end
-        return view
+    GetSection = function(_, system)
+        positionSystem = system
+        return {
+            id = "position",
+            name = "Position",
+            key = "settings:position",
+            options = {
+                {
+                    key = "anchored",
+                    type = "toggle",
+                    name = "Anchored",
+                    get = function()
+                        return true
+                    end,
+                    set = function() end,
+                },
+            },
+        }
     end,
 }
+local function positionShown()
+    return headers.Position ~= nil and headers.Position.shown
+end
 assert(loadfile("SeamlessUI/src/core/db.lua"))("SeamlessUI", app)
 app.db.profile = app.dbDefaults.profile
 function app.addon:NewModule()
@@ -260,7 +278,7 @@ for _, key in ipairs({ "player", "target", "pet", "focus" }) do
     EditModeSystemSettingsDialog.attachedToSystem = { system = 1, systemIndex = index }
     module:RefreshPanel()
     assert(panel:IsShown() and toggle.get(), key)
-    assert(not header.shown, "Position stays off until the global switch is on")
+    assert(not positionShown(), "Position stays off until the global switch is on")
     toggle.set(nil, false)
     assert(not panel:IsShown() and not toggle.get())
     toggle.set(nil, true)
@@ -276,15 +294,19 @@ assert(not config.addPosition.disabled() and not config.player.disabled())
 -- The internal per-frame values still gate the global switch.
 app.db.profile.blizzardEditMode.frames.focus.addPosition = false
 module:RefreshPanel()
-assert(not header.shown)
+assert(not positionShown())
 app.db.profile.blizzardEditMode.frames.focus.addPosition = true
 module:RefreshPanel()
 -- Add position appears as an expanded Position header that collapses like every other header.
-assert(header.shown and header.text == "Position" and not header.collapsed and positionView.shown)
-header.onClick()
-assert(header.collapsed and not positionView.shown and panel.height == 92 and panel:IsShown())
-header.onClick()
-assert(not header.collapsed and positionView.shown)
+local positionHeader, positionRow = headers.Position, created.EditModeSettingCheckboxTemplate
+assert(positionShown() and not positionHeader.collapsed and positionRow.shown)
+assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)
+-- Title, header, one row: 44 + 28 + 8 + 32 + 20.
+assert(panel.height == 132, panel.height)
+positionHeader.onClick()
+assert(positionHeader.collapsed and not positionRow.shown and panel.height == 92 and panel:IsShown())
+positionHeader.onClick()
+assert(not positionHeader.collapsed and positionRow.shown)
 local originalPanel = panel
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
 Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
@@ -341,7 +363,7 @@ for _, sample in ipairs(samples) do
     module:RefreshPanel()
     local selected, spec = module:GetSelectedFrame()
     assert(selected == native and spec.key == key and panel:IsShown(), key)
-    assert(config[key].get() and header.shown and header.text == "Position", key)
+    assert(config[key].get() and positionShown() and positionSystem == native, key)
     config[key].set(nil, false)
     assert(not panel:IsShown())
     config[key].set(nil, true)

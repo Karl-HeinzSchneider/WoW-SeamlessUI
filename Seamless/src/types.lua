@@ -114,7 +114,7 @@
 ---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
 ---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group, with preset defaults and Reset to default position.
 ---@field GetNativeSettingScale fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, setting: number): SeamlessCore.PositionScale Scale bound to a native Edit Mode percentage setting (Frame Size).
----@field GetEditModePositionSettings fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table[] LibEditMode settings for a Position section.
+---@field GetEditModePositionSetting fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition, options?: table[]): table LibEditMode frame setting for the shared Position section.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
 ---@field IsEditModeAnchorPickerActive fun(self: SeamlessCore.Addon): boolean

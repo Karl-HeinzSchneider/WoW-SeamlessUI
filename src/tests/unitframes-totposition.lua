@@ -208,7 +208,7 @@ local app = {
         GetPositionOptions = function(_, spec)
             return { type = "group", spec = spec }
         end,
-        GetEditModePositionSettings = function(_, spec)
+        GetEditModePositionSetting = function(_, spec)
             return { spec = spec }
         end,
         RegisterEditModeOptions = function(_, id, spec)
@@ -328,7 +328,7 @@ print("PASS: focus ToT follows Larger Frame")
 -- Edit Mode stand-ins: one per frame, Frames checkboxes, shown only in Edit Mode.
 local targetMover = registeredFrames["Target of Target"]
 local focusMover = registeredFrames["Target of Focus"]
-assert(targetMover and focusMover and targetMover.settings.spec, "registered with LibEditMode and Position rows")
+assert(targetMover and focusMover and targetMover.settings[1].spec, "registered with LibEditMode and Position rows")
 local frames = editModeGroups["SeamlessUnitframes.ToT"]
 assert(frames.section == "frames" and #frames.options == 2 and frames.options[1].get() == true)
 assert(not targetMover.frame.shown)

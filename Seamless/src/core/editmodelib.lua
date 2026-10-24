@@ -8,8 +8,10 @@ local _, app = ...
 local lib = app.LibEditMode
 local internal = lib.internal
 local addon = app.addon
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
 assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
+assert(lib.SettingType.Position == nil, "LibEditMode now defines Position; review editmodelib.lua")
 assert(type(internal.CreateDialog) == "function" and type(internal.MoveParent) == "function")
 assert(type(internal.GetFrameSettings) == "function" and type(internal.GetFrameButtons) == "function")
 assert(type(internal.TriggerCallback) == "function" and type(lib.frameSelections) == "table")
@@ -118,10 +120,12 @@ function app.CreateEditModeHeader(parent, onClick)
 end
 
 -- Setting kinds of our own. The settings window below draws them: a collapsible header (rows after
--- it, up to the next header, hide while it is collapsed) and a button whose `click(frame)` gets the
--- selected frame. Both support `name`, `hidden` and (buttons) `disabled`.
+-- it, up to the next header, hide while it is collapsed), a button whose `click(frame)` gets the
+-- selected frame (both support `name`, `hidden` and, buttons, `disabled`) and the shared Position
+-- section (GetEditModePositionSetting).
 lib.SettingType.Header = "seamless-header"
 lib.SettingType.Button = "seamless-button"
+lib.SettingType.Position = "seamless-position"
 
 local function HeaderKey(data)
     return "settings:" .. (data.key or data.name)
@@ -291,6 +295,136 @@ local function ConvertSetting(data, index, frame)
     return row
 end
 
+-- Position spec keys and the section's value keys they map to, in the order changes are written:
+-- the anchor frame first, as the anchor picker does.
+local POSITION_FIELDS = {
+    { "relativeTo", "relativeTo" },
+    { "point", "point" },
+    { "relativePoint", "relativePoint" },
+    { "x", "offsetX" },
+    { "y", "offsetY" },
+}
+
+local function Finite(value)
+    return value ~= nil and value == value and value > -math.huge and value < math.huge
+end
+
+-- The Position section of the selected frame, kept while it stays selected: it holds the values
+-- Revert restores and the last refusal. A new selection starts over.
+local positionSections = {}
+
+-- The shared Position section (editmodeposition.lua) for a Position setting of a suite frame,
+-- bound to the feature's spec: the same controls as on Blizzard frames.
+local function PositionSection(data, frame)
+    local cached = positionSections[data]
+    if cached and cached.frame == frame then
+        return cached.section
+    end
+    local spec, scale = data.position, data.position.scale or {}
+    local function canEdit()
+        return not (spec.disabled and spec.disabled()) and not InCombatLockdown() and lib:IsInEditMode()
+    end
+    local function read()
+        local values = {}
+        for _, field in ipairs(POSITION_FIELDS) do
+            values[field[2]] = spec.get(field[1])
+        end
+        return values
+    end
+    local function differs(values)
+        local current = read()
+        for _, field in ipairs(POSITION_FIELDS) do
+            if tostring(current[field[2]]) ~= tostring(values[field[2]]) then
+                return true
+            end
+        end
+        return false
+    end
+    -- Writes only what changed, so a feature rebuilds once per edit. Typed offsets arrive as text.
+    local function apply(values)
+        if not canEdit() then
+            return false
+        end
+        local x, y = tonumber(values.offsetX), tonumber(values.offsetY)
+        if not Finite(x) or not Finite(y) then
+            return false, L["X and Y must be finite numbers."]
+        end
+        values.offsetX, values.offsetY = x, y
+        local current = read()
+        for _, field in ipairs(POSITION_FIELDS) do
+            local value = values[field[2]]
+            if tostring(current[field[2]]) ~= tostring(value) then
+                spec.set(field[1], value)
+            end
+        end
+        lib:RefreshFrameSettings(frame)
+        return true
+    end
+    local function anchorFrames()
+        local values = type(spec.anchorFrames) == "function" and spec.anchorFrames() or spec.anchorFrames
+        return values or {}
+    end
+    local function scaleBound()
+        return scale.get ~= nil and scale.set ~= nil and not (scale.disabled and scale.disabled())
+    end
+    local snapshot = read()
+    local section = addon:CreateEditModePositionSection("position", {
+        frame = frame,
+        isCurrent = function()
+            local selection = internal.dialog and internal.dialog.selection
+            return selection ~= nil and selection.parent == frame
+        end,
+        canEdit = canEdit,
+        read = read,
+        apply = apply,
+        -- Without a scale binding the row shows 1 greyed out.
+        readScale = function()
+            local bound = scaleBound()
+            return bound and scale.get() or 1,
+                scale.min or 0.5,
+                scale.max or 2,
+                scale.step or 0.01,
+                bound and scale or nil
+        end,
+        applyScale = function(value)
+            if not canEdit() or not scaleBound() then
+                return false
+            end
+            value = tonumber(value)
+            if not Finite(value) or value < (scale.min or 0.5) or value > (scale.max or 2) then
+                return false, L["Invalid value"]
+            end
+            scale.set(value)
+            return true
+        end,
+        anchorFrames = anchorFrames,
+        anchorFrameText = function(value)
+            for _, entry in ipairs(anchorFrames()) do
+                if entry.value == value then
+                    return entry.text
+                end
+            end
+            return value ~= nil and tostring(value) or L["Unknown"]
+        end,
+        anchorFrame = spec.anchorFrame,
+        isValidTarget = function(target)
+            return target ~= frame and app.framePosition:IsValidAnchorTarget(target, frame)
+        end,
+        hasChanges = function()
+            return differs(snapshot)
+        end,
+        revert = function()
+            return apply(snapshot)
+        end,
+    })
+    -- The feature's own rows sit at the top of the section, under its header.
+    for index, extra in ipairs(data.options or {}) do
+        table.insert(section.options, index, ConvertSetting(extra, "position" .. index, frame))
+    end
+    positionSections[data] = { frame = frame, section = section }
+    return section
+end
+
 ---@class SeamlessCore.EditModeAttachedSettings
 ---@field anchor table The dialog the window attaches below; the window takes its width.
 ---@field title string
@@ -373,20 +507,33 @@ local function CreateSettingsWindow()
     end
 
     local function ResetSettings()
-        local settings = internal:GetFrameSettings(window.selection.parent)
-        for _, data in ipairs(settings or {}) do
+        local function reset(data)
             if data.set then
                 data.set(lib:GetActiveLayoutName(), data.default, true)
             end
         end
+        local settings = internal:GetFrameSettings(window.selection.parent)
+        for _, data in ipairs(settings or {}) do
+            reset(data)
+            -- Reset To Default leaves the position alone, but not the feature's rows beside it.
+            if data.kind == lib.SettingType.Position then
+                for _, extra in ipairs(data.options or {}) do
+                    reset(extra)
+                end
+            end
+        end
     end
 
-    -- The selected frame's settings, one section per header, then Reset To Default.
+    -- The selected frame's settings, one section per header or Position, then Reset To Default.
     local function ListSections(frame)
         local settings, count = internal:GetFrameSettings(frame)
         local sections = { { id = "settings", options = {} } }
         for index, data in ipairs(settings or {}) do
-            if data.kind == lib.SettingType.Header then
+            if data.kind == lib.SettingType.Position then
+                sections[#sections + 1] = PositionSection(data, frame)
+                -- Rows after it, up to the next header, go below without a header of their own.
+                sections[#sections + 1] = { id = "after:" .. index, options = {} }
+            elseif data.kind == lib.SettingType.Header then
                 sections[#sections + 1] = {
                     id = "header:" .. index,
                     name = data.name,
@@ -497,6 +644,7 @@ local function CreateSettingsWindow()
         self.Title:SetText(selection.system:GetSystemName())
         if newSelection then
             scroll:SetVerticalScroll(0)
+            table.wipe(positionSections)
         end
         self:Show()
         self:LayoutContent()
@@ -606,7 +754,6 @@ function internal:CreateDialog()
 end
 
 -- Public API for feature addons: the same header, collapse state and Position section in every window.
-local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@param parent table
 ---@param onClick fun()
@@ -673,138 +820,18 @@ function addon:GetEditModePositionSectionKey()
     return POSITION_SECTION
 end
 
----LibEditMode settings for a collapsible Position section: Scale, Anchor, AnchorParent, AnchorFrame,
----X, Y and an "Quick anchor to frame" button that starts the anchor picker. Scale uses the same
----`spec.scale` binding as the settings panel's Position and scale group, and is shown disabled
----without one.
----`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and y;
----`spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
+---A frame setting for LibEditMode's AddFrameSettings: the shared Position section (Scale, Anchor,
+---AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame", Revert), the same one Blizzard frames
+---get, with its collapse key `core:GetEditModePositionSectionKey()`.
+---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and
+---y; `spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
+---Scale uses `spec.scale`, the settings panel's binding, and is greyed out without one. Revert
+---restores the position the frame had when it was selected. `options` are LibEditMode settings
+---shown at the top of the section.
 ---@param spec SeamlessCore.EditModePosition
----@return table[] settings
-function addon:GetEditModePositionSettings(spec)
-    local function disabled()
-        return spec.disabled ~= nil and spec.disabled() or false
-    end
-    local function setter(key)
-        return function(_, value, fromReset)
-            -- Reset To Default leaves the position alone; Reset Position restores it.
-            if not fromReset and not disabled() and not InCombatLockdown() then
-                spec.set(key, value)
-            end
-        end
-    end
-    local function getter(key)
-        return function()
-            return spec.get(key)
-        end
-    end
-    -- Defined by editmodeposition.lua, which loads after this file.
-    local points = {}
-    for _, point in ipairs(app.EditModePoints) do
-        points[#points + 1] = { text = app.EditModePointLabels[point], value = point }
-    end
-    local function offset(name, key, extent)
-        extent = math.max(1, math.ceil(extent))
-        return {
-            name = name,
-            kind = lib.SettingType.Slider,
-            default = 0,
-            minValue = -extent,
-            maxValue = extent,
-            valueStep = 1,
-            get = function()
-                return spec.get(key) or 0
-            end,
-            set = setter(key),
-            disabled = disabled,
-            formatter = function(value)
-                return tostring(math.floor(value + 0.5))
-            end,
-        }
-    end
-    local function dropdown(name, key, values, height)
-        return {
-            name = name,
-            kind = lib.SettingType.Dropdown,
-            get = getter(key),
-            set = setter(key),
-            disabled = disabled,
-            values = values,
-            height = height,
-        }
-    end
-    local scale = spec.scale or {}
-    local function scaleDisabled()
-        return not scale.get or not scale.set or disabled() or (scale.disabled ~= nil and scale.disabled()) or false
-    end
-    local scaleRow = {
-        name = L["Scale"],
-        kind = lib.SettingType.Slider,
-        default = (type(scale.default) == "function" and scale.default() or scale.default) or 1,
-        minValue = scale.min or 0.5,
-        maxValue = scale.max or 2,
-        valueStep = scale.step or 0.01,
-        get = scale.get or function()
-            return 1
-        end,
-        set = function(_, value, fromReset)
-            -- Reset To Default leaves the scale alone, like the position rows.
-            if not fromReset and not scaleDisabled() and not InCombatLockdown() then
-                scale.set(value)
-            end
-        end,
-        disabled = scaleDisabled,
-        -- The settings panel's units: 1 is 100 %.
-        formatter = function(value)
-            return string.format("%.12g", math.floor(value * 100 + 0.5) / 100)
-        end,
-    }
-    return {
-        { name = L["Position"], key = "position", kind = lib.SettingType.Header },
-        scaleRow,
-        dropdown(L["Anchor"], "point", points),
-        dropdown(L["AnchorParent"], "relativePoint", points),
-        dropdown(L["AnchorFrame"], "relativeTo", spec.anchorFrames, 400),
-        offset(L["X"], "x", UIParent:GetWidth()),
-        offset(L["Y"], "y", UIParent:GetHeight()),
-        {
-            name = L["Quick anchor to frame"],
-            kind = lib.SettingType.Button,
-            disabled = disabled,
-            click = function(frame)
-                app.StartAnchorPicker({
-                    frame = frame,
-                    targets = function()
-                        local values = type(spec.anchorFrames) == "function" and spec.anchorFrames()
-                            or spec.anchorFrames
-                        local targets = {}
-                        for _, entry in ipairs(values or {}) do
-                            local target
-                            if spec.anchorFrame then
-                                target = spec.anchorFrame(entry.value)
-                            elseif type(entry.value) == "string" then
-                                target = _G[entry.value]
-                            end
-                            if type(target) == "table" and target ~= UIParent and target.IsObjectType then
-                                targets[#targets + 1] = { frame = target, value = entry.value }
-                            end
-                        end
-                        return targets
-                    end,
-                    apply = function(point, value, relativePoint, x, y)
-                        if disabled() or InCombatLockdown() or not lib:IsInEditMode() then
-                            return
-                        end
-                        spec.set("relativeTo", value)
-                        spec.set("point", point)
-                        spec.set("relativePoint", relativePoint)
-                        spec.set("x", x)
-                        spec.set("y", y)
-                        lib:RefreshFrameSettings(frame)
-                    end,
-                })
-            end,
-        },
-    }
+---@param options? table[]
+---@return table setting
+function addon:GetEditModePositionSetting(spec, options)
+    return { kind = lib.SettingType.Position, name = L["Position"], position = spec, options = options }
 end

@@ -222,11 +222,21 @@ function creators.button(parent, changed)
             changed()
         end
     end)
+    local function fit(self, width)
+        self.Button:SetWidth(self.option.width or width / 2)
+    end
     function row:Refresh(enabled)
         self.Button:SetText(self.option.name)
-        self.Button:SetWidth(self.option.width or self:GetWidth() / 2)
+        fit(self, self:GetWidth())
         self.Button:SetEnabled(enabled)
     end
+    -- A new row has no width until the client lays it out (the first window after a reload), so
+    -- size the button again once it has one.
+    row:SetScript("OnSizeChanged", function(self, width)
+        if self.option then
+            fit(self, width)
+        end
+    end)
     return row
 end
 

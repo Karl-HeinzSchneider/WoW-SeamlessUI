@@ -128,9 +128,8 @@ local function Create(key)
         OnMoved(key, point, x, y)
     end, RESET, entry.name)
     local position = app.totPosition
-    lib:AddFrameSettings(
-        frame,
-        app.core:GetEditModePositionSettings({
+    lib:AddFrameSettings(frame, {
+        app.core:GetEditModePositionSetting({
             get = function(field)
                 return position:Get(key)[field]
             end,
@@ -143,8 +142,8 @@ local function Create(key)
             disabled = function()
                 return not position.active
             end,
-        })
-    )
+        }),
+    })
     mover.movers[key] = frame
     mover.shown[key] = true
 end

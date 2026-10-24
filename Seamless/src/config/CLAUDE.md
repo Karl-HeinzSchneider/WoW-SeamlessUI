@@ -140,7 +140,7 @@ Run `lua src/tests/config-window.lua`. Check dragging, scrolling, compact mode a
 `core:GetPositionOptions(spec)` returns a collapsible inline Position and scale group with
 Anchor, AnchorParent, AnchorFrame, X, Y and Scale. It uses the same `get(key)`,
 `set(key, value)`, `anchorFrames` and optional `disabled()` contract as
-`GetEditModePositionSettings`; the keys are point, relativePoint, relativeTo, x, y.
+`GetEditModePositionSetting`; the keys are point, relativePoint, relativeTo, x, y.
 No position is stored by the controls. The returned group's order can be changed.
 
 For native Edit Mode frames, use `core:GetNativePositionOptions(function()
@@ -180,7 +180,7 @@ For a generic frame, add `scale = { get = getScale, set = setScale }` to the
 `GetPositionOptions` spec. For a native frame, pass that binding as the optional
 second argument to `GetNativePositionOptions(getFrame, scale)`; its default
 getter reads the native frame's current scale. Omit the binding to retain the
-disabled slider. The same binding in a `core:GetEditModePositionSettings(spec)` spec drives
+disabled slider. The same binding in a `core:GetEditModePositionSetting(spec)` spec drives
 the Scale row that leads every Edit Mode Position section (also disabled without it; Reset To
 Default leaves it alone).
 

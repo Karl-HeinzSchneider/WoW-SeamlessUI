@@ -167,9 +167,9 @@ local app = {
             return lib
         end,
         RefreshEditModeOptions = function() end,
-        GetEditModePositionSettings = function(_, value)
+        GetEditModePositionSetting = function(_, value)
             positionSpec = value
-            return { { name = "Position", kind = "header" } }
+            return { name = "Position", kind = "position" }
         end,
         RegisterEditModeOptions = function(_, _, value)
             spec = value

@@ -176,6 +176,10 @@ for _, name in ipairs({
     "SetBlendMode",
     "SetAlpha",
     "AdjustPointsOffset",
+    "SetAutoFocus",
+    "SetMaxLetters",
+    "SetCursorPosition",
+    "ClearFocus",
 }) do
     methods[name] = function() end
 end
@@ -593,29 +597,8 @@ lib.frameSettings[oddFrame], lib.frameButtons[oddFrame] = { { kind = lib.Setting
 assert(not pcall(dialog.Update, dialog, { parent = oddFrame, system = selection.system }))
 dialog:Update(selection)
 
--- The shared Position section: a Position header, then Anchor, AnchorParent, AnchorFrame, X, Y
--- and the anchor picker button.
-local otherWindow = object("Frame", UIParent)
-otherWindow.IsObjectType = function()
-    return true
-end
-local stored, locked = { point = "TOP", relativePoint = "TOP", relativeTo = "screen", x = 5, y = 6 }, false
-local position = app.addon:GetEditModePositionSettings({
-    get = function(key)
-        return stored[key]
-    end,
-    set = function(key, value)
-        stored[key] = value
-    end,
-    disabled = function()
-        return locked
-    end,
-    anchorFrames = { { text = "Screen", value = "screen" }, { text = "Window 2", value = "2" } },
-    anchorFrame = function(value)
-        return value == "2" and otherWindow or nil
-    end,
-})
-assert(#position == 8 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
+-- The shared Position section, as a frame setting: the same section Blizzard frames get, with a
+-- feature's own rows at its top and the rows after it below.
 assert(app.addon:GetEditModePositionSectionKey() == "settings:position")
 -- Position starts collapsed; opening it is remembered, and collapsing it again clears the entry.
 assert(app.IsEditModeSectionCollapsed("settings:position"), "Position starts collapsed")
@@ -623,76 +606,142 @@ app.SetEditModeSectionCollapsed("settings:position", false)
 assert(not app.IsEditModeSectionCollapsed("settings:position"))
 app.SetEditModeSectionCollapsed("settings:position", true)
 assert(app.IsEditModeSectionCollapsed("settings:position"))
-assert(position[3].name == "Anchor" and #position[3].values == 9 and position[5].height == 400)
-assert(position[6].minValue == -1500 and position[6].maxValue == 1500 and position[7].maxValue == 1000)
-assert(position[6].get() == 5 and position[6].formatter(4.6) == "5")
-position[6].set(nil, 42)
-assert(stored.x == 42)
-position[6].set(nil, 0, true)
-assert(stored.x == 42, "Reset To Default leaves the position alone")
-locked = true
-position[3].set(nil, "LEFT")
-assert(stored.point == "TOP" and position[3].disabled(), "a locked position cannot change")
-locked = false
--- Scale leads the rows: disabled without a binding, like the settings panel's Scale.
-local scaleRow = position[2]
-assert(scaleRow.name == "Scale" and scaleRow.kind == lib.SettingType.Slider and scaleRow.disabled())
-assert(
-    scaleRow.get() == 1 and scaleRow.minValue == 0.5 and scaleRow.maxValue == 2 and scaleRow.formatter(1.254) == "1.25"
-)
-local scaled = 1.5
-local bound = app.addon:GetEditModePositionSettings({
-    get = function(key)
-        return stored[key]
-    end,
-    set = function() end,
-    disabled = function()
-        return locked
-    end,
-    anchorFrames = {},
-    scale = {
-        min = 0.75,
-        max = 1.5,
-        step = 0.05,
-        default = function()
-            return 1.25
+do
+    local otherWindow = object("Frame", UIParent)
+    app.framePosition = {
+        IsValidAnchorTarget = function(_, target)
+            return target ~= nil
         end,
-        get = function()
-            return scaled
+    }
+    local picker
+    function app.addon:StartEditModeAnchorPicker(spec)
+        picker = spec
+        return true
+    end
+    local stored, locked = { point = "TOP", relativePoint = "TOP", relativeTo = "screen", x = 5, y = 6 }, false
+    local lock = { on = false }
+    local setting = app.addon:GetEditModePositionSetting({
+        get = function(key)
+            return stored[key]
         end,
-        set = function(value)
-            scaled = value
+        set = function(key, value)
+            stored[key] = value
         end,
-    },
-})[2]
-assert(not bound.disabled() and bound.get() == 1.5 and bound.default == 1.25)
-assert(bound.minValue == 0.75 and bound.maxValue == 1.5 and bound.valueStep == 0.05)
-bound.set(nil, 1.1)
-assert(scaled == 1.1)
-bound.set(nil, 1.25, true)
-assert(scaled == 1.1, "Reset To Default leaves the scale alone")
-locked = true
-bound.set(nil, 0.8)
-assert(scaled == 1.1 and bound.disabled(), "a locked position locks its scale")
-locked = false
--- The anchor picker button lists the resolved frames and writes all five values at once.
-local button = position[8]
-assert(button.kind == lib.SettingType.Button and button.name == "Quick anchor to frame")
-local picker
-function app.StartAnchorPicker(spec)
-    picker = spec
-    return true
+        disabled = function()
+            return locked
+        end,
+        anchorFrames = { { text = "Screen", value = "screen" }, { text = "Window 2", value = "2" } },
+        anchorFrame = function(value)
+            return value == "2" and otherWindow or value == "screen" and UIParent or nil
+        end,
+    }, {
+        {
+            kind = lib.SettingType.Checkbox,
+            name = "Lock it",
+            default = false,
+            get = function()
+                return lock.on
+            end,
+            set = function(_, value)
+                lock.on = value
+            end,
+        },
+    })
+    assert(setting.kind == lib.SettingType.Position and setting.name == "Position")
+    local positioned = object("Frame", UIParent)
+    positioned.GetPoint = frame.GetPoint
+    lib.frameSettings[positioned], lib.frameButtons[positioned] =
+        {
+            setting,
+            { kind = lib.SettingType.Checkbox, name = "Below position", get = getOn, set = setOn, default = false },
+        }, {}
+    local positionSelection = { parent = positioned, system = selection.system, isSelected = true }
+    lib.frameSelections[positioned] = positionSelection
+    app.SetEditModeSectionCollapsed("settings:position", false)
+    dialog:Update(positionSelection)
+    local function top(row)
+        return -row.points.TOPLEFT[2]
+    end
+    local lockRow, scaleRow, xRow = Row(list, "Lock it"), Row(list, "Scale"), Row(list, "X")
+    assert(Header(list, "Position") and lockRow and scaleRow and xRow and Row(list, "Below position"))
+    assert(top(lockRow) < top(scaleRow), "the feature's rows open the section")
+    assert(top(Row(list, "Revert changes")) < top(Row(list, "Below position")), "later rows go below it")
+    for _, name in ipairs({ "Anchor", "AnchorParent", "AnchorFrame", "Y", "Quick anchor to frame" }) do
+        assert(Row(list, name), name)
+    end
+    -- Scale is greyed out without a binding; X and Y write through the feature, one field at a time.
+    assert(scaleRow.option.disabled() and scaleRow.option.get() == 1)
+    assert(xRow.option.get() == 5 and xRow.option.editable)
+    local revert = Row(list, "Revert changes")
+    assert(revert.option.disabled(), "nothing to revert yet")
+    xRow.option.set("42")
+    assert(stored.x == 42 and stored.y == 6 and not revert.option.disabled(), "typed values become numbers")
+    xRow.option.set("abc")
+    assert(stored.x == 42 and Row(list, "X") and Row(list, "X").option.get() == 42, "text is refused")
+    locked = true
+    Row(list, "Anchor").option.set("LEFT")
+    assert(stored.point == "TOP", "a locked position cannot change")
+    locked = false
+    -- Revert restores the position the frame had when it was selected.
+    revert.option.click()
+    assert(stored.x == 5 and revert.option.disabled())
+    -- Anchor choices resolve through the feature; the screen counts as UIParent.
+    local entries = Row(list, "AnchorFrame").option.values()
+    assert(#entries == 2 and not entries[1].disabled and not entries[2].disabled)
+    -- A new button row has no width until the client lays it out; its button follows once it does.
+    local quick = Row(list, "Quick anchor to frame")
+    quick.scripts.OnSizeChanged(quick, 322)
+    assert(quick.Button.width == 161, "the button takes half the row once it has a width")
+    -- The anchor picker targets resolved frames but not UIParent, and writes all five values.
+    quick.option.click()
+    assert(picker and picker.frame == positioned)
+    local targets = picker.targets()
+    assert(#targets == 1 and targets[1].frame == otherWindow and targets[1].value == "2")
+    picker.apply("TOPLEFT", "2", "BOTTOMRIGHT", 5, -5)
+    assert(stored.relativeTo == "2" and stored.point == "TOPLEFT" and stored.relativePoint == "BOTTOMRIGHT")
+    assert(stored.x == 5 and stored.y == -5)
+    -- Reset To Default leaves the position alone, but resets the feature's rows in the section.
+    lock.on = true
+    Row(list, "Reset To Default").option.click()
+    assert(lock.on == false and stored.point == "TOPLEFT", "Reset To Default keeps the position")
+    -- A bound Scale writes through the feature's scale binding.
+    local scaled = 1.5
+    local scaledFrame = object("Frame", UIParent)
+    scaledFrame.GetPoint = frame.GetPoint
+    lib.frameSettings[scaledFrame], lib.frameButtons[scaledFrame] =
+        {
+            app.addon:GetEditModePositionSetting({
+                get = function(key)
+                    return stored[key]
+                end,
+                set = function() end,
+                anchorFrames = {},
+                scale = {
+                    min = 0.75,
+                    max = 1.5,
+                    step = 0.05,
+                    get = function()
+                        return scaled
+                    end,
+                    set = function(value)
+                        scaled = value
+                    end,
+                },
+            }),
+        }, {}
+    local scaledSelection = { parent = scaledFrame, system = selection.system, isSelected = true }
+    lib.frameSelections[scaledFrame] = scaledSelection
+    dialog:Update(scaledSelection)
+    local bound = Row(list, "Scale").option
+    assert(not bound.disabled() and bound.get() == 1.5 and bound.min() == 0.75 and bound.max() == 1.5)
+    bound.set("1.1")
+    assert(scaled == 1.1)
+    bound.set(3)
+    assert(scaled == 1.1, "outside the binding's range")
+    app.SetEditModeSectionCollapsed("settings:position", true)
+    lib.frameSelections[positioned], lib.frameSelections[scaledFrame] = nil, nil
+    dialog:Update(selection)
 end
-button.click(frame)
-assert(picker and picker.frame == frame)
-local targets = picker.targets()
-assert(#targets == 1 and targets[1].frame == otherWindow and targets[1].value == "2", "UIParent/screen is not a target")
-picker.apply("TOPLEFT", "2", "BOTTOMRIGHT", 5, -5)
-assert(stored.relativeTo == "2" and stored.point == "TOPLEFT" and stored.relativePoint == "BOTTOMRIGHT")
-assert(stored.x == 5 and stored.y == -5)
-locked = true
-picker.apply("LEFT", "2", "RIGHT", 5, 0)
-assert(stored.point == "TOPLEFT", "a locked position ignores the picker")
 print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dialog and widget refresh")
 
 -- A frame near the right edge gets its settings on its left.

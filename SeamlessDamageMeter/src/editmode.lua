@@ -204,7 +204,9 @@ local function RegisterControls(frame)
         }
     end
     -- Position comes first, with its outside-Edit-Mode lock right under the header.
-    local position = app.core:GetEditModePositionSettings({
+    add(L["Lock position outside Edit Mode"], "lockPosition", lib.SettingType.Checkbox)
+    local lock = table.remove(settings)
+    settings[1] = app.core:GetEditModePositionSetting({
         get = function(key)
             if key == "relativeTo" then
                 return frame.config.anchorTo and tostring(frame.config.anchorTo) or "screen"
@@ -223,7 +225,10 @@ local function RegisterControls(frame)
             app:RebuildWindows()
         end,
         anchorFrame = function(value)
-            return value ~= "screen" and _G["SeamlessDamageMeterWindow" .. value] or nil
+            if value == "screen" then
+                return UIParent
+            end
+            return _G["SeamlessDamageMeterWindow" .. value]
         end,
         anchorFrames = function()
             local values = { { text = L["Screen (UIParent)"], value = "screen" } }
@@ -246,12 +251,7 @@ local function RegisterControls(frame)
                 SetWindowOption(frame, "scale", SliderValue(value * 100, 5) / 100)
             end,
         },
-    })
-    settings[1] = table.remove(position, 1)
-    add(L["Lock position outside Edit Mode"], "lockPosition", lib.SettingType.Checkbox)
-    for _, setting in ipairs(position) do
-        settings[#settings + 1] = setting
-    end
+    }, { lock })
     settings[#settings + 1] = { name = L["Window"], kind = lib.SettingType.Header }
     add(L["Lock size"], "lockSize", lib.SettingType.Checkbox)
     add(L["Frame width"], "width", lib.SettingType.Slider, 200, 800, 1)

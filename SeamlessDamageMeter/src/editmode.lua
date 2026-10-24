@@ -234,6 +234,18 @@ local function RegisterControls(frame)
             end
             return values
         end,
+        scale = {
+            min = 0.5,
+            max = 2,
+            step = 0.05,
+            default = app.positionDefaults.scale,
+            get = function()
+                return app:GetWindowSetting(frame.config, "scale")
+            end,
+            set = function(value)
+                SetWindowOption(frame, "scale", SliderValue(value * 100, 5) / 100)
+            end,
+        },
     })
     settings[1] = table.remove(position, 1)
     add(L["Lock position outside Edit Mode"], "lockPosition", lib.SettingType.Checkbox)
@@ -242,7 +254,6 @@ local function RegisterControls(frame)
     end
     settings[#settings + 1] = { name = L["Window"], kind = lib.SettingType.Header }
     add(L["Lock size"], "lockSize", lib.SettingType.Checkbox)
-    add(L["Frame scale"], "scale", lib.SettingType.Slider, 50, 200, 5, 100)
     add(L["Frame width"], "width", lib.SettingType.Slider, 200, 800, 1)
     add(L["Frame height"], "height", lib.SettingType.Slider, 120, 900, 1)
     add(L["Fixed height by row count"], "fixedHeight", lib.SettingType.Checkbox)

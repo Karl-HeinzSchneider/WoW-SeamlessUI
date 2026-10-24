@@ -94,29 +94,8 @@ local function createPreview(key)
         disabled = function()
             return not position.active
         end,
+        scale = position:ScaleOption(key),
     })
-    local scale = position:ScaleOption(key)
-    settings[#settings + 1] = {
-        kind = lib.SettingType.Slider,
-        name = L["Scale"],
-        default = scale.default,
-        minValue = scale.min,
-        maxValue = scale.max,
-        valueStep = scale.step,
-        formatter = function(value)
-            return ("%d%%"):format(math.floor(value * 100 + 0.5))
-        end,
-        get = scale.get,
-        set = function(_, value, fromReset)
-            -- Reset To Default leaves the scale alone, like the position rows.
-            if not fromReset and position.active then
-                scale.set(value)
-            end
-        end,
-        disabled = function()
-            return not position.active
-        end,
-    }
     for _, setting in ipairs(app.LibEditModeSettings(key)) do
         settings[#settings + 1] = setting
     end

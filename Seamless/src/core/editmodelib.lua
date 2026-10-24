@@ -535,8 +535,10 @@ local POINT_LABELS = {
     BOTTOMRIGHT = L["Bottom right"],
 }
 
----LibEditMode settings for a collapsible Position section: Anchor, AnchorParent, AnchorFrame, X, Y
----and an "Quick anchor to frame" button that starts the anchor picker.
+---LibEditMode settings for a collapsible Position section: Scale, Anchor, AnchorParent, AnchorFrame,
+---X, Y and an "Quick anchor to frame" button that starts the anchor picker. Scale uses the same
+---`spec.scale` binding as the settings panel's Position and scale group, and is shown disabled
+---without one.
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and y;
 ---`spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
@@ -593,8 +595,35 @@ function addon:GetEditModePositionSettings(spec)
             height = height,
         }
     end
+    local scale = spec.scale or {}
+    local function scaleDisabled()
+        return not scale.get or not scale.set or disabled() or (scale.disabled ~= nil and scale.disabled()) or false
+    end
+    local scaleRow = {
+        name = L["Scale"],
+        kind = lib.SettingType.Slider,
+        default = (type(scale.default) == "function" and scale.default() or scale.default) or 1,
+        minValue = scale.min or 0.5,
+        maxValue = scale.max or 2,
+        valueStep = scale.step or 0.01,
+        get = scale.get or function()
+            return 1
+        end,
+        set = function(_, value, fromReset)
+            -- Reset To Default leaves the scale alone, like the position rows.
+            if not fromReset and not scaleDisabled() and not InCombatLockdown() then
+                scale.set(value)
+            end
+        end,
+        disabled = scaleDisabled,
+        -- The settings panel's units: 1 is 100 %.
+        formatter = function(value)
+            return string.format("%.12g", math.floor(value * 100 + 0.5) / 100)
+        end,
+    }
     return {
         { name = L["Position"], key = "position", kind = lib.SettingType.Header },
+        scaleRow,
         dropdown(L["Anchor"], "point", points),
         dropdown(L["AnchorParent"], "relativePoint", points),
         dropdown(L["AnchorFrame"], "relativeTo", spec.anchorFrames, 400),

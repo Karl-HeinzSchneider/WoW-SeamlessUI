@@ -394,7 +394,7 @@ local position = app.addon:GetEditModePositionSettings({
         return value == "2" and otherWindow or nil
     end,
 })
-assert(#position == 7 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
+assert(#position == 8 and position[1].kind == lib.SettingType.Header and position[1].key == "position")
 assert(app.addon:GetEditModePositionSectionKey() == "settings:position")
 -- Position starts collapsed; opening it is remembered, and collapsing it again clears the entry.
 assert(app.IsEditModeSectionCollapsed("settings:position"), "Position starts collapsed")
@@ -402,19 +402,60 @@ app.SetEditModeSectionCollapsed("settings:position", false)
 assert(not app.IsEditModeSectionCollapsed("settings:position"))
 app.SetEditModeSectionCollapsed("settings:position", true)
 assert(app.IsEditModeSectionCollapsed("settings:position"))
-assert(position[2].name == "Anchor" and #position[2].values == 9 and position[4].height == 400)
-assert(position[5].minValue == -1500 and position[5].maxValue == 1500 and position[6].maxValue == 1000)
-assert(position[5].get() == 5 and position[5].formatter(4.6) == "5")
-position[5].set(nil, 42)
+assert(position[3].name == "Anchor" and #position[3].values == 9 and position[5].height == 400)
+assert(position[6].minValue == -1500 and position[6].maxValue == 1500 and position[7].maxValue == 1000)
+assert(position[6].get() == 5 and position[6].formatter(4.6) == "5")
+position[6].set(nil, 42)
 assert(stored.x == 42)
-position[5].set(nil, 0, true)
+position[6].set(nil, 0, true)
 assert(stored.x == 42, "Reset To Default leaves the position alone")
 locked = true
-position[2].set(nil, "LEFT")
-assert(stored.point == "TOP" and position[2].disabled(), "a locked position cannot change")
+position[3].set(nil, "LEFT")
+assert(stored.point == "TOP" and position[3].disabled(), "a locked position cannot change")
+locked = false
+-- Scale leads the rows: disabled without a binding, like the settings panel's Scale.
+local scaleRow = position[2]
+assert(scaleRow.name == "Scale" and scaleRow.kind == lib.SettingType.Slider and scaleRow.disabled())
+assert(
+    scaleRow.get() == 1 and scaleRow.minValue == 0.5 and scaleRow.maxValue == 2 and scaleRow.formatter(1.254) == "1.25"
+)
+local scaled = 1.5
+local bound = app.addon:GetEditModePositionSettings({
+    get = function(key)
+        return stored[key]
+    end,
+    set = function() end,
+    disabled = function()
+        return locked
+    end,
+    anchorFrames = {},
+    scale = {
+        min = 0.75,
+        max = 1.5,
+        step = 0.05,
+        default = function()
+            return 1.25
+        end,
+        get = function()
+            return scaled
+        end,
+        set = function(value)
+            scaled = value
+        end,
+    },
+})[2]
+assert(not bound.disabled() and bound.get() == 1.5 and bound.default == 1.25)
+assert(bound.minValue == 0.75 and bound.maxValue == 1.5 and bound.valueStep == 0.05)
+bound.set(nil, 1.1)
+assert(scaled == 1.1)
+bound.set(nil, 1.25, true)
+assert(scaled == 1.1, "Reset To Default leaves the scale alone")
+locked = true
+bound.set(nil, 0.8)
+assert(scaled == 1.1 and bound.disabled(), "a locked position locks its scale")
 locked = false
 -- The anchor picker button lists the resolved frames and writes all five values at once.
-local button = position[7]
+local button = position[8]
 assert(button.kind == lib.SettingType.Button and button.name == "Quick anchor to frame")
 local picker
 function app.StartAnchorPicker(spec)

@@ -55,6 +55,12 @@ Run `lua src/tests/blizzard-editmode.lua`.
   targets are disabled.
 - X/Y use LibEditMode's slider template with an editable value (click to type, Enter commits,
   Escape discards).
+- Scale is the first row, like the settings panel's "Position and scale" group: the same slider
+  in the panel's units (1 = 100 %), bound to the system's native percentage setting (`FrameSize`
+  for unit frames, `IconSize` for action bars and auras, `BarSize` for the cast bar, `Scale` for
+  swing timers, otherwise `Size`) with its range and step, written through Core's `ApplySetting`
+  so it stays in the native draft. Frames without that setting (or while Edit Mode hides it)
+  show their scale greyed out.
 - Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`/
   `ReanchorFrame`, mirrors the anchor into the live draft and calls the frame's
   `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate

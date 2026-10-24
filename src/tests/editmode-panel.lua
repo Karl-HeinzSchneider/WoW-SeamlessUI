@@ -264,7 +264,7 @@ heading.Toggle()
 assert(collapsedSections["panel:frames"] == false and not heading.collapsed)
 local panel, toggle, border
 for _, frame in ipairs(frames) do
-    if frame.points.TOPRIGHT and frame.points.TOPRIGHT[1] == EditModeManagerFrame then
+    if frame.points.TOPLEFT and frame.points.TOPRIGHT and frame.points.TOPRIGHT[1] == EditModeManagerFrame then
         panel = frame
     end
     if frame.template == "UICheckButtonTemplate" then
@@ -463,7 +463,7 @@ local minimize, restore
 for _, frame in ipairs(frames) do
     if frame.template == "UIPanelCloseButtonNoScripts" then
         minimize = frame
-    elseif frame.points.TOP and frame.points.TOP[1] == EditModeManagerFrame then
+    elseif frame.points.TOPRIGHT and frame.points.TOPRIGHT[2] == "BOTTOMRIGHT" then
         restore = frame
     end
 end

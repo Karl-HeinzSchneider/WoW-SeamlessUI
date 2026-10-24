@@ -8,6 +8,7 @@ local _, app = ...
 local addon = app.addon
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
+-- Anchor points in dropdown order and their labels, shared with editmodelib.lua.
 local POINTS = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
 local POINT_LABELS = {
     TOPLEFT = L["Top left"],
@@ -20,6 +21,7 @@ local POINT_LABELS = {
     BOTTOM = L["Bottom"],
     BOTTOMRIGHT = L["Bottom right"],
 }
+app.EditModePoints, app.EditModePointLabels = POINTS, POINT_LABELS
 
 local function formatNumber(value)
     return string.format("%.12g", value)

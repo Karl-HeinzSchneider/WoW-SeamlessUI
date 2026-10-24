@@ -28,6 +28,8 @@ local profile = {
         -- values below (addMoreOptions only stores a preference for future controls).
         addPosition = true,
         addMoreOptions = true,
+        -- Snaps the native settings dialog right of the Edit Mode window on each selection.
+        snapSettingsDialog = true,
         frames = {
             ["*"] = { enabled = true, addPosition = true, addMoreOptions = true },
         },

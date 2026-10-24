@@ -189,6 +189,9 @@ local function frameOption(spec, field)
     return settings()[field] and settings().frames[spec.key][field]
 end
 
+-- Space between the Edit Mode window and the settings dialog snapped next to it.
+local DIALOG_GAP = 4
+
 local function hidePanel()
     if panel then
         panel:Hide()
@@ -300,12 +303,38 @@ function module:RefreshPanel()
     panel:Show()
 end
 
+-- Puts the native settings dialog right of the Edit Mode window whenever a frame is selected;
+-- the player can still drag it anywhere until the next selection. The dialog is a plain,
+-- unprotected frame that nothing reads the position of, so only re-anchor it: never write its
+-- fields or replace its methods, which Blizzard's selection code reads.
+function module:SnapDialog()
+    local dialog, manager = EditModeSystemSettingsDialog, EditModeManagerFrame
+    if not settings().snapSettingsDialog or not dialog or not manager or not manager:IsShown() then
+        return
+    end
+    local right, top = manager:GetRight(), manager:GetTop()
+    if not right or not top then
+        return
+    end
+    -- Absolute coordinates, like a drop after dragging, so the dialog never follows the window.
+    local scale = manager:GetEffectiveScale() / dialog:GetEffectiveScale()
+    dialog:ClearAllPoints()
+    dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", right * scale + DIALOG_GAP, top * scale)
+end
+
+-- Runs after Blizzard's AttachToSystemFrame, which re-anchors the dialog when the system type
+-- changes, so the snapped position wins.
+function module:OnDialogAttached()
+    self:SnapDialog()
+    self:RefreshPanel()
+end
+
 function module:InstallHooks()
     local dialog = EditModeSystemSettingsDialog
     if not dialog or not EditModeManagerFrame or self:IsHooked(dialog, "AttachToSystemFrame") then
         return
     end
-    self:SecureHook(dialog, "AttachToSystemFrame", "RefreshPanel")
+    self:SecureHook(dialog, "AttachToSystemFrame", "OnDialogAttached")
     self:SecureHookScript(dialog, "OnShow", "RefreshPanel")
     self:SecureHookScript(dialog, "OnHide", hidePanel)
     self:SecureHookScript(EditModeManagerFrame, "OnHide", hidePanel)
@@ -381,6 +410,12 @@ function module:Options()
             "addMoreOptions",
             L["Add more options"],
             L["Reserved for future frame options. This setting has no effect yet."]
+        ),
+        snapSettingsDialog = globalToggle(
+            4,
+            "snapSettingsDialog",
+            L["Move settings next to the Edit Mode window"],
+            L["Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."]
         ),
     }
     for categoryOrder, category in ipairs(categories) do

@@ -132,6 +132,14 @@ end
 function methods:SetEnabled(value)
     self.enabled = value
 end
+function methods:SetNormalAtlas(value)
+    self.normalAtlas = value
+end
+function methods:SetPushedAtlas() end
+function methods:SetHighlightAtlas() end
+function methods:GetTextWidth()
+    return #(self.text or "") * 7
+end
 UIParent = object()
 EditModeManagerFrame = setmetatable({
     GetWidth = function()
@@ -449,6 +457,25 @@ panel.scripts.OnSizeChanged(panel)
 assert(panel.scripts.OnUpdate)
 panel.scripts.OnUpdate(panel)
 assert(panel:GetHeight() > expanded, "Narrow panels must expand for wrapped labels")
+-- Minimize (in the close button's place) swaps the window for a restore button under the native
+-- window, and the restore button swaps it back. The state is saved.
+local minimize, restore
+for _, frame in ipairs(frames) do
+    if frame.template == "UIPanelCloseButtonNoScripts" then
+        minimize = frame
+    elseif frame.points.TOP and frame.points.TOP[1] == EditModeManagerFrame then
+        restore = frame
+    end
+end
+assert(minimize and minimize.parent == panel and minimize.points.TOPRIGHT and minimize.normalAtlas)
+assert(restore and restore.parent == UIParent and restore.template == "UIPanelButtonTemplate")
+assert(restore.text == "SeamlessUI" and panel:IsShown() and not restore:IsShown())
+minimize.scripts.OnClick(minimize)
+assert(collapsedSections["panel:minimized"] == true and not panel:IsShown() and restore:IsShown())
+core:RefreshEditModeOptions()
+assert(not panel:IsShown() and restore:IsShown(), "Refresh keeps the window minimized")
+restore.scripts.OnClick(restore)
+assert(collapsedSections["panel:minimized"] == false and panel:IsShown() and not restore:IsShown())
 combat = true
 core:RefreshEditModeOptions()
 assert(not toggle.enabled)
@@ -467,6 +494,7 @@ assert(not panel:IsShown(), "Empty companion panel must hide")
 editing = false
 callbacks.exit()
 assert(not panel:IsShown() and panel.scripts.OnUpdate == nil)
+assert(not restore:IsShown(), "The restore button leaves with Edit Mode")
 button.scripts.OnClick(button)
 assert(clicked == 1, "Stale callbacks must not run outside Edit Mode")
 assert(SeamlessEditModeWindow, "the panel is the public frame SeamlessEditModeWindow")

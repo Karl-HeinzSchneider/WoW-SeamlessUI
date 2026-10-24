@@ -259,6 +259,7 @@ local function ConvertSetting(data, index, frame)
         key = kind .. ":" .. index,
         name = data.name,
         desc = data.desc,
+        default = data.default,
         hidden = Resolver(data.hidden),
         disabled = Resolver(data.disabled),
     }
@@ -412,6 +413,25 @@ local function PositionSection(data, frame)
         end,
         hasChanges = function()
             return differs(snapshot)
+        end,
+        -- Where Reset Position puts the frame: the library's default, on the frame's parent.
+        default = function(key)
+            if key == "scale" then
+                local value = scale.default
+                if type(value) == "function" then
+                    value = value()
+                end
+                return value
+            end
+            local position, parent = DefaultPosition(frame), frame:GetParent()
+            local defaults = {
+                point = position.point,
+                relativePoint = position.point,
+                relativeTo = parent and parent.GetName and parent:GetName() or nil,
+                offsetX = position.x,
+                offsetY = position.y,
+            }
+            return defaults[key]
         end,
         revert = function()
             return apply(snapshot)

@@ -179,6 +179,7 @@ for _, name in ipairs({
     "SetBlendMode",
     "SetAlpha",
     "AdjustPointsOffset",
+    "SetColorTexture",
     "SetAutoFocus",
     "SetMaxLetters",
     "SetCursorPosition",
@@ -475,6 +476,62 @@ local doIt = Row(list, "Do it")
 assert(doIt.Button.template == "EditModeSystemSettingsDialogButtonTemplate" and doIt.Button.width == 200)
 doIt.Button.click()
 assert(clicked == frame, "a Button setting gets the selected frame")
+
+-- Hovering a row lights it up and shows its tooltip with the default, beside the window.
+GameTooltip = { lines = {} }
+function GameTooltip:SetOwner(owner)
+    self.owner, self.lines, self.points = owner, {}, {}
+end
+function GameTooltip:ClearAllPoints()
+    self.points = {}
+end
+function GameTooltip:SetPoint(point, relativeTo, relativePoint, x, y)
+    self.points[point] = { relativeTo, relativePoint, x, y }
+end
+function GameTooltip:SetText(text)
+    self.lines = { text }
+end
+function GameTooltip:AddLine(text)
+    self.lines[#self.lines + 1] = text
+end
+function GameTooltip:Show()
+    self.shown = true
+end
+function GameTooltip:Hide()
+    self.shown = false
+end
+function GameTooltip:IsOwned(owner)
+    return self.owner == owner
+end
+function GameTooltip:GetWidth()
+    return 200
+end
+UIParent.right, dialog.right = 1500, 700
+on.mouseOver = true
+on.scripts.OnEnter(on)
+assert(on.Hover and on.Hover.shown and GameTooltip.shown and GameTooltip.owner == on)
+assert(GameTooltip.lines[1] == "On" and GameTooltip.lines[2] == "Tip")
+assert(GameTooltip.lines[3] == "\n(Default: |cff8080ffDisabled|r)", GameTooltip.lines[3])
+local tipPoint = GameTooltip.points.TOPLEFT
+assert(tipPoint[1] == dialog and tipPoint[2] == "TOPRIGHT" and tipPoint[3] == 16, "the tooltip sits beside the window")
+-- Moving onto the checkbox keeps both; leaving the row ends them.
+on.Button.scripts.OnLeave()
+assert(on.Hover.shown and GameTooltip.shown)
+on.mouseOver = false
+on.Button.scripts.OnLeave()
+assert(not on.Hover.shown and not GameTooltip.shown)
+style.Dropdown.scripts.OnEnter()
+assert(GameTooltip.lines[2] == "\n(Default: |cff8080ffA|r)", "a choice shows its label")
+style.Dropdown.scripts.OnLeave()
+assert(not style.Hover.shown and not GameTooltip.shown)
+dialog.right = 1400
+size.Slider.scripts.OnEnter()
+assert(GameTooltip.lines[2] == "\n(Default: |cff8080ff5|r)" and size.Hover.shown)
+tipPoint = GameTooltip.points.TOPRIGHT
+assert(tipPoint[1] == dialog and tipPoint[2] == "TOPLEFT" and tipPoint[3] == -16, "without room it goes left")
+doIt.scripts.OnEnter(doIt)
+assert(not doIt.Hover and GameTooltip.owner ~= doIt, "buttons without a description have no tooltip")
+dialog.right = nil
 local reset = Row(list, "Reset To Default")
 assert(reset and reset.Button.enabled and reset.Button.width == 200)
 -- The frame's buttons and Reset Position sit below the list.

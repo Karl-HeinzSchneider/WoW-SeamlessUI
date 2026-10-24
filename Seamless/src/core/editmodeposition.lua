@@ -43,6 +43,7 @@ end
 ---@field isValidTarget fun(target: table): boolean Whether the frame may anchor to target.
 ---@field hasChanges fun(): boolean Whether Revert has anything to restore.
 ---@field revert fun(): boolean, string?
+---@field default? fun(key: string): any The default of a value key (as in read, or "scale") for the tooltips; nil shows Not applicable.
 
 ---A Position section for LayoutEditModeSections, bound to one frame. Build a new one when the
 ---selection changes: it keeps the last refusal message for that frame only.
@@ -66,6 +67,11 @@ function addon:CreateEditModePositionSection(id, binding)
     end
     local function notAnchored()
         return not anchored()
+    end
+    local function default(key)
+        return binding.default and function()
+            return binding.default(key)
+        end
     end
     local function get(key)
         return function()
@@ -111,6 +117,7 @@ function addon:CreateEditModePositionSection(id, binding)
             end,
             max = extent,
             step = 1,
+            default = default(key),
             get = get(key),
             set = set(key),
             disabled = notAnchored,
@@ -123,6 +130,7 @@ function addon:CreateEditModePositionSection(id, binding)
             name = L["Scale"],
             editable = true,
             format = formatNumber,
+            default = default("scale"),
             get = function()
                 return (binding.readScale())
             end,
@@ -154,6 +162,7 @@ function addon:CreateEditModePositionSection(id, binding)
             name = L["Anchor"],
             values = points,
             text = pointText,
+            default = default("point"),
             get = get("point"),
             set = set("point"),
             disabled = notAnchored,
@@ -164,6 +173,7 @@ function addon:CreateEditModePositionSection(id, binding)
             name = L["AnchorParent"],
             values = points,
             text = pointText,
+            default = default("relativePoint"),
             get = get("relativePoint"),
             set = set("relativePoint"),
             disabled = notAnchored,
@@ -186,6 +196,7 @@ function addon:CreateEditModePositionSection(id, binding)
                 return entries
             end,
             text = binding.anchorFrameText,
+            default = default("relativeTo"),
             get = get("relativeTo"),
             set = set("relativeTo"),
             disabled = notAnchored,

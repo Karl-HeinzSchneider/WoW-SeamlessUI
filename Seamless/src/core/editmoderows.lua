@@ -6,11 +6,15 @@ local _, app = ...
 -- it, so a row type is written once.
 
 local addon = app.addon
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- Header and row heights, the gap between blocks and between rows, and the rows' inset.
 local HEADER, ROW, GAP, ROW_GAP, INSET = 28, 32, 8, 3, 24
 -- Width of a slider, leaving room for its typed value on the right.
 local SLIDER_WIDTH = 175
+-- How far a row's hover highlight reaches past the row on each side, and the tooltip's distance
+-- from the window.
+local HOVER_OUTSET, TOOLTIP_GAP = 8, 16
 
 local states = {}
 
@@ -21,19 +25,113 @@ local function evaluate(value)
     return value
 end
 
-local function showTooltip(self)
-    local option = self.option
-    if option and option.desc then
-        SettingsTooltip:SetOwner(self, "ANCHOR_NONE")
-        SettingsTooltip:SetPoint("BOTTOMRIGHT", self, "TOPLEFT")
-        SettingsTooltip:SetText(option.name, 1, 1, 1)
-        SettingsTooltip:AddLine(option.desc)
-        SettingsTooltip:Show()
+-- Settings show their default; buttons only a description they declare.
+local SETTINGS = { toggle = true, select = true, range = true }
+
+-- The declared default as the row shows values, like the config window's tooltips: booleans as
+-- Enabled/Disabled, choices by their label, numbers through the row's format.
+local function defaultText(option)
+    local value = evaluate(option.default)
+    if value == nil then
+        return L["Not applicable"]
+    end
+    if type(value) == "boolean" then
+        return value and L["Enabled"] or L["Disabled"]
+    end
+    if option.type == "select" then
+        for _, entry in ipairs(evaluate(option.values) or {}) do
+            if entry.value == value then
+                return entry.text
+            end
+        end
+        local text = option.text and option.text(value)
+        if text then
+            return text
+        end
+    elseif option.type == "range" and option.format and type(value) == "number" then
+        return option.format(value)
+    end
+    return value == "" and L["None"] or tostring(value)
+end
+
+-- The window the row is drawn in: its topmost ancestor below UIParent.
+local function windowOf(row)
+    local frame = row
+    while frame:GetParent() and frame:GetParent() ~= UIParent do
+        frame = frame:GetParent()
+    end
+    return frame
+end
+
+-- At a fixed place rather than at the hovered row: level with the window's top edge, right of the
+-- window (clear of the list's scroll bar) or, without room there, left of it.
+local function showTooltip(row)
+    local option = row.option
+    if not option then
+        return
+    end
+    local setting = SETTINGS[option.type]
+    local desc = evaluate(option.desc)
+    if not setting and not (desc and desc ~= "") then
+        return
+    end
+    local window = windowOf(row)
+    GameTooltip:SetOwner(row, "ANCHOR_NONE")
+    GameTooltip:ClearAllPoints()
+    GameTooltip:SetText(option.name or "", 1, 1, 1)
+    if desc and desc ~= "" then
+        GameTooltip:AddLine(desc, nil, nil, nil, true)
+    end
+    if setting then
+        GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], defaultText(option)), nil, nil, nil, true)
+    end
+    GameTooltip:Show()
+    local right, width = window:GetRight(), GameTooltip:GetWidth()
+    if right and width and right + TOOLTIP_GAP + width > UIParent:GetRight() then
+        GameTooltip:SetPoint("TOPRIGHT", window, "TOPLEFT", -TOOLTIP_GAP, 0)
+    else
+        GameTooltip:SetPoint("TOPLEFT", window, "TOPRIGHT", TOOLTIP_GAP, 0)
     end
 end
 
-local function hideTooltip()
-    SettingsTooltip:Hide()
+-- The whole row lights up and shows its tooltip while the cursor is over it or any of its
+-- controls, like the config window's rows. Moving between the row and a control fires a leave
+-- on one and an enter on the other, so a leave only counts once the cursor is off the row.
+local function enter(row)
+    if row.Hover then
+        row.Hover:Show()
+    end
+    showTooltip(row)
+end
+
+local function leave(row)
+    if row:IsMouseOver() then
+        return
+    end
+    if row.Hover then
+        row.Hover:Hide()
+    end
+    if GameTooltip:IsOwned(row) then
+        GameTooltip:Hide()
+    end
+end
+
+-- Forward a control's hover to its row, also while the control is disabled.
+local function hover(row, ...)
+    for index = 1, select("#", ...) do
+        local frame = select(index, ...)
+        if frame then
+            if frame.SetMotionScriptsWhileDisabled then
+                frame:SetMotionScriptsWhileDisabled(true)
+            end
+            frame:HookScript("OnEnter", function()
+                enter(row)
+            end)
+            frame:HookScript("OnLeave", function()
+                leave(row)
+            end)
+        end
+    end
 end
 
 local function setLabelEnabled(row, enabled)
@@ -49,6 +147,7 @@ local creators = {}
 function creators.toggle(parent, changed)
     local row = CreateFrame("Frame", nil, parent, "EditModeSettingCheckboxTemplate")
     row.Button:SetPropagateMouseMotion(true)
+    hover(row, row.Button)
     -- The template's button calls this; replace the native handler on our own row only.
     function row:OnCheckButtonClick()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -73,6 +172,7 @@ function creators.select(parent, changed)
     row.Dropdown = CreateFrame("DropdownButton", nil, row, "WowStyle1DropdownTemplate")
     row.Dropdown:SetPoint("LEFT", row.Label, "RIGHT", 5, 0)
     row.Dropdown:SetSize(200, 30)
+    hover(row, row.Dropdown)
     -- SetupMenu builds the menu at once, before Layout assigns the row's option.
     row.Dropdown:SetupMenu(function(_, root)
         if not row.option then
@@ -201,6 +301,8 @@ function creators.range(parent, changed, option)
     row.Slider.MaxText:Hide()
     row.Label:SetPoint("LEFT")
     addEditBox(row, changed)
+    local slider = row.Slider
+    hover(row, slider, slider.Slider, slider.Back, slider.Forward, row.EditBox)
     function row:Refresh(enabled)
         local option, value = self.option, self.option.get()
         if self.shownOption ~= option then
@@ -236,6 +338,7 @@ function creators.button(parent, changed)
     local row = CreateFrame("Frame", nil, parent)
     row.Button = CreateFrame("Button", nil, row, "EditModeSystemSettingsDialogButtonTemplate")
     row.Button:SetPoint("TOP")
+    hover(row, row.Button)
     row.Button:SetOnClickHandler(function()
         if row.option then
             row.option.click()
@@ -389,8 +492,19 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
                             current.changed()
                         end, option)
                         row:SetHeight(ROW)
-                        row:SetScript("OnEnter", showTooltip)
-                        row:SetScript("OnLeave", hideTooltip)
+                        if SETTINGS[option.type] then
+                            -- The config window's row hover, reaching a little past the row.
+                            row.Hover = row:CreateTexture(nil, "BACKGROUND")
+                            row.Hover:SetPoint("TOPLEFT", -HOVER_OUTSET, 0)
+                            row.Hover:SetPoint("BOTTOMRIGHT", HOVER_OUTSET, 0)
+                            row.Hover:SetColorTexture(1, 1, 1, 0.1)
+                            row.Hover:Hide()
+                        end
+                        if row.EnableMouseMotion then
+                            row:EnableMouseMotion(true)
+                        end
+                        row:SetScript("OnEnter", enter)
+                        row:SetScript("OnLeave", leave)
                         current.rows[id] = row
                     end
                     row.option = option

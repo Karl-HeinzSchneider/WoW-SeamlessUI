@@ -215,7 +215,7 @@ preset: never add entries to `EditModePresetLayoutManager` or write `EditModeMan
 `core:LayoutEditModeSections(parent, sections, y, spaced, changed)` draws sections (`id`, `name`,
 collapse `key`, `options`) into an addon-owned frame from `y` down and returns the bottom. Each
 section gets the shared collapsible header. Rows (`key`, `type`, `name`, optional `desc` tooltip,
-`hidden`, `disabled`):
+`default`, `hidden`, `disabled`):
 
 - `toggle`, `select` and `range`: the row schema of `RegisterEditModeSystemOptions`, on
   LibEditMode's templates. `select` also takes `values` as a function, entries with `disabled`,
@@ -225,6 +225,16 @@ section gets the shared collapsible header. Rows (`key`, `type`, `name`, optiona
   goes to `set` unchanged for the option to validate.
 - `button`: `click()`, half the row's width on the native dialog button template.
 - `text`: a wrapped message from `get()`, as tall as its text.
+
+Tooltips match the config window's: name, `desc`, then for `toggle`, `select` and `range` the
+localized `\n(Default: |cff8080ff%s|r)` line from `default` (a value or a function; booleans as
+Enabled/Disabled, choices by label, numbers through `format`, nil as Not applicable). Buttons
+show one only with a `desc`. The tooltip never follows the cursor: its top edge is level with the
+window's (the row's topmost ancestor below UIParent), 16 pixels right of it, or left when it would
+leave the screen. Setting rows light up as a whole, like the config rows, while the cursor is over
+the row or any of its controls (also disabled ones). LibEditMode settings pass their `default`;
+Position rows take theirs from the binding's optional `default(key)` (Reset Position's target for
+suite frames, the preset layout for Blizzard frames).
 
 Headers and rows are created once per parent and reused by section `id` and row `key`; only what a
 pass leaves out is hidden, so a click or drag in progress survives a redraw. `changed` runs after

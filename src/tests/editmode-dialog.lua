@@ -672,6 +672,13 @@ do
     -- Scale is greyed out without a binding; X and Y write through the feature, one field at a time.
     assert(scaleRow.option.disabled() and scaleRow.option.get() == 1)
     assert(xRow.option.get() == 5 and xRow.option.editable)
+    -- Values show at most two decimals, and the slider leaves room for them inside the row.
+    assert(xRow.option.format(-314.799987792969) == "-314.8" and xRow.option.format(1.006) == "1.01")
+    assert(xRow.Slider.width == 160 and Row(list, "Scale").Slider.width == 160)
+    xRow.value = -314.799987792969
+    xRow.EditBox.scripts.OnEditFocusGained(xRow.EditBox)
+    assert(xRow.EditBox.text == "-314.8", "typing starts from the shown value")
+    xRow.EditBox.scripts.OnEditFocusLost(xRow.EditBox)
     local revert = Row(list, "Revert changes")
     assert(revert.option.disabled(), "nothing to revert yet")
     xRow.option.set("42")

@@ -9,6 +9,8 @@ local addon = app.addon
 
 -- Header and row heights, the gap between blocks and between rows, and the rows' inset.
 local HEADER, ROW, GAP, ROW_GAP, INSET = 28, 32, 8, 3, 24
+-- Width of an editable slider, leaving room for its value on the right.
+local EDITABLE_SLIDER_WIDTH = 160
 
 local states = {}
 
@@ -136,7 +138,7 @@ local function addEditBox(row, changed)
         self:SetPoint("RIGHT", row.Slider.RightText, 5, 0)
         self:SetPoint("TOPLEFT", row.Slider)
         self:SetPoint("BOTTOMLEFT", row.Slider)
-        self:SetText(tostring(row.value or 0))
+        self:SetText((row.option and row.option.format or tostring)(row.value or 0))
         self:SetCursorPosition(0)
     end)
     edit:SetScript("OnEnterPressed", function(self)
@@ -177,6 +179,8 @@ function creators.range(parent, changed, option)
     row.Slider.MaxText:Hide()
     row.Label:SetPoint("LEFT")
     if option.editable then
+        -- Room for a typed value such as -1234.56 inside the row, right of a shorter slider.
+        row.Slider:SetWidth(EDITABLE_SLIDER_WIDTH)
         addEditBox(row, changed)
     end
     function row:Refresh(enabled)

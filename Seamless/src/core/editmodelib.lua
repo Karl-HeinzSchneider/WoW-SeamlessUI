@@ -438,20 +438,32 @@ local function AddScrolling(dialog)
     end
 end
 
--- Public reference for other addons and macros, like SeamlessUIEditModeSystemSettingsDialog for
--- Blizzard frames. The library creates the dialog without a name, so GetName() stays nil.
-local function SetUpDialog(dialog)
-    AddScrolling(dialog)
-    SeamlessEditModeSettingsDialog = dialog
-end
+local DIALOG_NAME = "SeamlessEditModeSettingsDialog"
 
 if internal.dialog then
-    SetUpDialog(internal.dialog)
+    AddScrolling(internal.dialog)
+    -- Created before this file loaded, too late to name: publish a reference instead.
+    _G[DIALOG_NAME] = internal.dialog
 else
     local createDialog = internal.CreateDialog
+    -- Name the dialog like SeamlessUIEditModeSystemSettingsDialog for Blizzard frames, so /fstack,
+    -- macros and other addons find it. The library creates it unnamed; instead of patching the file,
+    -- run its CreateDialog with a CreateFrame that names the one frame it parents to UIParent.
+    -- Only that function's environment changes; the global CreateFrame is never replaced.
+    setfenv(
+        createDialog,
+        setmetatable({
+            CreateFrame = function(frameType, name, parent, ...)
+                if name == nil and parent == UIParent and not _G[DIALOG_NAME] then
+                    name = DIALOG_NAME
+                end
+                return CreateFrame(frameType, name, parent, ...)
+            end,
+        }, { __index = _G, __newindex = _G })
+    )
     function internal:CreateDialog()
         local dialog = createDialog(self)
-        SetUpDialog(dialog)
+        AddScrolling(dialog)
         return dialog
     end
 end

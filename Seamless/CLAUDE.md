@@ -144,8 +144,8 @@ Run `lua src/tests/editmode-panel.lua`.
   header; collapsed sections are saved in `SeamlessDB.global.editModeCollapsed`
   (`core:Is/SetEditModeSectionCollapsed`). Position sections start collapsed.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
-- `core:GetEditModePositionSettings(spec)`: the Position header plus Anchor, AnchorParent,
-  AnchorFrame, X, Y and "Quick anchor to frame" (targets `spec.anchorFrames`, resolved by optional
+- `core:GetEditModePositionSettings(spec)`: the Position header plus Scale (from `spec.scale`, the
+  settings panel's binding; disabled without one), Anchor, AnchorParent, AnchorFrame, X, Y and "Quick anchor to frame" (targets `spec.anchorFrames`, resolved by optional
   `spec.anchorFrame(value)` or the global name; UIParent excluded). Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes

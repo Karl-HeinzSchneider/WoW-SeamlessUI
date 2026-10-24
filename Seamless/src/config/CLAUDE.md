@@ -180,7 +180,9 @@ For a generic frame, add `scale = { get = getScale, set = setScale }` to the
 `GetPositionOptions` spec. For a native frame, pass that binding as the optional
 second argument to `GetNativePositionOptions(getFrame, scale)`; its default
 getter reads the native frame's current scale. Omit the binding to retain the
-disabled slider. This does not change the existing Edit Mode Position rows.
+disabled slider. The same binding in a `core:GetEditModePositionSettings(spec)` spec drives
+the Scale row that leads every Edit Mode Position section (also disabled without it; Reset To
+Default leaves it alone).
 
 `core:GetNativeSettingScale(getFrame, setting)` binds Scale to a native Edit Mode
 percentage setting (the unit frames pass `Enum.EditModeUnitFrameSetting.FrameSize`):

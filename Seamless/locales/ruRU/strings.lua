@@ -461,7 +461,6 @@ end
 -- L["Font"] = "Font"
 -- L["For fixed height. 7.5 shows seven bars and half of the next."] = "For fixed height. 7.5 shows seven bars and half of the next."
 -- L["Frame height"] = "Frame height"
--- L["Frame scale"] = "Frame scale"
 -- L["Frame width"] = "Frame width"
 -- L["Game damage meter settings"] = "Game damage meter settings"
 -- L["Game meter"] = "Game meter"

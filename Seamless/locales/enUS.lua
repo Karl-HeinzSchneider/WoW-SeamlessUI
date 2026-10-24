@@ -458,7 +458,6 @@ L["Font size"] = true
 L["Font"] = true
 L["For fixed height. 7.5 shows seven bars and half of the next."] = true
 L["Frame height"] = true
-L["Frame scale"] = true
 L["Frame width"] = true
 L["Game damage meter settings"] = true
 L["Game meter"] = true

@@ -1302,6 +1302,12 @@ assert(positionSpec.get("relativeTo") == (meter.config.anchorTo and tostring(met
 assert(positionSpec.get("point") == app:GetWindowSetting(meter.config, "point"))
 positionSpec.set("x", 123)
 assert(meter.config.position.x == 123, "Position X edits the window offset")
+-- Scale is Position's first row (Core's), no longer a Window slider.
+assert(not order["Frame scale"] and positionSpec.scale.min == 0.5 and positionSpec.scale.max == 2)
+assert(positionSpec.scale.get() == app:GetWindowSetting(meter.config, "scale"))
+positionSpec.scale.set(1.234)
+assert(app:GetWindowSetting(meter.config, "scale") == 1.25, "snaps to 5 % steps")
+positionSpec.scale.set(1)
 assert(positionSpec.anchorFrames()[1].value == "screen")
 for _, entry in ipairs(positionSpec.anchorFrames()) do
     assert(entry.value ~= tostring(meter.config.id), "a window never anchors to itself")

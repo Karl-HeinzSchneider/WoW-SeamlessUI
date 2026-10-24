@@ -486,9 +486,10 @@ assert(app.position:GetOptions("target").spec.get("y") == -60)
 assert(app.position:GetOptions("player") == nil, "the player bar is the client's Edit Mode system")
 
 -- Scale: set on the real bar at every placement, offsets keep the anchor point on screen.
-local scaleRow = frameSettings[target][2]
-assert(scaleRow.get() == 1 and scaleRow.formatter(1.25) == "125%")
-scaleRow.set(layout, 2)
+-- The Edit Mode Scale row is Core's, from this binding (its Reset To Default guard is Core's too).
+local scaleRow = positionSpec.scale
+assert(scaleRow.get() == 1 and scaleRow.default == 1)
+scaleRow.set(2)
 assert(TargetFrameSpellBar.ownScale == 2 and app.db.profile.scales.target.Modern == 2)
 assert(app.db.profile.positions.target.Modern.y == -30, "offsets follow the scale")
 TargetFrameSpellBar.ownScale = nil
@@ -496,8 +497,6 @@ hooks[TargetFrameSpellBar].OnShow(TargetFrameSpellBar)
 assert(TargetFrameSpellBar.ownScale == 2, "re-applied when the client places the bar")
 app.UpdatePreviews()
 assert(target.ownScale == 3, "the preview shows the unit frame's scale times ours")
-scaleRow.set(layout, 1, true)
-assert(app.db.profile.scales.target.Modern == 2, "Reset To Default leaves the scale alone")
 assert(app.position:GetOptions("target").spec.scale.get() == 2, "the options tab's Scale slider")
 app.position:GetOptions("target").spec.scale.set(1)
 assert(TargetFrameSpellBar.ownScale == 1 and app.db.profile.scales.target.Modern == nil, "1 restores the client's")
@@ -512,7 +511,8 @@ assert(TargetFrameSpellBar.point[2] == "client")
 
 -- The preview's dialog shows Position, then the target bar's Style rows, writing the target profile.
 local settings = frameSettings[target]
-assert(settings[1].name == "Position" and settings[2].name == "Scale" and settings[3].name == "Style")
+assert(settings[1].name == "Position" and settings[2].name == "Style")
+assert(settings[1].spec.scale.min == 0.5 and settings[1].spec.scale.max == 2, "Scale comes from Core's Position rows")
 local byName = {}
 for _, setting in ipairs(settings) do
     byName[setting.name] = setting

@@ -131,7 +131,7 @@
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
----@field scale? SeamlessCore.PositionScale Optional binding for the config Position and scale group; does not alter Edit Mode rows.
+---@field scale? SeamlessCore.PositionScale Optional binding for the config Position and scale group and the Edit Mode Scale row; both are disabled without it.
 ---@field anchorFrame? fun(value: any): table? The frame of an anchorFrames entry; defaults to the global named by the value.
 ---@field disabled? fun(): boolean
 

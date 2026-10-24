@@ -39,8 +39,8 @@ system, so they are not part of this addon.
   placement puts the bar back. A scale per layout in `profile.scales[key][layout]` is set on
   the bar at the same moments (the client never scales these bars; 1 is not stored, and a bar we
   scaled gets 1 back); changing it rescales stored offsets so the anchor point stays put.
-  `GetOptions(key)` is the tab's Position and scale group; `ScaleOption(key)` also feeds the Edit
-  Mode Scale slider.
+  `GetOptions(key)` is the tab's Position and scale group; `ScaleOption(key)` is also the `scale`
+  binding of the previews' Core Position section, which shows it as its Scale row.
 - `src/preview.lua`: target/focus Edit Mode stand-ins using client art: addon-owned UIParent
   children at the bar's position and effective scale, registered with LibEditMode with Core's
   Position section and the Style rows. A drag releases the anchor frame (stored on UIParent where

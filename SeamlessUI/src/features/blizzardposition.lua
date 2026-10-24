@@ -325,10 +325,17 @@ function position:Create(parent)
         revert:SetEnabled(editable and position:HasChanges(system))
         message:SetText(self.error or "")
         message:SetShown(self.error ~= nil)
-        self:SetHeight(self.error and 296 or 250)
+        local height = self.error and 296 or 250
+        local resized = self.layoutHeight ~= height
+        self.layoutHeight = height
+        self:SetHeight(height)
         local parent = self:GetParent()
         if parent.LayoutContent then
-            parent:LayoutContent()
+            -- The poll below runs this every 0.15 s; re-stacking the window each time would
+            -- interrupt clicks on the sections below, so only do it when the height changes.
+            if resized then
+                parent:LayoutContent()
+            end
         else
             parent:SetHeight(self:GetHeight() + 100)
         end

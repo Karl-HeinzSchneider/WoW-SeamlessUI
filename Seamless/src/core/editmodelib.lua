@@ -1,14 +1,17 @@
 ---@type string, SeamlessCore
 local _, app = ...
 
--- Suite-only additions to the namespaced LibEditMode instance. The vendored files stay
--- untouched; this relies on lib.internal, so recheck it whenever the library is updated.
+-- Suite-only additions to the namespaced LibEditMode instance: our own settings window as its
+-- dialog, Header and Button settings, and fixed frames. The vendored files stay untouched; this
+-- relies on lib.internal, so recheck it whenever the library is updated.
 local lib = app.LibEditMode
 local internal = lib.internal
+local addon = app.addon
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
 assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
-assert(type(internal.CreatePool) == "function" and type(internal.CreateDialog) == "function")
-assert(type(internal.MoveParent) == "function" and type(lib.frameSelections) == "table")
+assert(type(internal.CreateDialog) == "function" and type(internal.MoveParent) == "function")
+assert(type(internal.GetFrameSettings) == "function" and type(internal.GetFrameButtons) == "function")
+assert(type(internal.TriggerCallback) == "function" and type(lib.frameSelections) == "table")
 
 -- Frames that can be selected in Edit Mode but never moved: no dragging, no arrow-key nudges and
 -- no Reset Position button.
@@ -113,56 +116,15 @@ function app.CreateEditModeHeader(parent, onClick)
     return header
 end
 
--- Collapsible section header. Rows after it, up to the next header, hide while it is collapsed.
+-- Setting kinds of our own. The settings window below draws them: a collapsible header (rows after
+-- it, up to the next header, hide while it is collapsed) and a button whose `click(frame)` gets the
+-- selected frame. Both support `name`, `hidden` and (buttons) `disabled`.
 lib.SettingType.Header = "seamless-header"
+lib.SettingType.Button = "seamless-button"
 
 local function HeaderKey(data)
     return "settings:" .. (data.key or data.name)
 end
-
-local headerMixin = {}
-function headerMixin:Setup(data)
-    self.setting = data
-    self:SetHeaderText(data.name)
-    self:Refresh()
-end
-
-function headerMixin:Refresh()
-    local data = self.setting
-    if type(data.hidden) == "function" then
-        self:SetShown(not data.hidden(lib:GetActiveLayoutName()))
-    else
-        self:SetShown(not data.hidden)
-    end
-    self:UpdateCollapsedState(self:IsCollapsed())
-end
-
-function headerMixin:IsCollapsed()
-    return app.IsEditModeSectionCollapsed(HeaderKey(self.setting))
-end
-
-function headerMixin:Toggle()
-    app.SetEditModeSectionCollapsed(HeaderKey(self.setting), not self:IsCollapsed())
-    self:GetParent():GetParent():RefreshWidgets()
-end
-
-internal:CreatePool(lib.SettingType.Header, function()
-    local frame
-    frame = app.CreateEditModeHeader(UIParent, function()
-        frame:Toggle()
-    end)
-    Mixin(frame, headerMixin)
-    frame:SetWidth(330)
-    return frame
-end, function(_, frame)
-    frame:Hide()
-    frame:SetHeaderText("")
-    frame.layoutIndex = nil
-end)
-
--- A full-width button row inside the settings list (the library's own buttons sit below it).
--- `click(frame)` receives the selected frame; supports `name`, `hidden` and `disabled`.
-lib.SettingType.Button = "seamless-button"
 
 local function Resolve(value)
     if type(value) == "function" then
@@ -171,58 +133,27 @@ local function Resolve(value)
     return value
 end
 
-local buttonMixin = {}
-function buttonMixin:Setup(data)
-    self.setting = data
-    self.Button:SetText(data.name)
-    self:Refresh()
-end
-
-function buttonMixin:Refresh()
-    self:SetShown(not Resolve(self.setting.hidden))
-    self.Button:SetEnabled(not Resolve(self.setting.disabled))
-end
-
-internal:CreatePool(lib.SettingType.Button, function()
-    local frame = Mixin(CreateFrame("Frame", nil, UIParent), buttonMixin)
-    frame:SetSize(330, 32)
-    frame.Button = CreateFrame("Button", nil, frame, "EditModeSystemSettingsDialogButtonTemplate")
-    frame.Button:SetPoint("CENTER")
-    frame.Button:SetWidth(200)
-    frame.Button:SetOnClickHandler(function()
-        local selection = internal.dialog and internal.dialog.selection
-        if selection and frame.setting and frame.setting.click and not InCombatLockdown() then
-            frame.setting.click(selection.parent)
-        end
-    end)
-    return frame
-end, function(_, frame)
-    frame:Hide()
-    frame.setting = nil
-    frame.layoutIndex = nil
-end)
-
--- The settings list scrolls past this height, like Blizzard's own settings container (325).
-local MAX_HEIGHT, MAX_HEIGHT_SHARE = 400, 0.6
-
--- Hide every row after a collapsed header, up to the next header.
-local function ApplyCollapsed(dialog)
-    local collapsed = false
-    for _, widget in ipairs(dialog.Settings.widgets) do
-        if widget.setting and widget.setting.kind == lib.SettingType.Header then
-            collapsed = widget:IsShown() and widget:IsCollapsed()
-        elseif collapsed then
-            widget:Hide()
-        end
+local function Resolver(value)
+    return function()
+        return Resolve(value)
     end
 end
 
+-- The settings list scrolls past this height, like Blizzard's own settings container (325).
+local MAX_HEIGHT, MAX_HEIGHT_SHARE = 400, 0.6
+-- The window's width (the library dialog's 330 pixel rows plus its padding), the title's offset
+-- and height, the gaps around the settings list, and the space below the buttons.
+local WIDTH, TITLE_TOP, TITLE_HEIGHT, LIST_GAP, BOTTOM = 370, 15, 20, 12, 20
+-- Width of the buttons in the window, as in the library's dialog.
+local BUTTON_WIDTH = 200
 -- Space between the window's right edge and its scroll bar, which sits outside the window.
 local SCROLL_BAR_GAP = 2
 -- Space between the selected frame and its settings window.
 local DIALOG_GAP = 16
 -- Gap to Blizzard's Edit Mode window when settings dialogs open beside it.
 local MANAGER_GAP = 4
+-- Arrow-key nudges, in pixels (with and without Shift), as in the library's dialog.
+local BIG_STEP, SMALL_STEP = 10, 1
 
 -- Set by a feature (SeamlessUI): open settings dialogs beside Blizzard's Edit Mode window instead
 -- of beside their frame.
@@ -253,223 +184,321 @@ local function PlaceBesideManager(dialog)
     return true
 end
 
--- Put the selected frame's settings list in a scroll frame, built like Blizzard's own
--- Edit Mode settings container (ResizeLayoutFrame + ScrollFrameTemplate with a maximum height).
-local function AddScrolling(dialog)
-    local settings = dialog.Settings
-    local scroll = CreateFrame("ScrollFrame", nil, dialog, "ResizeLayoutFrame, ScrollFrameTemplate")
-    scroll:SetPoint("TOP", dialog.Title, "BOTTOM", 0, -12)
-    -- LayoutFrame only applies maximumHeight when a minimum is set as well.
-    scroll.minimumHeight = 1
-    scroll:EnableMouseWheel(true)
-    scroll.ScrollBar.ignoreInLayout = true
-    scroll.ScrollBar:SetHideIfUnscrollable(true)
-    -- Widgets refresh through their grandparent, which is the scroll frame now.
-    function scroll:RefreshWidgets()
-        dialog:RefreshWidgets()
+-- Open beside the selected frame, on the side with more room, aligned with its top edge.
+-- Coordinates are converted to the dialog's scale; it does not follow the frame afterwards.
+local function PlaceBesideFrame(dialog, frame)
+    local left, right, top = frame:GetLeft(), frame:GetRight(), frame:GetTop()
+    local width, height = dialog:GetWidth(), dialog:GetHeight()
+    if not left or not right or not top or not width or not height then
+        return
     end
-    settings:ClearAllPoints()
-    settings:SetParent(scroll)
-    scroll:SetScrollChild(settings)
-    dialog.Buttons:ClearAllPoints()
-    dialog.Buttons:SetPoint("TOP", scroll, "BOTTOM", 0, -12)
-    dialog.SettingsScroll = scroll
-
-    -- Keep the scroll bar outside the window's right edge, so it never takes width from the rows.
-    local function PlaceScrollBar()
-        local dialogRight, scrollRight = dialog:GetRight(), scroll:GetRight()
-        local inset = (dialogRight and scrollRight) and (dialogRight - scrollRight) or dialog.widthPadding / 2
-        local bar = scroll.ScrollBar
-        bar:ClearAllPoints()
-        bar:SetPoint("TOPLEFT", scroll, "TOPRIGHT", inset + SCROLL_BAR_GAP, 0)
-        bar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", inset + SCROLL_BAR_GAP, 0)
+    local scale = dialog:GetEffectiveScale()
+    local ratio = frame:GetEffectiveScale() / scale
+    left, right, top = left * ratio, right * ratio, top * ratio
+    local screenWidth = UIParent:GetWidth() * UIParent:GetEffectiveScale() / scale
+    local screenHeight = UIParent:GetHeight() * UIParent:GetEffectiveScale() / scale
+    local x
+    if screenWidth - right >= left then
+        x = math.min(right + DIALOG_GAP, screenWidth - width)
+    else
+        x = math.max(left - DIALOG_GAP - width, 0)
     end
+    local y = math.max(math.min(top, screenHeight), math.min(height, screenHeight))
+    dialog:ClearAllPoints()
+    dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+end
 
-    -- Size the scroll frame from the list itself, so collapsing a section always shrinks the window.
-    local function LayoutDialog()
-        -- Pin the top edge where it is now, so resizing only moves the bottom edge.
-        local left, top = dialog:GetLeft(), dialog:GetTop()
-        if left and top then
-            dialog:ClearAllPoints()
-            dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+-- The library dialog's own Reset Position rules, for a frame without a stored default.
+local CENTER = { point = "CENTER", x = 0, y = 0 }
+
+local function DefaultPosition(frame)
+    return lib:GetFrameDefaultPosition(frame) or CopyTable(CENTER)
+end
+
+local function IsDefaultPosition(frame)
+    local point, _, _, x, y = frame:GetPoint()
+    local default = DefaultPosition(frame)
+    return point == default.point and math.abs(x - default.x) < 0.01 and math.abs(y - default.y) < 0.01
+end
+
+local function ResetPosition(frame)
+    if InCombatLockdown() then
+        return
+    end
+    local position = DefaultPosition(frame)
+    frame:ClearAllPoints()
+    frame:SetPoint(position.point, position.x, position.y)
+    internal:TriggerCallback(frame, position.point, position.x, position.y)
+end
+
+-- Rows already made for a setting: the renderer only initializes a row again (ending a slider
+-- drag) when it is handed a different option table.
+local convertedRows = setmetatable({}, { __mode = "k" })
+
+-- One renderer row for one library setting of the selected frame.
+local function ConvertSetting(data, index, frame)
+    local cached = convertedRows[data]
+    if cached and cached.index == index and cached.frame == frame then
+        return cached.row
+    end
+    local kind = data.kind
+    local row = {
+        key = kind .. ":" .. index,
+        name = data.name,
+        desc = data.desc,
+        hidden = Resolver(data.hidden),
+        disabled = Resolver(data.disabled),
+    }
+    local function get()
+        local value = data.get(lib:GetActiveLayoutName())
+        if value == nil then
+            value = data.default
         end
-        settings:Layout()
-        scroll.fixedWidth = settings:GetWidth()
-        scroll.fixedHeight = math.min(settings:GetHeight(), scroll.maximumHeight)
-        -- Resize the scroll frame first: the dialog measures the buttons below it before
-        -- reaching the scroll frame itself, which it created last.
-        scroll:Layout()
-        dialog:Layout()
+        return value
+    end
+    local function set(value)
+        data.set(lib:GetActiveLayoutName(), value, false)
+    end
+    if kind == lib.SettingType.Checkbox then
+        row.type, row.get, row.set = "toggle", get, set
+    elseif kind == lib.SettingType.Dropdown then
+        row.type, row.get, row.set = "select", get, set
+        row.values, row.scroll = data.values, data.height
+    elseif kind == lib.SettingType.Slider then
+        row.type, row.get, row.set = "range", get, set
+        row.min, row.max, row.step = data.minValue or 0, data.maxValue or 1, data.valueStep or 1
+        row.format = data.formatter
+    elseif kind == lib.SettingType.Button then
+        row.type, row.width = "button", BUTTON_WIDTH
+        row.click = function()
+            if data.click and not InCombatLockdown() then
+                data.click(frame)
+            end
+        end
+    else
+        error("Suite frames support Checkbox, Dropdown, Slider, Header and Button settings, not " .. tostring(kind))
+    end
+    convertedRows[data] = { index = index, frame = frame, row = row }
+    return row
+end
+
+---@class SeamlessCore.EditModeSettingsWindow : Frame
+---@field selection table? LibEditMode's selection of the frame whose settings are shown.
+
+-- The settings window of suite frames. LibEditMode shows it as its dialog: the library keeps
+-- selecting, dragging and calling Update/Reset/Hide, and the window draws the selected frame's
+-- settings with the shared row renderer (editmoderows.lua) instead of the library's widgets.
+local function CreateSettingsWindow()
+    local window = CreateFrame("Frame", "SeamlessEditModeSettingsDialog", UIParent) --[[@as SeamlessCore.EditModeSettingsWindow]]
+    window:SetSize(WIDTH, 350)
+    window:SetFrameStrata("DIALOG")
+    window:SetFrameLevel(200)
+    window:Hide()
+    -- Draggable like the library's dialog; arrow keys nudge the selected frame.
+    window:EnableMouse(true)
+    window:SetMovable(true)
+    window:SetClampedToScreen(true)
+    window:SetDontSavePosition(true)
+    window:RegisterForDrag("LeftButton")
+    window:SetScript("OnDragStart", window.StartMoving)
+    window:SetScript("OnDragStop", window.StopMovingOrSizing)
+
+    local border = CreateFrame("Frame", nil, window, "DialogBorderTranslucentTemplate")
+    border:SetAllPoints()
+    window.Title = window:CreateFontString(nil, nil, "GameFontHighlightLarge")
+    window.Title:SetPoint("TOP", 0, -TITLE_TOP)
+    window.Title:SetHeight(TITLE_HEIGHT)
+    local close = CreateFrame("Button", nil, window, "UIPanelCloseButton")
+    close:SetPoint("TOPRIGHT")
+    close:HookScript("OnClick", function()
+        window:Reset()
+    end)
+
+    -- The settings list scrolls; the buttons below it always stay in view.
+    local scroll = CreateFrame("ScrollFrame", nil, window, "ScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 0, -(TITLE_TOP + TITLE_HEIGHT + LIST_GAP))
+    scroll:SetWidth(WIDTH)
+    scroll:EnableMouseWheel(true)
+    scroll.ScrollBar:SetHideIfUnscrollable(true)
+    -- Outside the window's right edge, so it never takes width from the rows.
+    scroll.ScrollBar:ClearAllPoints()
+    scroll.ScrollBar:SetPoint("TOPLEFT", scroll, "TOPRIGHT", SCROLL_BAR_GAP, 0)
+    scroll.ScrollBar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", SCROLL_BAR_GAP, 0)
+    local list = CreateFrame("Frame", nil, scroll)
+    list:SetSize(WIDTH, 1)
+    scroll:SetScrollChild(list)
+    local buttons = CreateFrame("Frame", nil, window)
+    buttons:SetPoint("TOPLEFT", scroll, "BOTTOMLEFT", 0, -LIST_GAP)
+    buttons:SetSize(WIDTH, 1)
+    window.Scroll, window.List, window.Buttons = scroll, list, buttons
+
+    local function Redraw()
+        if window.selection then
+            window:LayoutContent()
+        end
+    end
+
+    local function ResetSettings()
+        local settings = internal:GetFrameSettings(window.selection.parent)
+        for _, data in ipairs(settings or {}) do
+            if data.set then
+                data.set(lib:GetActiveLayoutName(), data.default, true)
+            end
+        end
+    end
+
+    -- The selected frame's settings, one section per header, then Reset To Default.
+    local function ListSections(frame)
+        local settings, count = internal:GetFrameSettings(frame)
+        local sections = { { id = "settings", options = {} } }
+        for index, data in ipairs(settings or {}) do
+            if data.kind == lib.SettingType.Header then
+                sections[#sections + 1] = {
+                    id = "header:" .. index,
+                    name = data.name,
+                    key = HeaderKey(data),
+                    hidden = Resolver(data.hidden),
+                    options = {},
+                }
+            else
+                table.insert(sections[#sections].options, ConvertSetting(data, index, frame))
+            end
+        end
+        sections[#sections + 1] = {
+            id = "reset",
+            options = {
+                {
+                    key = "reset",
+                    type = "button",
+                    name = RESET_TO_DEFAULT,
+                    width = BUTTON_WIDTH,
+                    disabled = count == 0,
+                    click = ResetSettings,
+                },
+                { key = "divider", type = "divider" },
+            },
+        }
+        return sections
+    end
+
+    -- The frame's own buttons, then Reset Position (left out for frames that never move).
+    local function ButtonSections(frame)
+        local options = {}
+        for index, data in ipairs((internal:GetFrameButtons(frame)) or {}) do
+            options[#options + 1] = {
+                key = "button:" .. index,
+                type = "button",
+                name = data.text,
+                width = BUTTON_WIDTH,
+                click = data.click,
+            }
+        end
+        options[#options + 1] = {
+            key = "resetPosition",
+            type = "button",
+            name = HUD_EDIT_MODE_RESET_POSITION,
+            width = BUTTON_WIDTH,
+            hidden = fixedFrames[frame] == true,
+            disabled = IsDefaultPosition(frame),
+            click = function()
+                ResetPosition(frame)
+            end,
+        }
+        return { { id = "buttons", options = options } }
+    end
+
+    ---Draw the selected frame's settings and size the window to them, growing downward only.
+    function window:LayoutContent()
+        -- Pin the top edge where it is now, so resizing only moves the bottom edge.
+        local left, top = self:GetLeft(), self:GetTop()
+        if left and top then
+            self:ClearAllPoints()
+            self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", left, top)
+        end
+        local frame = self.selection.parent
+        local listHeight = addon:LayoutEditModeSections(list, ListSections(frame), 0, false, Redraw)
+        list:SetHeight(math.max(1, listHeight))
+        local maximum = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
+        local scrollHeight = math.min(listHeight, maximum)
+        scroll:SetHeight(math.max(1, scrollHeight))
+        local buttonsHeight = addon:LayoutEditModeSections(buttons, ButtonSections(frame), 0, false, Redraw)
+        -- An empty button list is left out of the window.
+        buttons:SetShown(buttonsHeight > 0)
+        buttons:SetHeight(math.max(1, buttonsHeight))
+        local height = TITLE_TOP + TITLE_HEIGHT + LIST_GAP + scrollHeight + BOTTOM
+        if buttonsHeight > 0 then
+            height = height + LIST_GAP + buttonsHeight
+        end
+        self:SetHeight(height)
         scroll:UpdateScrollChildRect()
         local range = scroll:GetVerticalScrollRange()
         if scroll:GetVerticalScroll() > range then
             scroll:SetVerticalScroll(range)
         end
-        PlaceScrollBar()
     end
 
-    -- Open beside the selected frame, on the side with more room, aligned with its top edge.
-    -- Coordinates are converted to the dialog's scale; it does not follow the frame afterwards.
-    local function PlaceBesideFrame(frame)
-        local left, right, top = frame:GetLeft(), frame:GetRight(), frame:GetTop()
-        local width, height = dialog:GetWidth(), dialog:GetHeight()
-        if not left or not right or not top or not width or not height then
-            return
-        end
-        local scale = dialog:GetEffectiveScale()
-        local ratio = frame:GetEffectiveScale() / scale
-        left, right, top = left * ratio, right * ratio, top * ratio
-        local screenWidth = UIParent:GetWidth() * UIParent:GetEffectiveScale() / scale
-        local screenHeight = UIParent:GetHeight() * UIParent:GetEffectiveScale() / scale
-        local x
-        if screenWidth - right >= left then
-            x = math.min(right + DIALOG_GAP, screenWidth - width)
-        else
-            x = math.max(left - DIALOG_GAP - width, 0)
-        end
-        local y = math.max(math.min(top, screenHeight), math.min(height, screenHeight))
-        dialog:ClearAllPoints()
-        dialog:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
-    end
-
-    -- Features refresh the dialog from their setters (RefreshFrameSettings), and LibEditMode's
-    -- Update releases and rebuilds every widget, which ends a slider drag after one step. While a
-    -- slider is held, an Update of the same selection only refreshes the rows in place; one full
-    -- Update follows on the first frame after the mouse button is released, outside any slider
-    -- script (rebuilding inside the slider's own OnMouseUp left the next grab stuck).
-    local heldSlider, pendingUpdate
-    local hookedSliders = {}
-    local releaseWatcher = CreateFrame("Frame")
-    local function StopHolding()
-        heldSlider, pendingUpdate = nil, nil
-        releaseWatcher:SetScript("OnUpdate", nil)
-    end
-    local function WatchRelease()
-        if IsMouseButtonDown("LeftButton") then
-            return
-        end
-        local pending = pendingUpdate
-        StopHolding()
-        if pending and dialog:IsShown() and dialog.selection then
-            dialog:Update(dialog.selection)
-        end
-    end
-    local function Hold(slider)
-        heldSlider = slider
-        releaseWatcher:SetScript("OnUpdate", WatchRelease)
-    end
-    local function OnSliderMouseDown(slider, button)
-        if button == "LeftButton" then
-            Hold(slider)
-        end
-    end
-    -- A click on the track can change the value before the slider's OnMouseDown script runs.
-    local function PressedSlider()
-        if not IsMouseButtonDown("LeftButton") then
-            return nil
-        end
-        for _, widget in ipairs(settings.widgets) do
-            local slider = widget.Slider and widget.Slider.Slider
-            if slider and slider:IsVisible() and slider:IsMouseOver() then
-                return slider
-            end
-        end
-        return nil
-    end
-    local function HookSliders()
-        for _, widget in ipairs(settings.widgets) do
-            local slider = widget.Slider and widget.Slider.Slider
-            if slider and not hookedSliders[slider] then
-                hookedSliders[slider] = true
-                slider:HookScript("OnMouseDown", OnSliderMouseDown)
-            end
-        end
-    end
-    dialog:HookScript("OnHide", StopHolding)
-
-    local update, refreshWidgets = dialog.Update, dialog.RefreshWidgets
-    function dialog:Update(selection)
+    -- Called by the library on selection and whenever a feature refreshes the frame's settings.
+    function window:Update(selection)
         local newSelection = selection ~= self.selection
-        local held = not newSelection and self:IsShown() and (heldSlider or PressedSlider())
-        if held then
-            Hold(held)
-            pendingUpdate = true
-            self:RefreshWidgets()
-            return
-        end
-        StopHolding()
+        self.selection = selection
+        self.Title:SetText(selection.system:GetSystemName())
         if newSelection then
             scroll:SetVerticalScroll(0)
         end
-        scroll.maximumHeight = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
-        -- Measure with every section open, then keep that width so collapsing never resizes the window.
-        settings.fixedWidth = nil
-        self.Buttons:Show()
-        update(self, selection)
-        settings.fixedWidth = settings:GetWidth()
-        if selection.parent and fixedFrames[selection.parent] and self.Buttons.ResetPositionButton then
-            self.Buttons.ResetPositionButton:Hide()
-            -- An empty button list has no valid size and stretched the window across the screen;
-            -- hidden, the window leaves it out.
-            local anyShown = false
-            for _, button in ipairs({ self.Buttons:GetChildren() }) do
-                anyShown = anyShown or button:IsShown()
-            end
-            if anyShown then
-                self.Buttons:Layout()
-            else
-                self.Buttons:Hide()
-            end
-        end
-        HookSliders()
-        ApplyCollapsed(self)
-        LayoutDialog()
+        self:Show()
+        self:LayoutContent()
         if newSelection and selection.parent and not (besideManager and PlaceBesideManager(self)) then
-            PlaceBesideFrame(selection.parent)
+            PlaceBesideFrame(self, selection.parent)
         end
     end
-    -- Never hide the dialog here: its OnHide clears the frame selection.
-    function dialog:RefreshWidgets()
-        refreshWidgets(self)
-        ApplyCollapsed(self)
-        if self:IsShown() then
-            LayoutDialog()
-        end
+
+    function window:RefreshWidgets()
+        Redraw()
     end
+
+    -- Called by the library before showing another frame's settings; never hide here, the
+    -- library's OnHide hook clears the selection.
+    function window:Reset()
+        self.selection = nil
+        self:ClearAllPoints()
+        self:SetPoint("BOTTOMRIGHT", UIParent, -250, 250)
+    end
+
+    window:SetScript("OnKeyDown", function(self, key)
+        if InCombatLockdown() then
+            return
+        end
+        local selection = self.selection
+        if not selection then
+            self:SetPropagateKeyboardInput(true)
+            return
+        end
+        self:SetPropagateKeyboardInput(false)
+        local step = IsShiftKeyDown() and BIG_STEP or SMALL_STEP
+        if key == "LEFT" then
+            internal:MoveParent(selection, -step)
+        elseif key == "RIGHT" then
+            internal:MoveParent(selection, step)
+        elseif key == "UP" then
+            internal:MoveParent(selection, 0, step)
+        elseif key == "DOWN" then
+            internal:MoveParent(selection, 0, -step)
+        else
+            self:SetPropagateKeyboardInput(true)
+        end
+    end)
+
+    window:Reset()
+    return window
 end
 
-local DIALOG_NAME = "SeamlessEditModeSettingsDialog"
-
-if internal.dialog then
-    AddScrolling(internal.dialog)
-    -- Created before this file loaded, too late to name: publish a reference instead.
-    _G[DIALOG_NAME] = internal.dialog
-else
-    local createDialog = internal.CreateDialog
-    -- Name the dialog like SeamlessUIEditModeSystemSettingsDialog for Blizzard frames, so /fstack,
-    -- macros and other addons find it. The library creates it unnamed; instead of patching the file,
-    -- run its CreateDialog with a CreateFrame that names the one frame it parents to UIParent.
-    -- Only that function's environment changes; the global CreateFrame is never replaced.
-    setfenv(
-        createDialog,
-        setmetatable({
-            CreateFrame = function(frameType, name, parent, ...)
-                if name == nil and parent == UIParent and not _G[DIALOG_NAME] then
-                    name = DIALOG_NAME
-                end
-                return CreateFrame(frameType, name, parent, ...)
-            end,
-        }, { __index = _G, __newindex = _G })
-    )
-    function internal:CreateDialog()
-        local dialog = createDialog(self)
-        AddScrolling(dialog)
-        return dialog
-    end
+-- The one replacement in the library: its dialog is our window. Nothing else in it changes.
+assert(not internal.dialog, "LibEditMode created its dialog before Core could replace it")
+function internal:CreateDialog()
+    return CreateSettingsWindow()
 end
 
 -- Public API for feature addons: the same header, collapse state and Position section in every window.
-local addon = app.addon
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@param parent table

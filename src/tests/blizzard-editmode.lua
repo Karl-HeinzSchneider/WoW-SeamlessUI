@@ -43,6 +43,9 @@ local function frame()
         self.generator = generator
         generator(self, { CreateRadio = function() end })
     end
+    function f:HasFocus()
+        return false
+    end
     function f:SetDefaultText(text)
         self.defaultText = text
     end
@@ -61,6 +64,12 @@ local function frame()
         "SetSize",
         "SetPropagateMouseMotion",
         "GenerateMenu",
+        "SetAutoFocus",
+        "SetMaxLetters",
+        "SetCursorPosition",
+        "SetText",
+        "ClearFocus",
+        "SetShown",
     }) do
         f[method] = function() end
     end

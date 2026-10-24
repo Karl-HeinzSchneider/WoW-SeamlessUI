@@ -173,11 +173,13 @@ function module:GetAnchorTargets()
     return targets
 end
 
-local panel, title, positionHeader, positionView
+local panel, title
 
--- Panel height with the title only; where the first header starts, its height, the gap between
--- blocks and the space below the last one.
-local TITLE_HEIGHT, TOP, HEADER, GAP, BOTTOM = 60, 44, 28, 8, 20
+-- Panel height with the title only, where the first header starts and the space below the last
+-- section.
+local TITLE_HEIGHT, TOP, BOTTOM = 60, 44, 20
+-- How often native changes (dragging, nudges, the dialog's own sliders, Revert) are picked up.
+local POLL = 0.15
 
 local function settings()
     return app.db.profile.blizzardEditMode
@@ -215,34 +217,33 @@ local function ensurePanel()
     title = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     title:SetPoint("TOPLEFT", 24, -20)
     title:SetPoint("TOPRIGHT", -24, -20)
-    -- The same collapsible header as every other Edit Mode window, sharing its collapsed state.
-    positionHeader = app.core:CreateEditModeHeader(panel, function()
-        if InCombatLockdown() then
-            return
-        end
-        local key = app.core:GetEditModePositionSectionKey()
-        app.core:SetEditModeSectionCollapsed(key, not app.core:IsEditModeSectionCollapsed(key))
-        module:RefreshPanel()
-    end)
-    positionHeader:SetPoint("TOPLEFT", 16, -44)
-    positionHeader:SetPoint("TOPRIGHT", -16, -44)
-    positionHeader:SetHeaderText(L["Position"])
-    positionHeader:Hide()
-    -- Stacks Position and the sections other addons register; the position view calls it
-    -- whenever its own height changes.
+    -- Stacks Position and the sections other addons register, all drawn by Core's row renderer.
     function panel:LayoutContent()
-        local y, spaced = TOP, false
-        if positionHeader:IsShown() then
-            y, spaced = y + HEADER, true
-            if positionView and positionView:IsShown() then
-                y = y + GAP + positionView:GetHeight()
-            end
+        local sections = {}
+        if self.addPosition then
+            sections[1] = app.blizzardPosition:GetSection(self.system)
         end
-        y = app.systemOptions:Layout(self, self.system, y, spaced, function()
+        for _, section in ipairs(app.systemOptions:GetSections(self.system)) do
+            sections[#sections + 1] = section
+        end
+        local y = app.core:LayoutEditModeSections(self, sections, TOP, false, function()
             module:RefreshPanel()
         end)
         self:SetHeight(y == TOP and TITLE_HEIGHT or y + BOTTOM)
     end
+    -- Native dragging, arrow nudges, size changes and Revert all update the same draft. Poll only
+    -- while shown and refresh the rows in place: laying the window out again each time would
+    -- interrupt clicks, so that only happens when rows appear, disappear or change height.
+    local elapsed = 0
+    panel:SetScript("OnUpdate", function(self, delta)
+        elapsed = elapsed + delta
+        if elapsed >= POLL and self.system then
+            elapsed = 0
+            if app.core:RefreshEditModeSections(self) then
+                self:LayoutContent()
+            end
+        end
+    end)
 end
 
 function module:GetSelectedFrame()
@@ -280,23 +281,7 @@ function module:RefreshPanel()
     panel.system = system
     title:SetText(string.format(L["SeamlessUI - %s"], spec.name))
     panel:SetFrameLevel(EditModeSystemSettingsDialog:GetFrameLevel() + 10)
-    local collapsed = app.core:IsEditModeSectionCollapsed(app.core:GetEditModePositionSectionKey())
-    local addPosition = frameOption(spec, "addPosition")
-    if addPosition then
-        positionHeader:UpdateCollapsedState(collapsed)
-        positionHeader:Show()
-    else
-        positionHeader:Hide()
-    end
-    if addPosition and not collapsed then
-        positionView = positionView or app.blizzardPosition:Create(panel)
-        positionView:Refresh(system)
-        positionView:Show()
-    else
-        if positionView then
-            positionView:Hide()
-        end
-    end
+    panel.addPosition = frameOption(spec, "addPosition")
     panel:LayoutContent()
     panel:Show()
 end

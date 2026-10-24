@@ -8,8 +8,8 @@ Required entry point of the suite; works with no feature addon enabled.
   LibStub; features use `core:GetEditModeLibrary()`.
 - `src/core/`: lifecycle, defaults, profiles, logger, options, minimap launcher, quests and tweaks.
   `frameposition.lua` owns native position validation and persistence; `editmode.lua`,
-  `editmodelib.lua`, `editmoderows.lua`, `systemoptions.lua` and `anchorpicker.lua` own shared Edit
-  Mode services.
+  `editmodelib.lua`, `editmoderows.lua`, `editmodeposition.lua`, `systemoptions.lua` and
+  `anchorpicker.lua` own shared Edit Mode services.
 - `src/config/`: custom options renderer and reusable Position groups; read its `CLAUDE.md`.
 - `locales/`: the suite's shared AceLocale catalogue.
 
@@ -194,11 +194,32 @@ preset: never add entries to `EditModePresetLayoutManager` or write `EditModeMan
 
 `core:LayoutEditModeSections(parent, sections, y, spaced, changed)` draws sections (`id`, `name`,
 collapse `key`, `options`) into an addon-owned frame from `y` down and returns the bottom. Each
-section gets the shared collapsible header; rows are `toggle`, `select` and `range` (the row
-schema of `RegisterEditModeSystemOptions`) on LibEditMode's templates, with `desc` tooltips.
+section gets the shared collapsible header. Rows (`key`, `type`, `name`, optional `desc` tooltip,
+`hidden`, `disabled`):
+
+- `toggle`, `select` and `range`: the row schema of `RegisterEditModeSystemOptions`, on
+  LibEditMode's templates. `select` also takes `values` as a function, entries with `disabled`,
+  `scroll` (menu height) and `text(value)` for the shown text. `range` also takes `min`/`max`/`step`
+  as functions and `editable = true` for a click-to-type value (Enter passes the typed text to
+  `set`, Escape discards).
+- `button`: `click()`, half the row's width on the native dialog button template.
+- `text`: a wrapped message from `get()`, as tall as its text.
+
 Headers and rows are created once per parent and reused by section `id` and row `key`; only what a
-pass leaves out is hidden, so a click or drag in progress survives a redraw. It is step 1 of moving
-every Edit Mode window onto one renderer: add new row types here, never a second renderer.
+pass leaves out is hidden, so a click or drag in progress survives a redraw. `changed` runs after
+every click; redraw there. `core:RefreshEditModeSections(parent)` refreshes the last pass's rows in
+place for polling and returns true when the layout itself must run again. Add new row types here,
+never a second renderer.
+
+## Position section (`editmodeposition.lua`)
+
+`core:CreateEditModePositionSection(id, binding)` returns a section for the renderer: Scale,
+Anchor, AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow with the value),
+"Quick anchor to frame", Revert and the last refusal message. The binding
+(`SeamlessCore.EditModePositionBinding`) reads, validates and applies; the section only builds rows
+and drops changes once `isCurrent()` is false. Build one per selected frame. SeamlessUI uses it for
+Blizzard frames; Seamless frames still use `GetEditModePositionSettings` until they move to the
+shared window.
 
 ## Settings for Blizzard systems (`systemoptions.lua`)
 

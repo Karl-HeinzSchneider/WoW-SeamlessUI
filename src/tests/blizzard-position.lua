@@ -93,6 +93,9 @@ local function frame(name, parent)
     function f:GetHeight()
         return 1080
     end
+    function f:GetStringHeight()
+        return 12
+    end
     for _, key in ipairs({
         "SetHeight",
         "SetSize",
@@ -107,9 +110,11 @@ local function frame(name, parent)
     end
     return f
 end
+local createdFrames = {}
 function CreateFrame(_, name, parent, template)
     local f = frame(name, parent)
     f.template = template
+    createdFrames[#createdFrames + 1] = f
     if template == "EditModeSettingSliderTemplate" then
         f.Label = frame()
         f.Slider = frame()
@@ -269,10 +274,48 @@ function app.blizzardEditMode:GetSelectedFrame()
         return selected, selectedSpec
     end
 end
+local collapsed = {}
+function app.core:GetEditModePositionSectionKey()
+    return "settings:position"
+end
+function app.core:IsEditModeSectionCollapsed(key)
+    return collapsed[key] == true
+end
+function app.core:SetEditModeSectionCollapsed(key, value)
+    collapsed[key] = value
+end
+function app.core:CreateEditModeHeader(parent)
+    local header = frame(nil, parent)
+    header.SetHeaderText, header.UpdateCollapsedState = function() end, function() end
+    return header
+end
 local coreApp = { addon = app.core }
 assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
+-- Core's real row renderer and Position section draw the controls.
+assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", coreApp)
+assert(loadfile("Seamless/src/core/editmodeposition.lua"))("Seamless", coreApp)
 assert(loadfile("SeamlessUI/src/features/blizzardposition.lua"))("SeamlessUI", app)
 local position = app.blizzardPosition
+-- The Position section laid out like the extended window does, with each row by its key. A click
+-- or commit lays it out again, like the window's redraw.
+local function createView(service)
+    local view = { parent = frame(), controls = {} }
+    function view:Refresh(system)
+        self.system = system
+        self.section = service:GetSection(system)
+        app.core:LayoutEditModeSections(self.parent, { self.section }, 0, false, function()
+            self:Refresh(self.system)
+        end)
+        for _, created in ipairs(createdFrames) do
+            if created.parent == self.parent and created.option then
+                self.controls[created.option.key] = created
+            end
+        end
+        self.RevertButton = self.controls.revert and self.controls.revert.Button
+        self.AnchorButton = self.controls.quickAnchor and self.controls.quickAnchor.Button
+    end
+    return view
+end
 local values = position:Read(player)
 assert(values.offsetX == 120 and values.relativeTo == "UIParent")
 values.offsetX = -42.5
@@ -324,7 +367,7 @@ enabled = true
 app.db.profile.blizzardEditMode.frames.player.addPosition = false
 reject({ offsetX = 99 })
 app.db.profile.blizzardEditMode.frames.player.addPosition = true
-local view = position:Create(frame())
+local view = createView(position)
 view:Refresh(player)
 local x, y = view.controls.offsetX, view.controls.offsetY
 assert(x.template == "EditModeSettingSliderTemplate" and y.template == "EditModeSettingSliderTemplate")
@@ -400,7 +443,7 @@ assert(position:Read(player).offsetX == -17.125 and position:Read(player).offset
 x.EditBox:SetFocus()
 x.EditBox:SetText("junk")
 x.EditBox.scripts.OnEscapePressed(x.EditBox)
-assert(not view.error and position:Read(player).offsetX == -17.125)
+assert(not view.section.error and position:Read(player).offsetX == -17.125)
 -- Numeric input can exceed the screen-sized slider range without being clamped.
 x.EditBox:SetFocus()
 x.EditBox:SetText("-5000.25")
@@ -427,7 +470,7 @@ player.systemInfo = draft.systems[1]
 view:Refresh(player)
 assert(x.Slider.value == 120 and saves == 0)
 assert(view.RevertButton.template == "EditModeSystemSettingsDialogButtonTemplate")
-assert(view.RevertButton.width == view:GetWidth() / 2)
+assert(view.RevertButton.width == view.controls.revert:GetWidth() / 2)
 assert(not view.RevertButton.enabled)
 -- Detect watched fields changed by native dragging, and preserve unrelated data.
 draft.systems[1].anchorInfo.offsetX = 350
@@ -487,10 +530,10 @@ TargetFrame:SetPoint("TOP", player, "BOTTOM", 0, 0)
 view:Refresh(player)
 assert(view.RevertButton.enabled)
 view.RevertButton.click()
-assert(view.error and position:Read(player).relativeTo == "UIParent" and view.RevertButton.enabled)
+assert(view.section.error and position:Read(player).relativeTo == "UIParent" and view.RevertButton.enabled)
 TargetFrame:ClearAllPoints()
 view.RevertButton.click()
-assert(not view.error and position:Read(player).relativeTo == "TargetFrame" and not view.RevertButton.enabled)
+assert(not view.section.error and position:Read(player).relativeTo == "TargetFrame" and not view.RevertButton.enabled)
 -- Restore the secondary anchor and default-position metadata as one position state.
 player.savedSystemInfo.anchorInfo2 =
     { point = "BOTTOM", relativeTo = "Minimap", relativePoint = "TOP", offsetX = 0, offsetY = 10 }
@@ -498,7 +541,7 @@ player.savedSystemInfo.isInDefaultPosition = true
 Minimap:SetPoint("CENTER", player, "CENTER", 0, 0)
 view:Refresh(player)
 view.RevertButton.click()
-assert(view.error and draft.systems[1].anchorInfo2 == nil)
+assert(view.section.error and draft.systems[1].anchorInfo2 == nil)
 Minimap:ClearAllPoints()
 view.RevertButton.click()
 assert(draft.systems[1].anchorInfo2.relativeTo == "Minimap" and draft.systems[1].isInDefaultPosition)
@@ -518,9 +561,10 @@ L["Anchor"], L["Top right"], L["Revert changes"] = "Translated anchor", "Transla
 L["X and Y must be finite numbers."] = "Translated numeric error"
 local coreApp = { addon = app.core }
 assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
+assert(loadfile("Seamless/src/core/editmodeposition.lua"))("Seamless", coreApp)
 assert(loadfile("SeamlessUI/src/features/blizzardposition.lua"))("SeamlessUI", app)
 local localizedPosition = app.blizzardPosition
-local localizedView = localizedPosition:Create(frame())
+local localizedView = createView(localizedPosition)
 localizedView:Refresh(player)
 assert(localizedView.controls.point.Label.text == "Translated anchor")
 assert(localizedView.RevertButton.text == "Translated revert")
@@ -589,7 +633,7 @@ EditModeManagerFrame.GetActiveLayoutSystemInfo = petLayout
 -- "Quick anchor to frame" offers the dropdown's frames, minus UIParent and frames that depend on
 -- the selected one, and applies the picked anchor to the live draft.
 selected = player
-view.error = nil
+view.section.error = nil
 view:Refresh(player)
 assert(view.AnchorButton.template == "EditModeSystemSettingsDialogButtonTemplate" and view.AnchorButton.enabled)
 view.AnchorButton.click()
@@ -603,7 +647,19 @@ assert(offered.TargetFrame and not offered.UIParent and not offered.PetFrame, "U
 picker.apply("TOPLEFT", "TargetFrame", "BOTTOMRIGHT", 5, -5)
 local picked = position:Read(player)
 assert(picked.point == "TOPLEFT" and picked.relativeTo == "TargetFrame" and picked.relativePoint == "BOTTOMRIGHT")
-assert(picked.offsetX == 5 and picked.offsetY == -5 and not view.error)
+assert(picked.offsetX == 5 and picked.offsetY == -5 and not view.section.error)
+-- The window's poll picks the pick up in place, without laying the rows out again.
+local anchorFrameRow = view.controls.relativeTo
+anchorFrameRow.points = {}
+assert(not app.core:RefreshEditModeSections(view.parent))
+assert(anchorFrameRow.Dropdown.text == "Target frame" and #anchorFrameRow.points == 0)
+-- A refusal message adds a row, so the poll asks for a new layout.
+view.section.error = "Refused"
+assert(app.core:RefreshEditModeSections(view.parent))
+view:Refresh(player)
+assert(view.controls.error.Text.text == "Refused" and not app.core:RefreshEditModeSections(view.parent))
+view.section.error = nil
+view:Refresh(player)
 -- A pick that lands after the selection changed is dropped.
 view.AnchorButton.click()
 selected = frame("OtherFrame")
@@ -611,10 +667,10 @@ picker.apply("LEFT", "TargetFrame", "RIGHT", 5, 0)
 assert(position:Read(player).point == "TOPLEFT")
 -- Scale leads the rows; without a native size setting it shows the frame's scale, greyed out.
 selected = player
-view.error = nil
+view.section.error = nil
 local scaleRow = view.controls.scale
 assert(scaleRow.template == "EditModeSettingSliderTemplate" and scaleRow.Label.text == "Scale")
-assert(scaleRow.points[1][3] == 0 and view.controls.point.points[1][3] == -35)
+assert(view.controls.point.points[1][3] - scaleRow.points[1][3] == -35)
 view:Refresh(player)
 assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown and scaleRow.Slider.value == 1)
 assert(scaleRow.Slider.min == 0.5 and scaleRow.Slider.max == 2)
@@ -645,12 +701,12 @@ scaleRow.EditBox:SetFocus()
 assert(scaleRow.EditBox:GetText() == "1.35")
 scaleRow.EditBox:SetText("1.62")
 scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
-assert(size == 160 and not view.error, "typed values snap to the native step")
+assert(size == 160 and not view.section.error, "typed values snap to the native step")
 scaleRow.EditBox:SetFocus()
 scaleRow.EditBox:SetText("3")
 scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
-assert(size == 160 and view.error, "out-of-range values are rejected")
-view.error = nil
+assert(size == 160 and view.section.error, "out-of-range values are rejected")
+view.section.error = nil
 -- A native change (the dialog's own Frame Size slider) is picked up by the poll.
 size = 180
 view:Refresh(player)

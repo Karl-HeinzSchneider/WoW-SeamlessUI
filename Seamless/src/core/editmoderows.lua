@@ -164,8 +164,10 @@ function creators.range(parent, changed, option)
     row.cbrHandles:Unregister()
     row.cbrHandles:RegisterCallback(row.Slider, MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
         if not row.syncing then
+            -- Keep the slider where it is being dragged rather than initializing it again, also
+            -- when the setter redraws the window before returning.
+            row.value = value
             row.option.set(value)
-            -- Keep the slider where it is being dragged rather than initializing it again.
             row.value = row.option.get()
             changed()
         end
@@ -210,7 +212,7 @@ function creators.range(parent, changed, option)
 end
 
 function creators.button(parent, changed)
-    -- Half the row's width and centered, like the buttons of Blizzard's settings dialog.
+    -- Centered; half the row's width unless the option sets one, like Blizzard's dialog buttons.
     local row = CreateFrame("Frame", nil, parent)
     row.Button = CreateFrame("Button", nil, row, "EditModeSystemSettingsDialogButtonTemplate")
     row.Button:SetPoint("TOP")
@@ -222,8 +224,22 @@ function creators.button(parent, changed)
     end)
     function row:Refresh(enabled)
         self.Button:SetText(self.option.name)
-        self.Button:SetWidth(self:GetWidth() / 2)
+        self.Button:SetWidth(self.option.width or self:GetWidth() / 2)
         self.Button:SetEnabled(enabled)
+    end
+    return row
+end
+
+function creators.divider(parent)
+    -- The line LibEditMode's dialog draws between its settings and its buttons.
+    local row = CreateFrame("Frame", nil, parent)
+    row.Line = row:CreateTexture(nil, "ARTWORK")
+    row.Line:SetSize(330, 16)
+    row.Line:SetPoint("CENTER")
+    row.Line:SetTexture([[Interface\FriendsFrame\UI-FriendsFrame-OnlineDivider]])
+    row.rowHeight = 16
+    function row:Refresh()
+        self:SetHeight(self.rowHeight)
     end
     return row
 end
@@ -253,11 +269,20 @@ local function state(parent, changed)
     return current
 end
 
+-- A section without a shown header (no name, or a hidden one) never collapses its rows.
+local function hasHeader(section)
+    return section.name ~= nil and not evaluate(section.hidden)
+end
+
+local function isCollapsed(section)
+    return hasHeader(section) and addon:IsEditModeSectionCollapsed(section.key)
+end
+
 -- Which headers are collapsed and which rows are shown: when it changes, the layout does too.
 local function layoutKey(sections)
     local parts = {}
     for _, section in ipairs(sections) do
-        local collapsed = addon:IsEditModeSectionCollapsed(section.key)
+        local collapsed = isCollapsed(section)
         parts[#parts + 1] = section.id .. (collapsed and "-" or "+")
         if not collapsed then
             for _, option in ipairs(section.options) do
@@ -277,8 +302,9 @@ end
 
 ---@class SeamlessCore.EditModeSection
 ---@field id string Unique among the sections drawn in one parent; rows are reused by id and key.
----@field name string Header text.
----@field key string Collapse key, see IsEditModeSectionCollapsed.
+---@field name string? Header text; without one the rows have no header and never collapse.
+---@field key string? Collapse key, see IsEditModeSectionCollapsed.
+---@field hidden (boolean|fun(): boolean)? Hides the header only; its rows show uncollapsed.
 ---@field options table[] Rows: key, type, name, desc?, get, set, hidden?, disabled? (see Seamless/CLAUDE.md).
 
 ---Lay out sections in parent from y down, each under a collapsible header; returns the bottom.
@@ -296,27 +322,29 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
     local used, shown = {}, {}
     for _, section in ipairs(sections) do
         local key = section.key
-        local header = current.headers[section.id]
-        if not header then
-            header = addon:CreateEditModeHeader(parent, function()
-                if InCombatLockdown() then
-                    return
-                end
-                addon:SetEditModeSectionCollapsed(key, not addon:IsEditModeSectionCollapsed(key))
-                current.changed()
-            end)
-            current.headers[section.id] = header
+        local collapsed = isCollapsed(section)
+        if hasHeader(section) then
+            local header = current.headers[section.id]
+            if not header then
+                header = addon:CreateEditModeHeader(parent, function()
+                    if InCombatLockdown() then
+                        return
+                    end
+                    addon:SetEditModeSectionCollapsed(key, not addon:IsEditModeSectionCollapsed(key))
+                    current.changed()
+                end)
+                current.headers[section.id] = header
+            end
+            header:SetHeaderText(section.name)
+            header:UpdateCollapsedState(collapsed)
+            if spaced then
+                y = y + GAP
+            end
+            place(header, 16, y)
+            used[header] = true
+            y = y + HEADER
+            spaced = true
         end
-        header:SetHeaderText(section.name)
-        local collapsed = addon:IsEditModeSectionCollapsed(key)
-        header:UpdateCollapsedState(collapsed)
-        if spaced then
-            y = y + GAP
-        end
-        place(header, 16, y)
-        used[header] = true
-        y = y + HEADER
-        spaced = true
         if not collapsed then
             local gap = GAP
             for _, option in ipairs(section.options) do
@@ -343,6 +371,7 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
                     shown[#shown + 1] = row
                     y = y + (row.rowHeight or ROW)
                     gap = ROW_GAP
+                    spaced = true
                 end
             end
         end

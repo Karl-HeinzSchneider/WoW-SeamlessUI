@@ -140,31 +140,36 @@ Run `lua src/tests/editmode-panel.lua`.
 
 ## Selected frame settings (`editmodelib.lua`)
 
+The settings window of a selected Seamless frame is Core's own frame
+`SeamlessEditModeSettingsDialog`. The namespaced library keeps selection, dragging and the
+OnHide reset; Core only replaces `internal:CreateDialog` (before the library creates its dialog)
+so it returns this window. The vendored file stays untouched.
+
+- The window is drawn by the shared renderer (`core:LayoutEditModeSections`): it splits the
+  frame's settings into sections at each Header, appends Reset To Default, and lists the frame's
+  buttons plus Reset Position below. Fixed width (370), the list scrolls past 400 pixels or 60%
+  of the screen height, grows downward only and keeps its scroll offset across refreshes.
+- Supported kinds: Checkbox, Dropdown (`values`, `height` scrolls the menu), Slider (`minValue`,
+  `maxValue`, `valueStep`, `formatter`), `lib.SettingType.Header` and `lib.SettingType.Button`.
+  Any other kind raises an error: add it to `ConvertSetting` and the renderer first.
 - `lib.SettingType.Header` (via `core:CreateEditModeHeader`): a collapsible header styled like the
-  reputation headers (`name`, optional `key`, `hidden`). It hides every row up to the next
-  header; collapsed sections are saved in `SeamlessDB.global.editModeCollapsed`
-  (`core:Is/SetEditModeSectionCollapsed`). Position sections start collapsed.
+  reputation headers (`name`, optional `key`, `hidden`). Collapsed sections are saved in
+  `SeamlessDB.global.editModeCollapsed` (`core:Is/SetEditModeSectionCollapsed`). Position
+  sections start collapsed.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
 - `core:GetEditModePositionSettings(spec)`: the Position header plus Scale (from `spec.scale`, the
-  settings panel's binding; disabled without one), Anchor, AnchorParent, AnchorFrame, X, Y and "Quick anchor to frame" (targets `spec.anchorFrames`, resolved by optional
+  settings panel's binding; disabled without one), Anchor, AnchorParent, AnchorFrame, X, Y and
+  "Quick anchor to frame" (targets `spec.anchorFrames`, resolved by optional
   `spec.anchorFrame(value)` or the global name; UIParent excluded). Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).
-- The settings list scrolls past 400 pixels or 60% of the screen height. The dialog opens
-  16 pixels beside its frame (the side with more room), grows downward only and never changes
-  width.
-- `core:SetEditModeDialogsBesideManager(enabled)` (off by default, SeamlessUI sets it) opens the
-  dialog of a new selection 4 pixels right of Blizzard's Edit Mode window instead;
-  `core:PlaceBesideEditModeManager(dialog)` does that placement for any dialog (SeamlessUI uses it
-  for Blizzard's `EditModeSystemSettingsDialog`). Both only re-anchor, in absolute coordinates.
-- While a slider is held, `RefreshFrameSettings` of the same frame only refreshes rows in place
-  (a full rebuild would end the drag); one full update follows when it is released. Setters may
-  keep refreshing the dialog.
-
-The dialog is the public frame `SeamlessEditModeSettingsDialog`: the library creates it unnamed, so
-its `CreateDialog` runs with a `setfenv` environment whose `CreateFrame` names the one frame it
-parents to UIParent. The vendored file and the global `CreateFrame` stay untouched.
+- The window opens 16 pixels beside its frame (the side with more room).
+  `core:SetEditModeDialogsBesideManager(enabled)` (off by default, SeamlessUI sets it) opens it
+  4 pixels right of Blizzard's Edit Mode window instead; `core:PlaceBesideEditModeManager(dialog)`
+  does that placement for any dialog. Both only re-anchor, in absolute coordinates.
+- Rows are converted once per setting and reused, so refreshes while a slider is held never end
+  the drag.
 
 It asserts on the library internals it relies on: rerun `lua src/tests/editmode-dialog.lua`
 whenever LibEditMode is updated.

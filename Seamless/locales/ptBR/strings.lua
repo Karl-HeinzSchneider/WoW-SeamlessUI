@@ -185,7 +185,6 @@ end
 -- L["Insert (short)"] = "Ins"
 -- L["Left Arrow (short)"] = "Lt"
 -- L["Menu order"] = "Menu order"
--- L["Menu size"] = "Menu size"
 -- L["Meta (short)"] = "Cm"
 -- L["Mouse Button %d (short)"] = "M%d"
 -- L["Mouse Wheel Down (short)"] = "WD"

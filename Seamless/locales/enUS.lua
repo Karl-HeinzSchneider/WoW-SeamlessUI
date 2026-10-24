@@ -182,7 +182,6 @@ L["Horizontal"] = true
 L["Insert (short)"] = "Ins"
 L["Left Arrow (short)"] = "Lt"
 L["Menu order"] = true
-L["Menu size"] = true
 L["Meta (short)"] = "Cm"
 L["Mouse Button %d (short)"] = "M%d"
 L["Mouse Wheel Down (short)"] = "WD"

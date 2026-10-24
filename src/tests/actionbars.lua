@@ -273,6 +273,7 @@ function addon:NewModule()
     return microModule
 end
 Enum.EditModeMicroMenuSetting = { Orientation = 0, Order = 1, Size = 2 }
+Enum.EditModeSystem.MicroMenu = 20
 Enum.MicroMenuOrientation = { Horizontal = 0, Vertical = 1 }
 Enum.MicroMenuOrder = { Default = 0, Reverse = 1 }
 MicroMenuContainer = {}
@@ -321,17 +322,29 @@ end
 MicroMenu = { BorderArt = Art(0.8), BackgroundArt = Art(1), button = Art(1) }
 app.db.profile.microMenu = { hideArtwork = false }
 load("micromenu.lua")
-local menu = app.MicroMenuOptions().args
+local menuSpec
+function app.core:RegisterEditModeSystemOptions(_, value)
+    menuSpec = value
+end
+function app.core:RefreshEditModeSystemOptions() end
+microModule:OnInitialize()
+assert(menuSpec.name == L["Style"] and menuSpec.system == 20 and #menuSpec.options == 3)
+local group = app.MicroMenuOptions()
+assert(group.name == L["Style"])
+local menu = group.args
 assert(menu.orientation.get() == 0 and menu.order.default() == 0)
-assert(menu.size.min == 70 and menu.size.max == 200 and menu.size.step == 5)
+assert(menu.size == nil, "size is only exposed through Position and scale")
 menu.orientation.set(nil, 1)
 menu.order.set(nil, 1)
-menu.size.set(nil, 125)
-assert(native[0] == 1 and native[1] == 1 and native[2] == 125)
+assert(native[0] == 1 and native[1] == 1 and native[2] == 100)
+menuSpec.options[1].set(0)
+assert(menu.orientation.get() == 0 and menuSpec.options[1].values[1].value == 0)
+menuSpec.options[2].set(0)
+assert(menu.order.get() == 0)
 canEdit = false
-assert(menu.orientation.disabled() and menu.order.disabled() and menu.size.disabled())
+assert(menu.orientation.disabled() and menu.order.disabled() and menuSpec.options[1].disabled())
 canEdit = true
-menu.hideArtwork.set(nil, true)
+menuSpec.options[3].set(true)
 app.RefreshMicroMenu()
 assert(MicroMenu.BorderArt.alpha == 0 and MicroMenu.BackgroundArt.alpha == 0 and MicroMenu.button.alpha == 1)
 app.db.profile = { microMenu = { hideArtwork = false } }

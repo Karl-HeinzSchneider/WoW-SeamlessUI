@@ -5,6 +5,48 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local module = app.addon:NewModule("MicroMenu", "AceEvent-3.0")
 local originalAlpha = {}
 
+function module:OnInitialize()
+    if not Enum.EditModeSystem or not Enum.EditModeSystem.MicroMenu then
+        return
+    end
+    -- Adapt the settings panel's declarations so both surfaces share every accessor.
+    local args = app.MicroMenuOptions().args
+    local rows = {}
+    for _, key in ipairs({ "orientation", "order", "hideArtwork" }) do
+        local option = args[key]
+        if option then
+            local row = {
+                key = key,
+                type = option.type,
+                name = option.name,
+                default = option.default,
+                disabled = option.disabled,
+                get = option.get,
+                set = function(value)
+                    option.set(nil, value)
+                    app.core:RefreshOptions("SeamlessActionBars")
+                end,
+            }
+            if option.type == "select" then
+                row.values = {}
+                for _, value in ipairs(option.sorting) do
+                    row.values[#row.values + 1] = { text = option.values[value], value = value }
+                end
+            end
+            rows[#rows + 1] = row
+        end
+    end
+    app.core:RegisterEditModeSystemOptions("SeamlessActionBars:microMenu", {
+        system = Enum.EditModeSystem.MicroMenu,
+        name = L["Style"],
+        key = "SeamlessActionBars:microMenu:style",
+        enabled = function()
+            return module:IsEnabled() and app.addon:IsEnabled()
+        end,
+        options = rows,
+    })
+end
+
 -- Only the surrounding Camelot artwork; the buttons and their hit areas stay intact.
 local function applyArtwork(restore)
     for _, key in ipairs({ "BorderArt", "BackgroundArt" }) do
@@ -30,17 +72,19 @@ end
 
 function app.RefreshMicroMenu()
     if module:IsEnabled() then
-        applyArtwork()
+        module:Refresh()
     end
 end
 
 function module:Refresh()
     applyArtwork()
+    app.core:RefreshEditModeSystemOptions()
 end
 
 function module:OnDisable()
     self:UnregisterAllEvents()
     applyArtwork(true)
+    app.core:RefreshEditModeSystemOptions()
 end
 
 -- Native settings go through the same layout service as Position: Save/Revert owns the
@@ -91,33 +135,6 @@ function app.MicroMenuOptions()
             [order.Reverse] = L["Reverse order"],
         }, { order.Default, order.Reverse }, 20)
     end
-    if settings.Size then
-        local scale = app.core:GetNativeSettingScale(function()
-            return MicroMenuContainer
-        end, settings.Size)
-        args.size = {
-            type = "range",
-            name = L["Menu size"],
-            order = 30,
-            editMode = true,
-            min = (scale.min or 0.7) * 100,
-            max = (scale.max or 2) * 100,
-            step = (scale.step or 0.05) * 100,
-            default = function()
-                local value = scale.default()
-                return value and value * 100
-            end,
-            disabled = function()
-                return not service:CanEdit(MicroMenuContainer) or scale.disabled()
-            end,
-            get = function()
-                return scale.get() * 100
-            end,
-            set = function(_, value)
-                scale.set(value / 100)
-            end,
-        }
-    end
     args.hideArtwork = {
         type = "toggle",
         name = L["Hide menu border and background"],
@@ -134,5 +151,5 @@ function app.MicroMenuOptions()
             end
         end,
     }
-    return { type = "group", inline = true, name = L["Micro menu"], order = 20, args = args }
+    return { type = "group", inline = true, name = L["Style"], order = 20, args = args }
 end

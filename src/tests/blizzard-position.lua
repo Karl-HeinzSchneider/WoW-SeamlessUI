@@ -836,6 +836,28 @@ function EditModeManagerFrame:IsEditModeActive()
 end
 player.isHighlighted = false
 assert(not config.x.disabled(), "outside Edit Mode, preview checkboxes do not restrict layout editing")
+-- Vehicle leave also honors the saved account checkbox outside Edit Mode. A
+-- stale highlight must not override it, and old callbacks must not save edits.
+Enum.EditModeSystem = { VehicleLeaveButton = 88 }
+Enum.EditModeAccountSetting = { ShowVehicleLeaveButton = 99 }
+local vehiclePreview = 0
+function C_EditMode.GetAccountSettings()
+    return { { setting = 98, value = 1 }, { setting = 99, value = vehiclePreview } }
+end
+local originalSystem = player.system
+player.system = 88
+player.isHighlighted = true
+local beforeVehicleEdit = config.x.get()
+assert(config.x.disabled() and config.reset.disabled())
+config.x.set(nil, 999)
+assert(not native:Apply(player, native:Read(player)))
+assert(config.x.get() == beforeVehicleEdit)
+vehiclePreview = 1
+assert(not config.x.disabled(), "checking the saved vehicle preview re-enables editing")
+vehiclePreview = 0
+assert(config.x.disabled(), "getters must re-read the saved checkbox after it changes")
+player.system = originalSystem
+player.isHighlighted = false
 local liveSaves = 0
 function EditModeManagerFrame:SaveLayouts()
     liveSaves = liveSaves + 1

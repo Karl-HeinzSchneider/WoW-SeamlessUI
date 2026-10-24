@@ -223,6 +223,21 @@ end
 function position:CanEdit(system)
     local manager = EditModeManagerFrame
     local override = LibStub("LibEditModeOverride-1.0")
+    -- The vehicle preview checkbox is an account setting, not a layout setting.
+    -- Honor it outside Edit Mode too, where isHighlighted is always false.
+    local vehicleSystem = Enum.EditModeSystem and Enum.EditModeSystem.VehicleLeaveButton
+    if system and vehicleSystem and system.system == vehicleSystem then
+        local enabled = false
+        for _, setting in ipairs(C_EditMode.GetAccountSettings()) do
+            if setting.setting == Enum.EditModeAccountSetting.ShowVehicleLeaveButton then
+                enabled = setting.value == 1
+                break
+            end
+        end
+        if not enabled then
+            return false
+        end
+    end
     return system ~= nil
         and manager ~= nil
         and not InCombatLockdown()

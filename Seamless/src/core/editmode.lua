@@ -6,7 +6,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local addon = app.addon
 local lib = app.LibEditMode
 local registrations = {}
-local panel, scroll, content
+local panel, scroll, content, restore
 local framesHeader
 local refreshing = false
 local PADDING, HEADER, BOTTOM, GAP = 24, 44, 16, 6
@@ -16,6 +16,8 @@ local COLUMNS, COLUMN_GAP = 2, 10
 local SCREEN_MARGIN, MIN_VISIBLE = 8, 96
 -- Collapse key of the Frames header; editmodelib.lua starts it collapsed.
 local FRAMES_SECTION = "panel:frames"
+-- The minimized window is remembered account-wide with the collapsed sections, under this key.
+local MINIMIZED_KEY = "panel:minimized"
 
 local function Evaluate(value)
     if type(value) == "function" then
@@ -58,6 +60,27 @@ local function EnsurePanel()
     local title = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightLarge")
     title:SetPoint("TOP", 0, -15)
     title:SetText(L["SeamlessUI"])
+    -- Minimize sits where native windows put their close button. It swaps the window for a small
+    -- restore button under the main Edit Mode window; both are ours, nothing native is touched.
+    local minimize = CreateFrame("Button", nil, panel, "UIPanelCloseButtonNoScripts")
+    minimize:SetPoint("TOPRIGHT")
+    minimize:SetNormalAtlas("RedButton-Condense")
+    minimize:SetPushedAtlas("RedButton-Condense-Pressed")
+    minimize:SetHighlightAtlas("RedButton-Highlight", "ADD")
+    minimize:SetScript("OnClick", function()
+        app.SetEditModeSectionCollapsed(MINIMIZED_KEY, true)
+        addon:RefreshEditModeOptions()
+    end)
+    restore = CreateFrame("Button", nil, UIParent, "UIPanelButtonTemplate")
+    restore:Hide()
+    restore:SetFrameStrata("DIALOG")
+    restore:SetPoint("TOPRIGHT", EditModeManagerFrame, "BOTTOMRIGHT", 0, -2)
+    restore:SetText(L["SeamlessUI"])
+    restore:SetSize(restore:GetTextWidth() + 40, 26)
+    restore:SetScript("OnClick", function()
+        app.SetEditModeSectionCollapsed(MINIMIZED_KEY, false)
+        addon:RefreshEditModeOptions()
+    end)
     -- Rows live in a scroll child, like Blizzard's own Edit Mode settings container.
     scroll = CreateFrame("ScrollFrame", nil, panel, "ScrollFrameTemplate")
     scroll:SetPoint("TOPLEFT", PADDING, -HEADER)
@@ -164,6 +187,7 @@ function addon:RefreshEditModeOptions()
         if panel then
             panel:SetScript("OnUpdate", nil)
             panel:Hide()
+            restore:Hide()
         end
         return
     end
@@ -344,7 +368,9 @@ function addon:RefreshEditModeOptions()
         end
         scroll:SetHeight(visible)
         panel:SetHeight(HEADER + visible + BOTTOM)
-        panel:SetShown(count > 0)
+        local minimized = app.IsEditModeSectionCollapsed(MINIMIZED_KEY)
+        panel:SetShown(count > 0 and not minimized)
+        restore:SetShown(count > 0 and minimized)
     end
     refreshing = false
 end

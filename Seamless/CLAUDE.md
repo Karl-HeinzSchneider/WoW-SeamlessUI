@@ -133,6 +133,9 @@ core:RegisterEditModeOptions("MyAddon", {
 - `type = "custom"`: `create(parent)` returns an addon-owned frame parented to `parent`, with a
   height; optional `layout(frame, width, disabled)` returns its measured height and must honor
   `disabled`. Never reposition, reparent or register the row with Blizzard layout containers.
+- The minimize button in the panel's close-button corner hides it and shows a small restore button
+  (also ours, on UIParent) under the main Edit Mode window; clicking that brings the panel back.
+  The state is saved account-wide with the collapsed sections (key `"panel:minimized"`).
 - The panel scrolls when it would pass the screen bottom. It owns its UIParent frame; never touch
   native layout containers.
 

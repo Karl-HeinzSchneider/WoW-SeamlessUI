@@ -403,9 +403,9 @@ end
 app.core.RegisterEditModeOptions = function(_, _, spec)
     previewOptions = spec.options
 end
-app.core.GetEditModePositionSettings = function(_, spec)
+app.core.GetEditModePositionSetting = function(_, spec)
     positionSpecs[#positionSpecs + 1] = spec
-    return { { kind = "header", name = "Position", spec = spec } }
+    return { kind = "position", name = "Position", spec = spec }
 end
 app.core.GetPositionOptions = function(_, spec)
     return { type = "group", spec = spec }

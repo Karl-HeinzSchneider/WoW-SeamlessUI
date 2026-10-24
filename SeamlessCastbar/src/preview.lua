@@ -81,21 +81,23 @@ local function createPreview(key)
         onMoved(key, point, x, y)
     end, RESET, spec.name)
     local position = app.position
-    local settings = app.core:GetEditModePositionSettings({
-        get = function(field)
-            return position:Get(key)[field]
-        end,
-        set = function(field, value)
-            position:Set(key, field, value)
-        end,
-        anchorFrames = function()
-            return app.core:GetFramePositionService():GetAnchorFrames((position:Frames(key)))
-        end,
-        disabled = function()
-            return not position.active
-        end,
-        scale = position:ScaleOption(key),
-    })
+    local settings = {
+        app.core:GetEditModePositionSetting({
+            get = function(field)
+                return position:Get(key)[field]
+            end,
+            set = function(field, value)
+                position:Set(key, field, value)
+            end,
+            anchorFrames = function()
+                return app.core:GetFramePositionService():GetAnchorFrames((position:Frames(key)))
+            end,
+            disabled = function()
+                return not position.active
+            end,
+            scale = position:ScaleOption(key),
+        }),
+    }
     for _, setting in ipairs(app.LibEditModeSettings(key)) do
         settings[#settings + 1] = setting
     end

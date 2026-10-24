@@ -1251,9 +1251,9 @@ app.core.GetEditModeLibrary = function()
     return lem
 end
 local positionSpecs = {}
-app.core.GetEditModePositionSettings = function(_, spec)
+app.core.GetEditModePositionSetting = function(_, spec, options)
     positionSpecs[#positionSpecs + 1] = spec
-    return { { name = "Position", kind = lem.SettingType.Header }, { name = "X", kind = lem.SettingType.Slider } }
+    return { name = "Position", kind = "position", options = options }
 end
 app.db.profiles = { Original = app.db.profile }
 EventRegistry = { TriggerEvent = function() end }
@@ -1285,6 +1285,12 @@ local function setting(name)
         if entry.name == name then
             return entry
         end
+        -- Rows inside the Position section.
+        for _, option in ipairs(entry.options or {}) do
+            if option.name == name then
+                return option
+            end
+        end
     end
     error("Missing control: " .. name)
 end
@@ -1294,8 +1300,10 @@ local order = {}
 for index, entry in ipairs(controls[meter]) do
     order[entry.name] = index
 end
-assert(order.Position == 1 and order["Lock position outside Edit Mode"] == 2 and order.Position < order.X)
-assert(order.X < order.Window and order.Window < order["Lock size"])
+-- The lock sits at the top of the Position section, right under its header.
+local positionOptions = controls[meter][1].options
+assert(order.Position == 1 and #positionOptions == 1 and positionOptions[1].name == "Lock position outside Edit Mode")
+assert(order.Position < order.Window and order.Window < order["Lock size"])
 assert(order.Style + 1 == order.Numbers and order.Numbers + 1 == order.Skin, "Numbers opens the Style section")
 local positionSpec = positionSpecs[1]
 assert(positionSpec.get("relativeTo") == (meter.config.anchorTo and tostring(meter.config.anchorTo) or "screen"))
@@ -1314,7 +1322,7 @@ for _, entry in ipairs(positionSpec.anchorFrames()) do
 end
 assert(order.Skin < order["Modify global style"] and order["Modify global style"] < order["Bar height"])
 assert(setting("Style").kind == lem.SettingType.Header)
-assert(setting("Window").kind == lem.SettingType.Header and controls[meter][1].kind == lem.SettingType.Header)
+assert(setting("Window").kind == lem.SettingType.Header and controls[meter][1].kind == "position")
 assert(setting("Modify global style").default and setting("Modify global style").get())
 local sharedStyle = app.db.profile.skins[meter.config.skin].settings
 local sharedHeight, sharedAlpha, sharedClasses =

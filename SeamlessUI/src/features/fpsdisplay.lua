@@ -228,7 +228,7 @@ function module:OnEnable()
                 end,
             },
         }
-        local position = app.core:GetEditModePositionSettings({
+        settings[#settings + 1] = app.core:GetEditModePositionSetting({
             get = function(key)
                 return CurrentPosition()[key]
             end,
@@ -246,9 +246,6 @@ function module:OnEnable()
                 return app.blizzardPosition:GetAnchorFrames(anchor)
             end,
         })
-        for _, setting in ipairs(position) do
-            settings[#settings + 1] = setting
-        end
         lib:AddFrameSettings(anchor, settings)
         CreateDisplay()
         HookNativeFramerate()

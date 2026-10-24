@@ -157,10 +157,14 @@ so it returns this window. The vendored file stays untouched.
   `SeamlessDB.global.editModeCollapsed` (`core:Is/SetEditModeSectionCollapsed`). Position
   sections start collapsed.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
-- `core:GetEditModePositionSettings(spec)`: the Position header plus Scale (from `spec.scale`, the
-  settings panel's binding; disabled without one), Anchor, AnchorParent, AnchorFrame, X, Y and
-  "Quick anchor to frame" (targets `spec.anchorFrames`, resolved by optional
-  `spec.anchorFrame(value)` or the global name; UIParent excluded). Collapse key
+- `core:GetEditModePositionSetting(spec, options)`: one `lib.SettingType.Position` frame setting
+  that the window draws as the shared Position section (`editmodeposition.lua`), the same one
+  Blizzard frames get: Scale (from `spec.scale`, the settings panel's binding; greyed out without
+  one), Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
+  `spec.anchorFrames`, resolved by optional `spec.anchorFrame(value)` or the global name;
+  UIParent excluded) and Revert (back to the position at selection). Only changed fields reach
+  `spec.set`. `options` are LibEditMode settings shown at the top of the section (Reset To Default
+  resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).
@@ -231,8 +235,7 @@ Anchor, AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow
 "Quick anchor to frame", Revert and the last refusal message. The binding
 (`SeamlessCore.EditModePositionBinding`) reads, validates and applies; the section only builds rows
 and drops changes once `isCurrent()` is false. Build one per selected frame. SeamlessUI uses it for
-Blizzard frames; Seamless frames still use `GetEditModePositionSettings` until they move to the
-shared window.
+Blizzard frames; Seamless frames get it through `GetEditModePositionSetting`.
 
 ## Settings for Blizzard systems (`systemoptions.lua`)
 

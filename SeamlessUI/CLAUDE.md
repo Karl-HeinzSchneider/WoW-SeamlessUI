@@ -10,7 +10,8 @@ here without a migration.
 - `src/features/xpbartooltip.lua`: secure post-hooks on XP/rested tooltips, with quest totals
   from Core. Owns cap/rate settings and migration of the former Core tooltip settings.
 - `blizzardposition.lua`: selected-system position view over Core's position service.
-- `systemoptions.lua`: renders sections registered through `RegisterEditModeSystemOptions`.
+- `systemoptions.lua`: places sections registered through `RegisterEditModeSystemOptions`, drawn by
+  Core's `LayoutEditModeSections`.
 - `blizzardeditmode.lua`: extension panel below native per-frame settings.
 - `fpsdisplay.lua`: FPS/latency overlay and Edit Mode integration.
 

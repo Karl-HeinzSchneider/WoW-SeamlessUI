@@ -146,6 +146,8 @@ function app.core:SendMessage(message)
     end
 end
 assert(loadfile("Seamless/src/core/systemoptions.lua"))("Seamless", { addon = app.core })
+-- Core's real row renderer draws the registered sections.
+assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", { addon = app.core })
 app.blizzardPosition = {
     Create = function()
         local view = frame()

@@ -93,6 +93,9 @@ end
 function methods:SetText(text)
     self.text = text
 end
+function methods:GetText()
+    return self.text
+end
 function methods:SetScrollChild(child)
     self.scrollChild = child
 end
@@ -517,6 +520,20 @@ size.onValueChanged(nil, 14)
 assert(store.size == 14 and refreshes == 1 and inits == 0, "the dragged slider is left alone")
 assert(Row(list, "Size") == size, "rows are reused, never rebuilt")
 size.Slider.Init = init
+-- Every slider takes a typed value: clamped to its range and snapped to its step.
+assert(size.EditBox and size.Slider.width == 160, "plain sliders have the input box too")
+local function typeSize(text)
+    size.EditBox.scripts.OnEditFocusGained(size.EditBox)
+    size.EditBox:SetText(text)
+    size.EditBox.scripts.OnEnterPressed(size.EditBox)
+    size.EditBox.scripts.OnEditFocusLost(size.EditBox)
+end
+typeSize("7")
+assert(store.size == 8, "typed values snap to the step")
+typeSize("99")
+assert(store.size == 20, "typed values stay inside the range")
+typeSize("abc")
+assert(store.size == 20, "text is refused")
 
 -- Collapsing a section hides its rows, is remembered, and keeps the width.
 scroll.verticalScroll = 0

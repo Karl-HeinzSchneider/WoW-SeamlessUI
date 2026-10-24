@@ -127,6 +127,31 @@ function methods:Layout()
         self.height = self.fixedHeight
     end
 end
+function methods:SetupMenu(generator)
+    self.generator = generator
+end
+function methods:SetDefaultText(text)
+    self.defaultText = text
+end
+function methods:SetChecked(value)
+    self.checked = value
+end
+function methods:Init(value, min, max, steps)
+    self.value, self.min, self.max, self.steps = value, min, max, steps
+end
+function methods:SetTextColor() end
+function methods:GetStringHeight()
+    return 12
+end
+function methods:HasFocus()
+    return false
+end
+function methods:SetOnClickHandler(callback)
+    self.click = callback
+end
+function methods:SetEnabled(value)
+    self.enabled = value
+end
 for _, name in ipairs({
     "SetFrameStrata",
     "SetFrameLevel",
@@ -138,8 +163,10 @@ for _, name in ipairs({
     "SetTexture",
     "SetJustifyH",
     "SetJustifyV",
-    "SetOnClickHandler",
-    "SetEnabled",
+    "GenerateMenu",
+    "SetWordWrap",
+    "SetScrollMode",
+    "SetPropagateKeyboardInput",
     "SetPropagateMouseMotion",
     "OnLoad",
     "SetHighlightTexture",
@@ -237,9 +264,33 @@ function CreateFrame(kind, name, parent, template)
         frame.ScrollBar = object("EventFrame", frame)
     end
     if template == "UIPanelCloseButton" then
-        frame.HookScript = function() end
+        frame.HookScript = function(self, event, callback)
+            self.scripts[event] = callback
+        end
+    end
+    -- The row templates the shared renderer uses.
+    if template == "EditModeSettingCheckboxTemplate" then
+        frame.Button, frame.Label = object("CheckButton", frame), frame:CreateFontString()
+    elseif template == "EditModeSettingSliderTemplate" then
+        frame.Label, frame.Slider = frame:CreateFontString(), object("Slider", frame)
+        frame.Slider.MinText, frame.Slider.MaxText = object("FontString", frame), object("FontString", frame)
+        frame.Slider.RightText = object("FontString", frame)
+        frame.cbrHandles = {
+            Unregister = function() end,
+            RegisterCallback = function(_, _, _, callback)
+                frame.onValueChanged = callback
+            end,
+        }
     end
     return frame
+end
+MinimalSliderWithSteppersMixin = { Event = { OnValueChanged = 1 }, Label = { Right = 1 } }
+function CreateMinimalSliderFormatter(_, formatter)
+    return formatter
+end
+WHITE_FONT_COLOR, DISABLED_FONT_COLOR = { GetRGB = function() end }, { GetRGB = function() end }
+function IsShiftKeyDown()
+    return false
 end
 
 local app = {}
@@ -258,42 +309,132 @@ local tocPanel = assert(toc:find("src\\core\\editmode.lua", 1, true))
 assert(tocAce < tocExtension and tocExtension < tocPanel, "Extension loads before any Edit Mode user")
 assert(loadfile("Seamless/src/core/editmodelib.lua"))("Seamless", app)
 local lib = app.LibEditMode
-assert(lib.SettingType.Header == "seamless-header")
-assert(lib.internal:GetPool(lib.SettingType.Header), "Header widgets have a pool")
-assert(lib.SettingType.Button == "seamless-button" and lib.internal:GetPool(lib.SettingType.Button))
+assert(lib.SettingType.Header == "seamless-header" and lib.SettingType.Button == "seamless-button")
+-- Core's real row renderer draws the window.
+assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", app)
 
 -- Second load must refuse silently overriding a library-defined Header.
 assert(not pcall(assert(loadfile("Seamless/src/core/editmodelib.lua")), "Seamless", app))
 
+-- The library's dialog is our window, a public frame of the library dialog's width.
 local dialog = lib.internal:CreateDialog()
+-- As AddFrame stores it.
+lib.internal.dialog = dialog
 assert(SeamlessEditModeSettingsDialog == dialog and dialog.name == "SeamlessEditModeSettingsDialog")
-local scroll = dialog.SettingsScroll
-assert(scroll and scroll.template == "ResizeLayoutFrame, ScrollFrameTemplate" and scroll.parent == dialog)
-assert(scroll.points.TOP[1] == dialog.Title and scroll.points.TOP[4] == -12)
-assert(scroll.ScrollBar.ignoreInLayout and scroll.ScrollBar.hideIfUnscrollable)
--- Blizzard's LayoutFrame GetSize ignores maximumHeight unless a minimum is set too.
-assert(scroll.minimumHeight == 1)
-assert(dialog.Settings.parent == scroll and scroll.scrollChild == dialog.Settings)
-assert(next(dialog.Settings.points) == nil, "The scroll frame anchors its scroll child")
-assert(dialog.Buttons.points.TOP[1] == scroll, "Buttons follow the scroll frame")
+assert(dialog.parent == UIParent and dialog.width == 370 and not dialog:IsShown())
+local scroll, list, buttons = dialog.Scroll, dialog.List, dialog.Buttons
+assert(scroll.template == "ScrollFrameTemplate" and scroll.scrollChild == list)
+assert(scroll.ScrollBar.hideIfUnscrollable, "the scroll bar hides when nothing scrolls")
+local bar = scroll.ScrollBar
+assert(bar.points.TOPLEFT[1] == scroll and bar.points.TOPLEFT[2] == "TOPRIGHT" and bar.points.TOPLEFT[3] == 2)
+assert(buttons.points.TOPLEFT[1] == scroll, "the buttons stay in view below the list")
+
+-- Rows of every row type the suite uses: what each window draws is checked through these frames.
+local function ShownRows(parent, template)
+    local rows = {}
+    for _, candidate in ipairs(frames) do
+        if candidate.parent == parent and candidate.option and candidate:IsShown() then
+            if not template or candidate.template == template then
+                rows[#rows + 1] = candidate
+            end
+        end
+    end
+    return rows
+end
+local function Row(parent, name)
+    for _, candidate in ipairs(ShownRows(parent)) do
+        if candidate.option.name == name then
+            return candidate
+        end
+    end
+end
+local function Header(parent, text)
+    for _, candidate in ipairs(frames) do
+        if candidate.parent == parent and candidate.Name and candidate.Name.text == text then
+            return candidate
+        end
+    end
+end
 
 lib.isEditing = true
 function lib:GetActiveLayoutName()
     return "Modern"
 end
 local frame = object("Frame", UIParent)
+local store, refreshes = { on = true, size = 10, style = "a" }, 0
+local function accessors(key)
+    return function(layout)
+        assert(layout == "Modern", "settings read and write the active layout")
+        return store[key]
+    end, function(layout, value, fromReset)
+        assert(layout == "Modern")
+        store[key], store.fromReset = value, fromReset
+    end
+end
+local getOn, setOn = accessors("on")
+local getSize, setSize = accessors("size")
+local getStyle, setStyle = accessors("style")
+local clicked
 lib.frameSettings[frame] = {
+    { kind = lib.SettingType.Checkbox, name = "On", get = getOn, set = setOn, default = false, desc = "Tip" },
     { kind = lib.SettingType.Header, name = "Section" },
-    { kind = lib.SettingType.Divider, name = "Inside" },
+    {
+        kind = lib.SettingType.Slider,
+        name = "Size",
+        get = getSize,
+        set = function(layout, value, fromReset)
+            setSize(layout, value, fromReset)
+            -- Features refresh the window from their setters.
+            refreshes = refreshes + 1
+            lib:RefreshFrameSettings(frame)
+        end,
+        default = 5,
+        minValue = 0,
+        maxValue = 20,
+        valueStep = 2,
+        formatter = tostring,
+    },
+    {
+        kind = lib.SettingType.Dropdown,
+        name = "Style",
+        get = getStyle,
+        set = setStyle,
+        default = "a",
+        values = { { text = "A", value = "a" }, { text = "B", value = "b" } },
+        height = 300,
+        disabled = function(layout)
+            return layout == "Modern" and not store.on
+        end,
+    },
+    {
+        kind = lib.SettingType.Button,
+        name = "Do it",
+        click = function(target)
+            clicked = target
+        end,
+    },
     { kind = lib.SettingType.Header, name = "Hidden section", hidden = true },
-    { kind = lib.SettingType.Divider, name = "After hidden header" },
+    { kind = lib.SettingType.Checkbox, name = "After hidden header", get = getOn, set = setOn, default = false },
 }
-lib.frameButtons[frame] = {}
+local buttonClicks = 0
+lib.frameButtons[frame] = {
+    {
+        text = "Feature button",
+        click = function()
+            buttonClicks = buttonClicks + 1
+        end,
+    },
+}
 function lib:GetFrameDefaultPosition()
     return { point = "CENTER", x = 0, y = 0 }
 end
+local framePoint = { "CENTER", nil, nil, 0, 0 }
 frame.GetPoint = function()
-    return "CENTER", nil, nil, 0, 0
+    return unpack(framePoint)
+end
+local resetCallback
+lib.frameCallbacks[frame] = function(_, _, point, x, y)
+    resetCallback = { point, x, y }
 end
 local selection = {
     parent = frame,
@@ -303,75 +444,154 @@ local selection = {
         end,
     },
 }
-scroll.verticalScroll = 50
-dialog.Settings.height = 1000
+lib.frameSelections[frame] = selection
 frame.left, frame.right, frame.top = 100, 300, 600
+scroll.verticalScroll = 50
 dialog:Update(selection)
+assert(dialog:IsShown() and dialog.Title.text == "Seamless Damage 1")
 local placed = dialog.points.TOPLEFT
 assert(placed[1] == UIParent and placed[3] == 316 and placed[4] == 600, "A new selection opens beside its frame")
-assert(scroll.maximumHeight == 400, "Settings scroll past a fixed height, like Blizzard's container")
-assert(scroll.fixedHeight == 400 and scroll.height == 400, "A long list scrolls at the cap")
 assert(scroll.verticalScroll == 0, "A new selection starts at the top")
-assert(dialog.Settings.fixedWidth == dialog.Settings.width, "The list keeps its fully expanded width")
-local bar = scroll.ScrollBar
-assert(bar.points.TOPLEFT[1] == scroll and bar.points.TOPLEFT[3] == 20 + 2, "Scroll bar sits outside the window")
-assert(bar.points.BOTTOMLEFT[2] == "BOTTOMRIGHT" and bar.points.BOTTOMLEFT[3] == 22)
-local widgets = dialog.Settings.widgets
-local header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
-assert(header.kind == "Button" and header.Name.text == "Section" and header.Name.font == "GameFontNormalLeft")
-assert(header.height == 28 and header.width == 330 and header.layoutIndex == 1 and header:IsShown())
-assert(not hiddenHeader:IsShown() and after:IsShown(), "A hidden header collapses nothing")
-assert(inside:IsShown() and header.StateIcon.atlas == "common-button-list-minus")
-assert(header:GetParent():GetParent() == scroll)
+-- Rows before the first header have none; a hidden header collapses nothing.
+local on, after = Row(list, "On"), Row(list, "After hidden header")
+assert(on.template == "EditModeSettingCheckboxTemplate" and on.Button.checked == true and on.option.desc == "Tip")
+local hiddenHeader = Header(list, "Hidden section")
+assert(after and not (hiddenHeader and hiddenHeader:IsShown()))
+local section = Header(list, "Section")
+assert(section:IsShown() and section.StateIcon.atlas == "common-button-list-minus")
+local size, style = Row(list, "Size"), Row(list, "Style")
+assert(size.template == "EditModeSettingSliderTemplate" and size.Slider.value == 10)
+assert(size.Slider.min == 0 and size.Slider.max == 20 and size.Slider.steps == 10)
+assert(style.Dropdown.defaultText == "A" and style.Dropdown.enabled)
+local doIt = Row(list, "Do it")
+assert(doIt.Button.template == "EditModeSystemSettingsDialogButtonTemplate" and doIt.Button.width == 200)
+doIt.Button.click()
+assert(clicked == frame, "a Button setting gets the selected frame")
+local reset = Row(list, "Reset To Default")
+assert(reset and reset.Button.enabled and reset.Button.width == 200)
+-- The frame's buttons and Reset Position sit below the list.
+local feature, resetPosition = Row(buttons, "Feature button"), Row(buttons, "Reset Position")
+assert(buttons:IsShown() and feature and resetPosition and not resetPosition.Button.enabled)
+feature.Button.click()
+assert(buttonClicks == 1)
 
-scroll.verticalScroll = 50
+-- Settings write the active layout; disabled states follow.
+on:OnCheckButtonClick()
+assert(store.on == false and store.fromReset == false and not style.Dropdown.enabled)
+local radios = {}
+style.Dropdown.generator(nil, {
+    SetScrollMode = function(_, height)
+        radios.height = height
+    end,
+    CreateRadio = function(_, text, _, select)
+        radios[text] = select
+        return { SetEnabled = function() end }
+    end,
+})
+assert(radios.height == 300)
+radios.B()
+assert(store.style == "b" and style.Dropdown.defaultText == "B")
+-- A slider whose setter refreshes the window keeps its drag: it is not initialized again.
+local inits = 0
+local init = size.Slider.Init
+function size.Slider:Init(...)
+    inits = inits + 1
+    return init(self, ...)
+end
+size.onValueChanged(nil, 14)
+assert(store.size == 14 and refreshes == 1 and inits == 0, "the dragged slider is left alone")
+assert(Row(list, "Size") == size, "rows are reused, never rebuilt")
+size.Slider.Init = init
+
+-- Collapsing a section hides its rows, is remembered, and keeps the width.
+scroll.verticalScroll = 0
+section.scripts.OnClick(section)
+assert(not size:IsShown() and not style:IsShown() and section.StateIcon.atlas == "common-button-list-plus")
+assert(app.IsEditModeSectionCollapsed("settings:Section") and dialog.width == 370)
 dialog:Update(selection)
-assert(scroll.verticalScroll == 50, "Refreshing the same selection keeps its scroll position")
--- Updating re-acquires pooled widgets, so read them again.
-header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
+assert(not size:IsShown(), "Collapsed sections stay collapsed")
+section.scripts.OnClick(section)
+assert(size:IsShown())
 
--- Clicking a header collapses its rows and remembers it for the next Update.
-local layouts = dialog.layouts
-local fixedWidth = dialog.Settings.fixedWidth
-dialog.right, scroll.right = 400, 370
-header.scripts.OnClick(header)
-assert(dialog.Settings.fixedWidth == fixedWidth, "Collapsing keeps the width")
-assert(bar.points.TOPLEFT[3] == 30 + 2, "Scroll bar follows the measured window edge")
-assert(not inside:IsShown() and after:IsShown() and header:IsShown())
-assert(header.StateIcon.atlas == "common-button-list-plus" and dialog.layouts == layouts + 2 and dialog:IsShown())
--- A short list shrinks the window and drops any scroll offset it no longer needs.
-dialog.Settings.height = 120
-dialog.left, dialog.top = 300, 700
-layoutOrder = {}
-dialog:RefreshWidgets()
-local scrollIndex, dialogIndex
-for index, frame in ipairs(layoutOrder) do
-    if frame == scroll and not scrollIndex then
-        scrollIndex = index
-    end
-    if frame == dialog then
-        dialogIndex = index
+-- Refreshing the same selection keeps its place.
+dialog.left, dialog.top = 320, 650
+dialog:Update(selection)
+local top = dialog.points.TOPLEFT
+assert(top[1] == UIParent and top[2] == "BOTTOMLEFT" and top[3] == 320 and top[4] == 650)
+assert(not dialog.points.BOTTOMRIGHT, "The dialog grows downward from its top edge")
+
+-- A long list scrolls at the cap; the window is never taller than its parts.
+local many = {}
+for index = 1, 30 do
+    many[index] = { kind = lib.SettingType.Checkbox, name = "Row " .. index, get = getOn, set = setOn }
+end
+local longFrame = object("Frame", UIParent)
+longFrame.left, longFrame.right, longFrame.top, longFrame.GetPoint = 100, 300, 600, frame.GetPoint
+lib.frameSettings[longFrame], lib.frameButtons[longFrame] = many, {}
+local longSelection = { parent = longFrame, system = selection.system }
+dialog:Update(longSelection)
+assert(scroll.height == 400, "Settings scroll past a fixed height, like Blizzard's container")
+assert(list.height > 400 and dialog.height == 15 + 20 + 12 + 400 + 12 + buttons.height + 20)
+scroll.verticalScroll = 50
+dialog:Update(longSelection)
+assert(scroll.verticalScroll == 50, "Refreshing the same selection keeps its scroll position")
+-- A shorter list drops any scroll offset it no longer needs.
+for index = 5, 30 do
+    many[index] = nil
+end
+scroll.verticalScroll = 1000
+dialog:Update(longSelection)
+assert(scroll.height < 400 and scroll.verticalScroll == 0, "the window shrinks with its list")
+dialog:Update(selection)
+
+-- Reset To Default writes every default with fromReset; Reset Position restores the default spot.
+reset = Row(list, "Reset To Default")
+reset.Button.click()
+assert(store.on == false and store.size == 5 and store.style == "a" and store.fromReset == true)
+framePoint = { "TOPLEFT", nil, nil, 40, -40 }
+dialog:Update(selection)
+assert(resetPosition.Button.enabled, "a moved frame can reset its position")
+function frame:ClearAllPoints() end
+function frame:SetPoint(point, x, y)
+    framePoint = { point, nil, nil, x, y }
+end
+lib.activeLayout = 1
+function securecallfunction(callback, ...)
+    return callback(...)
+end
+resetPosition.Button.click()
+assert(framePoint[1] == "CENTER" and resetCallback[1] == "CENTER" and not resetPosition.Button.enabled)
+
+-- Arrow keys nudge the selected frame through the library; other keys pass through.
+local nudged
+local move = lib.internal.MoveParent
+function lib.internal:MoveParent(target, x, y)
+    nudged = { target, x, y }
+end
+dialog.scripts.OnKeyDown(dialog, "LEFT")
+assert(nudged[1] == selection and nudged[2] == -1)
+dialog.scripts.OnKeyDown(dialog, "UP")
+assert(nudged[2] == 0 and nudged[3] == 1)
+lib.internal.MoveParent = move
+
+-- The close button resets the window like the library's dialog.
+local close
+for _, candidate in ipairs(frames) do
+    if candidate.template == "UIPanelCloseButton" and candidate.parent == dialog then
+        close = candidate
     end
 end
-assert(scrollIndex and scrollIndex < dialogIndex, "The scroll frame resizes before the dialog measures its buttons")
-local top = dialog.points.TOPLEFT
-assert(top and top[1] == UIParent and top[2] == "BOTTOMLEFT" and top[3] == 300 and top[4] == 700)
-assert(not dialog.points.BOTTOMRIGHT, "The dialog grows downward from its top edge")
-assert(scroll.fixedHeight == 120 and scroll.verticalScroll == 0, "Collapsing shrinks the window")
+close.scripts.OnClick(close)
+assert(dialog.selection == nil and dialog.points.BOTTOMRIGHT)
 dialog:Update(selection)
-assert(not widgets[2]:IsShown(), "Collapsed sections stay collapsed")
-widgets[1]:Toggle()
-assert(widgets[2]:IsShown())
-header, inside, hiddenHeader, after = widgets[1], widgets[2], widgets[3], widgets[4]
 
--- Widgets refresh through their grandparent; it must reach the dialog.
-lib.frameSettings[frame][3].hidden = false
-header:GetParent():GetParent():RefreshWidgets()
-assert(hiddenHeader:IsShown())
--- Rows after a collapsed header stay hidden even when their own state refreshes.
-hiddenHeader:Toggle()
-assert(not after:IsShown())
-assert(app.IsEditModeSectionCollapsed("settings:Hidden section"))
+-- Only supported setting kinds: anything else fails loudly instead of disappearing.
+local oddFrame = object("Frame", UIParent)
+oddFrame.GetPoint = frame.GetPoint
+lib.frameSettings[oddFrame], lib.frameButtons[oddFrame] = { { kind = lib.SettingType.Divider } }, {}
+assert(not pcall(dialog.Update, dialog, { parent = oddFrame, system = selection.system }))
+dialog:Update(selection)
+
 -- The shared Position section: a Position header, then Anchor, AnchorParent, AnchorFrame, X, Y
 -- and the anchor picker button.
 local otherWindow = object("Frame", UIParent)
@@ -534,81 +754,10 @@ lib.internal:MoveParent(fixedSelection, 5, 0)
 assert(not moved, "no arrow-key nudges")
 lib.frameSettings[fixedFrame], lib.frameButtons[fixedFrame] = {}, {}
 dialog:Update({ parent = fixedFrame, system = selection.system })
-assert(not dialog.Buttons.ResetPositionButton:IsShown(), "no Reset Position")
-assert(not dialog.Buttons:IsShown(), "an empty button list is left out of the window")
+assert(not Row(buttons, "Reset Position"), "no Reset Position")
+assert(not buttons:IsShown(), "an empty button list is left out of the window")
 dialog:Update({ parent = rightFrame, system = selection.system })
-assert(dialog.Buttons:IsShown() and dialog.Buttons.ResetPositionButton:IsShown(), "other frames keep Reset Position")
+assert(buttons:IsShown() and Row(buttons, "Reset Position"), "other frames keep Reset Position")
 print("PASS: fixed frames are selectable but never move")
 
--- A held slider keeps its drag: refreshes of the same selection wait until it is released.
-local sliderKind = "test-slider"
-lib.internal:CreatePool(sliderKind, function()
-    local row = object("Frame", UIParent)
-    row.Slider = object("Frame", row)
-    row.Slider.Slider = object("Slider", row.Slider)
-    row.Setup = function(self, data)
-        self.setting = data
-        self.setups = (self.setups or 0) + 1
-        self:Show()
-    end
-    row.Refresh = function(self)
-        self.refreshes = (self.refreshes or 0) + 1
-    end
-    return row
-end, function(_, row)
-    row:Hide()
-end)
-local sliderFrame = object("Frame", UIParent)
-sliderFrame.left, sliderFrame.right, sliderFrame.top = 100, 250, 500
-sliderFrame.GetPoint = frame.GetPoint
-lib.frameSettings[sliderFrame] = { { kind = sliderKind, name = "X" } }
-lib.frameButtons[sliderFrame] = {}
-local sliderSelection = { parent = sliderFrame, system = selection.system }
-dialog:Update(sliderSelection)
-local row = dialog.Settings.widgets[1]
-local thumb = row.Slider.Slider
-assert(row.setups == 1 and thumb.scripts.OnMouseDown, "sliders are watched")
--- The watcher frame is the one that gets an OnUpdate while a slider is held.
-local function Watcher()
-    for _, candidate in ipairs(frames) do
-        if candidate.scripts.OnUpdate then
-            return candidate
-        end
-    end
-end
-mouseDown = true
-thumb.scripts.OnMouseDown(thumb, "LeftButton")
-dialog:Update(sliderSelection)
-dialog:Update(sliderSelection)
-assert(dialog.Settings.widgets[1] == row and row.setups == 1 and row:IsShown(), "a held slider is not rebuilt")
-assert(row.refreshes >= 2, "held refreshes still update the rows in place")
-local watcher = assert(Watcher(), "release is watched")
-watcher.scripts.OnUpdate(watcher)
-assert(row.setups == 1, "nothing rebuilds while the button is down")
-mouseDown = false
-watcher.scripts.OnUpdate(watcher)
-assert(dialog.Settings.widgets[1].setups == 2, "the first frame after release runs the held refresh")
-assert(not Watcher(), "the watcher stops after release")
--- A click on the track changes the value before OnMouseDown: a pressed slider under the mouse counts.
-row = dialog.Settings.widgets[1]
-thumb = row.Slider.Slider
-local setups = row.setups
-mouseDown, thumb.mouseOver = true, true
-dialog:Update(sliderSelection)
-assert(row.setups == setups and row:IsShown(), "a pressed slider is not rebuilt before its OnMouseDown")
-mouseDown, thumb.mouseOver = false, false
-Watcher().scripts.OnUpdate(Watcher())
-assert(row.setups == setups + 1 and not Watcher())
--- Without a press, the same selection rebuilds as before.
-dialog:Update(sliderSelection)
-assert(row.setups == setups + 2, "an unheld refresh rebuilds")
--- Another selection always rebuilds, even with a slider held.
-mouseDown = true
-thumb.scripts.OnMouseDown(thumb, "LeftButton")
-setups = row.setups
-dialog:Update({ parent = rightFrame, system = selection.system })
-assert(#dialog.Settings.widgets == 0 and not Watcher(), "a new selection rebuilds and stops holding")
-mouseDown = false
-dialog:Update(sliderSelection)
-assert(dialog.Settings.widgets[1].setups == setups + 1, "the held state ended with the old selection")
-print("PASS: sliders keep their drag while features refresh the dialog")
+print("PASS: suite frame settings window")

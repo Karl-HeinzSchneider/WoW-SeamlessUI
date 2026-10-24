@@ -3,7 +3,7 @@ local _, app = ...
 local module = app.legacyLayout
 local backgrounds = {}
 local targetVisuals = {}
-local redirectedMasks = {}
+local predictionEvents
 local P = "UI-HUD-UnitFrame-"
 
 local function Equal(value, expected)
@@ -268,63 +268,134 @@ local function Player(frame, old)
     )
 end
 
-local function PredictionVisuals(source, visual, old, nativeMask, visualMask)
-    if InCombatLockdown() then
+local PREDICTION_STATUS = "ui-hud-unitframe-player-portraiton-bar-health-status"
+
+local function PredictionColor(name, r, g, b)
+    local color = _G[name]
+    if module:Readable(color) and type(color) == "table" and type(color.GetRGB) == "function" then
+        return color:GetRGB()
+    end
+    return r, g, b
+end
+
+local function SetDefault(calculator, setter, enum, value)
+    if Enum[enum] and type(calculator[setter]) == "function" then
+        calculator[setter](calculator, Enum[enum][value])
+    end
+end
+
+-- Legacy target/focus heal prediction is addon-owned. Blizzard's segments stay
+-- on the native bar untouched: storing our bar in them tainted their secret math.
+-- The calculator applies the native clamps, so no value is read or combined here;
+-- each bar starts where the previous fill ends and is as wide as the health bar.
+local function UpdatePrediction(frame)
+    local visual = targetVisuals[frame]
+    local prediction = visual and visual.Prediction
+    if not prediction or not module:Readable(frame.unit) or type(frame.unit) ~= "string" then
         return
     end
-    local owner, mask = old and visual or source, old and visualMask or nativeMask
-    -- The old art has no white target fill; the player's has the same 20 px bar.
-    PredictionFills(source, P .. (old and "Player" or "Target") .. "-PortraitOn-Bar-Health-Status")
-    for _, key in ipairs(PREDICTION_KEYS) do
-        local segment = source[key]
-        if module:CheckRegion(segment, "target prediction", { "SetParent", "SetAllPoints", "SetStatusBar" }) then
-            segment:SetParent(owner)
-            segment:SetStatusBar(owner)
-            segment:ClearAllPoints()
-            segment:SetAllPoints(owner)
-            for _, textureKey in ipairs({ "Fill", "TiledFillOverlay" }) do
-                local texture = segment[textureKey]
-                if module:Readable(texture) and texture then
-                    texture:RemoveMaskTexture(old and nativeMask or visualMask)
-                    texture:AddMaskTexture(mask)
-                end
-            end
-            local fillMask = segment.FillMask
-            if module:CheckRegion(fillMask, "target prediction mask", { "SetPoint" }) then
-                redirectedMasks[fillMask] = old
-                if not redirectedMasks[segment] then
-                    redirectedMasks[segment] = true
-                    local redirecting = false
-                    hooksecurefunc(fillMask, "SetPoint", function(_, point, relative, ...)
-                        if
-                            not redirecting
-                            and redirectedMasks[fillMask]
-                            and module:Readable(relative)
-                            and relative == source:GetStatusBarTexture()
-                        then
-                            redirecting = true
-                            -- Forward native offsets, including secrets, without reading them.
-                            fillMask:SetPoint(point, visual:GetStatusBarTexture(), ...)
-                            redirecting = false
-                        end
-                    end)
-                end
-            end
-        end
+    local calculator = prediction.calculator
+    UnitGetDetailedHealPrediction(frame.unit, "player", calculator)
+    local maxHealth = calculator:GetMaximumHealth()
+    local _, mine, others = calculator:GetIncomingHeals()
+    local absorb, overAbsorb = calculator:GetDamageAbsorbs()
+    local healAbsorb, overHealAbsorb = calculator:GetHealAbsorbs()
+    for key, value in pairs({ Mine = mine, Others = others, Absorb = absorb, HealAbsorb = healAbsorb }) do
+        prediction[key]:SetMinMaxValues(0, maxHealth)
+        prediction[key]:SetValue(value)
     end
-    for _, key in ipairs({ "OverAbsorbGlow", "OverHealAbsorbGlow" }) do
-        local glow = source[key]
-        if module:CheckRegion(glow, "target absorb glow", { "SetParent", "ClearAllPoints", "SetPoint" }) then
-            glow:SetParent(owner)
-            glow:ClearAllPoints()
-            if key == "OverAbsorbGlow" then
-                glow:SetPoint("TOPLEFT", owner, "TOPRIGHT", -7, 0)
-                glow:SetPoint("BOTTOMLEFT", owner, "BOTTOMRIGHT", -7, 0)
-            else
-                glow:SetPoint("BOTTOMRIGHT", owner, "BOTTOMLEFT", 7, 0)
-                glow:SetPoint("TOPRIGHT", owner, "TOPLEFT", 7, 0)
-            end
+    prediction.OverAbsorbGlow:SetAlphaFromBoolean(overAbsorb, 1, 0)
+    prediction.OverHealAbsorbGlow:SetAlphaFromBoolean(overHealAbsorb, 1, 0)
+end
+
+local function CreatePrediction(visual)
+    if type(CreateUnitHealPredictionCalculator) ~= "function" or type(UnitGetDetailedHealPrediction) ~= "function" then
+        module:Warn("target prediction", "heal prediction calculator unavailable")
+        return
+    end
+    local calculator = CreateUnitHealPredictionCalculator()
+    -- UnitFrameHealPredictionBars_Update's rules: heals and absorbs stay inside
+    -- the bar (overflow shows a glow) and heals and heal absorbs cancel out.
+    SetDefault(calculator, "SetIncomingHealClampMode", "UnitIncomingHealClampMode", "MissingHealth")
+    SetDefault(calculator, "SetDamageAbsorbClampMode", "UnitDamageAbsorbClampMode", "MissingHealth")
+    SetDefault(calculator, "SetHealAbsorbClampMode", "UnitHealAbsorbClampMode", "CurrentHealth")
+    SetDefault(calculator, "SetHealAbsorbMode", "UnitHealAbsorbMode", "ReducedByIncomingHeals")
+    if type(calculator.SetIncomingHealOverflowPercent) == "function" then
+        calculator:SetIncomingHealOverflowPercent(1)
+    end
+    local health = visual.HealthBar
+    local status = app.legacyAtlases[PREDICTION_STATUS][8]
+    local function Bar(texture, previous, reverse, r, g, b)
+        local bar = CreateFrame("StatusBar", nil, health)
+        bar:SetStatusBarTexture(texture)
+        bar:SetStatusBarColor(r, g, b)
+        bar:GetStatusBarTexture():AddMaskTexture(visual.HealthBarMask)
+        bar:SetMinMaxValues(0, 1)
+        bar:SetValue(0)
+        local from = reverse and "RIGHT" or "LEFT"
+        bar:SetPoint("TOP" .. from, previous, "TOPRIGHT")
+        bar:SetPoint("BOTTOM" .. from, previous, "BOTTOMRIGHT")
+        if reverse then
+            bar:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
         end
+        return bar
+    end
+    local function Glow(owner, texture, side, x)
+        -- Owned by a prediction bar so it draws above every fill.
+        local glow = owner:CreateTexture(nil, "OVERLAY")
+        glow:SetTexture(texture)
+        glow:SetBlendMode("ADD")
+        glow:AddMaskTexture(visual.HealthBarMask)
+        glow:SetWidth(16)
+        local other = side == "RIGHT" and "LEFT" or "RIGHT"
+        glow:SetPoint("TOP" .. other, health, "TOP" .. side, x, 0)
+        glow:SetPoint("BOTTOM" .. other, health, "BOTTOM" .. side, x, 0)
+        glow:SetAlpha(0)
+        return glow
+    end
+    local fill = health:GetStatusBarTexture()
+    local prediction = { calculator = calculator }
+    prediction.Mine = Bar(status, fill, false, PredictionColor("HEALTHBAR_MY_HEAL_PREDICTION_COLOR", 0, 0.83, 0.77))
+    prediction.Others = Bar(
+        status,
+        prediction.Mine:GetStatusBarTexture(),
+        false,
+        PredictionColor("HEALTHBAR_OTHER_HEAL_PREDICTION_COLOR", 0, 0.63, 0.56)
+    )
+    prediction.Absorb = Bar(
+        "Interface\\RaidFrame\\Shield-Fill",
+        prediction.Others:GetStatusBarTexture(),
+        false,
+        PredictionColor("HEALTHBAR_TOTAL_ABSORB_COLOR", 1, 1, 1)
+    )
+    -- Heal absorbs eat into health from its end, like the native segment.
+    prediction.HealAbsorb =
+        Bar("Interface\\RaidFrame\\Absorb-Fill", fill, true, PredictionColor("HEALTHBAR_HEAL_ABSORB_COLOR", 1, 1, 1))
+    prediction.OverAbsorbGlow = Glow(prediction.Absorb, "Interface\\RaidFrame\\Shield-Overshield", "RIGHT", -7)
+    prediction.OverHealAbsorbGlow = Glow(prediction.HealAbsorb, "Interface\\RaidFrame\\Absorb-Overabsorb", "LEFT", 7)
+    visual.Prediction = prediction
+    if not predictionEvents then
+        predictionEvents = CreateFrame("Frame")
+        for _, event in ipairs({
+            "UNIT_HEALTH",
+            "UNIT_MAXHEALTH",
+            "UNIT_HEAL_PREDICTION",
+            "UNIT_ABSORB_AMOUNT_CHANGED",
+            "UNIT_HEAL_ABSORB_AMOUNT_CHANGED",
+            "PLAYER_TARGET_CHANGED",
+            "PLAYER_FOCUS_CHANGED",
+        }) do
+            predictionEvents:RegisterEvent(event)
+        end
+        predictionEvents:SetScript("OnEvent", function(_, _, unit)
+            -- An unreadable unit token refreshes both frames rather than compare it.
+            if module:Readable(unit) and unit ~= nil and unit ~= "target" and unit ~= "focus" then
+                return
+            end
+            for owner in pairs(targetVisuals) do
+                UpdatePrediction(owner)
+            end
+        end)
     end
 end
 
@@ -343,12 +414,15 @@ local function TargetVisual(frame, main, old)
         for _, key in ipairs({ "HealthBar", "TempMaxHealthLoss" }) do
             local bar = visual[key]
             bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-            -- Match TargetFrame.xml so native prediction segments remain above
-            -- the health fill after their parent moves to the visual bar.
             module:Edit(bar:GetStatusBarTexture(), { layer = { "BACKGROUND", 0 } })
             bar:GetStatusBarTexture():AddMaskTexture(visual.HealthBarMask)
             module:MirrorBar(main.HealthBarsContainer[key], bar, key == "HealthBar", frame.unit)
         end
+        CreatePrediction(visual)
+        -- Children stack one level above their parent: the empty holder sits
+        -- beside the prediction bars, so the text frame inside it draws above them.
+        visual.Text = CreateFrame("Frame", nil, CreateFrame("Frame", nil, visual.HealthBar))
+        visual.Text:SetAllPoints(visual)
         -- Keep native SetText/status logic and fonts. These regions are not
         -- protected frames; anchor them once to the stable visual container.
         targetVisuals[frame] = visual
@@ -358,7 +432,7 @@ local function TargetVisual(frame, main, old)
             local text = main.HealthBarsContainer[key]
             if module:CheckRegion(text, "target health text") then
                 if not InCombatLockdown() and module:CheckRegion(text, "target text owner", { "SetParent" }) then
-                    text:SetParent(visual.HealthBar)
+                    text:SetParent(visual.Text)
                 end
                 local side = key == "LeftText" and "LEFT" or (key == "RightText" and "RIGHT" or "CENTER")
                 Point(text, side, visual, side, key == "LeftText" and 2 or (key == "RightText" and -5 or 0), 0)
@@ -380,14 +454,25 @@ local function TargetVisual(frame, main, old)
             )
         end
     end
-    if visual then
-        PredictionVisuals(
-            main.HealthBarsContainer.HealthBar,
-            visual.HealthBar,
-            old,
-            main.HealthBarsContainer.HealthBarMask,
-            visual.HealthBarMask
-        )
+    if visual and not InCombatLockdown() then
+        -- Hide only the native segments' drawing; their frames, fields and
+        -- updates stay Blizzard's own.
+        local source = main.HealthBarsContainer.HealthBar
+        for _, key in ipairs({
+            "MyHealPredictionBar",
+            "OtherHealPredictionBar",
+            "HealAbsorbBar",
+            "TotalAbsorbBar",
+            "OverAbsorbGlow",
+            "OverHealAbsorbGlow",
+        }) do
+            if module:CheckRegion(source[key], "native target prediction", { "SetAlpha" }) then
+                source[key]:SetAlpha(old and 0 or 1)
+            end
+        end
+    end
+    if old and visual then
+        UpdatePrediction(frame)
     end
     return old and visual or main.HealthBarsContainer
 end
@@ -492,6 +577,11 @@ local function Target(frame, old)
         old and minus and 12 or 20
     )
     Point(container.HealthBarMask, "TOPLEFT", container, "TOPLEFT", -1, old and (minus and 2 or 6) or 9)
+    if old and container.Prediction then
+        for _, key in ipairs({ "Mine", "Others", "Absorb", "HealAbsorb" }) do
+            module:Edit(container.Prediction[key], { width = minus and 125 or 126 })
+        end
+    end
     Point(
         container.TempMaxHealthLoss,
         "TOPLEFT",

@@ -68,6 +68,40 @@ function methods:SetParent(parent)
     assert(not combat, "reparenting during combat")
     self.parent = parent
 end
+function methods:SetBlendMode(mode)
+    self.blend = mode
+end
+function methods:SetAlphaFromBoolean(value, ifTrue, ifFalse)
+    self.alphaFrom = { value, ifTrue, ifFalse }
+end
+function methods:RegisterEvent(event)
+    self.events = self.events or {}
+    self.events[event] = true
+end
+function methods:SetScript(name, script)
+    self.scripts = self.scripts or {}
+    self.scripts[name] = script
+end
+local predictionUnits = {}
+function CreateUnitHealPredictionCalculator()
+    return {
+        GetMaximumHealth = function()
+            return secret
+        end,
+        GetIncomingHeals = function()
+            return secret, secret, secret, secret
+        end,
+        GetDamageAbsorbs = function()
+            return secret, secret
+        end,
+        GetHealAbsorbs = function()
+            return secret, secret
+        end,
+    }
+end
+function UnitGetDetailedHealPrediction(unit)
+    predictionUnits[#predictionUnits + 1] = unit
+end
 function methods:SetFillStyle(style)
     self.fillStyle = style
 end
@@ -300,6 +334,10 @@ PlayerFrame = Object()
 PlayerFrame.unit = "player"
 local mainPath = "PlayerFrameContent.PlayerFrameContentMain."
 local health = Path(PlayerFrame, mainPath .. "HealthBarsContainer.HealthBar", true)
+local predictionKeys = { "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }
+for _, key in ipairs(predictionKeys) do
+    Path(health, key .. ".Fill")
+end
 Path(PlayerFrame, mainPath .. "HealthBarsContainer.HealthBarMask")
 Path(PlayerFrame, mainPath .. "HealthBarsContainer.PlayerFrameTempMaxHealthLoss", true)
 local loss = Path(PlayerFrame, mainPath .. "HealthBarsContainer.PlayerFrameHealthBarAnimatedLoss", true)
@@ -385,6 +423,9 @@ local party = Object()
 party.unit, party.state, party.frameType = "party1", "player", "Party"
 PartyFrame.MemberFrame1 = party
 party.healthbar = Path(party, "HealthBarContainer.HealthBar", true)
+for _, key in ipairs(predictionKeys) do
+    Path(party.healthbar, key .. ".Fill")
+end
 Path(party, "HealthBarContainer.HealthBarMask")
 Path(party, "HealthBarContainer.TempMaxHealthLoss", true)
 Path(party, "ManaBar", true)
@@ -648,13 +689,36 @@ local focusVisual = focusContainer.LeftText.point[2]
 assert(targetVisual.height == 20 and focusVisual.height == 20)
 assert(focusContainer.height == 15 and focusContainer.HealthBar.fill.alpha == 0)
 assert(targetVisual.HealthBar.fill.mask == targetVisual.HealthBarMask)
-assert(targetContainer.LeftText.parent == targetVisual.HealthBar)
-local prediction = targetContainer.HealthBar.MyHealPredictionBar
-assert(prediction.parent == targetVisual.HealthBar)
-assert(prediction.Fill.mask == targetVisual.HealthBarMask)
-prediction.FillMask:SetPoint("TOPLEFT", targetContainer.HealthBar.fill, "TOPRIGHT", secret, 0)
-assert(prediction.FillMask.point[2] == targetVisual.HealthBar.fill)
-assert(rawequal(prediction.FillMask.point[4], secret))
+assert(targetContainer.LeftText.parent == targetVisual.Text)
+-- Native segments are only made transparent; no field or owner is written.
+local native = targetContainer.HealthBar.MyHealPredictionBar
+assert(native.alpha == 0 and native.statusBar == nil and native.parent == nil)
+assert(targetContainer.HealthBar.OverAbsorbGlow.alpha == 0)
+assert(native.Fill.mask == nil and native.FillMask.point == nil)
+local prediction = targetVisual.Prediction
+assert(prediction.Mine.parent == targetVisual.HealthBar)
+assert(prediction.Mine.point[2] == targetVisual.HealthBar.fill)
+assert(prediction.Others.point[2] == prediction.Mine.fill)
+assert(prediction.Absorb.point[2] == prediction.Others.fill)
+assert(prediction.HealAbsorb.fillStyle == Enum.StatusBarFillStyle.Reverse)
+assert(prediction.Mine.fill.mask == targetVisual.HealthBarMask)
+assert(prediction.Mine.width == 126)
+-- Calculator results are forwarded without being read.
+assert(rawequal(prediction.Mine.values[1], secret) and rawequal(prediction.Mine.range[2], secret))
+assert(rawequal(prediction.OverAbsorbGlow.alphaFrom[1], secret))
+local events
+for _, frame in ipairs(createdFrames) do
+    if frame.scripts and frame.scripts.OnEvent then
+        events = frame
+    end
+end
+assert(events and events.events.UNIT_HEAL_PREDICTION)
+local updates = #predictionUnits
+events.scripts.OnEvent(events, "UNIT_HEALTH", "party1")
+assert(#predictionUnits == updates, "other units must not refresh target prediction")
+events.scripts.OnEvent(events, "UNIT_HEALTH", secret)
+assert(#predictionUnits == updates + 2)
+assert(HasOld(health.MyHealPredictionBar.Fill), "player prediction uses the old white fill")
 local sourceLoss = targetContainer.TempMaxHealthLoss
 callbacks[sourceLoss].Show(sourceLoss)
 assert(targetVisual.TempMaxHealthLoss.shown)
@@ -708,11 +772,13 @@ assert(
     targetVisual.HealthBar.height == 12
         and targetHealth.fill.atlas == "UI-HUD-UnitFrame-Target-MinusMob-PortraitOn-Bar-Health-Status"
 )
+assert(prediction.Mine.width == 125)
 Mode("current")
 assert(targetHealth.height == 20)
 assert(targetContainer.LeftText.parent == targetContainer)
-assert(prediction.parent == targetContainer.HealthBar)
-assert(prediction.Fill.mask == targetContainer.HealthBarMask)
+assert(native.alpha == 1 and targetContainer.HealthBar.OverAbsorbGlow.alpha == 1)
+assert(native.statusBar == nil and native.parent == nil)
+assert(health.MyHealPredictionBar.Fill.atlas == "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health-Status")
 assert(targetContainer.LeftText.point[2] == targetContainer)
 assert(targetHealth.fill.alpha == 1 and not targetVisual.HealthBar.shown)
 assert(not focusVisual.HealthBar.shown)

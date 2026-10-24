@@ -7,6 +7,7 @@ local NAVIGATION_PANE_WIDTH, SCROLLBAR_GUTTER = 199, 24
 local NAVIGATION_WIDTH = NAVIGATION_PANE_WIDTH - SCROLLBAR_GUTTER
 local NAVIGATION_ROW_GAP = 1
 local NAVIGATION_PAGE_HEIGHT, NAVIGATION_HEADER_HEIGHT = 20, 30
+local CONTENT_TAG_OVERHANG = 32
 
 local function label(parent, font, text, point, relative, relativePoint, x, y)
     local textRegion = parent:CreateFontString(nil, "OVERLAY", font)
@@ -148,8 +149,9 @@ function config:CreateWindow()
     self.navigationBar:ClearAllPoints()
     self.navigationBar:SetPoint("TOP", self.navigation, "TOPRIGHT", SCROLLBAR_GUTTER / 2, -8)
     self.navigationBar:SetPoint("BOTTOM", self.navigation, "BOTTOMRIGHT", SCROLLBAR_GUTTER / 2, 8)
-    self.contentScroll, self.content = scroll(frame, 233, 643)
-    self.contentScroll:SetPoint("TOPLEFT", 233, -137)
+    -- Give leading tags room inside the scroll clip without moving the page or controls.
+    self.contentScroll, self.content = scroll(frame, 233 - CONTENT_TAG_OVERHANG, 643 + CONTENT_TAG_OVERHANG)
+    self.contentScroll:SetPoint("TOPLEFT", 233 - CONTENT_TAG_OVERHANG, -137)
     self.title = label(frame, "GameFontHighlightHuge", "", "TOPLEFT", frame, "TOPLEFT", 240, -98)
     self.title:SetWidth(620)
     local divider = frame:CreateTexture(nil, "ARTWORK")
@@ -157,7 +159,7 @@ function config:CreateWindow()
     divider:SetAtlas("Options_HorizontalDivider", true)
     divider:SetPoint("TOP", frame, "TOPLEFT", 565.5, -126)
     self.pageHost = CreateFrame("Frame", nil, self.content)
-    self.pageHost:SetPoint("TOPLEFT", 8, 0)
+    self.pageHost:SetPoint("TOPLEFT", 8 + CONTENT_TAG_OVERHANG, 0)
     self.pageHost:SetSize(627, 1)
     self.contentScroll:HookScript("OnSizeChanged", function()
         self:UpdateContentHeight()
@@ -179,8 +181,8 @@ function config:SetMinimized(minimized)
     self.done:SetShown(not minimized)
     local x, topOffset = minimized and 18 or 233, minimized and 81 or 137
     self.contentScroll:ClearAllPoints()
-    self.contentScroll:SetPoint("TOPLEFT", x, -topOffset)
-    self.contentScroll:SetPoint("BOTTOMLEFT", x, minimized and 18 or 46)
+    self.contentScroll:SetPoint("TOPLEFT", x - CONTENT_TAG_OVERHANG, -topOffset)
+    self.contentScroll:SetPoint("BOTTOMLEFT", x - CONTENT_TAG_OVERHANG, minimized and 18 or 46)
     self.title:ClearAllPoints()
     self.title:SetPoint("TOPLEFT", frame, "TOPLEFT", x + 7, minimized and -42 or -98)
     self.divider:ClearAllPoints()

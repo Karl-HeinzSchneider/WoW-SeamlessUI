@@ -12,6 +12,7 @@
 ---@field blizzardPosition SeamlessUI.BlizzardPosition
 ---@field systemOptions SeamlessUI.SystemOptions
 ---@field fpsDisplay SeamlessUI.FPSDisplay
+---@field editModeKeyboard SeamlessUI.EditModeKeyboard
 
 ---@class SeamlessUI.DB : AceDBObject-3.0
 ---@field profile SeamlessUI.DB.Profile

@@ -7,6 +7,7 @@ local _, app = ...
 -- User settings, switchable per character through the Profiles tab.
 ---@class SeamlessUI.DB.Profile
 local profile = {
+    editModeKeyboard = true,
     -- Reserved for settings of future UI improvements.
     ---@type table<string, table>
     features = {},

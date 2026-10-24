@@ -148,8 +148,10 @@ return PlayerFrame end)`. The frame is resolved on every access, and the shared
 `core:GetFramePositionService()` reads and applies the active native layout.
 Inside Edit Mode it preserves the live draft and native Save/Revert ownership;
 outside Edit Mode it saves through the manager's current live layout. Presets,
-override layouts, unavailable systems and combat disable editing. Anchor choices
-exclude self, descendants and cycles. This works without SeamlessUI enabled;
+override layouts, unavailable systems and combat disable editing.
+During Edit Mode, frames whose native preview checkbox is off also disable editing;
+the shared service checks the client's `isHighlighted` state on every write.
+Anchor choices exclude self, descendants and cycles. This works without SeamlessUI enabled;
 SeamlessUI's Edit Mode extension uses the same core backend with its own selection
 and feature-enable checks. Settings stay in Edit Mode layouts, not AceDB profiles.
 

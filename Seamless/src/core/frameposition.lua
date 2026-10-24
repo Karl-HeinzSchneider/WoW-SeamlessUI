@@ -229,6 +229,8 @@ function position:CanEdit(system)
         and not system.isLocked
         and not manager:IsActiveLayoutPreset()
         and not manager.overrideLayoutInfo
+        -- An unchecked native preview must not be edited through another panel.
+        and (not manager:IsEditModeActive() or system.isHighlighted == true)
         and override:IsReady()
         and self:Read(system) ~= nil
 end

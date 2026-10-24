@@ -241,6 +241,7 @@ EditModeSystemSettingsDialog = { UpdateDialog = function() end }
 assert(loadfile("Seamless/lib/LibEditModeOverride/LibEditModeOverride.lua"))()
 dofile("src/tests/locale-support.lua")
 local player = frame("PlayerFrame", UIParent)
+player.isHighlighted = true
 player.system, player.systemIndex = 1, 1
 player.systemInfo = draft.systems[1]
 player.savedSystemInfo = copy(player.systemInfo)
@@ -792,6 +793,18 @@ assert(config.relativePoint.get() == position:Read(player).relativePoint)
 assert(config.relativeTo.get() == position:Read(player).relativeTo)
 assert(config.x.get() == 5 and config.y.get() == -5)
 assert(not config.x.disabled(), "config editing needs no selected Edit Mode extension")
+-- A native preview unchecked in Blizzard's main window cannot be changed from
+-- either settings panel, including callbacks left over from before unchecking.
+player.isHighlighted = false
+local uncheckedPosition = config.x.get()
+local uncheckedLoads = loads
+assert(config.x.disabled())
+config.x.set(nil, 999)
+assert(not native:Apply(player, native:Read(player)))
+assert(not native:ResetToDefault(player))
+assert(config.x.get() == uncheckedPosition and loads == uncheckedLoads)
+player.isHighlighted = true
+assert(not config.x.disabled())
 local beforeConfigSave = saves
 config.x.set(nil, 42)
 assert(position:Read(player).offsetX == 42 and saves == beforeConfigSave, "active Edit Mode keeps edits in its draft")
@@ -821,6 +834,8 @@ assert(native:Read(player).relativeTo == beforeCycle.relativeTo)
 function EditModeManagerFrame:IsEditModeActive()
     return false
 end
+player.isHighlighted = false
+assert(not config.x.disabled(), "outside Edit Mode, preview checkboxes do not restrict layout editing")
 local liveSaves = 0
 function EditModeManagerFrame:SaveLayouts()
     liveSaves = liveSaves + 1
@@ -963,6 +978,18 @@ assert(defaults.scale.get() == 1.2 and not defaults.scale.disabled())
 -- Scale writes the native setting in display units and saves outside Edit Mode.
 defaults.scale.set(nil, 1.35)
 assert(frameSize == 135 and settingSaves == 1, "1.35 is stored as exactly 135")
+function EditModeManagerFrame:IsEditModeActive()
+    return true
+end
+assert(defaults.scale.disabled() and defaults.reset.disabled())
+defaults.scale.set(nil, 1.5)
+assert(not native:ApplySetting(player, FRAME_SIZE, 150))
+assert(frameSize == 135 and settingSaves == 1, "unchecked previews reject setting writes too")
+player.isHighlighted = true
+assert(not defaults.scale.disabled())
+function EditModeManagerFrame:IsEditModeActive()
+    return false
+end
 combat = true
 defaults.scale.set(nil, 1.5)
 assert(frameSize == 135 and defaults.scale.disabled())

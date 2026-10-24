@@ -6,6 +6,7 @@ local function frame()
     local f = { shown = true }
     function f:Hide()
         self.shown = false
+        self.hides = (self.hides or 0) + 1
     end
     function f:Show()
         self.shown = true
@@ -460,6 +461,11 @@ assert(style.format == "B" and dropdown.defaultText == "Beta")
 toggle:OnCheckButtonClick()
 assert(style.on == false and toggle.Button.checked == false and dropdown.enabled == false)
 assert(not slider.shown and panel.height == 167, "hidden rows take no space")
+-- Re-stacking the window (the Position poll does it) must not hide what stays shown: a hidden
+-- button loses the press in progress, so its click never arrives.
+local headerHides, toggleHides = header.hides, toggle.hides
+module:RefreshPanel()
+assert(header.hides == headerHides and toggle.hides == toggleHides, "shown sections stay shown")
 header.onClick()
 assert(header.collapsed and not toggle.shown and panel.height == 92)
 sectionEnabled = false

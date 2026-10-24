@@ -89,12 +89,22 @@ function app.CreateEditModeHeader(parent, onClick)
     header.Name:SetPoint("RIGHT", header.StateIcon, "LEFT", -4, 0)
     header.SetHeaderText = SetHeaderText
     header.UpdateCollapsedState = SetCollapsedState
+    -- Nudge the name while pressed. A header hidden mid-press never gets OnMouseUp, so OnHide
+    -- releases it too; otherwise the name drifts a pixel per lost press.
+    local function release()
+        if header.pressed then
+            header.pressed = nil
+            header.Name:AdjustPointsOffset(-1, 1)
+        end
+    end
     header:SetScript("OnMouseDown", function()
-        header.Name:AdjustPointsOffset(1, -1)
+        if not header.pressed then
+            header.pressed = true
+            header.Name:AdjustPointsOffset(1, -1)
+        end
     end)
-    header:SetScript("OnMouseUp", function()
-        header.Name:AdjustPointsOffset(-1, 1)
-    end)
+    header:SetScript("OnMouseUp", release)
+    header:SetScript("OnHide", release)
     header:SetScript("OnClick", function()
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         onClick()

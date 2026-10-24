@@ -163,12 +163,9 @@ end
 ---@return number bottom
 function systemOptions:Layout(parent, system, y, spaced, changed)
     local current = state(parent, changed)
-    for _, header in pairs(current.headers) do
-        header:Hide()
-    end
-    for _, row in pairs(current.rows) do
-        row:Hide()
-    end
+    -- Only hide what this pass leaves out: hiding a shown header or row, even for a moment,
+    -- cancels a click or drag in progress on it.
+    local used = {}
     for _, spec in ipairs(app.core:GetEditModeSystemOptions(system)) do
         local key = "settings:" .. (spec.key or spec.name)
         local header = current.headers[spec.id]
@@ -189,6 +186,7 @@ function systemOptions:Layout(parent, system, y, spaced, changed)
             y = y + GAP
         end
         place(header, 16, y)
+        used[header] = true
         y = y + HEADER
         spaced = true
         if not collapsed then
@@ -210,10 +208,18 @@ function systemOptions:Layout(parent, system, y, spaced, changed)
                     row.Label:SetText(option.name)
                     y = y + gap
                     place(row, INSET, y)
+                    used[row] = true
                     row:Refresh(not evaluate(option.disabled))
                     y = y + ROW
                     gap = ROW_GAP
                 end
+            end
+        end
+    end
+    for _, frames in ipairs({ current.headers, current.rows }) do
+        for _, frame in pairs(frames) do
+            if not used[frame] then
+                frame:Hide()
             end
         end
     end

@@ -89,9 +89,13 @@ values without comparison or arithmetic. Existing native text regions retain the
 SetText logic and attach to the visual bar; Current restores their native ownership
 and anchors. Native source fills are transparent only in Legacy. The protected mana
 bar anchors directly to native artwork, never to a visual bar (which would propagate
-protection). Native prediction segments and absorb glows also attach to the visual health bar;
-their masks redirect native health-fill anchors without inspecting native offsets.
-Current restores their native ownership, masks and status-bar references.
+protection). Native prediction segments and absorb glows are never reparented or given another
+status bar (storing our bar in them tainted their secret arithmetic); Legacy only makes them
+transparent. The visual bar draws its own heal, absorb and heal-absorb bars from
+`UnitGetDetailedHealPrediction` with a heal prediction calculator set to the native clamps; each
+bar is anchored to the previous fill and only receives forwarded values. They use the player's old
+white health fill (the old art has none for targets) and the raid shield/absorb fills. Player and
+party keep their native segments and only get the old white fill of their family.
 Native frames, events, targeting and tooltips remain in place. Layout
 repairs can resize the visuals in combat and skip every protected region.
 

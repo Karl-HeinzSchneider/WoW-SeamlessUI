@@ -21,7 +21,7 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
 ## Blizzard Edit Mode extensions (`blizzardeditmode.lua`)
 
 - The registry matches system enum plus subsystem enum/index (unit frames, action bars 1–8,
-  stance/pet/possess bars, auras, XP/reputation containers, minimap and the other native systems),
+  stance/pet/possess bars, the left and right endcaps, auras, XP/reputation containers, minimap and the other native systems),
   grouped as Unit frames, Action bars, Auras and Other frames. Entries stay hidden until the
   client's `registeredSystemFrames` has the frame; missing enums are safe.
 - Profile `blizzardEditMode`: global `enabled`, `addPosition` and `addMoreOptions` (all default
@@ -65,8 +65,9 @@ Run `lua src/tests/blizzard-editmode.lua`.
   in the panel's units (1 = 100 %), bound to the system's native percentage setting (`FrameSize`
   for unit frames, `IconSize` for action bars and auras, `BarSize` for the cast bar, `Scale` for
   swing timers, otherwise `Size`) with its range and step, written through Core's `ApplySetting`
-  so it stays in the native draft. Frames without that setting (or while Edit Mode hides it)
-  show their scale greyed out.
+  so it stays in the native draft. Frames without one use a binding a feature registered with
+  `core:RegisterEditModeSystemScale` (the action bar endcaps), snapped to its step; without
+  either (or while Edit Mode hides the setting) the row shows the frame's scale greyed out.
 - Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`/
   `ReanchorFrame`, mirrors the anchor into the live draft and calls the frame's
   `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate

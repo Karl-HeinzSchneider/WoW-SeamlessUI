@@ -246,6 +246,12 @@ window, so no feature depends on SeamlessUI. `core:RefreshEditModeSystemOptions(
 `core:GetEditModeSystemOptionsMessage()`; `core:GetEditModeSystemOptions(system)` returns the
 enabled sections in order.
 
+`core:RegisterEditModeSystemScale(id, spec)` gives a system without a native size setting (the
+action bar endcaps) a Scale: `system`, optional `systemIndex`, `enabled` and `scale` (a
+`PositionScale` binding with `get`/`set`, optional `min`/`max`/`step`/`disabled`). The feature
+stores and applies it; `core:GetEditModeSystemScale(system)` returns the enabled binding, which
+SeamlessUI's Position section uses for its Scale row.
+
 ## Shared feature databases
 
 `core:RegisterAddonDatabase(name, defaults, owner, refreshMethod, legacySavedVariable)` runs

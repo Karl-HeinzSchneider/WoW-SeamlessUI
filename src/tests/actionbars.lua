@@ -166,4 +166,100 @@ bindings["CLICK MultiBar5Button1:LeftButton"] = "CTRL-E"
 app.UpdateHotkey(clicked)
 assert(clicked.HotKey:GetText() == "Cgame:E", "click binding")
 
-print("PASS: short labels, range/mana tints, native restore and hotkey restore")
+-- Endcaps: profile scale through the frame's own SetScale, native Hidden through Core's service.
+local combat = false
+InCombatLockdown = function()
+    return combat
+end
+local function EndCap(index)
+    local cap = { scale = 1, system = 26, systemIndex = index, scaleCalls = 0 }
+    function cap:GetScale()
+        return self.scale
+    end
+    function cap:SetScale(value)
+        self.scale, self.scaleCalls = value, self.scaleCalls + 1
+    end
+    return cap
+end
+local left, right = EndCap(1), EndCap(2)
+MainActionBar = { EndCaps = { LeftEndCap = left, RightEndCap = right } }
+Enum = {
+    EditModeSystem = { MainActionBarEndCap = 26 },
+    EditModeMainActionBarEndCapSystemIndices = { EndCapLeft = 1, EndCapRight = 2 },
+    EditModeMainActionBarEndCapSetting = { Hidden = 0 },
+}
+local hidden, canEdit, refreshed, registered = { [left] = 0, [right] = 0 }, true, 0, {}
+local service = {
+    ReadSetting = function(_, frame, setting)
+        assert(setting == 0)
+        return frame and hidden[frame]
+    end,
+    ApplySetting = function(_, frame, setting, value)
+        assert(setting == 0 and canEdit)
+        hidden[frame] = value
+        return true
+    end,
+    CanEdit = function()
+        return canEdit
+    end,
+    GetDefaultSetting = function()
+        return 0
+    end,
+}
+app.core = {
+    GetFramePositionService = function()
+        return service
+    end,
+    RefreshOptions = function()
+        refreshed = refreshed + 1
+    end,
+    RegisterEditModeSystemScale = function(_, id, spec)
+        registered[id] = spec
+    end,
+}
+local enabled = true
+function addon:IsEnabled()
+    return enabled
+end
+app.addon = addon
+app.dbDefaults = { profile = { endCaps = { left = { scale = 1 }, right = { scale = 1 } } } }
+app.db.profile.endCaps = { left = { scale = 1.5 }, right = { scale = 1 } }
+load("endcaps.lua")
+app.ApplyEndCapScales()
+assert(left.scale == 1.5 and right.scale == 1 and right.scaleCalls == 0, "profile scale applied, unchanged left alone")
+local leftEntry = app.endCaps[1]
+local scale = app.EndCapScale(leftEntry)
+assert(scale.get() == 1.5 and scale.default() == 1 and scale.min == 0.5 and scale.max == 2)
+scale.set(0.8)
+assert(app.db.profile.endCaps.left.scale == 0.8 and left.scale == 0.8 and refreshed == 1)
+combat = true
+scale.set(1.2)
+assert(app.db.profile.endCaps.left.scale == 1.2 and left.scale == 0.8, "no SetScale in combat")
+combat = false
+app.ApplyEndCapScales()
+assert(left.scale == 1.2, "applied after combat")
+enabled = false
+scale.set(1.4)
+assert(app.db.profile.endCaps.left.scale == 1.4 and left.scale == 1.2, "disabled addon only stores")
+app.ApplyEndCapScales(true)
+assert(left.scale == 1 and right.scale == 1, "disable restores the game's scale")
+enabled = true
+app.RegisterEndCapScales()
+local spec = registered["SeamlessActionBars:endCap:left"]
+assert(spec and spec.system == 26 and spec.systemIndex == 1 and spec.enabled())
+assert(registered["SeamlessActionBars:endCap:right"].systemIndex == 2)
+local toggle = app.EndCapHiddenOption(app.endCaps[2])
+assert(toggle.type == "toggle" and toggle.editMode and toggle.name == L["Hide endcap"])
+assert(toggle.get() == false and toggle.default() == false and not toggle.disabled())
+toggle.set(nil, true)
+assert(hidden[right] == 1 and toggle.get() == true and hidden[left] == 0)
+toggle.set(nil, false)
+assert(hidden[right] == 0)
+canEdit = false
+assert(toggle.disabled(), "preset layouts are read-only")
+canEdit = true
+MainActionBar = nil
+assert(toggle.disabled() and app.EndCapFrame(leftEntry) == nil, "missing bar is safe")
+app.ApplyEndCapScales()
+
+print("PASS: short labels, range/mana tints, native restore, hotkey restore and endcaps")

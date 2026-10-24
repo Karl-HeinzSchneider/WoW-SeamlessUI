@@ -12,6 +12,7 @@
 
 src\db.lua
 src\core.lua
+src\endcaps.lua
 src\icons.lua
 src\hotkeys.lua
 src\options.lua

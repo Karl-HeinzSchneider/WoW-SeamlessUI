@@ -289,8 +289,13 @@ function app.core:CreateEditModeHeader(parent)
     header.SetHeaderText, header.UpdateCollapsedState = function() end, function() end
     return header
 end
+local coreMessages = 0
+function app.core:SendMessage()
+    coreMessages = coreMessages + 1
+end
 local coreApp = { addon = app.core }
 assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
+assert(loadfile("Seamless/src/core/systemoptions.lua"))("Seamless", coreApp)
 -- Core's real row renderer and Position section draw the controls.
 assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", coreApp)
 assert(loadfile("Seamless/src/core/editmodeposition.lua"))("Seamless", coreApp)
@@ -722,6 +727,50 @@ EditModeManagerFrame.OnSystemSettingChange = nil
 selectedSpec.system = nil
 view:Refresh(player)
 assert(not scaleRow.Slider.enabled)
+-- Systems without a size setting (the endcaps) use a feature's registered scale binding.
+local endCapScale, endCapEnabled = 1.25, true
+app.core:RegisterEditModeSystemScale("test:endCap", {
+    system = player.system,
+    systemIndex = player.systemIndex,
+    enabled = function()
+        return endCapEnabled
+    end,
+    scale = {
+        min = 0.5,
+        max = 2,
+        step = 0.05,
+        get = function()
+            return endCapScale
+        end,
+        set = function(value)
+            endCapScale = value
+        end,
+    },
+})
+assert(coreMessages > 0, "registering a scale redraws the window")
+assert(not pcall(app.core.RegisterEditModeSystemScale, app.core, "test:endCap", { system = 1, scale = {} }))
+assert(app.core:GetEditModeSystemScale({ system = player.system, systemIndex = -1 }) == nil)
+view:Refresh(player)
+assert(scaleRow.Slider.enabled and scaleRow.EditBox.shown and scaleRow.Slider.value == 1.25)
+assert(scaleRow.Slider.min == 0.5 and scaleRow.Slider.max == 2 and scaleRow.Slider.steps == 30)
+scaleRow.Slider:SetValue(1.5)
+assert(endCapScale == 1.5 and saves == 0, "slider writes the feature's scale")
+scaleRow.EditBox:SetFocus()
+scaleRow.EditBox:SetText("0.83")
+scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
+assert(math.abs(endCapScale - 0.85) < 1e-9 and not view.section.error, "typed values snap to the binding's step")
+scaleRow.EditBox:SetFocus()
+scaleRow.EditBox:SetText("5")
+scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
+assert(math.abs(endCapScale - 0.85) < 1e-9 and view.section.error, "out-of-range values are rejected")
+view.section.error = nil
+preset = true
+view:Refresh(player)
+assert(not scaleRow.Slider.enabled, "preset layouts stay read-only")
+preset = false
+endCapEnabled = false
+view:Refresh(player)
+assert(not scaleRow.Slider.enabled, "a disabled feature's scale is greyed out")
 print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")
 
 -- The config view uses the shared core service without requiring SeamlessUI or a selection.

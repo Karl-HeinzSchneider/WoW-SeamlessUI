@@ -12,9 +12,8 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local HEADER, ROW, GAP, ROW_GAP, INSET = 28, 32, 8, 3, 24
 -- Width of a slider, leaving room for its typed value on the right.
 local SLIDER_WIDTH = 175
--- How far a row's hover highlight reaches past the row on each side, and the tooltip's distance
--- from the window.
-local HOVER_OUTSET, TOOLTIP_GAP = 8, 16
+-- How far a row's hover highlight reaches past the row on each side.
+local HOVER_OUTSET = 8
 
 local states = {}
 
@@ -54,17 +53,8 @@ local function defaultText(option)
     return value == "" and L["None"] or tostring(value)
 end
 
--- The window the row is drawn in: its topmost ancestor below UIParent.
-local function windowOf(row)
-    local frame = row
-    while frame:GetParent() and frame:GetParent() ~= UIParent do
-        frame = frame:GetParent()
-    end
-    return frame
-end
-
--- At a fixed place rather than at the hovered row: level with the window's top edge, right of the
--- window (clear of the list's scroll bar) or, without room there, left of it.
+-- Anchored to the hovered row, not the cursor: the tooltip's bottom-left corner on the row's
+-- top-right corner.
 local function showTooltip(row)
     local option = row.option
     if not option then
@@ -75,9 +65,9 @@ local function showTooltip(row)
     if not setting and not (desc and desc ~= "") then
         return
     end
-    local window = windowOf(row)
     GameTooltip:SetOwner(row, "ANCHOR_NONE")
     GameTooltip:ClearAllPoints()
+    GameTooltip:SetPoint("BOTTOMLEFT", row, "TOPRIGHT")
     GameTooltip:SetText(option.name or "", 1, 1, 1)
     if desc and desc ~= "" then
         GameTooltip:AddLine(desc, nil, nil, nil, true)
@@ -86,12 +76,6 @@ local function showTooltip(row)
         GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], defaultText(option)), nil, nil, nil, true)
     end
     GameTooltip:Show()
-    local right, width = window:GetRight(), GameTooltip:GetWidth()
-    if right and width and right + TOOLTIP_GAP + width > UIParent:GetRight() then
-        GameTooltip:SetPoint("TOPRIGHT", window, "TOPLEFT", -TOOLTIP_GAP, 0)
-    else
-        GameTooltip:SetPoint("TOPLEFT", window, "TOPRIGHT", TOOLTIP_GAP, 0)
-    end
 end
 
 -- The whole row lights up and shows its tooltip while the cursor is over it or any of its

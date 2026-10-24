@@ -16,25 +16,6 @@ assert(type(internal.CreateDialog) == "function" and type(internal.MoveParent) =
 assert(type(internal.GetFrameSettings) == "function" and type(internal.GetFrameButtons) == "function")
 assert(type(internal.TriggerCallback) == "function" and type(lib.frameSelections) == "table")
 
--- Blizzard's dialog tracks Shift for nudging, but otherwise swallows even unused keys.
--- Keep its handlers (including key-up bookkeeping) and only change propagation.
-local nativeKeyboardHooked = false
-lib:RegisterCallback("enter", function()
-    local dialog = EditModeSystemSettingsDialog
-    if nativeKeyboardHooked or not dialog then
-        return
-    end
-    local consumedKeys = { LEFT = true, RIGHT = true, UP = true, DOWN = true, ESCAPE = true, PRINTSCREEN = true }
-    local function PropagateUnusedKey(self, key)
-        if not InCombatLockdown() then
-            self:SetPropagateKeyboardInput(not consumedKeys[key])
-        end
-    end
-    dialog:HookScript("OnKeyDown", PropagateUnusedKey)
-    dialog:HookScript("OnKeyUp", PropagateUnusedKey)
-    nativeKeyboardHooked = true
-end)
-
 -- Frames that can be selected in Edit Mode but never moved: no dragging, no arrow-key nudges and
 -- no Reset Position button.
 local fixedFrames = {}

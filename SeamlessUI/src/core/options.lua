@@ -21,6 +21,7 @@ function module:OnInitialize()
         end,
         title = L["UI"],
         general = {
+            editModeKeyboard = app.editModeKeyboard:Options(),
             xpBarTooltip = app.xpBarTooltip:Options(),
         },
         tabs = {

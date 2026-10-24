@@ -98,6 +98,12 @@ Run `lua src/tests/fps-display.lua`.
 
 ## Adding improvements
 
+`editmodekeyboard.lua` owns the General option "Pass unused Edit Mode keys through"
+(`editModeKeyboard`, default on), independently of the Edit Mode extensions toggle. Native
+key handlers stay intact; arrows, Escape and Print Screen are consumed, other keys propagate.
+Disabling restores native capture, deferred until combat ends if necessary.
+Run `lua src/tests/editmode-keyboard.lua`.
+
 Feature modules go in `src/features/`, listed in the TOC in dependency order. Register hooks and
 events in `OnEnable`, restore changes in `OnDisable`, read `app.db.profile` at use time and
 implement `OnProfileRefresh` for profile-dependent behavior.

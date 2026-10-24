@@ -8,7 +8,8 @@ Required entry point of the suite; works with no feature addon enabled.
   LibStub; features use `core:GetEditModeLibrary()`.
 - `src/core/`: lifecycle, defaults, profiles, logger, options, minimap launcher, quests and tweaks.
   `frameposition.lua` owns native position validation and persistence; `editmode.lua`,
-  `editmodelib.lua`, `systemoptions.lua` and `anchorpicker.lua` own shared Edit Mode services.
+  `editmodelib.lua`, `editmoderows.lua`, `systemoptions.lua` and `anchorpicker.lua` own shared Edit
+  Mode services.
 - `src/config/`: custom options renderer and reusable Position groups; read its `CLAUDE.md`.
 - `locales/`: the suite's shared AceLocale catalogue.
 
@@ -189,6 +190,16 @@ preset: never add entries to `EditModePresetLayoutManager` or write `EditModeMan
 (index shift and taint). Save through `C_EditMode` like the native import. Run
 `lua src/tests/default-layout.lua`.
 
+## Shared row renderer (`editmoderows.lua`)
+
+`core:LayoutEditModeSections(parent, sections, y, spaced, changed)` draws sections (`id`, `name`,
+collapse `key`, `options`) into an addon-owned frame from `y` down and returns the bottom. Each
+section gets the shared collapsible header; rows are `toggle`, `select` and `range` (the row
+schema of `RegisterEditModeSystemOptions`) on LibEditMode's templates, with `desc` tooltips.
+Headers and rows are created once per parent and reused by section `id` and row `key`; only what a
+pass leaves out is hidden, so a click or drag in progress survives a redraw. It is step 1 of moving
+every Edit Mode window onto one renderer: add new row types here, never a second renderer.
+
 ## Settings for Blizzard systems (`systemoptions.lua`)
 
 `core:RegisterEditModeSystemOptions(id, spec)` adds a section to a Blizzard Edit Mode system's
@@ -196,8 +207,8 @@ settings: `system` (`Enum.EditModeSystem`), optional `systemIndex`, `name` (coll
 optional `key` (collapse key `"settings:" .. (key or name)`), `order`, `enabled` and `options`
 (rows with `key`, `type` = `toggle`, `select` with `values = { { text, value } }` or `range` with
 `min`, `max`, `step`, optional `format`; `name`, optional `desc`, `get()`, `set(value)`, `hidden`,
-`disabled`). Core only keeps the registry; SeamlessUI draws the sections, so no feature depends
-on SeamlessUI. `core:RefreshEditModeSystemOptions()` sends
+`disabled`). Core keeps the registry and the row renderer; SeamlessUI places the sections in its
+window, so no feature depends on SeamlessUI. `core:RefreshEditModeSystemOptions()` sends
 `core:GetEditModeSystemOptionsMessage()`; `core:GetEditModeSystemOptions(system)` returns the
 enabled sections in order.
 

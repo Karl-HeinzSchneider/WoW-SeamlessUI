@@ -1,20 +1,13 @@
 -- Run from the repository root: lua src/tests/editmode-keyboard.lua
-local combat, deferred, eventHandler, propagated
+local combat, loggedIn, propagated = false, false
 function InCombatLockdown()
     return combat
 end
+function IsLoggedIn()
+    return loggedIn
+end
 function CreateFrame()
-    return {
-        RegisterEvent = function()
-            deferred = true
-        end,
-        UnregisterEvent = function()
-            deferred = false
-        end,
-        SetScript = function(_, _, handler)
-            eventHandler = handler
-        end,
-    }
+    error("keyboard option must not create frames")
 end
 function LibStub()
     return {
@@ -27,15 +20,40 @@ function LibStub()
         end,
     }
 end
-local module = { hooks = {} }
+local module = { hooks = {}, events = {}, enabled = false }
+function module:SetEnabledState(value)
+    self.enabled = value
+end
+function module:IsEnabled()
+    return self.enabled
+end
+function module:Enable()
+    if not self.enabled then
+        self.enabled = true
+        self:OnEnable()
+    end
+end
+function module:Disable()
+    if self.enabled then
+        self.enabled = false
+        self:OnDisable()
+    end
+end
 function module:IsHooked(_, script)
     return self.hooks[script] ~= nil
 end
 function module:SecureHookScript(_, script, method)
     self.hooks[script] = self[method]
 end
-function module:RegisterEvent() end
-function module:UnregisterAllEvents() end
+function module:RegisterEvent(event, handler)
+    self.events[event] = handler
+end
+function module:UnregisterEvent(event)
+    self.events[event] = nil
+end
+function module:UnregisterAllEvents()
+    self.events = {}
+end
 function module:UnhookAll()
     self.hooks = {}
 end
@@ -48,8 +66,22 @@ assert(loadfile("SeamlessUI/src/core/db.lua"))("SeamlessUI", app)
 app.db = { profile = app.dbDefaults.profile }
 assert(app.db.profile.editModeKeyboard == true, "enabled by default")
 assert(loadfile("SeamlessUI/src/features/editmodekeyboard.lua"))("SeamlessUI", app)
-module:OnEnable() -- Native addon may load later.
-assert(next(module.hooks) == nil)
+-- A disabled saved profile must never install hooks/events or touch the native dialog.
+app.db.profile = { editModeKeyboard = false }
+EditModeSystemSettingsDialog = setmetatable({}, {
+    __index = function()
+        error("disabled feature touched Blizzard's dialog")
+    end,
+})
+module:OnProfileRefresh()
+assert(not module:IsEnabled() and next(module.hooks) == nil and next(module.events) == nil)
+loggedIn = true
+module:OnProfileRefresh()
+assert(next(module.hooks) == nil and next(module.events) == nil)
+EditModeSystemSettingsDialog = nil
+local option = module:Options()
+option.set(nil, true) -- Native addon may load later.
+assert(module:IsEnabled() and module.events.ADDON_LOADED and next(module.hooks) == nil)
 EditModeSystemSettingsDialog = {
     SetPropagateKeyboardInput = function(_, value)
         propagated = value
@@ -67,22 +99,24 @@ for _, script in ipairs({ "OnKeyDown", "OnKeyUp" }) do
         assert(propagated == false, script .. " consumes " .. key)
     end
 end
-local option = module:Options()
 assert(option.get() == true)
 option.set(nil, false)
 assert(propagated == false and option.get() == false)
-module:OnKey(EditModeSystemSettingsDialog, "W")
-assert(propagated == false, "disabled option retains native capture")
+assert(not module:IsEnabled() and next(module.hooks) == nil and next(module.events) == nil)
 app.db.profile = { editModeKeyboard = true }
 module:OnProfileRefresh()
 module:OnKey(EditModeSystemSettingsDialog, "W")
 assert(propagated == true, "profile switches use the current profile")
 combat = true
-module:OnDisable()
-assert(deferred and next(module.hooks) == nil)
+app.db.profile = { editModeKeyboard = false }
+module:OnProfileRefresh()
+assert(module:IsEnabled() and module.events.PLAYER_REGEN_ENABLED)
 combat = false
-eventHandler()
-assert(propagated == false and not deferred, "restore capture after combat")
+module:OnProfileRefresh()
+assert(not module:IsEnabled() and propagated == false)
+assert(next(module.hooks) == nil and next(module.events) == nil)
+option.set(nil, true)
+assert(module:IsEnabled() and module.hooks.OnKeyDown and module.hooks.OnKeyUp)
 print("UI Edit Mode keyboard option OK")
 
 -- The shared declaration exposes the same General toggle to both options panels.

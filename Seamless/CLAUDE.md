@@ -220,8 +220,9 @@ section gets the shared collapsible header. Rows (`key`, `type`, `name`, optiona
 - `toggle`, `select` and `range`: the row schema of `RegisterEditModeSystemOptions`, on
   LibEditMode's templates. `select` also takes `values` as a function, entries with `disabled`,
   `scroll` (menu height) and `text(value)` for the shown text. `range` also takes `min`/`max`/`step`
-  as functions and `editable = true` for a click-to-type value (Enter passes the typed text to
-  `set`, Escape discards).
+  as functions. Every `range` has a click-to-type value (Enter commits, Escape discards): a typed
+  number is clamped to the range and snapped to the step, or with `editable = true` the typed text
+  goes to `set` unchanged for the option to validate.
 - `button`: `click()`, half the row's width on the native dialog button template.
 - `text`: a wrapped message from `get()`, as tall as its text.
 

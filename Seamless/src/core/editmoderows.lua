@@ -9,8 +9,8 @@ local addon = app.addon
 
 -- Header and row heights, the gap between blocks and between rows, and the rows' inset.
 local HEADER, ROW, GAP, ROW_GAP, INSET = 28, 32, 8, 3, 24
--- Width of an editable slider, leaving room for its value on the right.
-local EDITABLE_SLIDER_WIDTH = 160
+-- Width of a slider, leaving room for its typed value on the right.
+local SLIDER_WIDTH = 160
 
 local states = {}
 
@@ -115,8 +115,23 @@ function creators.select(parent, changed)
     return row
 end
 
--- Click the value to type one: Enter commits, Escape discards. The typed text goes to set()
--- unchanged, so the option validates it and may accept values outside the slider's range.
+-- A typed number for a plain slider: inside its range and on its steps, or nil.
+local function typedValue(option, text)
+    local value = tonumber(text)
+    if not value or value ~= value or value == math.huge or value == -math.huge then
+        return nil
+    end
+    local min, max, step = evaluate(option.min), evaluate(option.max), evaluate(option.step)
+    value = math.min(max, math.max(min, value))
+    if step and step > 0 then
+        value = math.min(max, min + math.floor((value - min) / step + 0.5) * step)
+    end
+    return value
+end
+
+-- Click the value to type one: Enter commits, Escape discards. With `editable`, the typed text goes
+-- to set() unchanged, so the option validates it and may accept values outside the slider's range;
+-- otherwise only a number is passed, clamped to the range and snapped to the step.
 local function addEditBox(row, changed)
     local edit = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
     row.EditBox = edit
@@ -142,8 +157,14 @@ local function addEditBox(row, changed)
         self:SetCursorPosition(0)
     end)
     edit:SetScript("OnEnterPressed", function(self)
-        if row.option then
-            row.option.set(self:GetText())
+        local option = row.option
+        if option and option.editable then
+            option.set(self:GetText())
+        elseif option then
+            local value = typedValue(option, self:GetText())
+            if value then
+                option.set(value)
+            end
         end
         self:ClearFocus()
         changed()
@@ -174,30 +195,25 @@ function creators.range(parent, changed, option)
             changed()
         end
     end, row)
-    row.Slider:SetWidth(200)
+    -- Room for a typed value such as -1234.56 inside the row, right of a shorter slider.
+    row.Slider:SetWidth(SLIDER_WIDTH)
     row.Slider.MinText:Hide()
     row.Slider.MaxText:Hide()
     row.Label:SetPoint("LEFT")
-    if option.editable then
-        -- Room for a typed value such as -1234.56 inside the row, right of a shorter slider.
-        row.Slider:SetWidth(EDITABLE_SLIDER_WIDTH)
-        addEditBox(row, changed)
-    end
+    addEditBox(row, changed)
     function row:Refresh(enabled)
         local option, value = self.option, self.option.get()
-        if self.EditBox and self.shownOption ~= option then
+        if self.shownOption ~= option then
             -- Typed text belongs to the option it was typed for.
             self.EditBox:ClearFocus()
         end
         self.enabled = enabled
         self.Slider:SetEnabled(enabled)
         setLabelEnabled(self, enabled)
-        if self.EditBox then
-            self.EditBox:SetShown(enabled)
-        end
+        self.EditBox:SetShown(enabled)
         local min, max, step = evaluate(option.min), evaluate(option.max), evaluate(option.step)
         local range = min .. ":" .. max .. ":" .. step
-        local typing = self.EditBox and self.EditBox:HasFocus()
+        local typing = self.EditBox:HasFocus()
         if not typing and (self.value ~= value or self.shownOption ~= option or self.range ~= range) then
             self.value, self.shownOption, self.range = value, option, range
             local formatters = {

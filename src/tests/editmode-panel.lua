@@ -146,8 +146,13 @@ EditModeManagerFrame = setmetatable({
     end,
 })
 function CreateFrame(_, name, parent, template)
-    assert(name == nil and parent ~= EditModeManagerFrame)
+    assert(parent ~= EditModeManagerFrame)
+    -- Only the panel itself is a public frame.
+    assert(name == nil or (name == "SeamlessEditModeWindow" and not _G[name] and template == nil))
     local frame = object(parent or UIParent, template)
+    if name then
+        _G[name] = frame
+    end
     if template == "DialogBorderTranslucentTemplate" then
         frame:SetFrameLevel(500)
     end
@@ -464,4 +469,5 @@ callbacks.exit()
 assert(not panel:IsShown() and panel.scripts.OnUpdate == nil)
 button.scripts.OnClick(button)
 assert(clicked == 1, "Stale callbacks must not run outside Edit Mode")
+assert(SeamlessEditModeWindow, "the panel is the public frame SeamlessEditModeWindow")
 print("PASS: shared Edit Mode border, anchoring, groups, callbacks, dynamic height/wrapping, reuse and combat guards")

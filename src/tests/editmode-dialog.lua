@@ -226,8 +226,13 @@ function CreateUnsecuredObjectPool(create, reset)
     return pool
 end
 function CreateFrame(kind, name, parent, template)
-    assert(name == nil)
+    -- Only the settings dialog is a public frame.
+    assert(name == nil or (name == "SeamlessEditModeSettingsDialog" and parent == UIParent and not _G[name]))
     local frame = object(kind, parent, template)
+    if name then
+        frame.name = name
+        _G[name] = frame
+    end
     if template and template:find("ScrollFrameTemplate", 1, true) then
         frame.ScrollBar = object("EventFrame", frame)
     end
@@ -261,6 +266,7 @@ assert(lib.SettingType.Button == "seamless-button" and lib.internal:GetPool(lib.
 assert(not pcall(assert(loadfile("Seamless/src/core/editmodelib.lua")), "Seamless", app))
 
 local dialog = lib.internal:CreateDialog()
+assert(SeamlessEditModeSettingsDialog == dialog and dialog.name == "SeamlessEditModeSettingsDialog")
 local scroll = dialog.SettingsScroll
 assert(scroll and scroll.template == "ResizeLayoutFrame, ScrollFrameTemplate" and scroll.parent == dialog)
 assert(scroll.points.TOP[1] == dialog.Title and scroll.points.TOP[4] == -12)

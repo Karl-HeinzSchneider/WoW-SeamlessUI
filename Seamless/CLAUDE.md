@@ -102,7 +102,7 @@ Always read `app.db.profile` inside accessors (a cached table breaks profile swi
 ## Shared Edit Mode panel (`editmode.lua`)
 
 The panel below the main Edit Mode window, with the native translucent border and the window's
-width. Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
+width. It is the public frame `SeamlessEditModeWindow` (created once it first has rows to show). Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
 enabled state or other outside values change; Core refreshes on Edit Mode enter/exit, layout
 changes and combat.
 
@@ -160,6 +160,10 @@ Run `lua src/tests/editmode-panel.lua`.
 - While a slider is held, `RefreshFrameSettings` of the same frame only refreshes rows in place
   (a full rebuild would end the drag); one full update follows when it is released. Setters may
   keep refreshing the dialog.
+
+The dialog is the public frame `SeamlessEditModeSettingsDialog`: the library creates it unnamed, so
+its `CreateDialog` runs with a `setfenv` environment whose `CreateFrame` names the one frame it
+parents to UIParent. The vendored file and the global `CreateFrame` stay untouched.
 
 It asserts on the library internals it relies on: rerun `lua src/tests/editmode-dialog.lua`
 whenever LibEditMode is updated.

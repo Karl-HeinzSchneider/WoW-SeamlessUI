@@ -44,8 +44,9 @@ local function EnsurePanel()
     if panel then
         return
     end
-    -- Anchor to native Edit Mode, but never join or dirty its layout hierarchy.
-    panel = CreateFrame("Frame", nil, UIParent)
+    -- Anchor to native Edit Mode, but never join or dirty its layout hierarchy. Public name for
+    -- other addons, macros and /fstack.
+    panel = CreateFrame("Frame", "SeamlessEditModeWindow", UIParent)
     panel:Hide()
     panel:SetFrameStrata("DIALOG")
     panel:EnableMouse(true)

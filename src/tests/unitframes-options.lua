@@ -482,9 +482,9 @@ modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")
 print("PASS: PvP icons")
 
--- Persisting an account setting alone does not update the Pet preview control.
+-- The Pet header uses only the override library, never native manager state.
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
-local savedPet, cachedPet, checkedPet, activePet, previews = 0, 0, false, false, 0
+local savedPet = 0
 local override = LibStub:NewLibrary("LibEditModeOverride-1.0", 999)
 function override:GetGlobalSetting(setting)
     assert(setting == 24)
@@ -494,44 +494,22 @@ function override:SetGlobalSetting(setting, value)
     assert(setting == 24 and type(value) == "number")
     savedPet = value
 end
-EditModeManagerFrame = {
-    HasAccountSettings = function()
-        return true
+EditModeManagerFrame = setmetatable({}, {
+    __index = function()
+        error("Pet visibility must use only LibEditModeOverride")
     end,
-    IsEditModeActive = function()
-        return activePet
+    __newindex = function()
+        error("Pet visibility must not change native manager state")
     end,
-    OnAccountSettingChanged = function(_, setting, value)
-        error("Must not rebuild the shared native account-setting map from addon code")
-    end,
-    AccountSettings = {
-        SetPetFrameShown = function(_, value)
-            checkedPet = value
-        end,
-        RefreshPetFrame = function()
-            previews = previews + 1
-        end,
-        settingsCheckButtons = {
-            PetFrame = {
-                IsControlChecked = function()
-                    return checkedPet
-                end,
-            },
-        },
-    },
-}
+})
 local petVisibility = app.optionPages.pet.config.editModeVisibility
 assert(not petVisibility())
 petVisibility(true)
-assert(savedPet == 1 and cachedPet == 0 and checkedPet and previews == 0)
-activePet = true
-petVisibility(false)
-assert(savedPet == 0 and cachedPet == 0 and not checkedPet and previews == 1)
-checkedPet = true -- Native Edit Mode can show a real pet independently of the saved flag.
-assert(petVisibility())
-activePet = false
-assert(not petVisibility())
-EditModeManagerFrame = nil
-petVisibility(true)
 assert(savedPet == 1 and petVisibility())
-print("PASS: pet visibility updates only the saved flag and Pet preview, without rebuilding native caches")
+petVisibility(false)
+assert(savedPet == 0 and not petVisibility())
+savedPet = 1 -- External account-setting changes are read from the library.
+assert(petVisibility())
+EditModeManagerFrame = nil
+assert(petVisibility())
+print("PASS: pet visibility uses only the override library getter and setter")

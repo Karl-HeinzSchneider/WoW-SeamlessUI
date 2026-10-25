@@ -38,6 +38,55 @@ local function nativeOption(key, name, order)
 end
 
 local args = {}
+args.freeSlots = {
+    type = "toggle",
+    name = L["Show free bag slots"],
+    order = 50,
+    blizzard = true,
+    default = function()
+        return app.core:GetCVarOptionInfo("displayFreeBagSlots")
+    end,
+    get = function()
+        return GetCVarBool("displayFreeBagSlots")
+    end,
+    set = function(_, value)
+        SetCVar("displayFreeBagSlots", value)
+    end,
+}
+args.spacing = {
+    type = "range",
+    name = L["Bag button spacing"],
+    order = 40,
+    min = 0,
+    max = 20,
+    step = 1,
+    default = 0,
+    disabled = function()
+        return not app.db.profile.bags.retailStyle or InCombatLockdown()
+    end,
+    get = function()
+        return app.db.profile.bags.spacing
+    end,
+    set = function(_, value)
+        app.db.profile.bags.spacing = value
+        app.RefreshBagStyle()
+    end,
+}
+args.retailStyle = {
+    type = "toggle",
+    name = L["Retail bag button style"],
+    desc = L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."],
+    order = 30,
+    width = "full",
+    default = false,
+    get = function()
+        return app.db.profile.bags.retailStyle
+    end,
+    set = function(_, value)
+        app.db.profile.bags.retailStyle = value
+        app.RefreshBagStyle()
+    end,
+}
 if orientation.Horizontal and orientation.Vertical then
     args.orientation = nativeOption("Orientation", L["Orientation"], 10)
     args.orientation.type = "select"
@@ -60,7 +109,7 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = {},
+    defaults = { profile = { bags = { retailStyle = false, spacing = 0, expanded = true } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

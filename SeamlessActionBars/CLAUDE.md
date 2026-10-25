@@ -37,7 +37,29 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   horizontally, up/down vertically) use the native layout service as well;
   unavailable settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style
   controls into the selected frame's extended Edit Mode window. Native Size is exposed only as
-  Position's Scale. No bag settings are stored in profiles.
+  Position's Scale. These native settings stay in Edit Mode layouts.
+  Show free bag slots binds Blizzard's `displayFreeBagSlots` CVar directly and works with either
+  skin; the native backpack handles the count and its visibility. It is shared with Edit Mode's
+  Style section, and the config page refreshes on external CVar changes.
+- `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
+  selected-frame Edit Mode section. Profile `bags.spacing` (default 0, 0–20 pixels) controls the
+  gaps for this style; editing is disabled with the style off or during combat. The profile's
+  `bags.expanded` (default true) remembers manual collapse/expand across reloads and
+  profile changes, synchronizing the native expand CVar. Cursor-driven auto-expansion is not saved.
+  Reuses the client's `bag-*` atlases (BagSlots2x art) and
+  portrait mask, with a 48-pixel backpack and 30-pixel circular bags, reagent bag and keyring.
+  Keeps the native buttons, scripts, inventory updates, free-slot counter and expand manager.
+  The disabled module installs no hooks, events or masks until first enabled. Its native
+  UpdateTextures/Layout and expand-manager post-hooks then remain inert when off. The manager
+  hook runs after the native cached Layout callback; native arrow dimensions are set while
+  active and restored on disable (Forever initializes them to zero). Existing unprotected bag
+  buttons keep their skin and layout during combat; first activation and restoration defer until
+  combat ends. Collapse keeps the expanded bar footprint so the backpack stays fixed for any
+  native anchor, while visible small bags pack toward it. Restoration uses a lazy event frame
+  that survives module teardown.
+  Restores textures, masks, icon anchors, button sizes, frame artwork and native expand policy on
+  disable/profile changes, then runs the native bar layout. No retail templates/mixins are used.
+  Run `lua src/tests/bag-style.lua` for inactivity, all seven buttons, directions and restoration.
 
 ## Rules
 

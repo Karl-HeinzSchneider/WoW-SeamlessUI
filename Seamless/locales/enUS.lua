@@ -164,6 +164,7 @@ L["Use Seamless layout"] = true
 L["Action Bars"] = true
 L["Alt (short)"] = "A"
 L["Backspace (short)"] = "BS"
+L["Bag button spacing"] = true
 L["Bag direction"] = true
 L["Caps Lock (short)"] = "Cap"
 L["Color the icon of an action that is out of range of your target."] = true
@@ -198,15 +199,18 @@ L["Out of range"] = true
 L["Page Down (short)"] = "PD"
 L["Page Up (short)"] = "PU"
 L["Reverse order"] = true
+L["Retail bag button style"] = true
 L["Right Arrow (short)"] = "Rt"
 L["Shift (short)"] = "S"
 L["Short keybind labels"] = true
 L["Show action bars"] = true
+L["Show free bag slots"] = true
 L["Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N5 for num pad 5."] = true
 L["Space (short)"] = "Sp"
 L["Tab (short)"] = "Tab"
 L["Up Arrow (short)"] = "Up"
 L["Up"] = true
+L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."] = true
 L["Vertical"] = true
 
 -- SeamlessCastbar

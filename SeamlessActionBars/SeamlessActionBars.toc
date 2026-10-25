@@ -15,6 +15,7 @@ src\core.lua
 src\endcaps.lua
 src\micromenu.lua
 src\bags.lua
+src\bagstyle.lua
 src\icons.lua
 src\hotkeys.lua
 

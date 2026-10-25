@@ -64,6 +64,11 @@ function options:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_DISABLED", refreshPosition)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
+    self:RegisterEvent("CVAR_UPDATE", function(_, name)
+        if name == "displayFreeBagSlots" then
+            refreshPosition()
+        end
+    end)
     self.positionHooked = self.positionHooked or {}
     for _, getFrame in ipairs(app.optionFrameGetters) do
         local frame = getFrame()

@@ -62,6 +62,7 @@ end
 function app.addon:OnDisable()
     self:UnhookAll()
     self:UnregisterAllEvents()
+    app.RefreshBagStyle()
     app.ApplyEndCapScales(true)
     app.core:RefreshEditModeSystemOptions()
     for button in pairs(watched) do
@@ -81,4 +82,5 @@ function app.addon:Refresh()
     end
     app.ApplyEndCapScales()
     app.RefreshMicroMenu()
+    app.RefreshBagStyle()
 end

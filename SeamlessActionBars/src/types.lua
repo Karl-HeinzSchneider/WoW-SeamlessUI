@@ -19,6 +19,7 @@
 ---@field RegisterEndCapScales fun()
 ---@field MicroMenuOptions fun(): table
 ---@field RefreshMicroMenu fun()
+---@field RefreshBagStyle fun()
 
 ---@class SeamlessActionBars.EndCap
 ---@field key "left"|"right" Profile key under `endCaps`.

@@ -106,6 +106,8 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - One Frames checkbox ("Seamless Damage Meter", via `core:RegisterEditModeOptions` with
   `section = "frames"`) previews active slots without changing activation. Previews use local
   sample sessions only, never live combat data, and expand collapsed windows visually.
+  Every window settings page's header visibility checkbox shares this same state and queue ID;
+  there are no per-window Edit Mode visibility preferences.
 - Reuse Core's Position section, whose Scale row edits the window scale (5 % steps; there is no
   separate Window scale slider); window and Style settings follow it.
 - Callbacks ignore calls outside Edit Mode or in combat. Never read or alter library-owned state

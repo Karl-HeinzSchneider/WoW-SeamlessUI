@@ -25,6 +25,7 @@ L["Defaults"] = true
 L["Development Build"] = true
 L["Disabled"] = true
 L["EDIT MODE"] = true
+L["Edit Mode Visibility"] = true
 L["Enable"] = true
 L["Enabled"] = true
 L["Error"] = true
@@ -140,6 +141,16 @@ L["Copy the link below (Ctrl+C, Enter):"] = true
 L["Discord"] = true
 L["Edit Mode is not ready yet."] = true
 L["Edit Mode layout"] = true
+L["Edit Mode visibility readback mismatch for setting %s."] = true
+L["Edit Mode visibility: applying setting=%s value=%s"] = true
+L["Edit Mode visibility: click page=%s value=%s callback=%s"] = true
+L["Edit Mode visibility: deferred click blocked by combat"] = true
+L["Edit Mode visibility: event=%s"] = true
+L["Edit Mode visibility: flush source=%s pending=%s database=%s active=%s combat=%s"] = true
+L["Edit Mode visibility: queued setting=%s value=%s"] = true
+L["Edit Mode visibility: read setting=%s source=%s value=%s"] = true
+L["Edit Mode visibility: refresh stage=%s success=%s error=%s"] = true
+L["Edit Mode visibility: result setting=%s success=%s error=%s"] = true
 L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = true
 L["format error: "] = true
 L["GitHub"] = true
@@ -152,6 +163,7 @@ L["Log level"] = true
 L["Minimap button clicked (%s)"] = true
 L["Minimap button registered"] = true
 L["Minimap button"] = true
+L["No Edit Mode visibility binding for setting %s."] = true
 L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] = true
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true

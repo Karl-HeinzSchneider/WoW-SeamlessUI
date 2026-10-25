@@ -102,6 +102,29 @@ in game.
 
 ## Shared Edit Mode panel (`editmode.lua`)
 
+`core:EditModeVisibility(accountSettingID, value)` is the shared native visibility binding.
+With no value it reads the pending choice, or LibEditModeOverride's saved account value.
+With a boolean it stores the latest choice in `db.global.editModeVisibilityPending`, surviving
+reloads and profile changes. Inside Edit Mode it applies through the library; outside it waits.
+The library's enter callback schedules a flush after the user's native entry stack. The service
+never opens, closes or reopens Edit Mode, and never calls `ApplyChanges`, `LoadLayouts` or
+`SaveOnly`. Each frame declares `config.editModeVisibility = core:GetEditModeVisibility(settingID,
+update)` at file load. This registers its in-place `update(boolean)` callback and returns the
+header's read/write function. The callback runs only while Edit Mode is active and out of
+combat, after `SetGlobalSetting`; clear the pending choice only if the callback and library
+readback succeed. Failed writes or refreshes stay queued. Combat defers writes. A recursion
+guard covers the batch. Pet updates only its native checkbox and preview; it never calls
+`OnAccountSettingChanged` or rebuilds the shared account-setting map. Future frame bindings
+must likewise avoid changing native shared caches. Run `lua src/tests/editmode-visibility.lua`.
+
+Custom frame pages use `core:GetCustomEditModeVisibility(id, get, set)` with a namespaced
+string ID and the addon's existing preview visibility getter/setter. It uses the same queue,
+combat guards, entry flush and error handling without native account-setting calls. Frame-list
+controls and header controls must share their underlying getter/setter. All damage-meter window
+pages use the single ID `SeamlessDamageMeter.windows`, matching the shared Frames checkbox.
+Custom preview state remains session-only after application, like the existing Frames controls;
+unapplied choices survive reloads. No visibility binding opens or closes Edit Mode.
+
 The panel below the main Edit Mode window, with the native translucent border and the window's
 width. It is the public frame `SeamlessEditModeWindow` (created once it first has rows to show). Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
 enabled state or other outside values change; Core refreshes on Edit Mode enter/exit, layout

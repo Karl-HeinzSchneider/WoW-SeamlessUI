@@ -39,6 +39,7 @@ function app.addon:RegisterConfigCategory(id, spec)
         new = spec.new,
         blizzard = spec.blizzard,
         editMode = spec.editMode,
+        editModeVisibility = spec.editModeVisibility,
     }
     if config.frame then
         config:Refresh()

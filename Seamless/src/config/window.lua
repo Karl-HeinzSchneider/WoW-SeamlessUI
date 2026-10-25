@@ -258,6 +258,51 @@ function config:CreateWindow()
     self.contentScroll:SetPoint("TOPLEFT", 233 - CONTENT_TAG_OVERHANG, -137)
     self.title = label(frame, "GameFontHighlightHuge", "", "TOPLEFT", frame, "TOPLEFT", 240, -98)
     self.title:SetWidth(620)
+    local visibility = CreateFrame("CheckButton", nil, frame)
+    self.editModeVisibility = visibility
+    visibility:SetSize(30, 29)
+    visibility:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -44, -94)
+    visibility:SetNormalAtlas("checkbox-minimal")
+    visibility:SetPushedAtlas("checkbox-minimal")
+    local checked = visibility:CreateTexture(nil, "ARTWORK")
+    checked:SetAtlas("checkmark-minimal", true)
+    checked:SetPoint("CENTER")
+    visibility:SetCheckedTexture(checked)
+    local elapsed = 0
+    visibility:SetScript("OnUpdate", function(_, delta)
+        elapsed = elapsed + delta
+        if elapsed >= 0.2 then
+            elapsed = 0
+            self:RefreshEditModeVisibility()
+        end
+    end)
+    visibility.text = label(visibility, "GameFontNormal", L["Edit Mode Visibility"], "RIGHT", visibility, "LEFT", -6, 0)
+    visibility:SetScript("OnClick", function()
+        local category = self.categories[self.selected]
+        local callback = category and category.editModeVisibility
+        local value = visibility:GetChecked() and true or false
+        app.logger:debug(
+            L["Edit Mode visibility: click page=%s value=%s callback=%s"],
+            tostring(self.selected),
+            tostring(value),
+            type(callback)
+        )
+        if type(callback) ~= "function" then
+            return
+        end
+        C_Timer.After(0, function()
+            if InCombatLockdown() then
+                app.logger:debug(L["Edit Mode visibility: deferred click blocked by combat"])
+                self:RefreshEditModeVisibility()
+                return
+            end
+            local ok, err = pcall(callback, value)
+            if not ok then
+                app.logger:warn("%s", err)
+            end
+            self:RefreshEditModeVisibility()
+        end)
+    end)
     local divider = frame:CreateTexture(nil, "ARTWORK")
     self.divider = divider
     divider:SetAtlas("Options_HorizontalDivider", true)
@@ -268,6 +313,23 @@ function config:CreateWindow()
     self.contentScroll:HookScript("OnSizeChanged", function()
         self:UpdateContentHeight()
     end)
+end
+
+function config:RefreshEditModeVisibility()
+    local button = self.editModeVisibility
+    local category = self.categories[self.selected]
+    local callback = category and category.editModeVisibility
+    local shown = not self.minimized and type(callback) == "function"
+    button:SetShown(shown)
+    self.title:SetWidth(shown and (620 - button.text:GetStringWidth() - 42) or 620)
+    if shown then
+        local ok, value = pcall(callback)
+        button:SetChecked(ok and value == true)
+        button:SetEnabled(ok and not InCombatLockdown())
+        if not ok then
+            app.logger:warn("%s", value)
+        end
+    end
 end
 
 function config:SetMinimized(minimized)
@@ -417,6 +479,7 @@ function config:Refresh()
     end
     local category = self.categories[self.selected]
     self.title:SetText(category and category.name or "")
+    self:RefreshEditModeVisibility()
     if category then
         local page = self.pages[category.id]
         if not page then

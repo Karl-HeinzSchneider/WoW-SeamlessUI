@@ -30,6 +30,15 @@ local previews = {}
 -- The Frames list checkboxes; the previews show by default.
 local shown = { target = true, focus = true }
 
+function app.PreviewVisibility(key, value)
+    if value ~= nil then
+        shown[key] = value
+        EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
+        app.UpdatePreviews()
+    end
+    return shown[key]
+end
+
 ---@param key string
 ---@return StatusBar?
 function app.PreviewFrame(key)
@@ -161,12 +170,10 @@ function app.RegisterPreviews()
                 type = "toggle",
                 name = specs[key].name,
                 get = function()
-                    return shown[key]
+                    return app.PreviewVisibility(key)
                 end,
                 set = function(value)
-                    shown[key] = value
-                    EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
-                    app.UpdatePreviews()
+                    app.PreviewVisibility(key, value)
                 end,
             }
         end

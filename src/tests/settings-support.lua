@@ -1,6 +1,15 @@
 -- Read only the literal defaults from page declarations for behavior harnesses that do not
 -- load UI modules. config-options.lua separately exercises the complete declarations.
 local support = {}
+function support.customVisibility(_, id, get, set)
+    assert(type(id) == "string" and type(get) == "function" and type(set) == "function")
+    return function(value)
+        if value ~= nil then
+            set(value)
+        end
+        return get()
+    end
+end
 -- Inert declarations for page-only harnesses; dialog tests exercise the real action bindings.
 function support.buttonSection(_, buttons)
     for _, button in ipairs(buttons) do

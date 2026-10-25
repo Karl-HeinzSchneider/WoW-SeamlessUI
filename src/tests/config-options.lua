@@ -49,6 +49,17 @@ assert(coreApp.config.categories["Seamless:profiles"])
 local core = coreApp.addon
 core.GetEditModeButtonSection = support.buttonSection
 core.GetEditModePositionButton = support.positionButton
+local customVisibilityIDs = {}
+function core:GetCustomEditModeVisibility(id, get, set)
+    customVisibilityIDs[id] = (customVisibilityIDs[id] or 0) + 1
+    return support.customVisibility(self, id, get, set)
+end
+function core:GetEditModeVisibility(setting, update)
+    assert(type(setting) == "number" and type(update) == "function")
+    return function()
+        return false
+    end
+end
 function core:GetEditModeLibrary()
     return { SettingType = { Button = "seamless-button" } }
 end
@@ -77,6 +88,7 @@ function time()
     return 1
 end
 Enum = { EditModeUnitFrameSetting = { FrameSize = 1 }, EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
+Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
 Settings = {}
 C_CVar = {
     GetCVar = function()
@@ -448,4 +460,17 @@ local ok = pcall(function()
     })
 end)
 assert(not ok, "Conflicting defaults must fail before AceDB starts")
+for _, id in ipairs({
+    "SeamlessCastbar.target",
+    "SeamlessCastbar.focus",
+    "SeamlessUnitframes.targettarget",
+    "SeamlessUnitframes.focustarget",
+    "SeamlessUI.fpsDisplay",
+}) do
+    assert(customVisibilityIDs[id] == 1, "Custom frame must declare its header checkbox: " .. id)
+end
+assert(customVisibilityIDs["SeamlessDamageMeter.windows"] == 6, "Every meter page uses the same visibility setting")
+for id in pairs(customVisibilityIDs) do
+    assert(not id:match("^SeamlessDamageMeter%.window%d"), "No per-window meter visibility settings")
+end
 print("All addon page declarations, defaults, profile bindings, metadata and deferred refresh OK")

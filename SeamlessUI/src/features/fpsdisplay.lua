@@ -11,6 +11,15 @@ local lib = app.core:GetEditModeLibrary()
 local anchor
 local originalPoints
 local showAnchor = true
+
+function module:EditModeVisibility(value)
+    if value ~= nil then
+        showAnchor = value
+        EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
+        self:Refresh()
+    end
+    return showAnchor
+end
 local visibilityBeforeEditMode
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
 local display
@@ -237,12 +246,10 @@ app.core:RegisterEditModeOptions("SeamlessUI.FPSDisplay", {
             type = "toggle",
             name = L["FPS display"],
             get = function()
-                return showAnchor
+                return module:EditModeVisibility()
             end,
             set = function(value)
-                showAnchor = value
-                EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
-                module:Refresh()
+                module:EditModeVisibility(value)
             end,
         },
     },

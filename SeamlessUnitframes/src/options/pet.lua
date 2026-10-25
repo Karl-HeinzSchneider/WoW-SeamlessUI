@@ -33,6 +33,11 @@ app.optionPages.pet = {
         },
     },
     config = {
+        editModeVisibility = app.core:GetEditModeVisibility(Enum.EditModeAccountSetting.ShowPetFrame, function(value)
+            local account = EditModeManagerFrame.AccountSettings
+            account:SetPetFrameShown(value, false)
+            account:RefreshPetFrame()
+        end),
         editModeFrame = function()
             return PetFrame
         end,

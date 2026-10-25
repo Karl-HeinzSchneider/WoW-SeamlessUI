@@ -168,7 +168,6 @@ end
 -- L["Alt (short)"] = "A"
 -- L["Backspace (short)"] = "BS"
 -- L["Bag direction"] = "Bag direction"
--- L["Bag slot spacing"] = "Bag slot spacing"
 -- L["Caps Lock (short)"] = "Cap"
 -- L["Color the icon of an action that is out of range of your target."] = "Color the icon of an action that is out of range of your target."
 -- L["Color the icon of an action you lack the mana, rage or energy for, instead of the game's light blue shade."] = "Color the icon of an action you lack the mana, rage or energy for, instead of the game's light blue shade."

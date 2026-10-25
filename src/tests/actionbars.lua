@@ -386,7 +386,7 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 3)
+assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 2)
 assert(bagSpec.options[2].values()[1].text == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])
@@ -394,14 +394,14 @@ bagStyle.orientation.set(nil, 1)
 assert(bagSpec.options[2].values()[1].text == L["Up"])
 assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
 bagStyle.direction.set(nil, 1)
-bagStyle.padding.set(nil, 7)
 bags.args.position.scale.set(1.25)
-assert(native[0] == 1 and native[1] == 1 and native[2] == 125 and native[3] == 7)
+assert(native[0] == 1 and native[1] == 1 and native[2] == 125 and native[3] == 4)
+assert(bagStyle.padding == nil, "unsupported slot spacing is not exposed")
 assert(bagStyle.size == nil, "size is only exposed through Position and scale")
 canEdit = false
-assert(bagStyle.orientation.disabled() and bagStyle.direction.disabled() and bagStyle.padding.disabled())
+assert(bagStyle.orientation.disabled() and bagStyle.direction.disabled())
 canEdit = true
 BagsBar = nil
-assert(bags.hidden() and bagStyle.padding.disabled() and bagStyle.orientation.get() == nil)
+assert(bags.hidden() and bagStyle.direction.disabled() and bagStyle.orientation.get() == nil)
 
 print("PASS: short labels, range/mana tints, native restore, hotkey restore, endcaps, micro menu and bags")

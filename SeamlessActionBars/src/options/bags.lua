@@ -57,13 +57,6 @@ if direction.Left and direction.Right and direction.Up and direction.Down then
         return { [direction.Left] = L["Left"], [direction.Right] = L["Right"] }
     end
 end
-if settings.BagSlotPadding then
-    args.padding = nativeOption("BagSlotPadding", L["Bag slot spacing"], 30)
-    args.padding.type = "range"
-    args.padding.min = 2
-    args.padding.max = 10
-    args.padding.step = 1
-end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {

@@ -111,7 +111,7 @@ StaticPopupDialogs.SeamlessConfigConfirm = {
 }
 
 function Row:Commit(...)
-    if self.syncing or not self.enabled then
+    if self.syncing or not self.enabled or (self.inEditMode and InCombatLockdown()) then
         return false
     end
     local option, values = self.option, { ... }
@@ -124,7 +124,7 @@ function Row:Commit(...)
     end
     local function apply()
         -- Recheck state after confirmation, as a profile may have changed.
-        if option:Read("hidden") or option:Read("disabled") then
+        if option:Read("hidden") or option:Read("disabled") or (self.inEditMode and InCombatLockdown()) then
             return
         end
         option:Read(option:Read("type") == "execute" and "func" or "set", unpack(values))
@@ -368,7 +368,7 @@ function creators.color(page)
         local option = row.option
         local r, g, b, a = option:Read("get")
         local function apply(red, green, blue, alpha)
-            if option:Read("disabled") then
+            if option:Read("disabled") or (row.inEditMode and InCombatLockdown()) then
                 return
             end
             option:Read("set", red, green, blue, alpha)

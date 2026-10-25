@@ -158,6 +158,46 @@ function module:Refresh()
     app.core:RefreshEditModeOptions()
 end
 
+function module:Options()
+    local args = {
+        startup = {
+            type = "toggle",
+            order = 1,
+            name = L["Show FPS on startup"],
+            default = false,
+            get = function()
+                return app.core.db.profile.tweaks.showFramerateOnStartup
+            end,
+            set = function(_, value)
+                app.core.db.profile.tweaks.showFramerateOnStartup = value
+                visibilityBeforeEditMode = value
+                self:Refresh()
+            end,
+        },
+    }
+    for index, entry in ipairs({
+        { "showLatency", L["Show latency"] },
+        { "whiteLatency", L["White latency text"] },
+        { "roundFramerate", L["Round FPS"] },
+    }) do
+        local key = entry[1]
+        args[key] = {
+            type = "toggle",
+            order = index + 1,
+            name = entry[2],
+            default = false,
+            get = function()
+                return app.db.profile.fpsDisplay[key]
+            end,
+            set = function(_, value)
+                app.db.profile.fpsDisplay[key] = value
+                self:Refresh()
+            end,
+        }
+    end
+    return { type = "group", inline = true, order = 30, name = L["FPS display"], args = args }
+end
+
 function module:OnEnable()
     if not FramerateFrame then
         return
@@ -247,6 +287,9 @@ function module:OnEnable()
             end,
         })
         lib:AddFrameSettings(anchor, settings)
+        app.core:RegisterEditModeSettings(anchor, "SeamlessUI", { "general", "fpsDisplay" }, function()
+            return module:IsEnabled()
+        end)
         CreateDisplay()
         HookNativeFramerate()
     end

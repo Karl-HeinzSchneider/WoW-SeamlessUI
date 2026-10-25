@@ -113,7 +113,9 @@ function app.addon:GetPositionOptions(spec)
             end,
         }
     end
-    return { type = "group", inline = true, name = L["Position and scale"], order = 10, args = args }
+    local group = { type = "group", inline = true, name = L["Position and scale"], order = 10, args = args }
+    app.config.positionGroups[args] = true
+    return group
 end
 
 ---A native frame's active layout is the only source of position values, so the group
@@ -177,6 +179,7 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
         end,
     })
     group.editMode = true
+    app.config.nativeFrames[group] = getFrame
     return group
 end
 

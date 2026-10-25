@@ -354,6 +354,7 @@ local function RegisterControls(frame)
         end,
     })
     lib:AddFrameSettings(frame, settings)
+    app.core:RegisterEditModeSettings(frame, "SeamlessDamageMeter", { "window" .. frame.config.id })
     lib:AddFrameSettingsButtons(frame, {
         {
             text = L["Edit selected skin"],

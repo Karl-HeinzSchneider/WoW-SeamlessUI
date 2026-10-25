@@ -17,7 +17,7 @@ function systemOptions:GetSections(system)
         sections[#sections + 1] = {
             id = spec.id,
             name = spec.name,
-            key = "settings:" .. (spec.key or spec.name),
+            key = spec.configOptions and spec.key or (spec.name and "settings:" .. (spec.key or spec.name)),
             options = spec.options,
         }
     end

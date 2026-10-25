@@ -183,6 +183,7 @@ function app.RegisterEditMode()
         enabled = function()
             return app.addon:IsEnabled()
         end,
+        source = { addon = appName, path = { "player" } },
         options = app.EditModeSettings(),
     })
 end

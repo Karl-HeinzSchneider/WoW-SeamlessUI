@@ -171,4 +171,15 @@ function options:OnInitialize()
         },
         tabs = tabs,
     })
+    -- Lock to Player Frame disables positioning, not the bar's other settings.
+    app.core:RegisterEditModeSettings(
+        function()
+            return PlayerCastingBarFrame
+        end,
+        appName,
+        { "player" },
+        function()
+            return app.addon:IsEnabled()
+        end
+    )
 end

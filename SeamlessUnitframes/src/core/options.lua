@@ -18,6 +18,7 @@ local function Option(row, order)
         name = row.name,
         new = row.new,
         blizzard = row.blizzard,
+        hideInEditmode = row.hideInEditmode,
         desc = row.desc,
         get = function()
             return row.get()
@@ -142,6 +143,21 @@ function module:OnInitialize()
         },
         tabs = tabs,
     })
+    for _, entry in ipairs(app.unitFrames.list) do
+        if entry.linkedTo then
+            local parent = app.unitFrames:Get(entry.linkedTo)
+            app.core:RegisterEditModeSettings(
+                function()
+                    return _G[parent.frameName]
+                end,
+                appName,
+                { entry.key },
+                function()
+                    return app.addon:IsEnabled()
+                end
+            )
+        end
+    end
 end
 
 function module:OnEnable()

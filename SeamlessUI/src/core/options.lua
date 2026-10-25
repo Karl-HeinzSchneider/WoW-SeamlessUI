@@ -23,6 +23,7 @@ function module:OnInitialize()
         general = {
             editModeKeyboard = app.editModeKeyboard:Options(),
             xpBarTooltip = app.xpBarTooltip:Options(),
+            fpsDisplay = app.fpsDisplay:Options(),
         },
         tabs = {
             blizzardEditMode = app.blizzardEditMode:Options(),

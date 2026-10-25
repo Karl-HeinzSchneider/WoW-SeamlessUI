@@ -250,6 +250,7 @@ print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 local registered, registrations, refreshes, optionRefreshes, enabled = nil, 0, 0, 0, true
 local editLib = { SettingType = { Checkbox = 1, Dropdown = 2, Slider = 3, Header = "header" } }
 app.core = {
+    RegisterEditModeSettings = function() end,
     GetEditModeLibrary = function()
         return editLib
     end,

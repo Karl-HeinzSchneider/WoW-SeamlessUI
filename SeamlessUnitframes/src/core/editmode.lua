@@ -33,6 +33,7 @@ function module:OnEnable()
                 enabled = function()
                     return app.addon:IsEnabled()
                 end,
+                source = { addon = appName, path = { entry.key } },
                 options = app.StyleOptions(entry),
             })
         end

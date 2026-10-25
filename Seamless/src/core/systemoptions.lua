@@ -50,14 +50,22 @@ end
 ---@param system table The system frame the native settings dialog is attached to.
 ---@return SeamlessCore.EditModeSystemOptions[]
 function addon:GetEditModeSystemOptions(system)
-    local sections = {}
+    local sections, owners = self:GetEditModeSettingsSections(system)
     for _, spec in pairs(registrations) do
         if
             IsEnabled(spec)
+            and not (spec.source and owners[spec.source.addon])
             and system.system == spec.system
             and (spec.systemIndex == nil or system.systemIndex == spec.systemIndex)
         then
-            sections[#sections + 1] = spec
+            if spec.source then
+                for _, section in ipairs(self:GetEditModeOptionSections(spec.source.addon, spec.source.path)) do
+                    section.order = spec.order or (#sections + 1)
+                    sections[#sections + 1] = section
+                end
+            else
+                sections[#sections + 1] = spec
+            end
         end
     end
     table.sort(sections, function(a, b)

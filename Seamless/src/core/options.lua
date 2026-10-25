@@ -136,6 +136,30 @@ function module:Register(name, spec, parent)
     local _, id = AceConfigDialog:AddToBlizOptions(name, spec.title, parent)
     self.panels[name] = { title = spec.title, id = id, options = root }
     RegisterConfigPages(name, spec.title, args, spec)
+    -- Position groups identify the native frame owning the surrounding settings tab.
+    local function bind(group, path)
+        local resolver = app.config.nativeFrames and app.config.nativeFrames[group]
+        if resolver then
+            local parent = {}
+            for index = 1, #path - 1 do
+                parent[index] = path[index]
+            end
+            app.addon:RegisterEditModeSettings(resolver, name, parent, function()
+                local owner = LibStub("AceAddon-3.0"):GetAddon(name, true)
+                return not owner or owner:IsEnabled()
+            end)
+            return
+        end
+        for key, child in pairs(group.args or {}) do
+            local nextPath = {}
+            for index, part in ipairs(path) do
+                nextPath[index] = part
+            end
+            nextPath[#nextPath + 1] = key
+            bind(child, nextPath)
+        end
+    end
+    bind(root, {})
 end
 
 -- Opens the shared config window on the addon's General page or requested tab.
@@ -167,6 +191,7 @@ end
 ---@field new? boolean Show a glowing NEW label beside this feature.
 ---@field blizzard? boolean Show a glowing BLIZZ label beside this feature.
 ---@field editMode? boolean Show a glowing EDIT MODE label: its settings live in the Edit Mode layout.
+---@field hideInEditmode? boolean Hide this feature and its settings from frame details.
 ---@field options? table<string, table> AceConfig args; each key is the setting it stores.
 ---@field settings fun(): table The current profile's settings table; `enabled` is the switch.
 ---@field toggled fun() After `enabled` changed.
@@ -185,6 +210,7 @@ function module.FeatureGroup(spec)
             new = spec.new,
             blizzard = spec.blizzard,
             editMode = spec.editMode,
+            hideInEditmode = spec.hideInEditmode,
             order = spec.order,
             width = "full",
             name = spec.name,
@@ -221,6 +247,7 @@ function module.FeatureGroup(spec)
         new = spec.new,
         blizzard = spec.blizzard,
         editMode = spec.editMode,
+        hideInEditmode = spec.hideInEditmode,
         inline = true,
         order = spec.order,
         name = spec.name,

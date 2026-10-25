@@ -181,6 +181,7 @@ Enum = { EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
 PlayerCastingBarFrame = {}
 local cast = {
     core = {
+        RegisterEditModeSettings = function() end,
         GetOptionDefault = app.addon.GetOptionDefault,
         FeatureGroup = options.FeatureGroup,
         RegisterOptions = function(_, _, spec)

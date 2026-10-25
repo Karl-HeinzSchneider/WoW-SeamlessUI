@@ -308,7 +308,14 @@ for path in embed:gmatch("file='([^']+)'") do
     assert(loadfile("Seamless/lib/LibEditMode/" .. path:gsub("\\", "/")))("Seamless", app)
 end
 dofile("src/tests/locale-support.lua")
-app.addon = {}
+app.addon = {
+    FilterEditModePositionSection = function(_, _, section)
+        return section
+    end,
+    GetEditModeSettingsSections = function()
+        return {}, {}
+    end,
+}
 UIParent.width = 1500
 local toc = assert(io.open("Seamless/Seamless.toc")):read("*a")
 local tocAce = assert(toc:find("src\\core\\ace.lua", 1, true))

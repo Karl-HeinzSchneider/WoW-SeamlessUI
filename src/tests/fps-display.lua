@@ -162,6 +162,7 @@ local app = {
         end,
     },
     core = {
+        RegisterEditModeSettings = function() end,
         db = { profile = { tweaks = { showFramerateOnStartup = false } } },
         GetEditModeLibrary = function()
             return lib

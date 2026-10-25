@@ -527,6 +527,35 @@ local function CreateSettingsWindow()
     end
 
     local function ResetSettings()
+        local mirrored, owners = addon:GetEditModeSettingsSections(window.selection.parent)
+        if next(owners) then
+            for _, section in ipairs(mirrored) do
+                for _, row in ipairs(section.options) do
+                    local option = row.option
+                    local value = option:DefaultValue()
+                    local kind = option:Read("type")
+                    local editable = kind == "toggle"
+                        or kind == "select"
+                        or kind == "range"
+                        or kind == "input"
+                        or kind == "color"
+                    if editable and value ~= nil and not option:Read("hidden") and not option:Read("disabled") then
+                        if option:Read("type") == "color" then
+                            option:Read(
+                                "set",
+                                value.r or value[1],
+                                value.g or value[2],
+                                value.b or value[3],
+                                value.a or value[4] or 1
+                            )
+                        else
+                            option:Read("set", value)
+                        end
+                    end
+                end
+            end
+            return
+        end
         local function reset(data)
             if data.set then
                 data.set(lib:GetActiveLayoutName(), data.default, true)
@@ -547,12 +576,16 @@ local function CreateSettingsWindow()
     -- The selected frame's settings, one section per header or Position, then Reset To Default.
     local function ListSections(frame)
         local settings, count = internal:GetFrameSettings(frame)
+        local mirrored, owners = addon:GetEditModeSettingsSections(frame)
+        local hasBinding = next(owners) ~= nil
         local sections = { { id = "settings", options = {} } }
         for index, data in ipairs(settings or {}) do
             if data.kind == lib.SettingType.Position then
-                sections[#sections + 1] = PositionSection(data, frame)
+                sections[#sections + 1] = addon:FilterEditModePositionSection(frame, PositionSection(data, frame))
                 -- Rows after it, up to the next header, go below without a header of their own.
                 sections[#sections + 1] = { id = "after:" .. index, options = {} }
+            elseif hasBinding then
+                -- The declarations below replace the legacy per-frame settings.
             elseif data.kind == lib.SettingType.Header then
                 sections[#sections + 1] = {
                     id = "header:" .. index,
@@ -565,6 +598,9 @@ local function CreateSettingsWindow()
                 table.insert(sections[#sections].options, ConvertSetting(data, index, frame))
             end
         end
+        for _, section in ipairs(mirrored) do
+            sections[#sections + 1] = section
+        end
         sections[#sections + 1] = {
             id = "reset",
             options = {
@@ -573,7 +609,7 @@ local function CreateSettingsWindow()
                     type = "button",
                     name = RESET_TO_DEFAULT,
                     width = BUTTON_WIDTH,
-                    disabled = count == 0,
+                    disabled = (hasBinding and #mirrored == 0) or (not hasBinding and count == 0),
                     click = ResetSettings,
                 },
             },

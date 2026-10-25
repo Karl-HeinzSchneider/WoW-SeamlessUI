@@ -68,17 +68,18 @@ UIParent = {
 InCombatLockdown = function()
     return false
 end
-local coreApp = { addon = {} }
+local coreApp = { addon = {}, config = { positionGroups = {} } }
 dofile("src/tests/locale-support.lua")
 assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
 -- Core strips its custom `default` key before AceConfig sees an option.
 local function StripDefaults(option)
-    option.default = nil
+    option.default, option.hideInEditmode = nil, nil
     for _, child in pairs(option.args or {}) do
         StripDefaults(child)
     end
 end
 app.core = {
+    RegisterEditModeSettings = function() end,
     RefreshOptions = function() end,
     GetPositionOptions = function(_, spec)
         return coreApp.addon:GetPositionOptions(spec)

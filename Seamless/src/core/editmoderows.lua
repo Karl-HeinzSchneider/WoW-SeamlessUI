@@ -378,6 +378,65 @@ function creators.text(parent)
     return row
 end
 
+-- Reuse the settings controls for every AceConfig kind, including input and color.
+-- Stack label and control to fit the narrower details window without scaling text.
+function creators.config(parent)
+    local row = CreateFrame("Frame", nil, parent)
+    function row:Refresh(enabled)
+        local option = self.option.option
+        if not self.control then
+            local kind = option:Read("type")
+            self.control =
+                assert(app.config.controlCreators[kind], "Unsupported Edit Mode option: " .. tostring(kind))(self)
+        end
+        local control = self.control
+        control.inEditMode = true
+        control:SetWidth(self:GetWidth())
+        -- Polling must not clear a typed value or interrupt a held slider.
+        if
+            not (control.ValueInput and control.ValueInput:HasFocus())
+            and not (control.Control and control.Control.HasFocus and control.Control:HasFocus())
+            and not (
+                control.Control
+                and control.Control.Slider
+                and IsMouseButtonDown("LeftButton")
+                and control.Control:IsMouseOver()
+            )
+        then
+            control:Refresh(option)
+        end
+        control.enabled = enabled
+        if control.Control then
+            control.Control:SetEnabled(enabled)
+        end
+        control:ClearAllPoints()
+        control:SetPoint("TOPLEFT")
+        control.Label:ClearAllPoints()
+        control.Label:SetPoint("TOPLEFT", 0, -4)
+        control.Label:SetWidth(self:GetWidth())
+        local labelHeight = math.max(16, control.Label:GetStringHeight())
+        local widget = control.Control
+        if widget then
+            widget:ClearAllPoints()
+            widget:SetPoint("TOPLEFT", 4, -labelHeight - 10)
+            local width = self:GetWidth() - (control.ValueInput and 90 or 12)
+            if option:Read("type") == "select" then
+                widget:SetPoint("TOPLEFT", 24, -labelHeight - 10)
+                width = self:GetWidth() - 52
+            end
+            if option:Read("type") ~= "toggle" and option:Read("type") ~= "color" then
+                widget:SetWidth(width)
+            end
+            self.rowHeight = labelHeight + 48
+        else
+            self.rowHeight = labelHeight + 12
+        end
+        control:SetHeight(self.rowHeight)
+        self:SetHeight(self.rowHeight)
+    end
+    return row
+end
+
 local function state(parent)
     local current = states[parent]
     if not current then

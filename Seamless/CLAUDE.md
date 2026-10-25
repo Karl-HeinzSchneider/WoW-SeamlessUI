@@ -54,6 +54,8 @@ At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamles
   `GetFramePositionService`: see `src/config/CLAUDE.md`.
 - Edit Mode: `RegisterEditModeOptions`, `RefreshEditModeOptions`, `RegisterEditModeSystemOptions`
   and the `editmodelib.lua` helpers, below.
+- `RegisterEditModeSettings`, `GetEditModeOptionSections`, `GetEditModeSettingsSections`: frame
+  details mirrored from settings declarations; see `src/config/CLAUDE.md`.
 
 Core never references a feature by name or loads disabled features; core profiles include all
 feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
@@ -99,6 +101,13 @@ controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
 Always read `app.db.profile` inside accessors (a cached table breaks profile switching). Put shared
 `get`/`set` on the group (`info[#info]` is the key). AceConfigRegistry rejects unknown keys. Use
 `width = "full"` and `descStyle = "inline"` for toggles whose description should show.
+
+Frame settings mirror into their Edit Mode details window by default. Set
+`hideInEditmode = true` on an option or group to exclude it there; `false` or omission shows it.
+The existing `editMode` flag still marks layout-backed values. Native Position groups bind their
+settings tab automatically. Custom frames use `RegisterEditModeSettings(frame, addonName, path,
+enabled)`; see `src/config/CLAUDE.md`. Details reuse the settings controls and their callbacks,
+validation and confirmation. Run `lua src/tests/editmode-options.lua`.
 
 ## Shared Edit Mode panel (`editmode.lua`)
 

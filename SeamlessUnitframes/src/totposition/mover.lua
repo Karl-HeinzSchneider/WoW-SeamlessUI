@@ -144,6 +144,7 @@ local function Create(key)
             end,
         }),
     })
+    app.core:RegisterEditModeSettings(frame, "SeamlessUnitframes", { key })
     mover.movers[key] = frame
     mover.shown[key] = true
 end

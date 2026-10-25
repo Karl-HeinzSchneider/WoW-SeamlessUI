@@ -1147,7 +1147,7 @@ assert(app:GetWindowSetting(inherited.config, "relativePoint") == app:GetWindowS
 inherited.config.anchorTo = second.config.id
 inherited.config.position = app:NewWindowPosition()
 app:SetWindowEnabled(second.config, false)
-app.core = { logger = { chat = function() end } }
+app.core = { RegisterEditModeSettings = function() end, logger = { chat = function() end } }
 for _ = 1, 12 do
     app:AddWindow()
 end

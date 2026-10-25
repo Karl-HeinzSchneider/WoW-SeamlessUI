@@ -612,3 +612,47 @@ assert(edit:GetText() == "1.5" and not edit:HasFocus(), "refresh discards stale 
 range.Control.callback(range.Control.owner, 2.5)
 assert(profile.amount == 2.5 and edit:GetText() == "2.5", "dragging updates the numeric field")
 print("Native config controls OK")
+
+-- Frame details reuse those controls, including confirmation and typed slider values.
+local created = {}
+local create = CreateFrame
+function CreateFrame(...)
+    local object = create(...)
+    created[#created + 1] = object
+    return object
+end
+function IsMouseButtonDown()
+    return false
+end
+local combat = false
+function InCombatLockdown()
+    return combat
+end
+assert(loadfile("Seamless/src/core/editmoderows.lua"))("Seamless", app)
+local detailOptions = {}
+for _, key in ipairs({ "enabled", "amount", "choice", "input" }) do
+    local option = app.config.Option:New(root, { "general", key }, "Test")
+    detailOptions[#detailOptions + 1] = { key = key, type = "config", option = option }
+end
+local details = frame()
+local sections = { { id = "details", options = detailOptions } }
+app.addon:LayoutEditModeSections(details, sections, 0, false, function() end)
+local mirroredRange, mirroredToggle
+for _, object in ipairs(created) do
+    if object.control and object.option.key == "amount" then
+        mirroredRange = object
+    end
+    if object.control and object.option.key == "enabled" then
+        mirroredToggle = object
+    end
+end
+assert(mirroredRange and mirroredToggle)
+assert(mirroredRange.control.inEditMode and mirroredRange:GetHeight() > 32)
+local typed = mirroredRange.control.ValueInput
+typed.focused = true
+typed:SetText("8")
+app.addon:RefreshEditModeSections(details)
+assert(typed:HasFocus() and typed:GetText() == "8", "Details polling preserves typed values")
+combat = true
+assert(not mirroredToggle.control:Commit(false), "Details commits recheck combat")
+print("Mirrored config controls OK")

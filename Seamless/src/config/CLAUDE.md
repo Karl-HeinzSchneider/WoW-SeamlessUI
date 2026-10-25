@@ -76,6 +76,33 @@ should call `core:RefreshOptions(addonName)` after rebuilding so flags are
 normalized before native options redraw. Never modify the vendored AceConfig
 validator to accept custom keys.
 
+## Edit Mode visibility
+
+Options in a frame's settings subtree also appear in its Edit Mode details window by default.
+Set `hideInEditmode = true` on an option, group, tab or `FeatureGroup` spec to exclude it there;
+omitted or `false` keeps it visible. Hiding a group excludes its entire subtree, even if a child
+sets `hideInEditmode = false`. The flag never hides anything in either settings panel.
+It is independent of `editMode`, which remains the badge for layout-backed values.
+`NormalizeOptionTags` validates and strips `hideInEditmode` before AceConfig sees it.
+
+```lua
+advanced = {
+    type = "input", name = L["Advanced"], hideInEditmode = true,
+    -- get/set as usual
+}
+```
+
+Core automatically binds tabs containing `GetNativePositionOptions` to that native frame.
+For addon-owned frames, call `core:RegisterEditModeSettings(frame, addonName, { tabKey }, enabled)`
+after registering the frame; `frame` may also be a resolver and `enabled` is an optional predicate.
+Bindings resolve the current option tree, defaults and profile on every layout. Original AceConfig
+paths, inherited callbacks, validation and confirmation are preserved. Details use the same control
+factories, with stacked labels and controls to fit the narrower window. Position groups use the specialized
+Edit Mode Position section through the same bindings, including the quick anchor picker and Revert.
+That section also respects `hideInEditmode` on the Position group and its individual controls.
+
+Run `lua src/tests/editmode-options.lua` and `lua src/tests/config-controls.lua`.
+
 ## Settings rows
 
 `core/options.lua` registers one category header per addon and one child page per

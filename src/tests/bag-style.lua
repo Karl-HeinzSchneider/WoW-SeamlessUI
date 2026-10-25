@@ -289,9 +289,21 @@ for _, horizontal in ipairs({ true, false }) do
         local point, anchor = KeyRingButton:GetPoint(1)
         assert(point == (horizontal and (reverse and "RIGHT" or "LEFT") or (reverse and "BOTTOM" or "TOP")))
         assert(anchor == CharacterReagentBag0Slot, "reagent and keyring both remain in the native order")
+        local expandedWidth, expandedHeight = BagsBar:GetWidth(), BagsBar:GetHeight()
+        local backpackPoint, backpackAnchor, backpackRelativePoint = MainMenuBarBackpackButton:GetPoint(1)
         MainMenuBarBagManager.expanded = false
         MainMenuBarBagManager:OnExpandBarChanged()
         assert(not CharacterBag0Slot:IsShown(), "collapse hides ordinary bags")
+        assert(
+            BagsBar:GetWidth() == expandedWidth and BagsBar:GetHeight() == expandedHeight,
+            "collapse preserves the bar footprint so center and edge anchors keep the backpack fixed"
+        )
+        local collapsedPoint, collapsedAnchor, collapsedRelativePoint = MainMenuBarBackpackButton:GetPoint(1)
+        assert(
+            collapsedPoint == backpackPoint
+                and collapsedAnchor == backpackAnchor
+                and collapsedRelativePoint == backpackRelativePoint
+        )
         assert(
             BagBarExpandToggle:IsVisible() and BagBarExpandToggle:GetWidth() > 0 and BagBarExpandToggle:GetHeight() > 0
         )
@@ -301,6 +313,7 @@ for _, horizontal in ipairs({ true, false }) do
         )
         MainMenuBarBagManager.expanded = true
         MainMenuBarBagManager:OnExpandBarChanged()
+        assert(BagsBar:GetWidth() == expandedWidth and BagsBar:GetHeight() == expandedHeight)
         assert(
             CharacterBag0Slot:IsShown() and CharacterBag0Slot:GetWidth() == 30,
             "re-expand works immediately without combat exit"

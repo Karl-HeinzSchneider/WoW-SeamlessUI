@@ -178,10 +178,14 @@ local function layout()
     -- hook, so it must have valid dimensions even when our combat guard defers.
     bar.bagBarExpandToggleInitialWidth = 10
     bar.bagBarExpandToggleInitialHeight = 16
-    local visible = {}
+    local visible, fullLength, count = {}, 0, 0
     for _, button in MainMenuBarBagManager:EnumerateBagButtons() do
         prepare(button)
         skin(button)
+        fullLength = fullLength
+            + (bar:IsHorizontal() and button:GetWidth() or button:GetHeight())
+            + (count > 0 and 4 or 0)
+        count = count + 1
         if button:IsShown() then
             visible[#visible + 1] = button
         end
@@ -199,7 +203,7 @@ local function layout()
     local point = horizontal and (reverse and "RIGHT" or "LEFT") or (reverse and "BOTTOM" or "TOP")
     local relativePoint = horizontal and (reverse and "LEFT" or "RIGHT") or (reverse and "TOP" or "BOTTOM")
     local offset = reverse and -4 or 4
-    local previous, length = bar, 0
+    local previous = bar
     for _, button in ipairs(visible) do
         button:ClearAllPoints()
         button:SetPoint(
@@ -209,7 +213,6 @@ local function layout()
             previous ~= bar and horizontal and offset or 0,
             previous ~= bar and not horizontal and -offset or 0
         )
-        length = length + (horizontal and button:GetWidth() or button:GetHeight()) + (previous ~= bar and 4 or 0)
         previous = button
         if button == MainMenuBarBackpackButton and BagBarExpandToggle then
             local arrow = BagBarExpandToggle
@@ -219,10 +222,12 @@ local function layout()
             arrow:Show()
             arrow:UpdateOrientation()
             previous = arrow
-            length = length + 10
         end
     end
-    bar:SetSize(horizontal and length or 48, horizontal and 48 or length)
+    -- Keep the expanded footprint even while individual bags are hidden. Changing
+    -- its length moves the backpack edge when the native bar is center-anchored.
+    fullLength = fullLength + (BagBarExpandToggle and 10 or 0)
+    bar:SetSize(horizontal and fullLength or 48, horizontal and 48 or fullLength)
     changing = false
 end
 

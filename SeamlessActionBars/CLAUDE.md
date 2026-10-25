@@ -46,7 +46,9 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   UpdateTextures/Layout and expand-manager post-hooks then remain inert when off. The manager
   hook runs after the native cached Layout callback; native arrow dimensions are set while
   active and restored on disable (Forever initializes them to zero). All size/layout changes defer
-  in combat; a lazily created event frame survives module teardown to finish restoration.
+  in combat. Collapse keeps the expanded bar footprint so the backpack stays fixed for any
+  native anchor, while visible small bags pack toward it. Restoration uses a lazy event frame
+  that survives module teardown.
   Restores textures, masks, icon anchors, button sizes, frame artwork and native expand policy on
   disable/profile changes, then runs the native bar layout. No retail templates/mixins are used.
   Run `lua src/tests/bag-style.lua` for inactivity, all seven buttons, directions and restoration.

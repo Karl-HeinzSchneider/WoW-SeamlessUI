@@ -162,6 +162,7 @@ local app = {
         end,
     },
     core = {
+        GetCustomEditModeVisibility = dofile("src/tests/settings-support.lua").customVisibility,
         db = { profile = { tweaks = { showFramerateOnStartup = false } } },
         GetEditModeLibrary = function()
             return lib

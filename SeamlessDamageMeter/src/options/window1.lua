@@ -27,6 +27,11 @@ app.optionPages.window1 = {
     end,
     defaults = {},
     config = {
+        editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessDamageMeter.windows", function()
+            return app:EditModeWindowVisibility()
+        end, function(value)
+            app:EditModeWindowVisibility(value)
+        end),
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
             app.core:GetEditModePositionButton("resetPosition"),

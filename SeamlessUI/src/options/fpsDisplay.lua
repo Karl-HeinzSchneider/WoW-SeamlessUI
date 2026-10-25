@@ -8,6 +8,11 @@ app.optionPages.fpsDisplay = {
         profile = { fpsDisplay = { layouts = {}, showLatency = false, whiteLatency = false, roundFramerate = false } },
     },
     config = {
+        editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessUI.fpsDisplay", function()
+            return app.fpsDisplay:EditModeVisibility()
+        end, function(value)
+            app.fpsDisplay:EditModeVisibility(value)
+        end),
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
             app.core:GetEditModePositionButton("resetPosition"),

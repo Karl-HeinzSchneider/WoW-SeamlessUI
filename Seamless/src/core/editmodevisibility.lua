@@ -2,7 +2,7 @@
 local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local lastRead = {}
-local refreshers = {}
+local bindings = {}
 local applying = false
 local enterScheduled = false
 
@@ -48,7 +48,6 @@ local function applyPending(source)
     if applying or not pending or not next(pending) or not canApply() then
         return
     end
-    local lib = LibStub("LibEditModeOverride-1.0")
     applying = true
     for setting, value in pairs(pending) do
         app.logger:debug(
@@ -57,14 +56,10 @@ local function applyPending(source)
             tostring(value and 1 or 0)
         )
         local ok, err = pcall(function()
-            local update =
-                assert(refreshers[setting], L["No Edit Mode visibility binding for setting %s."]:format(setting))
-            lib:SetGlobalSetting(setting, value and 1 or 0)
-            update(value)
-            assert(
-                lib:GetGlobalSetting(setting) == (value and 1 or 0),
-                L["Edit Mode visibility readback mismatch for setting %s."]:format(setting)
-            )
+            local binding =
+                assert(bindings[setting], L["No Edit Mode visibility binding for setting %s."]:format(setting))
+            binding.set(value)
+            assert(binding.get() == value, L["Edit Mode visibility readback mismatch for setting %s."]:format(setting))
         end)
         app.logger:debug(
             L["Edit Mode visibility: result setting=%s success=%s error=%s"],
@@ -81,13 +76,13 @@ local function applyPending(source)
     applying = false
 end
 
----Read the pending choice (including false), or the library's saved account value.
+---Read the pending choice (including false), or the registered visibility binding.
 ---Writes outside Edit Mode wait for the next entry; writes inside apply directly.
----@param setting number EditModeAccountSetting ID.
+---@param setting number|string Account-setting ID or namespaced custom-frame ID.
 ---@param value? boolean
 ---@return boolean
 function app.addon:EditModeVisibility(setting, value)
-    assert(type(setting) == "number", "Edit Mode visibility requires an account-setting ID")
+    assert(type(setting) == "number" or type(setting) == "string", "Edit Mode visibility requires a setting ID")
     assert(value == nil or type(value) == "boolean", "Edit Mode visibility requires a boolean")
     local pending = pendingSettings()
     if value ~= nil then
@@ -101,9 +96,10 @@ function app.addon:EditModeVisibility(setting, value)
         traceRead(setting, "pending", pending[setting])
         return pending[setting]
     end
-    local saved = LibStub("LibEditModeOverride-1.0"):GetGlobalSetting(setting)
-    traceRead(setting, "library", saved)
-    return saved == 1
+    local binding = bindings[setting]
+    local saved = binding and binding.get() or false
+    traceRead(setting, type(setting) == "number" and "library" or "custom", saved)
+    return saved
 end
 
 ---Register a frame's in-place refresh and return its settings-header callback.
@@ -113,9 +109,33 @@ end
 ---@return fun(value?: boolean): boolean
 function app.addon:GetEditModeVisibility(setting, update)
     assert(type(setting) == "number" and type(update) == "function", "Invalid Edit Mode visibility binding")
-    refreshers[setting] = update
+    bindings[setting] = {
+        get = function()
+            return LibStub("LibEditModeOverride-1.0"):GetGlobalSetting(setting) == 1
+        end,
+        set = function(value)
+            LibStub("LibEditModeOverride-1.0"):SetGlobalSetting(setting, value and 1 or 0)
+            update(value)
+        end,
+    }
     return function(value)
         return self:EditModeVisibility(setting, value)
+    end
+end
+
+---Bind an addon-owned frame to the same persistent queue and Edit Mode guards.
+---@param id string Namespaced frame ID.
+---@param get fun(): boolean
+---@param set fun(value: boolean)
+---@return fun(value?: boolean): boolean
+function app.addon:GetCustomEditModeVisibility(id, get, set)
+    assert(
+        type(id) == "string" and id ~= "" and type(get) == "function" and type(set) == "function",
+        "Invalid custom visibility binding"
+    )
+    bindings[id] = { get = get, set = set }
+    return function(value)
+        return self:EditModeVisibility(id, value)
     end
 end
 app.LibEditMode:RegisterCallback("enter", function()

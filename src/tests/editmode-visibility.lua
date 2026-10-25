@@ -150,6 +150,41 @@ tick()
 assert(active and preview[24] == true)
 saved[24] = 0
 assert(not core:EditModeVisibility(24))
+-- Custom bindings share the same queue, without touching native account flags.
+active = false
+local customShown, customUpdates = true, 0
+local function customGet()
+    return customShown
+end
+local function customSet(value)
+    assert(active and not combat)
+    customShown = value
+    customUpdates = customUpdates + 1
+end
+local first = core:GetCustomEditModeVisibility("Meter.windows", customGet, customSet)
+local second = core:GetCustomEditModeVisibility("Meter.windows", customGet, customSet)
+local nativeWrites = #writes
+first(false)
+assert(not second() and customShown and customUpdates == 0)
+core:EditModeVisibility(24, true)
+active = true
+callbacks.enter()
+tick()
+assert(not customShown and customUpdates == 1 and #writes == nativeWrites + 1)
+assert(not next(app.db.global.editModeVisibilityPending))
+second(true)
+assert(first() and customShown and customUpdates == 2)
+customShown = false -- The existing Frames checkbox can change the same state.
+assert(not first() and not second())
+active = false
+first(true)
+loadService()
+local reloaded = core:GetCustomEditModeVisibility("Meter.windows", customGet, customSet)
+assert(reloaded() and not customShown)
+active = true
+callbacks.enter()
+tick()
+assert(customShown and not next(app.db.global.editModeVisibilityPending))
 app.db = nil
 callbacks.enter()
 tick()

@@ -38,6 +38,11 @@ app.optionPages.targettarget = {
         },
     },
     config = {
+        editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessUnitframes.targettarget", function()
+            return app.totMover:Visibility("targettarget")
+        end, function(value)
+            app.totMover:Visibility("targettarget", value)
+        end),
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
             app.core:GetEditModePositionButton("resetPosition"),

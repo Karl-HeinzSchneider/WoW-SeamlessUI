@@ -30,6 +30,11 @@ app.optionPages.target = {
         },
     },
     config = {
+        editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessCastbar.target", function()
+            return app.PreviewVisibility("target")
+        end, function(value)
+            app.PreviewVisibility("target", value)
+        end),
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
             app.core:GetEditModePositionButton("resetPosition"),

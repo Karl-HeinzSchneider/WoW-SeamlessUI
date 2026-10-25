@@ -7,6 +7,15 @@ local lib = app.core:GetEditModeLibrary()
 local activeLayout
 local layoutKeys = { "point", "relativePoint", "x", "y", "width", "height", "scale" }
 local showUsedWindows = true
+
+function app:EditModeWindowVisibility(value)
+    if value ~= nil then
+        showUsedWindows = value
+        EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
+        self:RebuildWindows()
+    end
+    return showUsedWindows
+end
 local registered = {}
 
 -- Layout records belong to the active AceDB profile. Copy only public geometry;
@@ -61,12 +70,10 @@ app.core:RegisterEditModeOptions("SeamlessDamageMeter", {
             type = "toggle",
             name = L["Seamless Damage Meter"],
             get = function()
-                return showUsedWindows
+                return app:EditModeWindowVisibility()
             end,
             set = function(value)
-                showUsedWindows = value
-                EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
-                app:RebuildWindows()
+                app:EditModeWindowVisibility(value)
             end,
         },
     },

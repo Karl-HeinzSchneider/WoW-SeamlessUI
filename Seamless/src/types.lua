@@ -82,7 +82,8 @@
 ---@field defaultLayoutString string Edit Mode export string of the Seamless layout.
 
 ---@class SeamlessCore.Addon
----@field EditModeVisibility fun(self: SeamlessCore.Addon, setting: number, value?: boolean): boolean
+---@field EditModeVisibility fun(self: SeamlessCore.Addon, setting: number|string, value?: boolean): boolean
+---@field GetCustomEditModeVisibility fun(self: SeamlessCore.Addon, id: string, get: fun(): boolean, set: fun(value: boolean)): fun(value?: boolean): boolean
 ---@field GetEditModeVisibility fun(self: SeamlessCore.Addon, setting: number, update: fun(value: boolean)): fun(value?: boolean): boolean
 ---@field RegisterPreviewCharacter fun(self: SeamlessCore.Addon, id: string, record: SeamlessCore.PreviewCharacter)
 ---@field GetPreviewCharacter fun(self: SeamlessCore.Addon, consumer: string): SeamlessCore.PreviewCharacter?

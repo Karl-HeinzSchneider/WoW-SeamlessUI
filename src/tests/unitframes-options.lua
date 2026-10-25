@@ -138,6 +138,7 @@ assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
 app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
 app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
 local petVisibilityUpdate
+app.core.GetCustomEditModeVisibility = dofile("src/tests/settings-support.lua").customVisibility
 function app.core:GetEditModeVisibility(setting, update)
     assert(type(update) == "function")
     petVisibilityUpdate = update

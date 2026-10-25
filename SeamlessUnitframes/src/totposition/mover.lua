@@ -25,6 +25,15 @@ local RESET = { point = "CENTER", x = 0, y = 0 }
 local mover = { movers = {}, shown = {} }
 app.totMover = mover
 
+function mover:Visibility(key, value)
+    if value ~= nil then
+        self.shown[key] = value
+        EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
+        self:Refresh()
+    end
+    return self.shown[key] ~= false
+end
+
 local function Known(value)
     return not (issecretvalue and issecretvalue(value)) and value ~= nil
 end
@@ -197,12 +206,10 @@ function mover:Register()
                 type = "toggle",
                 name = app.unitFrames:Get(key).name,
                 get = function()
-                    return self.shown[key]
+                    return self:Visibility(key)
                 end,
                 set = function(value)
-                    self.shown[key] = value
-                    EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
-                    self:Refresh()
+                    self:Visibility(key, value)
                 end,
             }
         end

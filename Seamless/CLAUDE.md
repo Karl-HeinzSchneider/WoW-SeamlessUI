@@ -117,6 +117,14 @@ guard covers the batch. Pet updates only its native checkbox and preview; it nev
 `OnAccountSettingChanged` or rebuilds the shared account-setting map. Future frame bindings
 must likewise avoid changing native shared caches. Run `lua src/tests/editmode-visibility.lua`.
 
+Custom frame pages use `core:GetCustomEditModeVisibility(id, get, set)` with a namespaced
+string ID and the addon's existing preview visibility getter/setter. It uses the same queue,
+combat guards, entry flush and error handling without native account-setting calls. Frame-list
+controls and header controls must share their underlying getter/setter. All damage-meter window
+pages use the single ID `SeamlessDamageMeter.windows`, matching the shared Frames checkbox.
+Custom preview state remains session-only after application, like the existing Frames controls;
+unapplied choices survive reloads. No visibility binding opens or closes Edit Mode.
+
 The panel below the main Edit Mode window, with the native translucent border and the window's
 width. It is the public frame `SeamlessEditModeWindow` (created once it first has rows to show). Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
 enabled state or other outside values change; Core refreshes on Edit Mode enter/exit, layout

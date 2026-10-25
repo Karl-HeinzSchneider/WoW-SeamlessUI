@@ -1,6 +1,7 @@
 ---@class SeamlessDamageMeter
 ---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field ApplyEditModeLayout fun(self: SeamlessDamageMeter) Restore the current native layout in the active profile.
+---@field EditModeWindowVisibility fun(self: SeamlessDamageMeter, value?: boolean): boolean
 ---@field RefreshThreatWindows fun(self: SeamlessDamageMeter) Refresh visible threat windows immediately from client events.
 ---@field core SeamlessCore.Addon
 ---@field addon AceAddon|AceConsole-3.0|AceEvent-3.0|AceTimer-3.0

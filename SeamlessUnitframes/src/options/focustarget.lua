@@ -38,6 +38,11 @@ app.optionPages.focustarget = {
         },
     },
     config = {
+        editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessUnitframes.focustarget", function()
+            return app.totMover:Visibility("focustarget")
+        end, function(value)
+            app.totMover:Visibility("focustarget", value)
+        end),
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
             app.core:GetEditModePositionButton("resetPosition"),

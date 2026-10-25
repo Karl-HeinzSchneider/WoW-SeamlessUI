@@ -2,9 +2,10 @@
 local L = LibStub("AceLocale-3.0"):NewLocale("Seamless", "enUS", true)
 
 -- Common / shared
+L["|cff8080ff[Blizzard CVAR]|r"] = true
+L["|cff8080ff[Saved in the Edit Mode layout]|r"] = true
 L["\n(Default: |cff8080ff%s|r)"] = true
 L["\n\n|cff8080ff[Per-character setting]|r"] = true
-L["\n\n|cff8080ff[Saved in the Edit Mode layout]|r"] = true
 L["%dd %dh %dm"] = true
 L["Accept"] = true
 L["Apply this change?"] = true

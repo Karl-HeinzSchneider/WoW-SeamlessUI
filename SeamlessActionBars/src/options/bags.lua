@@ -16,8 +16,7 @@ local function nativeOption(key, name, order)
     return {
         name = name,
         order = order,
-        editMode = true,
-        blizzard = true,
+        layoutStored = true,
         default = function()
             return setting and service:GetDefaultSetting(getFrame(), setting)
         end,
@@ -42,7 +41,6 @@ args.freeSlots = {
     type = "toggle",
     name = L["Show free bag slots"],
     order = 50,
-    blizzard = true,
     default = function()
         return app.core:GetCVarOptionInfo("displayFreeBagSlots")
     end,

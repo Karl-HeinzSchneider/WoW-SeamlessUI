@@ -30,12 +30,12 @@ end
 function app.addon:GetCVarOptionInfo(name)
     local _, default, _, character = C_CVar.GetCVarInfo(name)
     if default == "0" then
-        return false, character
+        return false, character, true
     end
     if default == "1" then
-        return true, character
+        return true, character, true
     end
-    return default, character
+    return default, character, true
 end
 
 -- Compatibility with existing option declarations is data-only. The custom
@@ -65,27 +65,28 @@ end
 
 function Option:TooltipDetails()
     local resolver = app.config.optionInfo and app.config.optionInfo[self.appName]
-    local value, perCharacter = self:Read("default"), nil
+    local value, perCharacter, blizzardCVar = self:Read("default"), nil, nil
     if type(value) == "function" then
-        value = value()
+        value, perCharacter, blizzardCVar = value()
     end
     if resolver then
-        local resolved
-        resolved, perCharacter = resolver(self.path)
+        local resolved, resolvedPerCharacter, resolvedCVar = resolver(self.path)
+        perCharacter = perCharacter or resolvedPerCharacter
+        blizzardCVar = blizzardCVar or resolvedCVar
         if value == nil then
             value = resolved
         end
     end
     if value == nil then
-        return L["Not applicable"], perCharacter
+        return L["Not applicable"], perCharacter, blizzardCVar
     end
     if type(value) == "boolean" then
-        return value and L["Enabled"] or L["Disabled"], perCharacter
+        return value and L["Enabled"] or L["Disabled"], perCharacter, blizzardCVar
     end
     if self:Read("type") == "select" then
         for _, choice in ipairs(self:Choices()) do
             if choice.value == value then
-                return choice.text, perCharacter
+                return choice.text, perCharacter, blizzardCVar
             end
         end
     end
@@ -99,11 +100,12 @@ function Option:TooltipDetails()
                 math.floor(b * 255 + 0.5),
                 math.floor(a * 255 + 0.5)
             ),
-                perCharacter
+                perCharacter,
+                blizzardCVar
         end
-        return L["Not applicable"], perCharacter
+        return L["Not applicable"], perCharacter, blizzardCVar
     end
-    return value == "" and L["None"] or tostring(value), perCharacter
+    return value == "" and L["None"] or tostring(value), perCharacter, blizzardCVar
 end
 
 function Option:Read(member, ...)
@@ -136,7 +138,7 @@ function Option:Read(member, ...)
     return value
 end
 
--- True when this option or one of its groups is tagged `editMode`: its value lives
+-- True when this option or one of its groups declares layout storage: its value lives
 -- in the Edit Mode layout, not the profile.
 function Option:InEditModeLayout()
     local group = self.root
@@ -145,7 +147,7 @@ function Option:InEditModeLayout()
         if not group then
             return false
         end
-        if group.editMode then
+        if group.layoutStored or group.editMode then
             return true
         end
     end

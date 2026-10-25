@@ -382,14 +382,24 @@ app.optionPages = {}
 assert(loadfile(root .. "options/bags.lua"))("SeamlessActionBars", app)
 local bags = app.optionPages.bags.config
 local bagStyle = bags.args.layout.args
+Enum.EditModeSystem.Bags = 21
+load("bags.lua")
+microModule:OnInitialize()
+local bagSpec = menuSpec
+assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 4)
+assert(bagSpec.options[2].values()[1].text == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])
 bagStyle.orientation.set(nil, 1)
+assert(bagSpec.options[2].values()[1].text == L["Up"])
 assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
 bagStyle.direction.set(nil, 1)
 bagStyle.padding.set(nil, 7)
 bags.args.position.scale.set(1.25)
 assert(native[0] == 1 and native[1] == 1 and native[2] == 125 and native[3] == 7)
+bagSpec.options[4].set(150)
+assert(bagStyle.size.get() == 150 and bags.args.position.scale.get() == 1.5)
+assert(bagStyle.size.blizzard and bagStyle.size.editMode and bagSpec.options[4].format(150) == "150%")
 canEdit = false
 assert(bagStyle.orientation.disabled() and bagStyle.direction.disabled() and bagStyle.padding.disabled())
 canEdit = true

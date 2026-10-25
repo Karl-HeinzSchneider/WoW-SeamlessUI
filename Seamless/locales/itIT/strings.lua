@@ -168,6 +168,7 @@ end
 -- L["Alt (short)"] = "A"
 -- L["Backspace (short)"] = "BS"
 -- L["Bag direction"] = "Bag direction"
+-- L["Bag size"] = "Bag size"
 -- L["Bag slot spacing"] = "Bag slot spacing"
 -- L["Caps Lock (short)"] = "Cap"
 -- L["Color the icon of an action that is out of range of your target."] = "Color the icon of an action that is out of range of your target."

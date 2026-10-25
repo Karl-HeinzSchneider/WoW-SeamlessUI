@@ -36,7 +36,7 @@ function addon:RegisterEditModeSystemOptions(id, spec)
         assert(type(option.name) == "string", "Row label is required")
         assert(type(option.get) == "function" and type(option.set) == "function", "Row needs get/set")
         if option.type == "select" then
-            assert(type(option.values) == "table", "Select needs values")
+            assert(type(option.values) == "table" or type(option.values) == "function", "Select needs values")
         elseif option.type == "range" then
             assert(option.min and option.max and option.step, "Range needs min, max and step")
         end

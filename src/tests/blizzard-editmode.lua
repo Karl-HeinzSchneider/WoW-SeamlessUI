@@ -512,7 +512,9 @@ app.core:RegisterEditModeSystemOptions("Test", {
             key = "format",
             type = "select",
             name = "Format",
-            values = { { text = "Alpha", value = "A" }, { text = "Beta", value = "B" } },
+            values = function()
+                return { { text = "Alpha", value = "A" }, { text = "Beta", value = "B" } }
+            end,
             get = getFormat,
             set = setFormat,
             disabled = function()

@@ -35,7 +35,9 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
 - `src/options/bags.lua`: the Bags tab uses the client's `BagsBar` for native position and
   Size, with explicit Revert and Reset Position footer actions. Orientation, direction (left/right
   horizontally, up/down vertically) and bag slot spacing use the native layout service as well;
-  unavailable settings and read-only layouts disable editing. No bag settings are stored in profiles.
+  unavailable settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style
+  controls (including native Size in percent) into the selected frame's extended Edit Mode window.
+  Size and Position's Scale edit the same native setting. No bag settings are stored in profiles.
 
 ## Rules
 

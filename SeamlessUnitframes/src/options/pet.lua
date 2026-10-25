@@ -36,8 +36,22 @@ app.optionPages.pet = {
         editModeVisibility = function(value)
             local lib = LibStub("LibEditModeOverride-1.0")
             local setting = Enum.EditModeAccountSetting.ShowPetFrame
+            local manager = EditModeManagerFrame
+            local account = manager and manager.AccountSettings
             if value ~= nil then
                 lib:SetGlobalSetting(setting, value and 1 or 0)
+                -- The library only persists the value; native previews read the manager's
+                -- cache and checkbox, not C_EditMode.GetAccountSettings().
+                if manager and manager:HasAccountSettings() then
+                    manager:OnAccountSettingChanged(setting, value)
+                    account:SetPetFrameShown(value)
+                    if manager:IsEditModeActive() then
+                        account:RefreshPetFrame()
+                    end
+                end
+            end
+            if account and manager:IsEditModeActive() then
+                return account.settingsCheckButtons.PetFrame:IsControlChecked()
             end
             return lib:GetGlobalSetting(setting) == 1
         end,

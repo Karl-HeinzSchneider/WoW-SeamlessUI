@@ -481,3 +481,58 @@ enabled = false
 modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")
 print("PASS: PvP icons")
+
+-- Persisting an account setting alone does not update the client's preview cache/control.
+Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
+local savedPet, cachedPet, checkedPet, activePet, previews = 0, 0, false, false, 0
+local override = LibStub:NewLibrary("LibEditModeOverride-1.0", 999)
+function override:GetGlobalSetting(setting)
+    assert(setting == 24)
+    return savedPet
+end
+function override:SetGlobalSetting(setting, value)
+    assert(setting == 24 and type(value) == "number")
+    savedPet = value
+end
+EditModeManagerFrame = {
+    HasAccountSettings = function()
+        return true
+    end,
+    IsEditModeActive = function()
+        return activePet
+    end,
+    OnAccountSettingChanged = function(_, setting, value)
+        assert(setting == 24)
+        cachedPet = value and 1 or 0
+    end,
+    AccountSettings = {
+        SetPetFrameShown = function(_, value)
+            checkedPet = value
+        end,
+        RefreshPetFrame = function()
+            previews = previews + 1
+        end,
+        settingsCheckButtons = {
+            PetFrame = {
+                IsControlChecked = function()
+                    return checkedPet
+                end,
+            },
+        },
+    },
+}
+local petVisibility = app.optionPages.pet.config.editModeVisibility
+assert(not petVisibility())
+petVisibility(true)
+assert(savedPet == 1 and cachedPet == 1 and checkedPet and previews == 0)
+activePet = true
+petVisibility(false)
+assert(savedPet == 0 and cachedPet == 0 and not checkedPet and previews == 1)
+checkedPet = true -- Native Edit Mode can show a real pet independently of the saved flag.
+assert(petVisibility())
+activePet = false
+assert(not petVisibility())
+EditModeManagerFrame = nil
+petVisibility(true)
+assert(savedPet == 1 and petVisibility())
+print("PASS: pet visibility synchronizes saved, cached and live Edit Mode state")

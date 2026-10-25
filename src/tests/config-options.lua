@@ -96,7 +96,14 @@ options:RegisterAddon("Unitframes", {
             new = true,
             blizzard = true,
             args = {
-                tagged = { type = "toggle", name = "Tagged", new = true, editMode = true, default = true },
+                tagged = {
+                    type = "toggle",
+                    name = "Tagged",
+                    new = true,
+                    editMode = true,
+                    hideInEditmode = true,
+                    default = true,
+                },
             },
         },
         target = { name = "TargetFrame", order = 20, args = {} },
@@ -121,6 +128,9 @@ assert(children[2].new and children[2].blizzard)
 local playerTab = tables.Unitframes.args.player
 assert(playerTab.new == nil and playerTab.blizzard == nil)
 assert(playerTab.args.tagged.new == nil)
+assert(
+    playerTab.args.tagged.hideInEditmode == nil and config:GetOptionTags(playerTab.args.tagged).hideInEditmode == true
+)
 assert(config:GetOptionTags(playerTab.args.tagged).new)
 assert(playerTab.args.tagged.editMode == nil and config:GetOptionTags(playerTab.args.tagged).editMode)
 assert(config.Option:New(tables.Unitframes, { "player", "tagged" }, "Unitframes"):InEditModeLayout())
@@ -163,6 +173,7 @@ print("Config options OK")
 local settings, toggles = { enabled = true }, 0
 local switch = options.FeatureGroup({
     name = "Short keybind labels",
+    hideInEditmode = true,
     settings = function()
         return settings
     end,
@@ -170,6 +181,7 @@ local switch = options.FeatureGroup({
         toggles = toggles + 1
     end,
 })
+assert(switch.hideInEditmode == true)
 assert(switch.type == "toggle" and switch.name == "Short keybind labels" and not switch.args)
 switch.set({ "general", "keybinds" }, false)
 assert(not settings.enabled and toggles == 1 and not switch.disabled())
@@ -181,6 +193,7 @@ Enum = { EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
 PlayerCastingBarFrame = {}
 local cast = {
     core = {
+        RegisterEditModeSettings = function() end,
         GetOptionDefault = app.addon.GetOptionDefault,
         FeatureGroup = options.FeatureGroup,
         RegisterOptions = function(_, _, spec)

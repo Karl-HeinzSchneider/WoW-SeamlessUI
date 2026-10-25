@@ -298,7 +298,7 @@ local coreMessages = 0
 function app.core:SendMessage()
     coreMessages = coreMessages + 1
 end
-local coreApp = { addon = app.core }
+local coreApp = { addon = app.core, config = { nativeFrames = {}, positionGroups = {} } }
 assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
 assert(loadfile("Seamless/src/core/systemoptions.lua"))("Seamless", coreApp)
 -- Core's real row renderer and Position section draw the controls.
@@ -569,7 +569,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 L["Focus frame"], L["Target frame"] = "Z Focus", "A Target"
 L["Anchor"], L["Top right"], L["Revert changes"] = "Translated anchor", "Translated top right", "Translated revert"
 L["X and Y must be finite numbers."] = "Translated numeric error"
-local coreApp = { addon = app.core }
+local coreApp = { addon = app.core, config = { nativeFrames = {}, positionGroups = {} } }
 assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
 assert(loadfile("Seamless/src/core/editmodeposition.lua"))("Seamless", coreApp)
 assert(loadfile("SeamlessUI/src/features/blizzardposition.lua"))("SeamlessUI", app)

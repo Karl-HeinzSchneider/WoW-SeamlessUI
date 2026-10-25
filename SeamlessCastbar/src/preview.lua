@@ -102,6 +102,7 @@ local function createPreview(key)
         settings[#settings + 1] = setting
     end
     lib:AddFrameSettings(preview, settings)
+    app.core:RegisterEditModeSettings(preview, "SeamlessCastbar", { key })
     previews[key] = preview
 end
 

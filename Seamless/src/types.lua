@@ -36,7 +36,11 @@
 ---@field selected? string
 ---@field minimized? boolean
 ---@field optionInfo table<string, fun(path: string[]): any, boolean?>
----@field optionTags table<table, { new?: boolean, blizzard?: boolean, editMode?: boolean, default?: any }> `default`: tooltip default value or a function returning it.
+---@field editModeRows table<table, table> Cached declaration adapters using existing Edit Mode row types.
+---@field editModeBindings table[] Frame resolvers and settings paths.
+---@field positionGroups table<table, boolean> Position args rendered by the specialized details section.
+---@field nativeFrames table<table, fun(): table?> Native position groups and their frame resolvers.
+---@field optionTags table<table, { new?: boolean, blizzard?: boolean, editMode?: boolean, hideInEditmode?: boolean, default?: any }> `default`: tooltip default value or a function returning it.
 ---@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
 ---@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
 ---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
@@ -92,6 +96,10 @@
 ---@field ToggleConfig fun(self: SeamlessCore.Addon)
 ---@field RefreshConfig fun(self: SeamlessCore.Addon)
 ---@field GetEditModeLibrary fun(self: SeamlessCore.Addon): table
+---@field FilterEditModePositionSection fun(self: SeamlessCore.Addon, frame: table, section: SeamlessCore.EditModeSection): SeamlessCore.EditModeSection
+---@field RegisterEditModeSettings fun(self: SeamlessCore.Addon, frame: table|fun(): table?, name: string, path: string[], enabled: (fun(): boolean)?)
+---@field GetEditModeOptionSections fun(self: SeamlessCore.Addon, name: string, path: string[]): SeamlessCore.EditModeSection[]
+---@field GetEditModeSettingsSections fun(self: SeamlessCore.Addon, frame: table): SeamlessCore.EditModeSection[], table<string, boolean>
 ---@field RegisterEditModeOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeOptions)
 ---@field RefreshEditModeOptions fun(self: SeamlessCore.Addon)
 ---@field LayoutEditModeSections fun(self: SeamlessCore.Addon, parent: table, sections: SeamlessCore.EditModeSection[], y: number, spaced: boolean, changed: fun()): number
@@ -185,6 +193,7 @@
 ---@field key string? Collapse key; defaults to the name.
 ---@field order number? Section order; ties use the registration id.
 ---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
+---@field source? { addon: string, path: string[] } Settings subtree mirrored into the details window.
 ---@field options SeamlessCore.EditModeSystemOption[]
 
 ---@class SeamlessCore.EditModeSystemScale
@@ -197,6 +206,7 @@
 ---@class SeamlessCore.EditModeSystemOption
 ---@field new? boolean Optional tag in the custom config view when adapted from a style row.
 ---@field blizzard? boolean Optional tag in the custom config view when adapted from a style row.
+---@field hideInEditmode? boolean Hide from frame details when explicitly true.
 ---@field key string Unique within the section.
 ---@field type "toggle"|"select"|"range"
 ---@field name string

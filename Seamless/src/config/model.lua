@@ -59,7 +59,7 @@ function Option:New(root, path, name)
     return setmetatable({ root = root, path = path, appName = name }, { __index = self })
 end
 
-function Option:TooltipDetails()
+function Option:DefaultValue()
     local resolver = app.config.optionInfo and app.config.optionInfo[self.appName]
     local value, perCharacter = self:Read("default"), nil
     if type(value) == "function" then
@@ -72,6 +72,11 @@ function Option:TooltipDetails()
             value = resolved
         end
     end
+    return value, perCharacter
+end
+
+function Option:TooltipDetails()
+    local value, perCharacter = self:DefaultValue()
     if value == nil then
         return L["Not applicable"], perCharacter
     end
@@ -119,7 +124,13 @@ function Option:Read(member, ...)
     if not inherited[member] then
         value = group[member]
     end
-    if member == "new" or member == "blizzard" or member == "editMode" or member == "default" then
+    if
+        member == "new"
+        or member == "blizzard"
+        or member == "editMode"
+        or member == "hideInEditmode"
+        or member == "default"
+    then
         return app.config:GetOptionTags(group)[member]
     end
     info.option, info.type, info.arg, info.handler = group, group.type, group.arg, handler
@@ -193,4 +204,275 @@ function Option:Choices()
         end)
     end
     return result
+end
+
+-- Adapt declarations to the existing Edit Mode row types. No settings-panel widgets or
+-- layout rules are used here: details keep their original renderer and templates.
+app.config.editModeRows = setmetatable({}, { __mode = "k" })
+
+local function declaration(option)
+    local current = option.root
+    for _, key in ipairs(option.path) do
+        current = current.args[key]
+    end
+    return current
+end
+
+local function editModeRow(option)
+    local kind = option:Read("type")
+    local definition = declaration(option)
+    local row = app.config.editModeRows[definition]
+    if not row or row.declarationType ~= kind then
+        row = { key = table.concat(option.path, ":") .. ":" .. kind, declarationType = kind }
+        app.config.editModeRows[definition] = row
+        row.hidden = function()
+            return row.option:Read("hidden") or row.option:Read("hideInEditmode") == true
+        end
+        row.disabled = function()
+            return InCombatLockdown() or row.option:Read("disabled")
+        end
+        row.get = function()
+            return row.option:Read(kind == "description" and "name" or "get")
+        end
+        local function commit(...)
+            if row.hidden() or row.disabled() then
+                return false
+            end
+            local values = { ... }
+            local valid = row.option:Read("validate", unpack(values))
+            if valid == false or type(valid) == "string" then
+                if row.owner then
+                    GameTooltip:SetOwner(row.owner, "ANCHOR_NONE")
+                    GameTooltip:ClearAllPoints()
+                    GameTooltip:SetPoint(
+                        "BOTTOMLEFT",
+                        row.owner.Label or row.owner.Button or row.owner,
+                        "TOPRIGHT",
+                        12,
+                        8
+                    )
+                    GameTooltip:SetText(type(valid) == "string" and valid or L["Invalid value"], 1, 0.2, 0.2)
+                    GameTooltip:Show()
+                end
+                return false
+            end
+            local function apply()
+                if row.hidden() or row.disabled() then
+                    return
+                end
+                row.option:Read(kind == "execute" and "func" or "set", unpack(values))
+                LibStub("AceConfigRegistry-3.0"):NotifyChange(row.option.appName)
+            end
+            local confirm = row.option:Read("confirm", unpack(values))
+            if confirm then
+                local message = type(confirm) == "string" and confirm
+                    or row.option:Read("confirmText")
+                    or L["Apply this change?"]
+                StaticPopup_Show("SeamlessConfigConfirm", message, nil, apply)
+            else
+                apply()
+            end
+            return true
+        end
+        row.set, row.click = commit, commit
+        row.default = function()
+            return row.option:DefaultValue()
+        end
+        row.values = function()
+            return row.option:Choices()
+        end
+        row.min = function()
+            return row.option:Read("min")
+        end
+        row.max = function()
+            return row.option:Read("max")
+        end
+        row.step = function()
+            return row.option:Read("step") or 1
+        end
+    end
+    row.option = option
+    row.type = ({ execute = "button", description = "text" })[kind] or kind
+    row.name, row.desc = option:Read("name"), option:Read("desc")
+    row.hasAlpha = option:Read("hasAlpha")
+    return row
+end
+
+-- Bind a frame (or a resolver for a native frame) to its existing settings subtree.
+-- Resolvers run at use time, including when Blizzard loads a frame late.
+app.config.editModeBindings = {}
+app.config.nativeFrames = setmetatable({}, { __mode = "k" })
+app.config.positionGroups = setmetatable({}, { __mode = "k" })
+
+function app.addon:RegisterEditModeSettings(frame, name, path, enabled)
+    local bindings = app.config.editModeBindings
+    for _, binding in ipairs(bindings) do
+        if
+            binding.frame == frame
+            and binding.name == name
+            and table.concat(binding.path, ":") == table.concat(path, ":")
+        then
+            binding.enabled = enabled
+            return
+        end
+    end
+    bindings[#bindings + 1] = { frame = frame, name = name, path = path, enabled = enabled }
+end
+
+-- Groups are visibility boundaries: hideInEditmode hides the whole subtree when true.
+function app.addon:GetEditModeOptionSections(name, path)
+    local panel = app.options.panels[name]
+    if not panel then
+        return {}
+    end
+    app.config:NormalizeOptionTags(panel.options)
+    local root = app.config.Option:New(panel.options, path, name)
+    local sections = {}
+    local function visit(option, section)
+        if
+            app.config.positionGroups[option:Read("args")]
+            or option:Read("hideInEditmode") == true
+            or option:Read("hidden")
+        then
+            return
+        end
+        local kind = option:Read("type")
+        if kind == "group" then
+            local nextSection = {
+                configOptions = true,
+                id = name .. ":" .. table.concat(option.path, ":"),
+                name = option:Read("name"),
+                key = "settings:" .. name .. ":" .. table.concat(option.path, ":"),
+                options = {},
+            }
+            sections[#sections + 1] = nextSection
+            for _, child in ipairs(option:Children()) do
+                if child:Read("type") == "header" then
+                    if child:Read("hideInEditmode") ~= true then
+                        nextSection = {
+                            configOptions = true,
+                            id = name .. ":" .. table.concat(child.path, ":"),
+                            name = child:Read("name"),
+                            key = "settings:" .. name .. ":" .. table.concat(child.path, ":"),
+                            options = {},
+                        }
+                        sections[#sections + 1] = nextSection
+                    end
+                else
+                    visit(child, nextSection)
+                    -- Subsequent siblings follow a nested group, rather than moving above it.
+                    if child:Read("type") == "group" then
+                        nextSection = {
+                            configOptions = true,
+                            id = name .. ":after:" .. table.concat(child.path, ":"),
+                            options = {},
+                        }
+                    end
+                end
+            end
+        elseif kind == "header" then
+            -- Header sections are handled with their following siblings below.
+        else
+            if #section.options == 0 and sections[#sections] ~= section then
+                sections[#sections + 1] = section
+            end
+            section.options[#section.options + 1] = editModeRow(option)
+        end
+    end
+    -- Check ancestor visibility as well as the selected group.
+    local group = panel.options
+    for _, key in ipairs(path) do
+        if app.config:GetOptionTags(group).hideInEditmode == true or not group.args or not group.args[key] then
+            return {}
+        end
+        group = group.args[key]
+    end
+    visit(root, { id = name .. ":" .. table.concat(path, ":"), options = {} })
+    local result = {}
+    for _, section in ipairs(sections) do
+        if section.name or #section.options > 0 then
+            result[#result + 1] = section
+        end
+    end
+    return result
+end
+
+function app.addon:GetEditModeSettingsSections(frame)
+    local sections, owners, seen = {}, {}, {}
+    for _, binding in ipairs(app.config.editModeBindings) do
+        local target = binding.frame
+        if type(target) == "function" then
+            target = target()
+        end
+        local key = binding.name .. ":" .. table.concat(binding.path, ":")
+        if target == frame and not seen[key] and (not binding.enabled or binding.enabled()) then
+            seen[key] = true
+            owners[binding.name] = true
+            for _, section in ipairs(self:GetEditModeOptionSections(binding.name, binding.path)) do
+                section.order = #sections + 1
+                sections[#sections + 1] = section
+            end
+        end
+    end
+    return sections, owners
+end
+
+-- Position keeps its specialized controls, but observes the same declaration visibility flags.
+function app.addon:FilterEditModePositionSection(frame, section)
+    for _, binding in ipairs(app.config.editModeBindings) do
+        local target = binding.frame
+        if type(target) == "function" then
+            target = target()
+        end
+        local panel = app.options.panels[binding.name]
+        if target == frame and panel and (not binding.enabled or binding.enabled()) then
+            local function find(option, excluded)
+                excluded = excluded or option:Read("hideInEditmode") == true or option:Read("hidden")
+                local args = option:Read("args")
+                if app.config.positionGroups[args] then
+                    local result = {}
+                    for key, value in pairs(section) do
+                        result[key] = value
+                    end
+                    result.hidden = excluded or section.hidden
+                    result.options = {}
+                    for _, row in ipairs(section.options) do
+                        local copy = {}
+                        for key, value in pairs(row) do
+                            copy[key] = value
+                        end
+                        local child = args[row.key]
+                        local wasHidden = row.hidden
+                        copy.hidden = function()
+                            return excluded
+                                or (child and app.config:GetOptionTags(child).hideInEditmode == true)
+                                or (type(wasHidden) == "function" and wasHidden())
+                                or wasHidden == true
+                        end
+                        result.options[#result.options + 1] = copy
+                    end
+                    return result
+                end
+                for key, child in pairs(args or {}) do
+                    if child.type == "group" then
+                        local path = {}
+                        for index, part in ipairs(option.path) do
+                            path[index] = part
+                        end
+                        path[#path + 1] = key
+                        local found = find(app.config.Option:New(panel.options, path, binding.name), excluded)
+                        if found then
+                            return found
+                        end
+                    end
+                end
+            end
+            local option = app.config.Option:New(panel.options, binding.path, binding.name)
+            local filtered = find(option)
+            if filtered then
+                return filtered
+            end
+        end
+    end
+    return section
 end

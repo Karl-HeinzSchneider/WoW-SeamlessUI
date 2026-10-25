@@ -18,11 +18,15 @@ function config:GetOptionTags(option)
     if editMode == nil then
         editMode = saved.editMode
     end
+    local hideInEditmode = option.hideInEditmode
+    if hideInEditmode == nil then
+        hideInEditmode = saved.hideInEditmode
+    end
     local default = option.default
     if default == nil then
         default = saved.default
     end
-    return { new = new, blizzard = blizzard, editMode = editMode, default = default }
+    return { new = new, blizzard = blizzard, editMode = editMode, hideInEditmode = hideInEditmode, default = default }
 end
 
 -- These convenience flags are ours, not AceConfig schema fields. `editMode` marks
@@ -30,12 +34,22 @@ end
 -- value (or a function returning it) the custom window's tooltip shows; it wins
 -- over the addon's `tooltip` resolver, for values only the game knows.
 function config:NormalizeOptionTags(option)
-    if option.new ~= nil or option.blizzard ~= nil or option.editMode ~= nil or option.default ~= nil then
+    if
+        option.new ~= nil
+        or option.blizzard ~= nil
+        or option.editMode ~= nil
+        or option.hideInEditmode ~= nil
+        or option.default ~= nil
+    then
         assert(option.new == nil or type(option.new) == "boolean", "Option new must be a boolean")
         assert(option.blizzard == nil or type(option.blizzard) == "boolean", "Option blizzard must be a boolean")
         assert(option.editMode == nil or type(option.editMode) == "boolean", "Option editMode must be a boolean")
+        assert(
+            option.hideInEditmode == nil or type(option.hideInEditmode) == "boolean",
+            "Option hideInEditmode must be a boolean"
+        )
         self.optionTags[option] = self:GetOptionTags(option)
-        option.new, option.blizzard, option.editMode, option.default = nil, nil, nil, nil
+        option.new, option.blizzard, option.editMode, option.hideInEditmode, option.default = nil, nil, nil, nil, nil
     end
     for _, child in pairs(option.args or {}) do
         self:NormalizeOptionTags(child)

@@ -65,6 +65,7 @@ local app = {
         end,
     },
     core = {
+        RegisterEditModeSettings = function() end,
         GetNativePositionOptions = function(_, getFrame, scale)
             assert(scale.setting == Enum.EditModeUnitFrameSetting.FrameSize and scale.getFrame == getFrame)
             positioned[#positioned + 1] = getFrame()

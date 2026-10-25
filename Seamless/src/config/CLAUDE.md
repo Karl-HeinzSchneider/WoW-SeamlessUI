@@ -76,6 +76,29 @@ should call `core:RefreshOptions(addonName)` after rebuilding so flags are
 normalized before native options redraw. Never modify the vendored AceConfig
 validator to accept custom keys.
 
+## Edit Mode visibility
+
+A frame's option declarations also supply its Edit Mode details content, using the existing
+Edit Mode renderer and row types. Preserve its templates, label/control alignment, dimensions,
+fonts and spacing; do not use the settings-panel widgets or layout in the details window.
+
+Options, groups, tabs and `FeatureGroup` specs may set `hideInEditmode = true` to exclude their
+content from details. Omission or `false` includes it. A hidden group excludes its descendants;
+a hidden standalone header excludes only that header. The flag does not affect either settings
+panel, and is separate from the `editMode` layout-storage badge. Core validates and strips it
+before passing the table to AceConfig.
+
+Tabs with `GetNativePositionOptions` bind automatically to that native frame. Custom frames bind
+with `core:RegisterEditModeSettings(frame, addonName, { tabKey }, enabled)`; `frame` may be a
+resolver and `enabled` is an optional predicate. `GetEditModeOptionSections` converts the current
+declarations to the existing details schemas: toggle, select, range, button, text, input and color.
+Callbacks keep their original paths, inherited handlers, validation and confirmation. Cached row
+adapters preserve sliders and typed input across refreshes. Position uses the existing specialized
+section and respects the same visibility flag on its group and individual controls.
+
+Run `lua src/tests/editmode-options.lua` and `lua src/tests/editmode-dialog.lua`; the dialog
+harness verifies the original Edit Mode templates, widths and row heights for mirrored controls.
+
 ## Settings rows
 
 `core/options.lua` registers one category header per addon and one child page per

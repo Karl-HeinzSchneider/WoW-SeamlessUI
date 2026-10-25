@@ -100,6 +100,13 @@ Always read `app.db.profile` inside accessors (a cached table breaks profile swi
 `get`/`set` on the group (`info[#info]` is the key). AceConfigRegistry rejects unknown keys. Use
 `width = "full"` and `descStyle = "inline"` for toggles whose description should show.
 
+Frame option declarations supply Edit Mode details through the existing renderer. Include all
+headers/settings by default; `hideInEditmode = true` excludes an option (or a group's subtree)
+from details only. Do not change Edit Mode control styling or use the settings-panel layout there.
+Native Position groups bind their tabs automatically; custom frames use
+`RegisterEditModeSettings(frame, addonName, path, enabled)`. See `src/config/CLAUDE.md` and run
+`lua src/tests/editmode-options.lua` plus `lua src/tests/editmode-dialog.lua`.
+
 ## Shared Edit Mode panel (`editmode.lua`)
 
 The panel below the main Edit Mode window, with the native translucent border and the window's

@@ -189,6 +189,7 @@ local profiles = {
 local app = {
     db = { profile = profiles.Default, profiles = profiles },
     core = {
+        RegisterEditModeSettings = function() end,
         GetEditModeLibrary = function()
             return lib
         end,

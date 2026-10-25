@@ -25,11 +25,14 @@ local function evaluate(value)
 end
 
 -- Settings show their default; buttons only a description they declare.
-local SETTINGS = { toggle = true, select = true, range = true }
+local SETTINGS = { toggle = true, select = true, range = true, input = true, color = true }
 
 -- The declared default as the row shows values, like the config window's tooltips: booleans as
 -- Enabled/Disabled, choices by their label, numbers through the row's format.
 local function defaultText(option)
+    if option.option then
+        return option.option:TooltipDetails()
+    end
     local value = evaluate(option.default)
     if value == nil then
         return L["Not applicable"]
@@ -378,6 +381,85 @@ function creators.text(parent)
     return row
 end
 
+-- Additional declaration kinds use the details panel's existing label/control alignment.
+local function labeledRow(parent)
+    local row = CreateFrame("Frame", nil, parent)
+    row.Label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightMedium")
+    row.Label:SetPoint("LEFT")
+    row.Label:SetWidth(100)
+    row.Label:SetJustifyH("LEFT")
+    return row
+end
+
+function creators.input(parent, changed)
+    local row = labeledRow(parent)
+    local edit = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+    row.EditBox = edit
+    edit:SetPoint("LEFT", row.Label, "RIGHT", 5, 0)
+    edit:SetSize(200, 22)
+    edit:SetAutoFocus(false)
+    edit:SetScript("OnEnterPressed", function(self)
+        if row.option.set(self:GetText()) then
+            self:ClearFocus()
+            changed()
+        end
+    end)
+    edit:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+        self:SetText(row.option.get() or "")
+    end)
+    edit:SetScript("OnEditFocusLost", function(self)
+        self:SetText(row.option.get() or "")
+    end)
+    hover(row, edit)
+    function row:Refresh(enabled)
+        edit:SetEnabled(enabled)
+        setLabelEnabled(self, enabled)
+        if not edit:HasFocus() then
+            edit:SetText(self.option.get() or "")
+        end
+    end
+    return row
+end
+
+function creators.color(parent, changed)
+    local row = labeledRow(parent)
+    local swatch = CreateFrame("Button", nil, row, "ColorSwatchTemplate")
+    swatch:SetPoint("LEFT", row.Label, "RIGHT", 5, 0)
+    hover(row, swatch)
+    swatch:SetScript("OnClick", function()
+        local option = row.option
+        local r, g, b, a = option.get()
+        local function apply(red, green, blue, alpha)
+            if option.set(red, green, blue, alpha) then
+                changed()
+            end
+        end
+        local function picked()
+            local red, green, blue = ColorPickerFrame:GetColorRGB()
+            apply(red, green, blue, ColorPickerFrame:GetColorAlpha())
+        end
+        ColorPickerFrame:SetupColorPickerAndShow({
+            r = r,
+            g = g,
+            b = b,
+            opacity = a or 1,
+            hasOpacity = option.hasAlpha,
+            swatchFunc = picked,
+            opacityFunc = picked,
+            cancelFunc = function()
+                apply(r, g, b, a)
+            end,
+        })
+    end)
+    function row:Refresh(enabled)
+        swatch:SetEnabled(enabled)
+        setLabelEnabled(self, enabled)
+        swatch:SetColorRGB(self.option.get())
+    end
+    return row
+end
+
 local function state(parent)
     local current = states[parent]
     if not current then
@@ -388,8 +470,12 @@ local function state(parent)
 end
 
 -- A section without a shown header (no name, or a hidden one) never collapses its rows.
+local function isHidden(option)
+    return option.hideInEditmode == true or evaluate(option.hidden)
+end
+
 local function hasHeader(section)
-    return section.name ~= nil and not evaluate(section.hidden)
+    return section.name ~= nil and section.hideInEditmode ~= true and not evaluate(section.hidden)
 end
 
 local function isCollapsed(section)
@@ -404,7 +490,7 @@ local function layoutKey(sections)
         parts[#parts + 1] = section.id .. (collapsed and "-" or "+")
         if not collapsed then
             for _, option in ipairs(section.options) do
-                parts[#parts + 1] = evaluate(option.hidden) and "0" or "1"
+                parts[#parts + 1] = isHidden(option) and "0" or "1"
             end
         end
     end
@@ -468,7 +554,7 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
         if not collapsed then
             local gap = GAP
             for _, option in ipairs(section.options) do
-                if not evaluate(option.hidden) then
+                if not isHidden(option) then
                     -- With the type, so another owner's row of the same key is never reused.
                     local id = section.id .. ":" .. option.type .. ":" .. option.key
                     local row = current.rows[id]
@@ -493,6 +579,9 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
                         current.rows[id] = row
                     end
                     row.option = option
+                    if option.option then
+                        option.owner = row
+                    end
                     if row.Label then
                         row.Label:SetText(option.name)
                     end

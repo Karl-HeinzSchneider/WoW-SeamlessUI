@@ -308,7 +308,14 @@ for path in embed:gmatch("file='([^']+)'") do
     assert(loadfile("Seamless/lib/LibEditMode/" .. path:gsub("\\", "/")))("Seamless", app)
 end
 dofile("src/tests/locale-support.lua")
-app.addon = {}
+app.addon = {
+    FilterEditModePositionSection = function(_, _, section)
+        return section
+    end,
+    GetEditModeSettingsSections = function()
+        return {}, {}
+    end,
+}
 UIParent.width = 1500
 local toc = assert(io.open("Seamless/Seamless.toc")):read("*a")
 local tocAce = assert(toc:find("src\\core\\ace.lua", 1, true))
@@ -985,3 +992,123 @@ end
 print("PASS: the window attaches below Blizzard's settings dialog")
 
 print("PASS: suite frame settings window")
+
+-- Mirrored declarations must keep the original Edit Mode templates and dimensions.
+assert(loadfile("Seamless/src/config/registry.lua"))("Seamless", app)
+assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
+local previousStub = LibStub
+function LibStub(name, ...)
+    if name == "AceConfigRegistry-3.0" then
+        return { NotifyChange = function() end }
+    end
+    return previousStub(name, ...)
+end
+local profile = { toggle = true, slider = 5, dropdown = "a", input = "text" }
+local args = {
+    toggle = { type = "toggle", name = "Mirrored toggle", order = 1 },
+    slider = { type = "range", name = "Mirrored slider", order = 2, min = 0, max = 10, step = 1 },
+    dropdown = { type = "select", name = "Mirrored dropdown", order = 3, values = { a = "A" } },
+    action = { type = "execute", name = "Mirrored action", order = 4, func = function() end },
+    input = { type = "input", name = "Mirrored input", order = 5 },
+    color = {
+        type = "color",
+        name = "Mirrored color",
+        order = 6,
+        get = function()
+            return 1, 0, 0, 1
+        end,
+    },
+    heading = { type = "header", name = "Mirrored header", order = 7 },
+    message = { type = "description", name = "Mirrored text", order = 8 },
+    skipped = { type = "toggle", name = "Skipped", order = 9, hideInEditmode = true },
+}
+app.options = {
+    panels = {
+        Test = {
+            options = {
+                type = "group",
+                args = {
+                    general = {
+                        type = "group",
+                        name = "Mirrored group",
+                        args = args,
+                        get = function(info)
+                            return profile[info[#info]]
+                        end,
+                        set = function(info, value)
+                            profile[info[#info]] = value
+                        end,
+                    },
+                },
+            },
+        },
+    },
+}
+function methods:SetColorRGB(...)
+    self.color = { ... }
+end
+local native = object("Frame", UIParent)
+native.GetFrameLevel = function()
+    return 50
+end
+app.addon:AttachEditModeSettingsWindow({
+    anchor = native,
+    key = "mirror-style",
+    title = "Mirrored",
+    sections = function()
+        return app.addon:GetEditModeOptionSections("Test", { "general" })
+    end,
+    changed = function() end,
+})
+local toggle, slider, dropdown =
+    Row(list, "Mirrored toggle"), Row(list, "Mirrored slider"), Row(list, "Mirrored dropdown")
+assert(toggle.template == "EditModeSettingCheckboxTemplate" and toggle.height == 32)
+assert(slider.template == "EditModeSettingSliderTemplate" and slider.height == 32 and slider.Slider.width == 175)
+assert(dropdown.Dropdown.template == "WowStyle1DropdownTemplate" and dropdown.Dropdown.width == 200)
+assert(dropdown.Label.width == 100 and dropdown.height == 32)
+assert(Row(list, "Mirrored action").Button.template == "EditModeSystemSettingsDialogButtonTemplate")
+assert(Row(list, "Mirrored input").EditBox.template == "InputBoxTemplate")
+assert(Row(list, "Mirrored color") and Header(list, "Mirrored header") and Header(list, "Mirrored group"))
+assert(not Row(list, "Skipped"))
+assert(not app.config.controlCreators, "Mirroring never loads or uses settings-panel control factories")
+toggle:OnCheckButtonClick()
+assert(profile.toggle == false)
+local sameSlider = slider
+local input = Row(list, "Mirrored input").EditBox
+input:SetText("changed")
+input.scripts.OnEnterPressed(input)
+assert(profile.input == "changed")
+local color = Row(list, "Mirrored color")
+local swatch
+for _, child in ipairs(frames) do
+    if child.parent == color and child.template == "ColorSwatchTemplate" then
+        swatch = child
+    end
+end
+assert(swatch and color.Label.width == 100 and color.height == 32)
+local picker
+ColorPickerFrame = {
+    SetupColorPickerAndShow = function(_, options)
+        picker = options
+    end,
+    GetColorRGB = function()
+        return 0, 1, 0
+    end,
+    GetColorAlpha = function()
+        return 0.5
+    end,
+}
+args.color.set = function(_, r, g, b, a)
+    profile.color = { r, g, b, a }
+end
+swatch.scripts.OnClick()
+picker.swatchFunc()
+assert(profile.color[2] == 1 and profile.color[4] == 0.5)
+picker.cancelFunc()
+assert(profile.color[1] == 1 and profile.color[2] == 0)
+args.heading.hideInEditmode = true
+app.addon:AttachEditModeSettingsWindow(dialog.attached)
+assert(not Header(list, "Mirrored header"):IsShown(), "Only explicitly excluded headers are skipped")
+assert(Row(list, "Mirrored slider") == sameSlider, "Mirrored rows are reused across layouts")
+app.addon:DetachEditModeSettingsWindow()
+print("PASS: mirrored options retain the existing Edit Mode styling and row templates")

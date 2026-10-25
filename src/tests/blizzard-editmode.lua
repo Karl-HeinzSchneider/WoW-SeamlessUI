@@ -121,6 +121,12 @@ local app = { addon = {}, db = { profile = {} } }
 local collapsedSections, header, headers = {}, nil, {}
 local beside, placedDialog
 app.core = {
+    FilterEditModePositionSection = function(_, _, section)
+        return section
+    end,
+    GetEditModeSettingsSections = function()
+        return {}, {}
+    end,
     SetEditModeDialogsBesideManager = function(_, enabled)
         beside = enabled
     end,

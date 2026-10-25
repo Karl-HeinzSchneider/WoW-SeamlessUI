@@ -70,7 +70,7 @@ Every option exists in two places, built from one declaration:
 Declare an option once, as plain AceConfig args through `core:RegisterOptions` (or
 `core.FeatureGroup` inside it); Core registers it in both. Never add an option to only one panel,
 build controls for one of them by hand, or use AceConfig keys our window can't render without
-checking `Seamless/src/config/CLAUDE.md`. Custom-window-only extras (`new`/`blizzard`/`editMode` tags,
+checking `Seamless/src/config/CLAUDE.md`. Custom-window-only extras (`new`/`blizzard`/`editMode` tags, `hideInEditmode`,
 `tooltip` defaults) are stripped before AceConfig sees them. Settings a frame shows in Edit Mode
 are also offered on its addon's options tab, built from the same rows (see Castbar, Unitframes).
 Test a new option in both panels.

@@ -313,8 +313,64 @@ local function Finite(value)
 end
 
 -- The Position section of the selected frame, kept while it stays selected: it holds the values
--- Revert restores and the last refusal. A new selection starts over.
+-- Revert restores and the last refusal, retained across selections in this session.
 local positionSections = {}
+
+-- Snapshot values, rather than clicks: returning a control to its original value
+-- must clear Revert again. Keep baselines when selecting another frame.
+local settingSnapshots = {}
+local snapshotProfile
+local function ClearSnapshots()
+    table.wipe(settingSnapshots)
+    table.wipe(positionSections)
+end
+lib:RegisterCallback("enter", ClearSnapshots)
+lib:RegisterCallback("exit", ClearSnapshots)
+lib:RegisterCallback("layout", ClearSnapshots)
+
+local function TrackSettings(frame, sections, attached)
+    local snapshots = settingSnapshots[frame] or {}
+    settingSnapshots[frame] = snapshots
+    for _, section in ipairs(sections) do
+        for _, row in ipairs(section.options or {}) do
+            -- Position has its own validated, ordered restore path. Custom scale
+            -- is a setting; native scale belongs to Blizzard's saved system state.
+            local position = section.id == "position"
+                and (
+                    row.key == "point"
+                    or row.key == "relativePoint"
+                    or row.key == "relativeTo"
+                    or row.key == "offsetX"
+                    or row.key == "offsetY"
+                    or row.key == "scale"
+                )
+            local scale = row.key == "scale" and (not attached or addon:GetEditModeSystemScale(frame))
+            if row.get and row.set and (not position or scale) then
+                local key = section.id .. ":" .. row.key
+                local snapshot = snapshots[key]
+                if not snapshot then
+                    snapshot = { value = row.get() }
+                    snapshots[key] = snapshot
+                end
+                snapshot.row = row
+            end
+        end
+    end
+end
+
+local function SettingsChanged(frame, restore)
+    local changed = false
+    for _, snapshot in pairs(settingSnapshots[frame] or {}) do
+        local row = snapshot.row
+        if row.get() ~= snapshot.value then
+            changed = true
+            if restore then
+                row.set(snapshot.value)
+            end
+        end
+    end
+    return changed
+end
 
 -- The shared Position section (editmodeposition.lua) for a Position setting of a suite frame,
 -- bound to the feature's spec: the same controls as on Blizzard frames.
@@ -621,6 +677,11 @@ local function CreateSettingsWindow()
     ---Draw the selected frame's settings (or the attached sections) and size the window to them,
     ---growing downward only.
     function window:LayoutContent()
+        local profile = app.db and app.db.profile
+        if profile ~= snapshotProfile then
+            ClearSnapshots()
+            snapshotProfile = profile
+        end
         local attached, frame = self.attached, self.selection and self.selection.parent
         if not attached then
             -- Pin the top edge where it is now, so resizing only moves the bottom edge.
@@ -639,6 +700,7 @@ local function CreateSettingsWindow()
         list:SetWidth(width)
         buttons:SetWidth(width)
         local sections = attached and attached.sections() or ListSections(frame)
+        TrackSettings(attached and attached.key or frame, sections, attached)
         local changed = attached and attached.changed or Redraw
         local listHeight = addon:LayoutEditModeSections(list, sections, 0, false, changed)
         list:SetHeight(math.max(1, listHeight))
@@ -675,7 +737,6 @@ local function CreateSettingsWindow()
         self.Title:SetText(selection.system:GetSystemName())
         if newSelection then
             scroll:SetVerticalScroll(0)
-            table.wipe(positionSections)
         end
         self:Show()
         self:LayoutContent()
@@ -729,10 +790,10 @@ local function CreateSettingsWindow()
 
     -- Attached, poll while shown and refresh the rows in place: laying the window out again each
     -- time would interrupt clicks, so that only happens when rows appear, disappear or change
-    -- height. Suite frames refresh through the library instead.
+    -- height. Poll suite frames too, so dragging and changes elsewhere update Revert.
     local elapsed = 0
     window:SetScript("OnUpdate", function(self, delta)
-        if not self.attached then
+        if not self.attached and not self.selection then
             return
         end
         elapsed = elapsed + delta
@@ -921,14 +982,14 @@ function addon:GetEditModePositionButton(action)
             local binding = dialog and dialog.attached and dialog.attached.buttonBinding
             if binding then
                 return not binding.canEdit()
-                    or (action == "revert" and not binding.hasChanges())
+                    or (action == "revert" and not binding.hasChanges() and not SettingsChanged(frame))
                     or (action == "resetPosition" and binding.isDefault())
             end
             if action == "resetPosition" then
                 return fixedFrames[frame] == true or IsDefaultPosition(frame)
             end
             local section = position(frame)
-            return not section or section.revertButton.disabled()
+            return (not section or section.revertButton.disabled()) and not SettingsChanged(frame)
         end,
         click = function(frame)
             local dialog = internal.dialog
@@ -941,7 +1002,11 @@ function addon:GetEditModePositionButton(action)
             if binding then
                 if binding.canEdit() then
                     if action == "revert" then
-                        binding.revert()
+                        if binding.hasChanges() and binding.revert() == false then
+                            return
+                        end
+                        SettingsChanged(frame, true)
+                        dialog:LayoutContent()
                     else
                         binding.reset()
                     end
@@ -957,6 +1022,8 @@ function addon:GetEditModePositionButton(action)
                 if section and not section.revertButton.disabled() then
                     section.revertButton.click()
                 end
+                SettingsChanged(frame, true)
+                dialog:LayoutContent()
             end
         end,
     }

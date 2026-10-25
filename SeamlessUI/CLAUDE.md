@@ -77,8 +77,10 @@ Run `lua src/tests/blizzard-editmode.lua`.
   `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate
   layout copy, and the latter closes Edit Mode); native Save/Revert own persistence. Preset layouts
   are read-only.
-- The Revert button compares position state with the frame's `savedSystemInfo` baseline, restores
-  only that, revalidates cycles first and recomputes dirty flags so other pending edits stay.
+- The footer Revert button combines Core's custom setting snapshots with a full native system
+  comparison against `savedSystemInfo`. It restores custom values and the saved native system,
+  revalidates changed anchors first, and keeps other frames' pending edits. The Position binding's
+  own Revert remains limited to position state.
 - "Quick anchor to frame" starts Core's anchor picker with the AnchorFrame targets and applies the
   result through the same validated path.
 

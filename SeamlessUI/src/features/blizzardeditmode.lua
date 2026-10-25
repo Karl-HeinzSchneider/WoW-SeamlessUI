@@ -265,19 +265,21 @@ function module:RefreshPanel()
         buttonSection = app.core:GetEditModeFrameButtonSection(system),
         buttonBinding = {
             canEdit = function()
-                return frameOption(spec, "addPosition") and app.blizzardPosition:CanEdit(system)
+                return module:GetSelectedFrame() == system and app.core:GetFramePositionService():CanEdit(system)
             end,
             hasChanges = function()
-                return app.blizzardPosition:HasChanges(system)
+                return app.core:GetFramePositionService():HasSystemChanges(system)
             end,
             revert = function()
-                return positionAction("Revert")
+                return app.core:GetFramePositionService():RevertSystem(system)
             end,
             isDefault = function()
-                return app.blizzardPosition:IsDefault(system)
+                return not frameOption(spec, "addPosition") or app.blizzardPosition:IsDefault(system)
             end,
             reset = function()
-                return positionAction("ResetToDefault")
+                if frameOption(spec, "addPosition") then
+                    return positionAction("ResetToDefault")
+                end
             end,
         },
         changed = refresh,

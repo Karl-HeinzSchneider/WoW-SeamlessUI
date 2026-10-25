@@ -37,7 +37,17 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   horizontally, up/down vertically) use the native layout service as well;
   unavailable settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style
   controls into the selected frame's extended Edit Mode window. Native Size is exposed only as
-  Position's Scale. No bag settings are stored in profiles.
+  Position's Scale. These native settings stay in Edit Mode layouts.
+- `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
+  selected-frame Edit Mode section. Reuses the client's `bag-*` atlases (BagSlots2x art) and
+  portrait mask, with a 48-pixel backpack and 30-pixel circular bags, reagent bag and keyring.
+  Keeps the native buttons, scripts, inventory updates, free-slot counter and expand manager.
+  The disabled module installs no hooks, events or masks until first enabled. Its native
+  UpdateTextures/Layout post-hooks then remain inert when off. All size/layout changes defer
+  in combat; a lazily created event frame survives module teardown to finish restoration.
+  Restores textures, masks, icon anchors, button sizes, frame artwork and native expand policy on
+  disable/profile changes, then runs the native bar layout. No retail templates/mixins are used.
+  Run `lua src/tests/bag-style.lua` for inactivity, all seven buttons, directions and restoration.
 
 ## Rules
 

@@ -9,13 +9,14 @@ function module:OnInitialize()
     end
     local args = app.optionPages.bags.config.args.layout.args
     local rows = {}
-    for _, key in ipairs({ "orientation", "direction" }) do
+    for _, key in ipairs({ "retailStyle", "orientation", "direction" }) do
         local option = args[key]
         if option then
             local row = {
                 key = key,
                 type = option.type,
                 name = option.name,
+                desc = option.desc,
                 default = option.default,
                 disabled = option.disabled,
                 get = option.get,

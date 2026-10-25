@@ -201,6 +201,7 @@ end
 -- L["Page Down (short)"] = "PD"
 -- L["Page Up (short)"] = "PU"
 -- L["Reverse order"] = "Reverse order"
+-- L["Retail bag button style"] = "Retail bag button style"
 -- L["Right Arrow (short)"] = "Rt"
 -- L["Shift (short)"] = "S"
 -- L["Short keybind labels"] = "Short keybind labels"
@@ -210,6 +211,7 @@ end
 -- L["Tab (short)"] = "Tab"
 -- L["Up Arrow (short)"] = "Up"
 -- L["Up"] = "Up"
+-- L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."] = "Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."
 -- L["Vertical"] = "Vertical"
 
 -- SeamlessCastbar

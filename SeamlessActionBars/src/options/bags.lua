@@ -38,6 +38,21 @@ local function nativeOption(key, name, order)
 end
 
 local args = {}
+args.retailStyle = {
+    type = "toggle",
+    name = L["Retail bag button style"],
+    desc = L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."],
+    order = 5,
+    width = "full",
+    default = false,
+    get = function()
+        return app.db.profile.bags.retailStyle
+    end,
+    set = function(_, value)
+        app.db.profile.bags.retailStyle = value
+        app.RefreshBagStyle()
+    end,
+}
 if orientation.Horizontal and orientation.Vertical then
     args.orientation = nativeOption("Orientation", L["Orientation"], 10)
     args.orientation.type = "select"
@@ -60,7 +75,7 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = {},
+    defaults = { profile = { bags = { retailStyle = false } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

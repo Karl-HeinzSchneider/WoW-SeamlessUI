@@ -386,7 +386,17 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 3)
+assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 4)
+app.db.profile.bags = { retailStyle = false, spacing = 4 }
+app.RefreshBagStyle = function() end
+InCombatLockdown = function()
+    return false
+end
+assert(bagStyle.spacing.disabled() and bagStyle.spacing.default == 4)
+app.db.profile.bags.retailStyle = true
+assert(not bagStyle.spacing.disabled())
+bagSpec.options[4].set(8)
+assert(bagStyle.spacing.get() == 8 and bagSpec.options[4].get() == 8)
 assert(bagSpec.options[3].values()[1].text == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])

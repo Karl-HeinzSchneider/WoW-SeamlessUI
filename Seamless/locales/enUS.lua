@@ -164,6 +164,7 @@ L["Use Seamless layout"] = true
 L["Action Bars"] = true
 L["Alt (short)"] = "A"
 L["Backspace (short)"] = "BS"
+L["Bag button spacing"] = true
 L["Bag direction"] = true
 L["Caps Lock (short)"] = "Cap"
 L["Color the icon of an action that is out of range of your target."] = true

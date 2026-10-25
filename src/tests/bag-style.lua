@@ -174,7 +174,7 @@ end
 function addon:NewModule()
     return module
 end
-local app = { addon = addon, db = { profile = { bags = { retailStyle = false } } } }
+local app = { addon = addon, db = { profile = { bags = { retailStyle = false, spacing = 4 } } } }
 assert(loadfile("SeamlessActionBars/src/bagstyle.lua"))("SeamlessActionBars", app)
 app.RefreshBagStyle()
 assert(
@@ -292,6 +292,16 @@ for _, horizontal in ipairs({ true, false }) do
     for _, reverse in ipairs({ true, false }) do
         BagsBar.horizontal, BagsBar.reverse = horizontal, reverse
         BagsBar:Layout()
+        for _, spacing in ipairs({ 0, 8, 20 }) do
+            app.db.profile.bags.spacing = spacing
+            app.RefreshBagStyle()
+            local _, _, _, x, y = KeyRingButton:GetPoint(1)
+            local offset = reverse and -spacing or spacing
+            assert(x == (horizontal and offset or 0) and y == (horizontal and 0 or -offset))
+            assert((horizontal and BagsBar:GetWidth() or BagsBar:GetHeight()) == 238 + 6 * spacing)
+        end
+        app.db.profile.bags.spacing = 4
+        app.RefreshBagStyle()
         assert((horizontal and BagsBar:GetHeight() or BagsBar:GetWidth()) == 48)
         assert(KeyRingButton:GetWidth() == 30 and KeyRingButton:GetHeight() == 30)
         local point, anchor = KeyRingButton:GetPoint(1)
@@ -346,7 +356,7 @@ CharacterBag0Slot:UpdateTextures()
 assert(CharacterBag0Slot.normal:GetAtlas() == "bag-border", "native inventory redraw keeps the skin")
 local installedHooks = hookCount
 combat = true
-app.db.profile = { bags = { retailStyle = false } }
+app.db.profile = { bags = { retailStyle = false, spacing = 4 } }
 app.RefreshBagStyle()
 assert(CharacterBag0Slot:GetWidth() == 30 and module.events.PLAYER_REGEN_ENABLED, "combat defers restoration")
 combat = false

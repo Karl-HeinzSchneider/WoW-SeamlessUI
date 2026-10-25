@@ -38,6 +38,25 @@ local function nativeOption(key, name, order)
 end
 
 local args = {}
+args.spacing = {
+    type = "range",
+    name = L["Bag button spacing"],
+    order = 30,
+    min = 0,
+    max = 20,
+    step = 1,
+    default = 4,
+    disabled = function()
+        return not app.db.profile.bags.retailStyle or InCombatLockdown()
+    end,
+    get = function()
+        return app.db.profile.bags.spacing
+    end,
+    set = function(_, value)
+        app.db.profile.bags.spacing = value
+        app.RefreshBagStyle()
+    end,
+}
 args.retailStyle = {
     type = "toggle",
     name = L["Retail bag button style"],
@@ -75,7 +94,7 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = { profile = { bags = { retailStyle = false } } },
+    defaults = { profile = { bags = { retailStyle = false, spacing = 4 } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

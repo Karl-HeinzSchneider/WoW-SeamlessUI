@@ -194,13 +194,14 @@ local function layout()
         bar.bagBarExpandToggleInitialWidth = 10
         bar.bagBarExpandToggleInitialHeight = 16
     end
+    local spacing = app.db.profile.bags.spacing
     local visible, fullLength, count = {}, 0, 0
     for _, button in MainMenuBarBagManager:EnumerateBagButtons() do
         prepare(button)
         skin(button)
         fullLength = fullLength
             + (bar:IsHorizontal() and button:GetWidth() or button:GetHeight())
-            + (count > 0 and 4 or 0)
+            + (count > 0 and spacing or 0)
         count = count + 1
         if button:IsShown() then
             visible[#visible + 1] = button
@@ -218,7 +219,7 @@ local function layout()
     local reverse = horizontal and bar:IsDirectionLeft() or not horizontal and bar:IsDirectionUp()
     local point = horizontal and (reverse and "RIGHT" or "LEFT") or (reverse and "BOTTOM" or "TOP")
     local relativePoint = horizontal and (reverse and "LEFT" or "RIGHT") or (reverse and "TOP" or "BOTTOM")
-    local offset = reverse and -4 or 4
+    local offset = reverse and -spacing or spacing
     local previous = bar
     for _, button in ipairs(visible) do
         button:ClearAllPoints()

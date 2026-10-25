@@ -47,3 +47,6 @@ when enabled settings or profiles change; `OnEnable` applies settings on activat
 Update the suite README when adding features.
 
 All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.
+
+Run `lua src/tests/tooltip-loading.lua` after changing feature registration or settings ownership.
+It loads every runtime feature before AceDB, then the page declarations, and checks item-quality choices and border behavior.

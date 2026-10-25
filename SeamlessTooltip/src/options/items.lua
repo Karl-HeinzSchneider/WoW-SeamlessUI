@@ -184,3 +184,14 @@ app.optionPages.items = {
         },
     },
 }
+
+-- Poor (grey) up to Heirloom; the select shows each in its own color.
+local qualityOption = app.optionPages.items.config.args.QualityBorder.args.minQuality
+for quality = 0, 7 do
+    local r, g, b = C_Item.GetItemQualityColor(quality)
+    local name = _G["ITEM_QUALITY" .. quality .. "_DESC"]
+    if r and name then
+        qualityOption.values[quality] = CreateColor(r, g, b):WrapTextInColorCode(name)
+        qualityOption.sorting[#qualityOption.sorting + 1] = quality
+    end
+end

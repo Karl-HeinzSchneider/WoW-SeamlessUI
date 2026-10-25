@@ -78,6 +78,7 @@ C_CVar = {
         return "1"
     end,
 }
+C_Item = { GetItemQualityColor = function() end }
 local function noop() end
 local function feature(key)
     return {

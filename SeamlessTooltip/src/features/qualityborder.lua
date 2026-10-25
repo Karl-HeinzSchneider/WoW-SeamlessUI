@@ -8,17 +8,6 @@ local anySecret = app.features.AnySecret
 -- Colors the border of item tooltips in the item's quality color (green, blue, purple, ...).
 local feature = app.features:NewFeature("QualityBorder")
 
--- Poor (grey) up to Heirloom; the select shows each in its own color.
-local qualityOption = feature.info.options.minQuality
-for quality = 0, 7 do
-    local r, g, b = C_Item.GetItemQualityColor(quality)
-    local name = _G["ITEM_QUALITY" .. quality .. "_DESC"]
-    if r and name then
-        qualityOption.values[quality] = CreateColor(r, g, b):WrapTextInColorCode(name)
-        qualityOption.sorting[#qualityOption.sorting + 1] = quality
-    end
-end
-
 function feature:OnInitialize()
     self:AddTooltipPostCall(Enum.TooltipDataType.Item, "OnItemTooltip")
 end

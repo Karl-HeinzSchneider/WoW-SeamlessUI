@@ -181,3 +181,23 @@ whole percentages through `EditModeManagerFrame:OnSystemSettingChange` like the 
 slider (`ApplySetting`: saved at once outside Edit Mode, a draft inside it). It is
 disabled while Edit Mode hides the setting (`ShouldShowSetting`, e.g. Focus without
 Larger Frame).
+
+## Edit Mode button sections
+
+A frame page's config group may declare `buttonSection`, a
+`SeamlessCore.EditModeButtonSection`. Declare it in that frame's `src/options/<frame>.lua`:
+
+```lua
+config = {
+    type = "group",
+    buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
+    -- The frame's name, order and ordinary args follow.
+}
+```
+
+This is native schema metadata, validated by `PrepareSettingsOptions` and retained on the
+config table. It supplies the selected frame's Edit Mode footer; it does not create rows in
+the standalone settings window. Frame registration only consumes this field. Omitting it means
+no footer, with no automatic fallback. Extra Button declarations may be passed as the helper's
+second argument; the damage meter's shared options helper supplies its custom window actions,
+and each window page explicitly opts in.

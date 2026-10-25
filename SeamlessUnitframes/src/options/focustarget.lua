@@ -38,6 +38,7 @@ app.optionPages.focustarget = {
         },
     },
     config = {
+        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
         type = "group",
         name = L["Target of Focus"],
         order = 60,

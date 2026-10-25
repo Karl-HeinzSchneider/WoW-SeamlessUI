@@ -85,6 +85,10 @@ app.core = {
     end,
 }
 dofile("src/tests/locale-support.lua")
+app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
+app.core.GetEditModeLibrary = function()
+    return { SettingType = { Button = "seamless-button" } }
+end
 dofile("src/tests/settings-support.lua").pages("SeamlessDamageMeter", app)
 app:RegisterOptions()
 local refreshed = 0

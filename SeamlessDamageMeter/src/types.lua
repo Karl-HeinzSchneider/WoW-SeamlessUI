@@ -25,6 +25,7 @@
 ---@field postCombatTooltip table? Pooled post-combat hover panel with target analysis.
 
 ---@class SeamlessDamageMeter
+---@field WindowEditModeButtons fun(): SeamlessCore.EditModeButton[]
 ---@field WindowAppearanceOptions fun(windowID?: number): table
 ---@field WindowPositionOptions fun(windowID: number): table
 ---@field meterSettingDefinitions table[]

@@ -38,6 +38,7 @@ app.optionPages.targettarget = {
         },
     },
     config = {
+        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
         type = "group",
         name = L["Target of Target"],
         order = 40,

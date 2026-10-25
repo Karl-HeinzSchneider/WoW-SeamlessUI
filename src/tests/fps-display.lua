@@ -245,6 +245,7 @@ frameSettings[2].set(nil, false)
 assert(not display.shown and FramerateFrame.alpha == 1, "turning latency off must restore the counter")
 assert(frame.width == 120, "anchor must return to its normal size")
 assert(frameSettings[5].name == "Position", "the Position section follows the frame's settings")
+assert(frameSettings[6] == app.optionPages.fpsDisplay.config.buttonSection, "footer comes from the frame config")
 PlayerFrame = newFrame()
 PlayerFrame.IsObjectType = function(_, kind)
     return kind == "Frame"

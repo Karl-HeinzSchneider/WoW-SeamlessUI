@@ -47,6 +47,10 @@ assert(coreApp.dbDefaults.profile.tweaks.reloadShortcut)
 assert(coreApp.config.categories["Seamless:tweaks"].parent == "Seamless")
 assert(coreApp.config.categories["Seamless:profiles"])
 local core = coreApp.addon
+core.GetEditModeButtonSection = support.buttonSection
+function core:GetEditModeLibrary()
+    return { SettingType = { Button = "seamless-button" } }
+end
 function core:GetNativePositionOptions(getFrame, scale)
     return { type = "group", order = 10, name = "Position and scale", args = {}, getFrame = getFrame, scale = scale }
 end
@@ -197,6 +201,44 @@ for _, addon in ipairs({
     end
     apps[addon] = app
 end
+-- Footer ownership belongs to each frame page, not its Edit Mode registration module.
+for addon, keys in pairs({
+    SeamlessUnitframes = { "targettarget", "focustarget" },
+    SeamlessCastbar = { "target", "focus" },
+    SeamlessUI = { "fpsDisplay" },
+    SeamlessDamageMeter = { "window1", "window2", "window3", "window4", "window5", "window6" },
+}) do
+    for _, key in ipairs(keys) do
+        local config = apps[addon].optionPages[key].config
+        local section = config.buttonSection
+        assert(section and section.options[1].name == "revert" and section.options[2].name == "resetPosition")
+        assert(
+            coreApp.options.panels[addon].options.args[key].buttonSection == section,
+            "schema retains the declaration"
+        )
+        if addon == "SeamlessDamageMeter" then
+            assert(
+                #section.options == 5
+                    and section.options[3].name == "Edit selected skin"
+                    and section.options[4].name == "Create new window"
+                    and section.options[5].name == "Remove window"
+            )
+        end
+    end
+    assert(not apps[addon].optionPages.general.config.buttonSection, "unrelated pages do not inherit a footer")
+end
+assert(not pcall(function()
+    core:PrepareSettingsOptions({ type = "group", buttonSection = { kind = "wrong", options = {} } })
+end), "invalid footer schema is rejected")
+assert(not pcall(function()
+    core:PrepareSettingsOptions({
+        type = "group",
+        buttonSection = {
+            kind = "seamless-button-section",
+            options = { { kind = "seamless-button", name = "Missing callback" } },
+        },
+    })
+end), "invalid footer buttons are rejected")
 -- AceAddon returns an instance inheriting from the prototype. Exercise every page's
 -- first-open callback after registration, rather than only inspecting its declaration.
 function coreApp.config:CreateOptionsPage(page, root, key, name)

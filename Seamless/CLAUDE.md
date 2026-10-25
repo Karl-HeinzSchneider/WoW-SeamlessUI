@@ -171,9 +171,10 @@ so it returns this window. The vendored file stays untouched.
   `spec.set`. `options` are LibEditMode settings shown at the top of the section (Reset To Default
   resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
-- Every movable suite frame explicitly includes
-  `core:GetEditModeButtonSection({ "revert", "resetPosition" })` in its `AddFrameSettings`
-  declaration. This returns a `lib.SettingType.ButtonSection` with ordered Button settings;
+- Every movable suite frame's `src/options/<frame>.lua` explicitly sets
+  `config.buttonSection = core:GetEditModeButtonSection({ "revert", "resetPosition" })`.
+  Frame registration passes that config field to `AddFrameSettings`; it must never manufacture
+  a footer or substitute default actions when the field is absent. This returns a `lib.SettingType.ButtonSection` with ordered Button settings;
   `extra` may supply custom Button settings (e.g. the damage meter's window actions). Revert
   restores the Position binding's snapshot at selection; Reset Position uses the frame's
   registered default and movement callback. Omit actions or the whole section to omit buttons.

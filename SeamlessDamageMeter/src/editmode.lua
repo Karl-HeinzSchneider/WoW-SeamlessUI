@@ -353,36 +353,7 @@ local function RegisterControls(frame)
             app:RebuildWindows()
         end,
     })
-    settings[#settings + 1] = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }, {
-        {
-            kind = lib.SettingType.Button,
-            name = L["Edit selected skin"],
-            click = function()
-                if not InCombatLockdown() then
-                    app.core:OpenOptions("SeamlessDamageMeter", "skin")
-                end
-            end,
-        },
-        {
-            kind = lib.SettingType.Button,
-            name = L["Create new window"],
-            click = function()
-                if app:IsEditingWindows() and not InCombatLockdown() then
-                    app:AddWindow()
-                end
-            end,
-        },
-        {
-            kind = lib.SettingType.Button,
-            name = L["Remove window"],
-            click = function()
-                if app:IsEditingWindows() and not InCombatLockdown() then
-                    EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
-                    app:SetWindowEnabled(frame.config, false)
-                end
-            end,
-        },
-    })
+    settings[#settings + 1] = app.optionPages["window" .. frame.config.id].config.buttonSection
     lib:AddFrameSettings(frame, settings)
 end
 

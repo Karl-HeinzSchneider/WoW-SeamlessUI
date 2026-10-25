@@ -8,6 +8,7 @@ app.optionPages.fpsDisplay = {
         profile = { fpsDisplay = { layouts = {}, showLatency = false, whiteLatency = false, roundFramerate = false } },
     },
     config = {
+        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
         type = "group",
         name = L["FPS display"],
         order = 20,

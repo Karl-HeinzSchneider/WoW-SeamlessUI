@@ -26,6 +26,7 @@ app.optionPages.window6 = {
     end,
     defaults = {},
     config = {
+        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }, app.WindowEditModeButtons()),
         type = "group",
         name = L["Window %d"]:format(6),
         order = 16,

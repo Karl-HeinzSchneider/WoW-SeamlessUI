@@ -1253,9 +1253,9 @@ app.core.GetEditModeLibrary = function()
     return lem
 end
 local positionSpecs = {}
-app.core.GetEditModeButtonSection = function(_, actions, extra)
-    assert(actions[1] == "revert" and actions[2] == "resetPosition")
-    return { kind = "buttons", options = extra or {} }
+app.optionPages = {}
+for id = 1, app.MAX_WINDOWS do
+    app.optionPages["window" .. id] = { config = { buttonSection = { kind = "buttons", options = {} } } }
 end
 app.core.GetEditModePositionSetting = function(_, spec, options)
     positionSpecs[#positionSpecs + 1] = spec
@@ -1286,6 +1286,7 @@ app:RebuildWindows()
 assert(registered == app.MAX_WINDOWS)
 callbacks.layout("Modern")
 local meter = app.windowFrames[1]
+assert(controls[meter][#controls[meter]] == app.optionPages.window1.config.buttonSection)
 local function setting(name)
     for _, entry in ipairs(controls[meter]) do
         if entry.name == name then

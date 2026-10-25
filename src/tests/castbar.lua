@@ -276,6 +276,7 @@ assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
 app.optionPages = {}
 app.dbDefaults = {}
 app.position = { GetOptions = function() end }
+app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
 load("options/shared.lua")
 load("options/general.lua")
 load("options/player.lua")
@@ -417,10 +418,6 @@ app.core.SetEditModeFrameFixed = function(_, frame)
 end
 app.core.RegisterEditModeOptions = function(_, _, spec)
     previewOptions = spec.options
-end
-app.core.GetEditModeButtonSection = function(_, actions, extra)
-    assert(actions[1] == "revert" and actions[2] == "resetPosition")
-    return { kind = "buttons", options = extra or {} }
 end
 app.core.GetEditModePositionSetting = function(_, spec)
     positionSpecs[#positionSpecs + 1] = spec

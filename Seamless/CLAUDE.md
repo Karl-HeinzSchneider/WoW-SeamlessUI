@@ -281,7 +281,8 @@ Blizzard frames; Seamless frames get it through `GetEditModePositionSetting`.
 settings: `system` (`Enum.EditModeSystem`), optional `systemIndex`, `name` (collapsible header),
 optional `key` (collapse key `"settings:" .. (key or name)`), `order`, `enabled` and `options`
 (rows with `key`, `type` = `toggle`, `select` with `values = { { text, value } }` or `range` with
-`min`, `max`, `step`, optional `format`; `name`, optional `desc`, `get()`, `set(value)`, `hidden`,
+`min`, `max`, `step`, optional `format`; select `values` may also be a function returning the
+entries for the current state. Rows use `name`, optional `desc`, `get()`, `set(value)`, `hidden`,
 `disabled`). Core keeps the registry and the row renderer; SeamlessUI places the sections in its
 window, so no feature depends on SeamlessUI. `core:RefreshEditModeSystemOptions()` sends
 `core:GetEditModeSystemOptionsMessage()`; `core:GetEditModeSystemOptions(system)` returns the

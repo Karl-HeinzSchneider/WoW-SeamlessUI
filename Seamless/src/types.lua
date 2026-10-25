@@ -206,7 +206,7 @@
 ---@field disabled boolean|fun(): boolean|nil
 ---@field get fun(): any
 ---@field set fun(value: any)
----@field values? { text: string, value: any }[] Select entries.
+---@field values? { text: string, value: any }[]|fun(): { text: string, value: any }[] Select entries.
 ---@field min? number
 ---@field max? number
 ---@field step? number

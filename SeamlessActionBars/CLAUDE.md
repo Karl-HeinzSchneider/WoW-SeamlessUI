@@ -32,6 +32,12 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   artwork controls with the selected frame's extended Edit Mode details window. Profile
   `microMenu.hideArtwork` (default false) hides only `MicroMenu.BorderArt` and `BackgroundArt`,
   restoring their original alpha on profile changes and disable. The buttons stay intact.
+- `src/options/bags.lua`: the Bags tab uses the client's `BagsBar` for native position and
+  Size, with explicit Revert and Reset Position footer actions. Orientation, direction (left/right
+  horizontally, up/down vertically) use the native layout service as well;
+  unavailable settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style
+  controls into the selected frame's extended Edit Mode window. Native Size is exposed only as
+  Position's Scale. No bag settings are stored in profiles.
 
 ## Rules
 

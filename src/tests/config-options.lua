@@ -216,6 +216,7 @@ for addon, keys in pairs({
         "petBar",
         "vehicleLeave",
         "microMenu",
+        "bags",
         "statusBar1",
         "statusBar2",
         "endCapLeft",
@@ -258,7 +259,7 @@ for _, app in pairs(apps) do
         end
     end
 end
-assert(footerCount == 32, "all 32 existing frame pages explicitly declare both actions")
+assert(footerCount == 33, "all 33 frame pages explicitly declare both actions")
 -- Every native frame resolves back to its actual per-frame page, with no default fallback.
 local nativePages = {
     SeamlessActionBars = {
@@ -273,6 +274,7 @@ local nativePages = {
         petBar = "PetActionBar",
         vehicleLeave = "MainMenuBarVehicleLeaveButton",
         microMenu = "MicroMenuContainer",
+        bags = "BagsBar",
         statusBar1 = "MainStatusTrackingBarContainer",
         statusBar2 = "SecondaryStatusTrackingBarContainer",
         endCapLeft = "TestLeftEndcap",
@@ -309,8 +311,8 @@ for addon, pages in pairs(nativePages) do
     end
 end
 assert(
-    nativeCount == 21 and not core:GetEditModeFrameButtonSection({}) and not core:GetEditModeFrameButtonSection(nil),
-    "all 21 native frame pages are covered without a fallback"
+    nativeCount == 22 and not core:GetEditModeFrameButtonSection({}) and not core:GetEditModeFrameButtonSection(nil),
+    "all 22 native frame pages are covered without a fallback"
 )
 local declaredPlayer = apps.SeamlessUnitframes.optionPages.player.config.buttonSection
 apps.SeamlessUnitframes.optionPages.player.config.buttonSection = nil

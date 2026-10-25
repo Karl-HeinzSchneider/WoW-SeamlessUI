@@ -97,6 +97,7 @@ local function prepare(button)
     state.shown = button:IsShown()
     state.icon = capture(button.icon)
     state.icon.texture = button.icon:GetTexture()
+    state.icon.atlas = button.icon:GetAtlas()
     state.icon.coords = { button.icon:GetTexCoord() }
     state.masked = {}
     buttons[button] = state
@@ -138,6 +139,7 @@ local function prepare(button)
                 captureTextures(button, buttons[button])
                 if button == KeyRingButton then
                     buttons[button].icon.texture = button.icon:GetTexture()
+                    buttons[button].icon.atlas = button.icon:GetAtlas()
                     buttons[button].icon.coords = { button.icon:GetTexCoord() }
                 end
                 skin(button)
@@ -156,7 +158,11 @@ local function layout()
         barState = { borderAlpha = bar.BorderArt and bar.BorderArt:GetAlpha(), hideExpandToggle = bar.hideExpandToggle }
         if BagBarExpandToggle then
             barState.arrow = capture(BagBarExpandToggle)
+            barState.arrow.parent = BagBarExpandToggle:GetParent()
             barState.arrow.shown = BagBarExpandToggle:IsShown()
+            -- The native arrow lives inside the collapsible small-bag cluster.
+            -- Keep it outside that cluster so it remains available to expand again.
+            BagBarExpandToggle:SetParent(bar)
         end
     end
     -- Enable the client's existing expand button and manager, rather than replacing
@@ -220,7 +226,11 @@ local function restoreStyle()
         button:SetShown(state.shown)
         restore(button.icon, state.icon)
         if button == KeyRingButton then
-            button.icon:SetTexture(state.icon.texture)
+            if state.icon.atlas then
+                button.icon:SetAtlas(state.icon.atlas)
+            else
+                button.icon:SetTexture(state.icon.texture)
+            end
             button.icon:SetTexCoord(unpack(state.icon.coords))
         end
         for _, key in ipairs({ "icon", "searchOverlay", "ItemContextOverlay" }) do
@@ -248,6 +258,7 @@ local function restoreStyle()
     end
     BagsBar.hideExpandToggle = barState.hideExpandToggle
     if barState.arrow then
+        BagBarExpandToggle:SetParent(barState.arrow.parent)
         restore(BagBarExpandToggle, barState.arrow)
         BagBarExpandToggle:SetShown(barState.arrow.shown)
     end

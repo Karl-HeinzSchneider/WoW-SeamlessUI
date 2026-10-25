@@ -81,6 +81,15 @@ local function region()
     function r:IsShown()
         return self.shown
     end
+    function r:GetParent()
+        return self.parent
+    end
+    function r:SetParent(parent)
+        self.parent = parent
+    end
+    function r:IsVisible()
+        return self.shown and (not self.parent or self.parent:IsVisible())
+    end
     function r:SetShown(shown)
         self.shown = shown
     end
@@ -203,7 +212,12 @@ for i = 0, 3 do
     _G["CharacterBag" .. i .. "Slot"] = button(i + 1)
 end
 CharacterReagentBag0Slot, KeyRingButton = button(5), button(6)
+KeyRingButton.icon:SetAtlas("UI-HUD-ActionBar-Keyring-Small")
+KeyRingButton.icon:SetTexCoord(0.1, 0.3, 0.2, 0.4)
 BagsBar, BagBarExpandToggle = region(), region()
+local cluster = region()
+cluster:SetParent(BagsBar)
+BagBarExpandToggle:SetParent(cluster)
 BagsBar.hideExpandToggle, BagsBar.horizontal, BagsBar.reverse = true, true, true
 BagsBar.BorderArt = region()
 function BagsBar:IsHorizontal()
@@ -246,6 +260,9 @@ assert(
         and CharacterBag0Slot.icon:GetMaskTexture(1) ~= CharacterBag0Slot.SquareMask
 )
 assert(BagBarExpandToggle:IsShown() and not BagsBar.hideExpandToggle and BagsBar.BorderArt:GetAlpha() == 0)
+cluster:Hide()
+assert(BagBarExpandToggle:IsVisible(), "collapse must not hide the expand button with its original parent")
+cluster:Show()
 for _, horizontal in ipairs({ true, false }) do
     for _, reverse in ipairs({ true, false }) do
         BagsBar.horizontal, BagsBar.reverse = horizontal, reverse
@@ -272,7 +289,12 @@ for _, b in ipairs(list) do
     assert(b:GetWidth() == 45 and b.normal:GetAtlas() == "square")
     assert(b.icon:GetNumMaskTextures() == 1 and b.icon:GetMaskTexture(1) == b.SquareMask)
 end
-assert(KeyRingButton.icon:GetTexture() == "native-icon-6")
+assert(
+    KeyRingButton.icon:GetAtlas() == "UI-HUD-ActionBar-Keyring-Small",
+    "restore the keyring atlas, not just its sheet"
+)
+assert(KeyRingButton.icon.coords[1] == 0.1 and KeyRingButton.icon.coords[4] == 0.4, "restore keyring atlas coordinates")
+assert(BagBarExpandToggle:GetParent() == cluster, "restore the original arrow parent")
 CharacterBag0Slot:UpdateTextures()
 assert(CharacterBag0Slot.normal:GetAtlas() == "square", "disabled hooks are inert")
 app.db.profile.bags.retailStyle = true

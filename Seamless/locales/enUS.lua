@@ -164,6 +164,8 @@ L["Use Seamless layout"] = true
 L["Action Bars"] = true
 L["Alt (short)"] = "A"
 L["Backspace (short)"] = "BS"
+L["Bag direction"] = true
+L["Bag slot spacing"] = true
 L["Caps Lock (short)"] = "Cap"
 L["Color the icon of an action that is out of range of your target."] = true
 L["Color the icon of an action you lack the mana, rage or energy for, instead of the game's light blue shade."] = true
@@ -171,6 +173,7 @@ L["Ctrl (short)"] = "C"
 L["Default order"] = true
 L["Delete (short)"] = "Del"
 L["Down Arrow (short)"] = "Dn"
+L["Down"] = true
 L["End (short)"] = "End"
 L["Enter (short)"] = "Ent"
 L["Escape (short)"] = "Esc"
@@ -204,6 +207,7 @@ L["Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N
 L["Space (short)"] = "Sp"
 L["Tab (short)"] = "Tab"
 L["Up Arrow (short)"] = "Up"
+L["Up"] = true
 L["Vertical"] = true
 
 -- SeamlessCastbar

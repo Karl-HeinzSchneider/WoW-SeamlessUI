@@ -31,6 +31,7 @@ src\options\statusBar2.lua
 src\options\petBar.lua
 src\options\vehicleLeave.lua
 src\options\microMenu.lua
+src\options\bags.lua
 src\options\endCapLeft.lua
 src\options\endCapRight.lua
 src\options\register.lua

@@ -358,4 +358,42 @@ app.RefreshMicroMenu()
 MicroMenuContainer = nil
 assert(menu.orientation.get() == nil, "missing native frame is safe")
 
-print("PASS: short labels, range/mana tints, native restore, hotkey restore, endcaps and micro menu")
+-- Bags resolve the live frame and use native layout settings, including orientation-dependent direction.
+Enum.EditModeBagsSetting = { Orientation = 0, Direction = 1, Size = 2, BagSlotPadding = 3 }
+Enum.BagsOrientation = { Horizontal = 0, Vertical = 1 }
+Enum.BagsDirection = { Left = 0, Right = 1, Up = 0, Down = 1 }
+BagsBar = {}
+native = { [0] = 0, [1] = 0, [2] = 100, [3] = 4 }
+function service:ApplySetting(frame, setting, value)
+    assert(frame == BagsBar and canEdit)
+    native[setting] = value
+    return true
+end
+function app.core:GetNativePositionOptions(getFrame, scale)
+    return { getFrame = getFrame, scale = scale }
+end
+function app.core:GetEditModePositionButton(key)
+    return { name = key }
+end
+function app.core:GetEditModeButtonSection(buttons)
+    return { options = buttons }
+end
+app.optionPages = {}
+assert(loadfile(root .. "options/bags.lua"))("SeamlessActionBars", app)
+local bags = app.optionPages.bags.config
+local bagStyle = bags.args.layout.args
+assert(bags.editModeFrame() == BagsBar and not bags.hidden())
+assert(bagStyle.direction.values()[0] == L["Left"])
+bagStyle.orientation.set(nil, 1)
+assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
+bagStyle.direction.set(nil, 1)
+bagStyle.padding.set(nil, 7)
+bags.args.position.scale.set(1.25)
+assert(native[0] == 1 and native[1] == 1 and native[2] == 125 and native[3] == 7)
+canEdit = false
+assert(bagStyle.orientation.disabled() and bagStyle.direction.disabled() and bagStyle.padding.disabled())
+canEdit = true
+BagsBar = nil
+assert(bags.hidden() and bagStyle.padding.disabled() and bagStyle.orientation.get() == nil)
+
+print("PASS: short labels, range/mana tints, native restore, hotkey restore, endcaps, micro menu and bags")

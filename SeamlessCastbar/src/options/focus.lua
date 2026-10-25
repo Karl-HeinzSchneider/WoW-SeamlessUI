@@ -30,6 +30,10 @@ app.optionPages.focus = {
         },
     },
     config = {
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["Focus"],
         order = 30,

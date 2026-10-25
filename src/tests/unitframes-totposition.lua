@@ -243,6 +243,10 @@ for _, name in ipairs({ "legacyLayout", "healthColor", "nameDisplay", "classIcon
     }
 end
 load("totposition/totposition.lua")
+app.optionPages = {}
+for _, key in ipairs({ "targettarget", "focustarget" }) do
+    app.optionPages[key] = { config = { buttonSection = { kind = "buttons", options = {} } } }
+end
 load("totposition/mover.lua")
 local position, mover = app.totPosition, app.totMover
 
@@ -329,6 +333,8 @@ print("PASS: focus ToT follows Larger Frame")
 local targetMover = registeredFrames["Target of Target"]
 local focusMover = registeredFrames["Target of Focus"]
 assert(targetMover and focusMover and targetMover.settings[1].spec, "registered with LibEditMode and Position rows")
+assert(targetMover.settings[2] == app.optionPages.targettarget.config.buttonSection)
+assert(focusMover.settings[2] == app.optionPages.focustarget.config.buttonSection)
 local frames = editModeGroups["SeamlessUnitframes.ToT"]
 assert(frames.section == "frames" and #frames.options == 2 and frames.options[1].get() == true)
 assert(not targetMover.frame.shown)

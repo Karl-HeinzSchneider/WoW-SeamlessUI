@@ -10,6 +10,11 @@ local scale = nil
 app.optionPages.vehicleLeave = {
     defaults = {},
     config = {
+        editModeFrame = getFrame,
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["Leave vehicle button"],
         order = 120,

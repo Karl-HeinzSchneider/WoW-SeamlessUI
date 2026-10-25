@@ -39,7 +39,11 @@ Run `lua src/tests/xp-bar-tooltip.lua` for tooltip ownership and migration.
   (`SeamlessEditModeSettingsDialog`), attached below the dialog with
   `core:AttachEditModeSettingsWindow` and hidden with `core:DetachEditModeSettingsWindow`. Core
   draws them with its row renderer and polls native changes; this module only builds the
-  sections. Removable AceHook post-hooks drive it: `AttachToSystemFrame`, the dialog's
+  sections. The selected frame's `src/options/` config explicitly declares `buttonSection` and
+  `editModeFrame`. Core resolves that declaration through `GetEditModeFrameButtonSection`;
+  this module binds Revert and Reset Position to the guarded native position service and passes
+  the explicit footer to the same window. No declaration means no footer. Revert is never
+  inserted automatically into the Position controls. Removable AceHook post-hooks drive it: `AttachToSystemFrame`, the dialog's
   OnShow/OnHide, and `EditModeManagerFrame.SelectSystem`, which runs after LibEditMode's own hook
   (that one hides and resets Core's window on every native selection). Never join native layout
   containers or access LibEditMode internals.

@@ -425,7 +425,80 @@ lib.frameSettings[frame] = {
     { kind = lib.SettingType.Header, name = "Hidden section", hidden = true },
     { kind = lib.SettingType.Checkbox, name = "After hidden header", get = getOn, set = setOn, default = false },
 }
+-- A registered frame with no footer declaration must not gain default or legacy buttons.
+lib.frameButtons[frame] = {
+    {
+        text = "Legacy button",
+        click = function()
+            error("Undeclared button")
+        end,
+    },
+}
+dialog:Update({ parent = frame, system = {
+    GetSystemName = function()
+        return "No footer"
+    end,
+} })
+assert(not buttons:IsShown() and not Row(buttons, "Legacy button"), "no implicit footer")
+lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = app.addon:GetEditModeButtonSection({})
+dialog:RefreshWidgets()
+assert(not buttons:IsShown(), "empty explicit sections do not draw a divider")
+table.remove(lib.frameSettings[frame])
+-- Arbitrary custom buttons need no standard actions, and retain their declared order/guards.
+local customFrame, customDisabled, customHidden = nil, false, false
+local custom = app.addon:GetEditModeButtonSection({
+    {
+        name = "Custom first",
+        desc = "Custom action description",
+        click = function(selected)
+            customFrame = selected
+        end,
+        disabled = function()
+            return customDisabled
+        end,
+        hidden = function()
+            return customHidden
+        end,
+    },
+    {
+        name = "Custom second",
+        click = function() end,
+        hidden = function()
+            return customHidden
+        end,
+    },
+})
+lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = custom
+dialog:RefreshWidgets()
+local firstCustom, secondCustom = Row(buttons, "Custom first"), Row(buttons, "Custom second")
+assert(firstCustom and secondCustom and not Row(buttons, "Reset Position") and not Row(buttons, "Revert changes"))
+assert(firstCustom.points.TOPLEFT[2] > secondCustom.points.TOPLEFT[2], "custom buttons keep declaration order")
+firstCustom.option.click()
+assert(
+    customFrame == frame and firstCustom.option.desc == "Custom action description",
+    "custom callbacks receive the selected frame"
+)
+customDisabled = true
+dialog:RefreshWidgets()
+assert(not firstCustom.Button.enabled, "custom disabled predicates are honored")
+customHidden = true
+dialog:RefreshWidgets()
+assert(not buttons:IsShown(), "a fully hidden custom section has no orphan divider")
+table.remove(lib.frameSettings[frame])
+assert(not pcall(function()
+    app.addon:GetEditModeButtonSection({ "revert" })
+end), "sections accept button declarations, not action tokens")
 local buttonClicks = 0
+lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = app.addon:GetEditModeButtonSection({
+    app.addon:GetEditModePositionButton("resetPosition"),
+    {
+        kind = lib.SettingType.Button,
+        name = "Feature button",
+        click = function()
+            buttonClicks = buttonClicks + 1
+        end,
+    },
+})
 lib.frameButtons[frame] = {
     {
         text = "Feature button",
@@ -619,7 +692,7 @@ lib.frameSettings[longFrame], lib.frameButtons[longFrame] = many, {}
 local longSelection = { parent = longFrame, system = selection.system }
 dialog:Update(longSelection)
 assert(scroll.height == 400, "Settings scroll past a fixed height, like Blizzard's container")
-assert(list.height > 400 and dialog.height == 15 + 20 + 12 + 400 + 12 + buttons.height + 20)
+assert(list.height > 400 and dialog.height == 15 + 20 + 12 + 400 + 20)
 scroll.verticalScroll = 50
 dialog:Update(longSelection)
 assert(scroll.verticalScroll == 50, "Refreshing the same selection keeps its scroll position")
@@ -736,6 +809,7 @@ do
     lib.frameSettings[positioned], lib.frameButtons[positioned] =
         {
             setting,
+            app.addon:GetEditModeButtonSection({ app.addon:GetEditModePositionButton("revert"), app.addon:GetEditModePositionButton("resetPosition") }),
             { kind = lib.SettingType.Checkbox, name = "Below position", get = getOn, set = setOn, default = false },
         }, {}
     local positionSelection = { parent = positioned, system = selection.system, isSelected = true }
@@ -748,7 +822,7 @@ do
     local lockRow, scaleRow, xRow = Row(list, "Lock it"), Row(list, "Scale"), Row(list, "X")
     assert(Header(list, "Position") and lockRow and scaleRow and xRow and Row(list, "Below position"))
     assert(top(lockRow) < top(scaleRow), "the feature's rows open the section")
-    assert(top(Row(list, "Revert changes")) < top(Row(list, "Below position")), "later rows go below it")
+    assert(not Row(list, "Revert changes") and Row(buttons, "Revert changes"), "Revert is in the explicit footer")
     for _, name in ipairs({ "Anchor", "AnchorParent", "AnchorFrame", "Y", "Quick anchor to frame" }) do
         assert(Row(list, name), name)
     end
@@ -762,7 +836,7 @@ do
     xRow.EditBox.scripts.OnEditFocusGained(xRow.EditBox)
     assert(xRow.EditBox.text == "-314.8", "typing starts from the shown value")
     xRow.EditBox.scripts.OnEditFocusLost(xRow.EditBox)
-    local revert = Row(list, "Revert changes")
+    local revert = Row(buttons, "Revert changes")
     assert(revert.option.disabled(), "nothing to revert yet")
     xRow.option.set("42")
     assert(stored.x == 42 and stored.y == 6 and not revert.option.disabled(), "typed values become numbers")
@@ -837,7 +911,8 @@ print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dial
 -- A frame near the right edge gets its settings on its left.
 local rightFrame = object("Frame", UIParent)
 rightFrame.left, rightFrame.right, rightFrame.top = 1300, 1450, 500
-lib.frameSettings[rightFrame], lib.frameButtons[rightFrame] = {}, {}
+lib.frameSettings[rightFrame], lib.frameButtons[rightFrame] =
+    { app.addon:GetEditModeButtonSection({ app.addon:GetEditModePositionButton("resetPosition") }) }, {}
 rightFrame.GetPoint = frame.GetPoint
 dialog.width = 340
 dialog:Update({ parent = rightFrame, system = selection.system })
@@ -963,6 +1038,56 @@ do
     assert(row.Button.checked == true, "the poll picks up changes made elsewhere")
     dialog.scripts.OnDragStart(dialog)
     assert(not dragged, "it follows the native dialog")
+    -- Native frames use the same explicit config declaration, bound to native layout actions.
+    local pending, atDefault, allowed, reverts, resets = true, false, true, 0, 0
+    spec.key = native
+    spec.buttonSection = app.addon:GetEditModeButtonSection({
+        app.addon:GetEditModePositionButton("revert"),
+        app.addon:GetEditModePositionButton("resetPosition"),
+    })
+    spec.buttonBinding = {
+        canEdit = function()
+            return allowed
+        end,
+        hasChanges = function()
+            return pending
+        end,
+        revert = function()
+            reverts = reverts + 1
+            pending = false
+            return true
+        end,
+        isDefault = function()
+            return atDefault
+        end,
+        reset = function()
+            resets = resets + 1
+            atDefault = true
+            return true
+        end,
+    }
+    app.addon:AttachEditModeSettingsWindow(spec)
+    local nativeRevert, nativeReset = Row(buttons, "Revert changes"), Row(buttons, "Reset Position")
+    assert(nativeRevert and nativeReset and not nativeRevert.option.disabled() and not nativeReset.option.disabled())
+    nativeRevert.option.click()
+    nativeReset.option.click()
+    assert(reverts == 1 and resets == 1 and nativeRevert.option.disabled() and nativeReset.option.disabled())
+    pending, atDefault = true, false
+    dialog.scripts.OnUpdate(dialog, 0.2)
+    assert(nativeRevert.Button.enabled and nativeReset.Button.enabled, "native footer values poll with the controls")
+    allowed = false
+    nativeRevert.option.click()
+    nativeReset.option.click()
+    assert(reverts == 1 and resets == 1, "native footer callbacks honor the position guards")
+    allowed = true
+    local staleReset = nativeReset.option.click
+    spec.key = {}
+    app.addon:AttachEditModeSettingsWindow(spec)
+    staleReset()
+    assert(resets == 1, "a stale footer cannot act on a different selection")
+    spec.buttonSection, spec.buttonBinding = nil, nil
+    app.addon:AttachEditModeSettingsWindow(spec)
+    assert(not buttons:IsShown(), "a native frame without a declaration has no footer")
     -- Selecting a suite frame takes the window back; detaching then leaves it alone.
     dialog:Update({ parent = frame, system = selection.system })
     assert(dialog.attached == nil and dialog.Close:IsShown() and dialog.width == 370)

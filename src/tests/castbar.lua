@@ -276,6 +276,8 @@ assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
 app.optionPages = {}
 app.dbDefaults = {}
 app.position = { GetOptions = function() end }
+app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
+app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
 load("options/shared.lua")
 load("options/general.lua")
 load("options/player.lua")
@@ -530,7 +532,9 @@ assert(settings[1].name == "Position" and settings[2].name == "Style")
 assert(settings[1].spec.scale.min == 0.5 and settings[1].spec.scale.max == 2, "Scale comes from Core's Position rows")
 local byName = {}
 for _, setting in ipairs(settings) do
-    byName[setting.name] = setting
+    if setting.name then
+        byName[setting.name] = setting
+    end
 end
 assert(not byName["Spell icon"], "only the player bar has the icon option")
 app.db.profile.player.castTime.format = "ELAPSED_TOTAL"

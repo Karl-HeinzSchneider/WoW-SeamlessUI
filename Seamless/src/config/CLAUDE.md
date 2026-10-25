@@ -181,3 +181,45 @@ whole percentages through `EditModeManagerFrame:OnSystemSettingChange` like the 
 slider (`ApplySetting`: saved at once outside Edit Mode, a draft inside it). It is
 disabled while Edit Mode hides the setting (`ShouldShowSetting`, e.g. Focus without
 Larger Frame).
+
+## Edit Mode button sections
+
+A frame page's config group may declare `buttonSection`, a
+`SeamlessCore.EditModeButtonSection`. Declare it in that frame's `src/options/<frame>.lua`:
+
+```lua
+config = {
+    type = "group",
+    buttonSection = app.core:GetEditModeButtonSection({
+        app.core:GetEditModePositionButton("revert"),
+        {
+            name = L["Open"],
+            click = function(frame)
+                app.core:OpenOptions(appName, "general")
+            end,
+        },
+        app.core:GetEditModePositionButton("resetPosition"),
+    }),
+    -- The frame's name, order and ordinary args follow.
+}
+```
+
+For a native frame page, also declare `editModeFrame = function() return MyFrame end` (or
+reuse the page's existing frame resolver). Core's `GetEditModeFrameButtonSection(frame)` reads
+the matching registered config; the native details extension passes that exact declaration to
+the renderer with its position callbacks. All frame pages must declare their footer explicitly,
+including native frames without a Position group in their standalone page.
+
+These are native schema fields, validated by `PrepareSettingsOptions` and retained on the
+config table. It supplies the selected frame's Edit Mode footer; it does not create rows in
+the standalone settings window. Frame registration only consumes this field. Omitting it means
+no footer, with no automatic fallback.
+
+`GetEditModeButtonSection(buttons)` accepts one ordered array of arbitrary button declarations:
+`name`, `click(frame)`, optional `desc`, `hidden` and `disabled` (boolean or a layout-aware
+function). It fills the internal Button kind when omitted. It does not choose, append or reorder
+buttons. A section can contain only custom actions, only standard actions, or any mixture.
+`GetEditModePositionButton("revert"|"resetPosition")` is an optional helper returning one standard
+button; its position binding is independent of the generic section structure. The damage meter's
+shared options helper returns named custom declarations, which each window page explicitly lists
+alongside its standard buttons. Empty or entirely hidden sections draw no footer or divider.

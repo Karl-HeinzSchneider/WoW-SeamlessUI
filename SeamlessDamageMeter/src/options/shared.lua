@@ -269,3 +269,35 @@ end
 
 app.meterSettingDefinitions = settings
 app.MeterSettingControl = SettingControl
+
+---Custom footer actions, declared by each window's options config.
+---@return table<string, SeamlessCore.EditModeButton>
+function app.WindowEditModeButtons()
+    return {
+        editSkin = {
+            name = L["Edit selected skin"],
+            click = function()
+                if not InCombatLockdown() then
+                    app.core:OpenOptions("SeamlessDamageMeter", "skin")
+                end
+            end,
+        },
+        createWindow = {
+            name = L["Create new window"],
+            click = function()
+                if app:IsEditingWindows() and not InCombatLockdown() then
+                    app:AddWindow()
+                end
+            end,
+        },
+        removeWindow = {
+            name = L["Remove window"],
+            click = function(frame)
+                if app:IsEditingWindows() and not InCombatLockdown() then
+                    EventRegistry:TriggerEvent("EditModeExternal.hideDialog")
+                    app:SetWindowEnabled(frame.config, false)
+                end
+            end,
+        },
+    }
+end

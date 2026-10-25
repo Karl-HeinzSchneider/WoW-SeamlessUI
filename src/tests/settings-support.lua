@@ -1,6 +1,16 @@
 -- Read only the literal defaults from page declarations for behavior harnesses that do not
 -- load UI modules. config-options.lua separately exercises the complete declarations.
 local support = {}
+-- Inert declarations for page-only harnesses; dialog tests exercise the real action bindings.
+function support.buttonSection(_, buttons)
+    for _, button in ipairs(buttons) do
+        button.kind = button.kind or "seamless-button"
+    end
+    return { kind = "seamless-button-section", options = buttons }
+end
+function support.positionButton(_, action)
+    return { name = action, click = function() end }
+end
 local function literal(source, first)
     local depth, index = 0, first
     while index <= #source do

@@ -11,6 +11,11 @@ local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 app.optionPages.bar6 = {
     defaults = {},
     config = {
+        editModeFrame = getFrame,
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["Action bar %d"]:format(6),
         order = 60,

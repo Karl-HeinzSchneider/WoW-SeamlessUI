@@ -102,12 +102,15 @@ local function dependsOn(frame, target, seen)
 end
 
 ---Validate anchor ownership without accepting self, child or anchor cycles.
+---@param target table?
 ---@param frame table
----@return { value: string, text: string }[]
+---@return boolean
 function position:IsValidAnchorTarget(target, frame)
     return target ~= nil and not dependsOn(target, frame, {})
 end
 
+---@param frame table
+---@return { value: string, text: string }[]
 function position:GetAnchorFrames(frame)
     local entries, seen = {}, {}
     local function add(target, text)

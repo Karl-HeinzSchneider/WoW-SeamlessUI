@@ -191,6 +191,7 @@ function module:OnEnable()
         end
 
         settings[#settings + 1] = app.core:GetEditModePositionSetting(module:GetPositionBinding())
+        settings[#settings + 1] = app.optionPages.fpsDisplay.config.buttonSection
         lib:AddFrameSettings(anchor, settings)
         CreateDisplay()
         HookNativeFramerate()

@@ -11,6 +11,11 @@ local scale = app.EndCapScale(entry)
 app.optionPages.endCapRight = {
     defaults = { profile = { endCaps = { right = { scale = 1 } } } },
     config = {
+        editModeFrame = getFrame,
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = entry.name,
         order = 150,

@@ -5,6 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function config()
     return app.db.profile.windows[1]
 end
+local buttons = app.WindowEditModeButtons()
 local layout = app.WindowAppearanceOptions(1)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.window1 = {
@@ -26,6 +27,13 @@ app.optionPages.window1 = {
     end,
     defaults = {},
     config = {
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+            buttons.editSkin,
+            buttons.createWindow,
+            buttons.removeWindow,
+        }),
         type = "group",
         name = L["Window %d"]:format(1),
         order = 11,

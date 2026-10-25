@@ -12,6 +12,8 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field toggled? fun() Reapply a feature after its enabled state changes.
 ---@field changed? fun() Reapply subordinate settings.
 ---@field args? table<string, SeamlessCore.SettingsOption>
+---@field editModeFrame? SeamlessCore.FrameResolver Native frame whose Edit Mode details consume this config.
+---@field buttonSection? SeamlessCore.EditModeButtonSection Explicit Edit Mode footer for this frame; never inferred or shown in the settings window.
 
 ---@class SeamlessCore.SettingsPage
 ---@field defaults AceDB.Schema Saved defaults at their existing database paths.
@@ -154,6 +156,20 @@ function app.addon:PrepareSettingsOptions(option)
             if option[key] == nil or key == "type" or key == "args" then
                 option[key] = value
             end
+        end
+    end
+    assert(option.editModeFrame == nil or type(option.editModeFrame) == "function", "editModeFrame must be a resolver")
+    if option.buttonSection ~= nil then
+        local section = option.buttonSection
+        assert(
+            type(section) == "table" and section.kind == "seamless-button-section" and type(section.options) == "table",
+            "Invalid settings buttonSection"
+        )
+        for _, button in ipairs(section.options) do
+            assert(
+                button.kind == "seamless-button" and type(button.name) == "string" and type(button.click) == "function",
+                "Invalid settings buttonSection button"
+            )
         end
     end
     for _, child in pairs(option.args or {}) do

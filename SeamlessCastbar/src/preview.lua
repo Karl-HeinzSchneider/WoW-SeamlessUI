@@ -101,6 +101,7 @@ local function createPreview(key)
     for _, setting in ipairs(app.LibEditModeSettings(key)) do
         settings[#settings + 1] = setting
     end
+    settings[#settings + 1] = app.optionPages[key].config.buttonSection
     lib:AddFrameSettings(preview, settings)
     previews[key] = preview
 end

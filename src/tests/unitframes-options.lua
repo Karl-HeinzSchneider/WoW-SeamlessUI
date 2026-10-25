@@ -135,6 +135,8 @@ load("style.lua")
 app.optionPages, app.dbDefaults = {}, {}
 local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
+app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
+app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
 dofile("src/tests/settings-support.lua").pages("SeamlessUnitframes", app)
 dofile("src/tests/settings-support.lua").defaults("SeamlessUnitframes", app)
 load("editmode.lua")

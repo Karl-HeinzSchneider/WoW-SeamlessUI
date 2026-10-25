@@ -11,6 +11,11 @@ local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 app.optionPages.statusBar1 = {
     defaults = {},
     config = {
+        editModeFrame = getFrame,
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["XP / reputation bar %d"]:format(1),
         order = 90,

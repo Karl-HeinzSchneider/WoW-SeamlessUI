@@ -11,6 +11,11 @@ local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 app.optionPages.petBar = {
     defaults = {},
     config = {
+        editModeFrame = getFrame,
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["Pet action bar"],
         order = 110,

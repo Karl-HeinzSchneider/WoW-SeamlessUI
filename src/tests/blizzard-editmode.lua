@@ -121,6 +121,9 @@ local app = { addon = {}, db = { profile = {} } }
 local collapsedSections, header, headers = {}, nil, {}
 local beside, placedDialog
 app.core = {
+    GetEditModeFrameButtonSection = function(_, system)
+        return system.declaredFooter
+    end,
     SetEditModeDialogsBesideManager = function(_, enabled)
         beside = enabled
     end,
@@ -301,7 +304,13 @@ for _, key in ipairs({ "player", "target", "pet", "focus" }) do
     local toggle = config[key]
     local index = Enum.EditModeUnitFrameSystemIndices[key:sub(1, 1):upper() .. key:sub(2)]
     EditModeSystemSettingsDialog.attachedToSystem = { system = 1, systemIndex = index }
+    local system = EditModeSystemSettingsDialog.attachedToSystem
+    system.declaredFooter = { kind = "seamless-button-section", options = {} }
     module:RefreshPanel()
+    assert(
+        panel.spec.buttonSection == system.declaredFooter,
+        "native details consume the exact frame config declaration"
+    )
     assert(panel:IsShown() and toggle.get(), key)
     assert(not positionShown(), "Position stays off until the global switch is on")
     toggle.set(nil, false)

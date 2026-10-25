@@ -12,8 +12,9 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
 assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
 assert(lib.SettingType.Position == nil, "LibEditMode now defines Position; review editmodelib.lua")
+assert(lib.SettingType.ButtonSection == nil, "LibEditMode now defines ButtonSection; review editmodelib.lua")
 assert(type(internal.CreateDialog) == "function" and type(internal.MoveParent) == "function")
-assert(type(internal.GetFrameSettings) == "function" and type(internal.GetFrameButtons) == "function")
+assert(type(internal.GetFrameSettings) == "function")
 assert(type(internal.TriggerCallback) == "function" and type(lib.frameSelections) == "table")
 
 -- Frames that can be selected in Edit Mode but never moved: no dragging, no arrow-key nudges and
@@ -126,6 +127,7 @@ end
 lib.SettingType.Header = "seamless-header"
 lib.SettingType.Button = "seamless-button"
 lib.SettingType.Position = "seamless-position"
+lib.SettingType.ButtonSection = "seamless-button-section"
 
 local function HeaderKey(data)
     return "settings:" .. (data.key or data.name)
@@ -451,6 +453,15 @@ end
 ---@field key any What is shown (a Blizzard system); the list scrolls back to the top when it changes.
 ---@field sections fun(): SeamlessCore.EditModeSection[] Built again on every layout.
 ---@field changed? fun() Called after a row changed a value (default: lay the window out again).
+---@field buttonSection? SeamlessCore.EditModeButtonSection Explicit frame config declaration.
+---@field buttonBinding? SeamlessCore.EditModeButtonBinding Native position action callbacks.
+
+---@class SeamlessCore.EditModeButtonBinding
+---@field canEdit fun(): boolean
+---@field hasChanges fun(): boolean
+---@field revert fun(): boolean, string?
+---@field isDefault fun(): boolean
+---@field reset fun(): boolean, string?
 
 ---@class SeamlessCore.EditModeSettingsWindow : Frame
 ---@field selection table? LibEditMode's selection of the frame whose settings are shown.
@@ -549,7 +560,9 @@ local function CreateSettingsWindow()
         local settings, count = internal:GetFrameSettings(frame)
         local sections = { { id = "settings", options = {} } }
         for index, data in ipairs(settings or {}) do
-            if data.kind == lib.SettingType.Position then
+            if data.kind == lib.SettingType.ButtonSection then
+                -- Explicit footer declarations are drawn separately, outside the scrolling list.
+            elseif data.kind == lib.SettingType.Position then
                 sections[#sections + 1] = PositionSection(data, frame)
                 -- Rows after it, up to the next header, go below without a header of their own.
                 sections[#sections + 1] = { id = "after:" .. index, options = {} }
@@ -581,34 +594,28 @@ local function CreateSettingsWindow()
         return sections
     end
 
-    -- Below a divider, outside the scrolling list: the frame's own buttons, then Reset Position
-    -- (left out for frames that never move). Without any button the divider goes too.
-    local function ButtonSections(frame)
-        local frameButtons = (internal:GetFrameButtons(frame)) or {}
-        local options = {
-            { key = "divider", type = "divider", hidden = #frameButtons == 0 and fixedFrames[frame] == true },
-        }
-        for index, data in ipairs(frameButtons) do
-            options[#options + 1] = {
-                key = "button:" .. index,
-                type = "button",
-                name = data.text,
-                width = BUTTON_WIDTH,
-                click = data.click,
-            }
+    -- Draw only declared footer sections, outside the scrolling list.
+    local function ButtonSections(frame, declared)
+        local sections = {}
+        local settings = declared and { declared } or internal:GetFrameSettings(frame)
+        for index, data in ipairs(settings or {}) do
+            if data.kind == lib.SettingType.ButtonSection and #data.options > 0 then
+                local function allHidden()
+                    for _, button in ipairs(data.options) do
+                        if not Resolve(button.hidden) then
+                            return false
+                        end
+                    end
+                    return true
+                end
+                local options = { { key = "divider", type = "divider", hidden = allHidden } }
+                for buttonIndex, button in ipairs(data.options) do
+                    options[#options + 1] = ConvertSetting(button, "footer:" .. index .. ":" .. buttonIndex, frame)
+                end
+                sections[#sections + 1] = { id = "buttons:" .. index, options = options }
+            end
         end
-        options[#options + 1] = {
-            key = "resetPosition",
-            type = "button",
-            name = HUD_EDIT_MODE_RESET_POSITION,
-            width = BUTTON_WIDTH,
-            hidden = fixedFrames[frame] == true,
-            disabled = IsDefaultPosition(frame),
-            click = function()
-                ResetPosition(frame)
-            end,
-        }
-        return { { id = "buttons", options = options } }
+        return sections
     end
 
     ---Draw the selected frame's settings (or the attached sections) and size the window to them,
@@ -638,10 +645,11 @@ local function CreateSettingsWindow()
         local maximum = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
         local scrollHeight = math.min(listHeight, maximum)
         scroll:SetHeight(math.max(1, scrollHeight))
-        local buttonsHeight = 0
-        if not attached then
-            buttonsHeight = addon:LayoutEditModeSections(buttons, ButtonSections(frame), 0, false, Redraw)
+        local footer = {}
+        if not attached or attached.buttonSection then
+            footer = ButtonSections(attached and attached.key or frame, attached and attached.buttonSection)
         end
+        local buttonsHeight = addon:LayoutEditModeSections(buttons, footer, 0, false, changed)
         -- An empty button list is left out of the window.
         buttons:SetShown(buttonsHeight > 0)
         buttons:SetHeight(math.max(1, buttonsHeight))
@@ -730,7 +738,7 @@ local function CreateSettingsWindow()
         elapsed = elapsed + delta
         if elapsed >= POLL then
             elapsed = 0
-            if addon:RefreshEditModeSections(list) then
+            if addon:RefreshEditModeSections(list) or addon:RefreshEditModeSections(buttons) then
                 self:LayoutContent()
             end
         end
@@ -844,17 +852,112 @@ function addon:GetEditModePositionSectionKey()
 end
 
 ---A frame setting for LibEditMode's AddFrameSettings: the shared Position section (Scale, Anchor,
----AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame", Revert), the same one Blizzard frames
+---AnchorParent, AnchorFrame, X, Y and "Quick anchor to frame"), the same one Blizzard frames
 ---get, with its collapse key `core:GetEditModePositionSectionKey()`.
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and
 ---y; `spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
----Scale uses `spec.scale`, the settings panel's binding, and is greyed out without one. Revert
----restores the position the frame had when it was selected. `options` are LibEditMode settings
+---Scale uses `spec.scale`, the settings panel's binding, and is greyed out without one. Declare
+---Revert separately with GetEditModeButtonSection. `options` are LibEditMode settings
 ---shown at the top of the section.
 ---@param spec SeamlessCore.EditModePosition
 ---@param options? table[]
 ---@return table setting
 function addon:GetEditModePositionSetting(spec, options)
     return { kind = lib.SettingType.Position, name = L["Position"], position = spec, options = options }
+end
+
+---@class SeamlessCore.EditModeButtonSection
+---@field kind "seamless-button-section"
+---@field options SeamlessCore.EditModeButton[] Explicit Button settings, in display order.
+
+---@class SeamlessCore.EditModeButton
+---@field kind? "seamless-button" Filled by GetEditModeButtonSection when omitted.
+---@field name string
+---@field click fun(frame: table)
+---@field desc? string
+---@field hidden? boolean|fun(layout: string): boolean
+---@field disabled? boolean|fun(layout: string): boolean
+
+---An explicit, ordered list of arbitrary button declarations. No actions are inferred.
+---@param buttons SeamlessCore.EditModeButton[]
+---@return SeamlessCore.EditModeButtonSection
+function addon:GetEditModeButtonSection(buttons)
+    for _, button in ipairs(buttons) do
+        assert(
+            type(button) == "table" and type(button.name) == "string" and type(button.click) == "function",
+            "Edit Mode buttons need a name and click callback"
+        )
+        button.kind = button.kind or lib.SettingType.Button
+        assert(button.kind == lib.SettingType.Button, "Button sections only accept buttons")
+    end
+    return { kind = lib.SettingType.ButtonSection, options = buttons }
+end
+
+---Optional reusable position action, usable anywhere in an explicit button list.
+---@param action "revert"|"resetPosition"
+---@return SeamlessCore.EditModeButton
+function addon:GetEditModePositionButton(action)
+    assert(action == "revert" or action == "resetPosition", "Unknown Edit Mode position action")
+    local function position(frame)
+        local settings = internal:GetFrameSettings(frame)
+        for _, setting in ipairs(settings or {}) do
+            if setting.kind == lib.SettingType.Position then
+                return PositionSection(setting, frame)
+            end
+        end
+    end
+    return {
+        kind = lib.SettingType.Button,
+        name = action == "revert" and (HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
+            or HUD_EDIT_MODE_RESET_POSITION,
+        disabled = function()
+            local dialog = internal.dialog
+            local frame = dialog
+                and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
+            if not frame or InCombatLockdown() or not lib:IsInEditMode() then
+                return true
+            end
+            local binding = dialog and dialog.attached and dialog.attached.buttonBinding
+            if binding then
+                return not binding.canEdit()
+                    or (action == "revert" and not binding.hasChanges())
+                    or (action == "resetPosition" and binding.isDefault())
+            end
+            if action == "resetPosition" then
+                return fixedFrames[frame] == true or IsDefaultPosition(frame)
+            end
+            local section = position(frame)
+            return not section or section.revertButton.disabled()
+        end,
+        click = function(frame)
+            local dialog = internal.dialog
+            local current = dialog
+                and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
+            if InCombatLockdown() or not lib:IsInEditMode() or current ~= frame then
+                return
+            end
+            local binding = dialog.attached and dialog.attached.buttonBinding
+            if binding then
+                if binding.canEdit() then
+                    if action == "revert" then
+                        binding.revert()
+                    else
+                        binding.reset()
+                    end
+                end
+                return
+            end
+            if action == "resetPosition" then
+                if not fixedFrames[frame] then
+                    ResetPosition(frame)
+                end
+            else
+                local section = position(frame)
+                if section and not section.revertButton.disabled() then
+                    section.revertButton.click()
+                end
+            end
+        end,
+    }
 end

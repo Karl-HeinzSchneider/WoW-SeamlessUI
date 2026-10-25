@@ -242,6 +242,12 @@ function module:RefreshPanel()
         hidePanel()
         return
     end
+    local function positionAction(method)
+        local ok, err = app.blizzardPosition[method](app.blizzardPosition, system)
+        local section = app.blizzardPosition:GetSection(system)
+        section.error = not ok and err or nil
+        return ok, err
+    end
     app.core:AttachEditModeSettingsWindow({
         anchor = EditModeSystemSettingsDialog,
         key = system,
@@ -256,6 +262,24 @@ function module:RefreshPanel()
             end
             return sections
         end,
+        buttonSection = app.core:GetEditModeFrameButtonSection(system),
+        buttonBinding = {
+            canEdit = function()
+                return frameOption(spec, "addPosition") and app.blizzardPosition:CanEdit(system)
+            end,
+            hasChanges = function()
+                return app.blizzardPosition:HasChanges(system)
+            end,
+            revert = function()
+                return positionAction("Revert")
+            end,
+            isDefault = function()
+                return app.blizzardPosition:IsDefault(system)
+            end,
+            reset = function()
+                return positionAction("ResetToDefault")
+            end,
+        },
         changed = refresh,
     })
 end

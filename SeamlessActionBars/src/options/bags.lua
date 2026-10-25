@@ -64,16 +64,6 @@ if settings.BagSlotPadding then
     args.padding.max = 10
     args.padding.step = 1
 end
-if settings.Size then
-    args.size = nativeOption("Size", L["Bag size"], 40)
-    args.size.type = "range"
-    args.size.min = 75
-    args.size.max = 200
-    args.size.step = 5
-    args.size.format = function(value)
-        return string.format("%d%%", value)
-    end
-end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {

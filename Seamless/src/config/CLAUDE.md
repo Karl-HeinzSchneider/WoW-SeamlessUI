@@ -54,11 +54,10 @@ group/control. These fields belong to our schema and stay directly on the table.
 flags mark the subcategory; individual control flags mark their row. Flags combine and do not
 propagate to children or clear on hover/open.
 
-`editMode` (glowing EDIT MODE, blue glow) marks settings stored in the active Edit Mode layout
-instead of the AceDB profile. Tag only those: `GetNativePositionOptions` tags its Position and
-scale group; profile-stored positions from `GetPositionOptions` stay untagged. Settings in a
-tagged group, or tagged themselves, also get the tooltip line
-`|cff8080ff[Saved in the Edit Mode layout]|r`.
+Suite options do not set Blizzard or Edit Mode visual tags. Native Position and scale
+and other layout-backed settings use `layoutStored = true` solely for the tooltip line
+`|cff8080ff[Saved in the Edit Mode layout]|r`. It is inherited by settings inside the
+group and never renders a badge. Profile-stored positions stay unmarked.
 
 `badges.lua` uses `NewFeatureLabelTemplate`. Tags are children of their rows, do not reserve
 layout space, and hide when pooled rows are reused. Setting rows place them left of the label;

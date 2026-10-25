@@ -6,6 +6,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field new? boolean
 ---@field blizzard? boolean
 ---@field editMode? boolean
+---@field layoutStored? boolean Tooltip metadata for settings stored in the active Edit Mode layout.
 ---@field default? any|fun(): any
 ---@field feature? boolean Supply the shared feature switch and settings bindings.
 ---@field settings? fun(): table Resolve the current profile's feature settings.
@@ -51,6 +52,7 @@ local function featureGroup(spec)
             new = spec.new,
             blizzard = spec.blizzard,
             editMode = spec.editMode,
+            layoutStored = spec.layoutStored,
             order = spec.order,
             width = "full",
             name = spec.name,
@@ -89,6 +91,7 @@ local function featureGroup(spec)
         new = spec.new,
         blizzard = spec.blizzard,
         editMode = spec.editMode,
+        layoutStored = spec.layoutStored,
         inline = true,
         order = spec.order,
         name = spec.name,
@@ -142,7 +145,7 @@ function app.addon:PrepareSettingsOptions(option)
         type(option) == "table" and kinds[option.type],
         "Unsupported Seamless setting type: " .. tostring(option.type)
     )
-    for _, key in ipairs({ "new", "blizzard", "editMode", "feature" }) do
+    for _, key in ipairs({ "new", "blizzard", "editMode", "layoutStored", "feature" }) do
         assert(option[key] == nil or type(option[key]) == "boolean", "Setting " .. key .. " must be a boolean")
     end
     if option.feature and not prepared[option] then

@@ -249,7 +249,7 @@ local spec = registered["SeamlessActionBars:endCap:left"]
 assert(spec and spec.system == 26 and spec.systemIndex == 1 and spec.enabled())
 assert(registered["SeamlessActionBars:endCap:right"].systemIndex == 2)
 local toggle = app.EndCapHiddenOption(app.endCaps[2])
-assert(toggle.type == "toggle" and toggle.editMode and toggle.name == L["Hide endcap"])
+assert(toggle.type == "toggle" and toggle.layoutStored and not toggle.editMode and toggle.name == L["Hide endcap"])
 assert(toggle.get() == false and toggle.default() == false and not toggle.disabled())
 toggle.set(nil, true)
 assert(hidden[right] == 1 and toggle.get() == true and hidden[left] == 0)
@@ -396,7 +396,7 @@ SetCVar = function(name, value)
     assert(name == "displayFreeBagSlots")
     showFreeSlots = value
 end
-assert(not bagStyle.freeSlots.get() and bagStyle.freeSlots.blizzard and not bagStyle.freeSlots.editMode)
+assert(not bagStyle.freeSlots.get() and not bagStyle.freeSlots.blizzard and not bagStyle.freeSlots.editMode)
 bagSpec.options[5].set(true)
 assert(bagStyle.freeSlots.get(), "the native CVar is shared by config and Edit Mode")
 app.db.profile.bags = { retailStyle = false, spacing = 4 }

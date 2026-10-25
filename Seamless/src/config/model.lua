@@ -138,7 +138,7 @@ function Option:Read(member, ...)
     return value
 end
 
--- True when this option or one of its groups is tagged `editMode`: its value lives
+-- True when this option or one of its groups declares layout storage: its value lives
 -- in the Edit Mode layout, not the profile.
 function Option:InEditModeLayout()
     local group = self.root
@@ -147,7 +147,7 @@ function Option:InEditModeLayout()
         if not group then
             return false
         end
-        if group.editMode then
+        if group.layoutStored or group.editMode then
             return true
         end
     end

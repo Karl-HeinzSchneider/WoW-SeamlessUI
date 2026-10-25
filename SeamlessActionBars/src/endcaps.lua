@@ -82,7 +82,7 @@ function app.EndCapHiddenOption(entry)
         type = "toggle",
         order = 5,
         width = "full",
-        editMode = true,
+        layoutStored = true,
         name = L["Hide endcap"],
         desc = L["Hide this gryphon outside Edit Mode. Edit Mode still shows it so you can select it."],
         descStyle = "inline",

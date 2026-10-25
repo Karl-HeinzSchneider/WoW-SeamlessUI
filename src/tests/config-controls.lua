@@ -380,6 +380,13 @@ assert(toggle.featureTags.new.ignoreInLayout and toggle.featureTags.blizzard.ign
 root.args.general.args.enabled.new, root.args.general.args.enabled.blizzard = nil, nil
 app.config:RefreshOptionsPage(page)
 assert(not toggle.featureTags.new:IsShown() and not toggle.featureTags.blizzard:IsShown())
+-- Layout storage supplies tooltip text without adding a visual tag.
+root.args.general.layoutStored = true
+app.config:RefreshOptionsPage(page)
+toggle.scripts.OnEnter()
+assert(GameTooltip.lines[#GameTooltip.lines] == "|cff8080ff[Saved in the Edit Mode layout]|r")
+assert(not toggle.featureTags.editMode and not toggle.featureTags.blizzard:IsShown())
+root.args.general.layoutStored = nil
 -- EDIT MODE marks settings stored in the Edit Mode layout: nearest the label, a blue glow,
 -- and a tooltip line on the setting and on every setting inside a tagged group.
 root.args.general.args.enabled.editMode, root.args.general.args.enabled.new = true, true

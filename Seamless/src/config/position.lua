@@ -184,7 +184,7 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
             return anchorFrames
         end,
     })
-    group.editMode = true
+    group.layoutStored = true
     return group
 end
 

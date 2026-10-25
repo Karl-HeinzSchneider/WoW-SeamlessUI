@@ -791,7 +791,7 @@ local group = app.core:GetNativePositionOptions(function()
     return player
 end)
 assert(group.name == "Position and scale" and group.type == "group" and group.inline)
-assert(group.editMode, "native layout groups carry the EDIT MODE tag")
+assert(group.layoutStored and not group.editMode, "native layout groups keep tooltip metadata without a badge")
 local config = group.args
 assert(config.point.get() == position:Read(player).point)
 assert(config.relativePoint.get() == position:Read(player).relativePoint)

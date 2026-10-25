@@ -99,7 +99,7 @@ function app.MicroMenuOptions()
             type = "select",
             name = name,
             order = order,
-            editMode = true,
+            layoutStored = true,
             values = values,
             sorting = sorting,
             default = function()

@@ -183,7 +183,11 @@ so it returns this window. The vendored file stays untouched.
   `buttonBinding` (canEdit, hasChanges, revert, isDefault, reset), so both native and suite frames
   draw their declared footer outside the scroll. The helper returns a `lib.SettingType.ButtonSection`
   with the declared Button settings in order; it never chooses or appends actions. Revert
-  restores a suite frame's position snapshot at selection; Reset Position uses its registered
+  restores the frame's custom setting values (including scale) and its position snapshot at first
+  selection in the Edit Mode session. Baselines survive selection changes and clear on a new
+  session, layout or profile. Dirty state compares current values, including external changes;
+  returning to the baseline disables Revert. Native bindings also compare and restore the whole
+  saved Blizzard system, independently of native dirty flags. Reset Position uses its registered
   default and movement callback. Native bindings restore the saved layout baseline or preset
   anchor through the native position service. Omit actions or the whole section to omit buttons.
   Empty sections draw nothing. The Position section never inserts Revert into its controls.

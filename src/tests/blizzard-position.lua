@@ -998,3 +998,18 @@ EditModePresetLayoutManager.GetDefaultSystemAnchorInfo = nil
 assert(defaults.x.default() == nil, "clients without the preset API show Not applicable")
 assert(not native:ResetToDefault(player) and #warnings == 0)
 print("Native position defaults, Frame Size scale and Reset To Default OK")
+
+-- The footer restores the whole native system even when its dirty flag was missed.
+player.savedSystemInfo = copy(draft.systems[1])
+draft.systems[1].pendingOtherSetting = 987
+player.dirty = false
+assert(native:HasSystemChanges(player) and not native:HasChanges(player))
+local reverted = 0
+function EditModeManagerFrame:RevertSystemChanges(system)
+    reverted = reverted + 1
+    draft.systems[1] = copy(system.savedSystemInfo)
+end
+assert(native:RevertSystem(player))
+assert(reverted == 1 and not native:HasSystemChanges(player))
+assert(not native:RevertSystem(player), "no native changes remain")
+print("Native full-system Revert detects changes independently of dirty flags")

@@ -849,6 +849,14 @@ do
     -- Revert restores the position the frame had when it was selected.
     revert.option.click()
     assert(stored.x == 5 and revert.option.disabled())
+    lockRow.option.set(true)
+    assert(not revert.option.disabled(), "custom settings alone enable Revert")
+    lockRow.option.set(false)
+    assert(revert.option.disabled(), "returning to the baseline clears Revert")
+    lockRow.option.set(true)
+    xRow.option.set("24")
+    revert.option.click()
+    assert(not lock.on and stored.x == 5 and revert.option.disabled(), "restore custom settings and position together")
     -- Anchor choices resolve through the feature; the screen counts as UIParent.
     local entries = Row(list, "AnchorFrame").option.values()
     assert(#entries == 2 and not entries[1].disabled and not entries[2].disabled)
@@ -902,6 +910,13 @@ do
     assert(scaled == 1.1)
     bound.set(3)
     assert(scaled == 1.1, "outside the binding's range")
+    local scaleRevert = app.addon:GetEditModePositionButton("revert")
+    assert(not scaleRevert.disabled(), "scale changes enable Revert")
+    dialog:Update(positionSelection)
+    dialog:Update(scaledSelection)
+    assert(not scaleRevert.disabled(), "changing selections preserves the baseline")
+    scaleRevert.click(scaledFrame)
+    assert(scaled == 1.5 and scaleRevert.disabled(), "Revert restores custom scale")
     app.SetEditModeSectionCollapsed("settings:position", true)
     lib.frameSelections[positioned], lib.frameSelections[scaledFrame] = nil, nil
     dialog:Update(selection)
@@ -1072,13 +1087,21 @@ do
     nativeRevert.option.click()
     nativeReset.option.click()
     assert(reverts == 1 and resets == 1 and nativeRevert.option.disabled() and nativeReset.option.disabled())
+    on = false
+    dialog.scripts.OnUpdate(dialog, 0.2)
+    assert(nativeRevert.Button.enabled, "custom-only native changes enable Revert through polling")
+    nativeRevert.option.click()
+    assert(on and reverts == 1 and nativeRevert.option.disabled(), "restore custom values without a native change")
+    on, pending = false, true
+    nativeRevert.option.click()
+    assert(on and not pending and reverts == 2, "one action restores both native and custom changes")
     pending, atDefault = true, false
     dialog.scripts.OnUpdate(dialog, 0.2)
     assert(nativeRevert.Button.enabled and nativeReset.Button.enabled, "native footer values poll with the controls")
     allowed = false
     nativeRevert.option.click()
     nativeReset.option.click()
-    assert(reverts == 1 and resets == 1, "native footer callbacks honor the position guards")
+    assert(reverts == 2 and resets == 1, "native footer callbacks honor the position guards")
     allowed = true
     local staleReset = nativeReset.option.click
     spec.key = {}

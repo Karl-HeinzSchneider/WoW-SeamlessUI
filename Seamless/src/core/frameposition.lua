@@ -79,6 +79,27 @@ function position:HasChanges(system)
         and not equal(positionState(info), positionState(system.savedSystemInfo))
 end
 
+-- Compare the actual draft as native dirty flags can miss addon-driven edits.
+function position:HasSystemChanges(system)
+    local info = EditModeManagerFrame:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
+    return info ~= nil and system.savedSystemInfo ~= nil and not equal(info, system.savedSystemInfo)
+end
+
+function position:RevertSystem(system)
+    if not self:CanEdit(system) or not self:HasSystemChanges(system) then
+        return false
+    end
+    -- Reuse position validation before restoring native settings and dirty flags.
+    if self:HasChanges(system) and not self:Revert(system) then
+        return false
+    end
+    EditModeManagerFrame:RevertSystemChanges(system)
+    if EditModeSystemSettingsDialog then
+        EditModeSystemSettingsDialog:UpdateDialog(system)
+    end
+    return true
+end
+
 -- Check anchors and ownership: anchoring to a descendant or to a frame whose
 -- anchors lead back here would create a layout cycle.
 local function dependsOn(frame, target, seen)

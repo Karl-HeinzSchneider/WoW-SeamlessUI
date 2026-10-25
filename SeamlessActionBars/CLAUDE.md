@@ -39,7 +39,7 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   controls into the selected frame's extended Edit Mode window. Native Size is exposed only as
   Position's Scale. These native settings stay in Edit Mode layouts.
 - `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
-  selected-frame Edit Mode section. Profile `bags.spacing` (default 4, 0–20 pixels) controls the
+  selected-frame Edit Mode section. Profile `bags.spacing` (default 0, 0–20 pixels) controls the
   gaps for this style; editing is disabled with the style off or during combat. Reuses the
   client's `bag-*` atlases (BagSlots2x art) and
   portrait mask, with a 48-pixel backpack and 30-pixel circular bags, reagent bag and keyring.

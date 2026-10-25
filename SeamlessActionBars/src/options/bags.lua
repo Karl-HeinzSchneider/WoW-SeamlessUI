@@ -41,11 +41,11 @@ local args = {}
 args.spacing = {
     type = "range",
     name = L["Bag button spacing"],
-    order = 30,
+    order = 40,
     min = 0,
     max = 20,
     step = 1,
-    default = 4,
+    default = 0,
     disabled = function()
         return not app.db.profile.bags.retailStyle or InCombatLockdown()
     end,
@@ -61,7 +61,7 @@ args.retailStyle = {
     type = "toggle",
     name = L["Retail bag button style"],
     desc = L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."],
-    order = 5,
+    order = 30,
     width = "full",
     default = false,
     get = function()
@@ -94,7 +94,7 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = { profile = { bags = { retailStyle = false, spacing = 4 } } },
+    defaults = { profile = { bags = { retailStyle = false, spacing = 0 } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

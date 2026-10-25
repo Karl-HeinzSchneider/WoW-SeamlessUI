@@ -392,16 +392,16 @@ app.RefreshBagStyle = function() end
 InCombatLockdown = function()
     return false
 end
-assert(bagStyle.spacing.disabled() and bagStyle.spacing.default == 4)
+assert(bagStyle.spacing.disabled() and bagStyle.spacing.default == 0)
 app.db.profile.bags.retailStyle = true
 assert(not bagStyle.spacing.disabled())
 bagSpec.options[4].set(8)
 assert(bagStyle.spacing.get() == 8 and bagSpec.options[4].get() == 8)
-assert(bagSpec.options[3].values()[1].text == L["Left"])
+assert(bagSpec.options[2].values()[1].text == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])
 bagStyle.orientation.set(nil, 1)
-assert(bagSpec.options[3].values()[1].text == L["Up"])
+assert(bagSpec.options[2].values()[1].text == L["Up"])
 assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
 bagStyle.direction.set(nil, 1)
 bags.args.position.scale.set(1.25)

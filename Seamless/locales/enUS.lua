@@ -141,6 +141,7 @@ L["Copy the link below (Ctrl+C, Enter):"] = true
 L["Discord"] = true
 L["Edit Mode is not ready yet."] = true
 L["Edit Mode layout"] = true
+L["Edit Mode visibility readback mismatch for setting %s."] = true
 L["Edit Mode visibility: applying setting=%s value=%s"] = true
 L["Edit Mode visibility: click page=%s value=%s callback=%s"] = true
 L["Edit Mode visibility: deferred click blocked by combat"] = true
@@ -162,6 +163,7 @@ L["Log level"] = true
 L["Minimap button clicked (%s)"] = true
 L["Minimap button registered"] = true
 L["Minimap button"] = true
+L["No Edit Mode visibility binding for setting %s."] = true
 L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] = true
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true

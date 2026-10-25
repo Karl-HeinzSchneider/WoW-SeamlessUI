@@ -49,6 +49,12 @@ assert(coreApp.config.categories["Seamless:profiles"])
 local core = coreApp.addon
 core.GetEditModeButtonSection = support.buttonSection
 core.GetEditModePositionButton = support.positionButton
+function core:GetEditModeVisibility(setting, update)
+    assert(type(setting) == "number" and type(update) == "function")
+    return function()
+        return false
+    end
+end
 function core:GetEditModeLibrary()
     return { SettingType = { Button = "seamless-button" } }
 end
@@ -77,6 +83,7 @@ function time()
     return 1
 end
 Enum = { EditModeUnitFrameSetting = { FrameSize = 1 }, EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
+Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
 Settings = {}
 C_CVar = {
     GetCVar = function()

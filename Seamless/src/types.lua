@@ -83,6 +83,7 @@
 
 ---@class SeamlessCore.Addon
 ---@field EditModeVisibility fun(self: SeamlessCore.Addon, setting: number, value?: boolean): boolean
+---@field GetEditModeVisibility fun(self: SeamlessCore.Addon, setting: number, update: fun(value: boolean)): fun(value?: boolean): boolean
 ---@field RegisterPreviewCharacter fun(self: SeamlessCore.Addon, id: string, record: SeamlessCore.PreviewCharacter)
 ---@field GetPreviewCharacter fun(self: SeamlessCore.Addon, consumer: string): SeamlessCore.PreviewCharacter?
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)

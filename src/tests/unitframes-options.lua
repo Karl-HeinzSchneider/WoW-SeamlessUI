@@ -37,7 +37,7 @@ local counts = {
 }
 local registeredOptions, systemOptions, enabled = nil, {}, true
 local positioned = {}
-Enum = { EditModeUnitFrameSetting = { FrameSize = 9 } }
+Enum = { EditModeUnitFrameSetting = { FrameSize = 9 }, EditModeAccountSetting = { ShowPetFrame = 24 } }
 local modules = {}
 local app = {
     db = {
@@ -137,6 +137,14 @@ local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
 app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
 app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
+local petVisibilityUpdate
+function app.core:GetEditModeVisibility(setting, update)
+    assert(type(update) == "function")
+    petVisibilityUpdate = update
+    return function(value)
+        return self:EditModeVisibility(setting, value)
+    end
+end
 dofile("src/tests/settings-support.lua").pages("SeamlessUnitframes", app)
 dofile("src/tests/settings-support.lua").defaults("SeamlessUnitframes", app)
 load("editmode.lua")
@@ -497,3 +505,19 @@ assert(not visibility())
 assert(visibility(true) and visibility())
 assert(not visibility(false) and not visibility())
 print("PASS: Pet header delegates visibility to Core")
+local petChecked, petRefreshes = nil, 0
+EditModeManagerFrame = {
+    AccountSettings = {
+        SetPetFrameShown = function(_, value, userInput)
+            assert(userInput == false, "Never rebuild the shared account-setting map")
+            petChecked = value
+        end,
+        RefreshPetFrame = function()
+            petRefreshes = petRefreshes + 1
+        end,
+    },
+}
+petVisibilityUpdate(true)
+assert(petChecked and petRefreshes == 1)
+petVisibilityUpdate(false)
+assert(not petChecked and petRefreshes == 2)

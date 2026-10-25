@@ -172,14 +172,17 @@ so it returns this window. The vendored file stays untouched.
   resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - Every frame's `src/options/<frame>.lua` explicitly sets
-  `config.buttonSection = core:GetEditModeButtonSection({ "revert", "resetPosition" })`.
+  `config.buttonSection = core:GetEditModeButtonSection({ ... })`, an ordered array of arbitrary
+  button declarations (`name`, `click(frame)`, optional `desc`, `hidden`, `disabled`). Standard
+  actions are individual optional entries from `GetEditModePositionButton("revert")` and
+  `GetEditModePositionButton("resetPosition")`; custom button tables use the same list.
   Frame registration passes that config field to `AddFrameSettings`; it must never manufacture
   a footer or substitute default actions when the field is absent. Native frame pages also
   declare `config.editModeFrame`; Core looks up their explicit section with
   `GetEditModeFrameButtonSection(frame)`. The attached window receives `buttonSection` and a
   `buttonBinding` (canEdit, hasChanges, revert, isDefault, reset), so both native and suite frames
   draw their declared footer outside the scroll. The helper returns a `lib.SettingType.ButtonSection`
-  with ordered Button settings; `extra` may supply custom Button settings (e.g. the damage meter's window actions). Revert
+  with the declared Button settings in order; it never chooses or appends actions. Revert
   restores a suite frame's position snapshot at selection; Reset Position uses its registered
   default and movement callback. Native bindings restore the saved layout baseline or preset
   anchor through the native position service. Omit actions or the whole section to omit buttons.

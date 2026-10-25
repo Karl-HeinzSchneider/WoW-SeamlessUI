@@ -48,6 +48,7 @@ assert(coreApp.config.categories["Seamless:tweaks"].parent == "Seamless")
 assert(coreApp.config.categories["Seamless:profiles"])
 local core = coreApp.addon
 core.GetEditModeButtonSection = support.buttonSection
+core.GetEditModePositionButton = support.positionButton
 function core:GetEditModeLibrary()
     return { SettingType = { Button = "seamless-button" } }
 end

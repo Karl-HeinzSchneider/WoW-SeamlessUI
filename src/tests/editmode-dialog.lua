@@ -444,8 +444,53 @@ lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = app.addon:GetEditModeB
 dialog:RefreshWidgets()
 assert(not buttons:IsShown(), "empty explicit sections do not draw a divider")
 table.remove(lib.frameSettings[frame])
+-- Arbitrary custom buttons need no standard actions, and retain their declared order/guards.
+local customFrame, customDisabled, customHidden = nil, false, false
+local custom = app.addon:GetEditModeButtonSection({
+    {
+        name = "Custom first",
+        desc = "Custom action description",
+        click = function(selected)
+            customFrame = selected
+        end,
+        disabled = function()
+            return customDisabled
+        end,
+        hidden = function()
+            return customHidden
+        end,
+    },
+    {
+        name = "Custom second",
+        click = function() end,
+        hidden = function()
+            return customHidden
+        end,
+    },
+})
+lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = custom
+dialog:RefreshWidgets()
+local firstCustom, secondCustom = Row(buttons, "Custom first"), Row(buttons, "Custom second")
+assert(firstCustom and secondCustom and not Row(buttons, "Reset Position") and not Row(buttons, "Revert changes"))
+assert(firstCustom.points.TOPLEFT[2] > secondCustom.points.TOPLEFT[2], "custom buttons keep declaration order")
+firstCustom.option.click()
+assert(
+    customFrame == frame and firstCustom.option.desc == "Custom action description",
+    "custom callbacks receive the selected frame"
+)
+customDisabled = true
+dialog:RefreshWidgets()
+assert(not firstCustom.Button.enabled, "custom disabled predicates are honored")
+customHidden = true
+dialog:RefreshWidgets()
+assert(not buttons:IsShown(), "a fully hidden custom section has no orphan divider")
+table.remove(lib.frameSettings[frame])
+assert(not pcall(function()
+    app.addon:GetEditModeButtonSection({ "revert" })
+end), "sections accept button declarations, not action tokens")
 local buttonClicks = 0
-lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = app.addon:GetEditModeButtonSection({ "resetPosition" }, {
+lib.frameSettings[frame][#lib.frameSettings[frame] + 1] = app.addon:GetEditModeButtonSection({
+    app.addon:GetEditModePositionButton("resetPosition"),
     {
         kind = lib.SettingType.Button,
         name = "Feature button",
@@ -764,7 +809,7 @@ do
     lib.frameSettings[positioned], lib.frameButtons[positioned] =
         {
             setting,
-            app.addon:GetEditModeButtonSection({ "revert", "resetPosition" }),
+            app.addon:GetEditModeButtonSection({ app.addon:GetEditModePositionButton("revert"), app.addon:GetEditModePositionButton("resetPosition") }),
             { kind = lib.SettingType.Checkbox, name = "Below position", get = getOn, set = setOn, default = false },
         }, {}
     local positionSelection = { parent = positioned, system = selection.system, isSelected = true }
@@ -867,7 +912,7 @@ print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dial
 local rightFrame = object("Frame", UIParent)
 rightFrame.left, rightFrame.right, rightFrame.top = 1300, 1450, 500
 lib.frameSettings[rightFrame], lib.frameButtons[rightFrame] =
-    { app.addon:GetEditModeButtonSection({ "resetPosition" }) }, {}
+    { app.addon:GetEditModeButtonSection({ app.addon:GetEditModePositionButton("resetPosition") }) }, {}
 rightFrame.GetPoint = frame.GetPoint
 dialog.width = 340
 dialog:Update({ parent = rightFrame, system = selection.system })
@@ -996,7 +1041,10 @@ do
     -- Native frames use the same explicit config declaration, bound to native layout actions.
     local pending, atDefault, allowed, reverts, resets = true, false, true, 0, 0
     spec.key = native
-    spec.buttonSection = app.addon:GetEditModeButtonSection({ "revert", "resetPosition" })
+    spec.buttonSection = app.addon:GetEditModeButtonSection({
+        app.addon:GetEditModePositionButton("revert"),
+        app.addon:GetEditModePositionButton("resetPosition"),
+    })
     spec.buttonBinding = {
         canEdit = function()
             return allowed

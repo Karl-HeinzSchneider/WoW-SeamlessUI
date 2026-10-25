@@ -34,7 +34,10 @@ app.optionPages.player = {
         editModeFrame = function()
             return PlayerCastingBarFrame
         end,
-        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["Player"],
         order = 10,

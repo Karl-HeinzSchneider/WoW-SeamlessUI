@@ -167,10 +167,8 @@ local app = {
             return lib
         end,
         RefreshEditModeOptions = function() end,
-        GetEditModeButtonSection = function(_, actions)
-            assert(actions[1] == "revert" and actions[2] == "resetPosition")
-            return { kind = "buttons", options = actions }
-        end,
+        GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection,
+        GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton,
         GetEditModePositionSetting = function(_, value)
             positionSpec = value
             return { name = "Position", kind = "position" }

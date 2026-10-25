@@ -600,7 +600,15 @@ local function CreateSettingsWindow()
         local settings = declared and { declared } or internal:GetFrameSettings(frame)
         for index, data in ipairs(settings or {}) do
             if data.kind == lib.SettingType.ButtonSection and #data.options > 0 then
-                local options = { { key = "divider", type = "divider" } }
+                local function allHidden()
+                    for _, button in ipairs(data.options) do
+                        if not Resolve(button.hidden) then
+                            return false
+                        end
+                    end
+                    return true
+                end
+                local options = { { key = "divider", type = "divider", hidden = allHidden } }
                 for buttonIndex, button in ipairs(data.options) do
                     options[#options + 1] = ConvertSetting(button, "footer:" .. index .. ":" .. buttonIndex, frame)
                 end
@@ -864,19 +872,33 @@ end
 ---@field options SeamlessCore.EditModeButton[] Explicit Button settings, in display order.
 
 ---@class SeamlessCore.EditModeButton
----@field kind "seamless-button"
+---@field kind? "seamless-button" Filled by GetEditModeButtonSection when omitted.
 ---@field name string
 ---@field click fun(frame: table)
 ---@field desc? string
 ---@field hidden? boolean|fun(layout: string): boolean
 ---@field disabled? boolean|fun(layout: string): boolean
 
----Declare a footer explicitly. Position actions share the selected frame's Position binding;
----custom Button settings may follow them. No footer is drawn without this declaration.
----@param actions ("revert"|"resetPosition")[]
----@param extra? SeamlessCore.EditModeButton[]
+---An explicit, ordered list of arbitrary button declarations. No actions are inferred.
+---@param buttons SeamlessCore.EditModeButton[]
 ---@return SeamlessCore.EditModeButtonSection
-function addon:GetEditModeButtonSection(actions, extra)
+function addon:GetEditModeButtonSection(buttons)
+    for _, button in ipairs(buttons) do
+        assert(
+            type(button) == "table" and type(button.name) == "string" and type(button.click) == "function",
+            "Edit Mode buttons need a name and click callback"
+        )
+        button.kind = button.kind or lib.SettingType.Button
+        assert(button.kind == lib.SettingType.Button, "Button sections only accept buttons")
+    end
+    return { kind = lib.SettingType.ButtonSection, options = buttons }
+end
+
+---Optional reusable position action, usable anywhere in an explicit button list.
+---@param action "revert"|"resetPosition"
+---@return SeamlessCore.EditModeButton
+function addon:GetEditModePositionButton(action)
+    assert(action == "revert" or action == "resetPosition", "Unknown Edit Mode position action")
     local function position(frame)
         local settings = internal:GetFrameSettings(frame)
         for _, setting in ipairs(settings or {}) do
@@ -885,65 +907,57 @@ function addon:GetEditModeButtonSection(actions, extra)
             end
         end
     end
-    local options = {}
-    for _, action in ipairs(actions) do
-        assert(action == "revert" or action == "resetPosition", "Unknown Edit Mode footer action")
-        options[#options + 1] = {
-            kind = lib.SettingType.Button,
-            name = action == "revert" and (HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
-                or HUD_EDIT_MODE_RESET_POSITION,
-            disabled = function()
-                local dialog = internal.dialog
-                local frame = dialog
-                    and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
-                if not frame or InCombatLockdown() or not lib:IsInEditMode() then
-                    return true
+    return {
+        kind = lib.SettingType.Button,
+        name = action == "revert" and (HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
+            or HUD_EDIT_MODE_RESET_POSITION,
+        disabled = function()
+            local dialog = internal.dialog
+            local frame = dialog
+                and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
+            if not frame or InCombatLockdown() or not lib:IsInEditMode() then
+                return true
+            end
+            local binding = dialog and dialog.attached and dialog.attached.buttonBinding
+            if binding then
+                return not binding.canEdit()
+                    or (action == "revert" and not binding.hasChanges())
+                    or (action == "resetPosition" and binding.isDefault())
+            end
+            if action == "resetPosition" then
+                return fixedFrames[frame] == true or IsDefaultPosition(frame)
+            end
+            local section = position(frame)
+            return not section or section.revertButton.disabled()
+        end,
+        click = function(frame)
+            local dialog = internal.dialog
+            local current = dialog
+                and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
+            if InCombatLockdown() or not lib:IsInEditMode() or current ~= frame then
+                return
+            end
+            local binding = dialog.attached and dialog.attached.buttonBinding
+            if binding then
+                if binding.canEdit() then
+                    if action == "revert" then
+                        binding.revert()
+                    else
+                        binding.reset()
+                    end
                 end
-                local binding = dialog and dialog.attached and dialog.attached.buttonBinding
-                if binding then
-                    return not binding.canEdit()
-                        or (action == "revert" and not binding.hasChanges())
-                        or (action == "resetPosition" and binding.isDefault())
+                return
+            end
+            if action == "resetPosition" then
+                if not fixedFrames[frame] then
+                    ResetPosition(frame)
                 end
-                if action == "resetPosition" then
-                    return fixedFrames[frame] == true or IsDefaultPosition(frame)
-                end
+            else
                 local section = position(frame)
-                return not section or section.revertButton.disabled()
-            end,
-            click = function(frame)
-                local dialog = internal.dialog
-                local current = dialog
-                    and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
-                if InCombatLockdown() or not lib:IsInEditMode() or current ~= frame then
-                    return
+                if section and not section.revertButton.disabled() then
+                    section.revertButton.click()
                 end
-                local binding = dialog.attached and dialog.attached.buttonBinding
-                if binding then
-                    if binding.canEdit() then
-                        if action == "revert" then
-                            binding.revert()
-                        else
-                            binding.reset()
-                        end
-                    end
-                    return
-                end
-                if action == "resetPosition" then
-                    if not fixedFrames[frame] then
-                        ResetPosition(frame)
-                    end
-                else
-                    local section = position(frame)
-                    if section and not section.revertButton.disabled() then
-                        section.revertButton.click()
-                    end
-                end
-            end,
-        }
-    end
-    for _, button in ipairs(extra or {}) do
-        options[#options + 1] = button
-    end
-    return { kind = lib.SettingType.ButtonSection, options = options }
+            end
+        end,
+    }
 end

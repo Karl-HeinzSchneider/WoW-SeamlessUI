@@ -41,7 +41,10 @@ app.optionPages.focus = {
         editModeFrame = function()
             return FocusFrame
         end,
-        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
+        buttonSection = app.core:GetEditModeButtonSection({
+            app.core:GetEditModePositionButton("revert"),
+            app.core:GetEditModePositionButton("resetPosition"),
+        }),
         type = "group",
         name = L["Focus"],
         order = 50,

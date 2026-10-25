@@ -190,7 +190,16 @@ A frame page's config group may declare `buttonSection`, a
 ```lua
 config = {
     type = "group",
-    buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
+    buttonSection = app.core:GetEditModeButtonSection({
+        app.core:GetEditModePositionButton("revert"),
+        {
+            name = L["Open"],
+            click = function(frame)
+                app.core:OpenOptions(appName, "general")
+            end,
+        },
+        app.core:GetEditModePositionButton("resetPosition"),
+    }),
     -- The frame's name, order and ordinary args follow.
 }
 ```
@@ -204,6 +213,13 @@ including native frames without a Position group in their standalone page.
 These are native schema fields, validated by `PrepareSettingsOptions` and retained on the
 config table. It supplies the selected frame's Edit Mode footer; it does not create rows in
 the standalone settings window. Frame registration only consumes this field. Omitting it means
-no footer, with no automatic fallback. Extra Button declarations may be passed as the helper's
-second argument; the damage meter's shared options helper supplies its custom window actions,
-and each window page explicitly opts in.
+no footer, with no automatic fallback.
+
+`GetEditModeButtonSection(buttons)` accepts one ordered array of arbitrary button declarations:
+`name`, `click(frame)`, optional `desc`, `hidden` and `disabled` (boolean or a layout-aware
+function). It fills the internal Button kind when omitted. It does not choose, append or reorder
+buttons. A section can contain only custom actions, only standard actions, or any mixture.
+`GetEditModePositionButton("revert"|"resetPosition")` is an optional helper returning one standard
+button; its position binding is independent of the generic section structure. The damage meter's
+shared options helper returns named custom declarations, which each window page explicitly lists
+alongside its standard buttons. Empty or entirely hidden sections draw no footer or divider.

@@ -271,12 +271,10 @@ app.meterSettingDefinitions = settings
 app.MeterSettingControl = SettingControl
 
 ---Custom footer actions, declared by each window's options config.
----@return SeamlessCore.EditModeButton[]
+---@return table<string, SeamlessCore.EditModeButton>
 function app.WindowEditModeButtons()
-    local lib = app.core:GetEditModeLibrary()
     return {
-        {
-            kind = lib.SettingType.Button,
+        editSkin = {
             name = L["Edit selected skin"],
             click = function()
                 if not InCombatLockdown() then
@@ -284,8 +282,7 @@ function app.WindowEditModeButtons()
                 end
             end,
         },
-        {
-            kind = lib.SettingType.Button,
+        createWindow = {
             name = L["Create new window"],
             click = function()
                 if app:IsEditingWindows() and not InCombatLockdown() then
@@ -293,8 +290,7 @@ function app.WindowEditModeButtons()
                 end
             end,
         },
-        {
-            kind = lib.SettingType.Button,
+        removeWindow = {
             name = L["Remove window"],
             click = function(frame)
                 if app:IsEditingWindows() and not InCombatLockdown() then

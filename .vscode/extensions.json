@@ -1,3 +1,9 @@
 {
-  "recommendations": ["JohnnyMorganz.stylua", "redhat.vscode-xml", "sumneko.lua", "ketho.wow-api"]
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "JohnnyMorganz.stylua",
+    "redhat.vscode-xml",
+    "sumneko.lua",
+    "ketho.wow-api"
+  ]
 }

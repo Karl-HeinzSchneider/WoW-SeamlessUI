@@ -12,8 +12,9 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review editmodelib.lua")
 assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
 assert(lib.SettingType.Position == nil, "LibEditMode now defines Position; review editmodelib.lua")
+assert(lib.SettingType.ButtonSection == nil, "LibEditMode now defines ButtonSection; review editmodelib.lua")
 assert(type(internal.CreateDialog) == "function" and type(internal.MoveParent) == "function")
-assert(type(internal.GetFrameSettings) == "function" and type(internal.GetFrameButtons) == "function")
+assert(type(internal.GetFrameSettings) == "function")
 assert(type(internal.TriggerCallback) == "function" and type(lib.frameSelections) == "table")
 
 -- Frames that can be selected in Edit Mode but never moved: no dragging, no arrow-key nudges and
@@ -126,6 +127,7 @@ end
 lib.SettingType.Header = "seamless-header"
 lib.SettingType.Button = "seamless-button"
 lib.SettingType.Position = "seamless-position"
+lib.SettingType.ButtonSection = "seamless-button-section"
 
 local function HeaderKey(data)
     return "settings:" .. (data.key or data.name)
@@ -437,6 +439,12 @@ local function PositionSection(data, frame)
             return apply(snapshot)
         end,
     })
+    for index, row in ipairs(section.options) do
+        if row.key == "revert" then
+            section.revertButton = table.remove(section.options, index)
+            break
+        end
+    end
     -- The feature's own rows sit at the top of the section, under its header.
     for index, extra in ipairs(data.options or {}) do
         table.insert(section.options, index, ConvertSetting(extra, "position" .. index, frame))
@@ -549,7 +557,9 @@ local function CreateSettingsWindow()
         local settings, count = internal:GetFrameSettings(frame)
         local sections = { { id = "settings", options = {} } }
         for index, data in ipairs(settings or {}) do
-            if data.kind == lib.SettingType.Position then
+            if data.kind == lib.SettingType.ButtonSection then
+                -- Explicit footer declarations are drawn separately, outside the scrolling list.
+            elseif data.kind == lib.SettingType.Position then
                 sections[#sections + 1] = PositionSection(data, frame)
                 -- Rows after it, up to the next header, go below without a header of their own.
                 sections[#sections + 1] = { id = "after:" .. index, options = {} }
@@ -581,34 +591,20 @@ local function CreateSettingsWindow()
         return sections
     end
 
-    -- Below a divider, outside the scrolling list: the frame's own buttons, then Reset Position
-    -- (left out for frames that never move). Without any button the divider goes too.
+    -- Draw only declared footer sections, outside the scrolling list.
     local function ButtonSections(frame)
-        local frameButtons = (internal:GetFrameButtons(frame)) or {}
-        local options = {
-            { key = "divider", type = "divider", hidden = #frameButtons == 0 and fixedFrames[frame] == true },
-        }
-        for index, data in ipairs(frameButtons) do
-            options[#options + 1] = {
-                key = "button:" .. index,
-                type = "button",
-                name = data.text,
-                width = BUTTON_WIDTH,
-                click = data.click,
-            }
+        local sections = {}
+        local settings = internal:GetFrameSettings(frame)
+        for index, data in ipairs(settings or {}) do
+            if data.kind == lib.SettingType.ButtonSection and #data.options > 0 then
+                local options = { { key = "divider", type = "divider" } }
+                for buttonIndex, button in ipairs(data.options) do
+                    options[#options + 1] = ConvertSetting(button, "footer:" .. index .. ":" .. buttonIndex, frame)
+                end
+                sections[#sections + 1] = { id = "buttons:" .. index, options = options }
+            end
         end
-        options[#options + 1] = {
-            key = "resetPosition",
-            type = "button",
-            name = HUD_EDIT_MODE_RESET_POSITION,
-            width = BUTTON_WIDTH,
-            hidden = fixedFrames[frame] == true,
-            disabled = IsDefaultPosition(frame),
-            click = function()
-                ResetPosition(frame)
-            end,
-        }
-        return { { id = "buttons", options = options } }
+        return sections
     end
 
     ---Draw the selected frame's settings (or the attached sections) and size the window to them,
@@ -844,17 +840,89 @@ function addon:GetEditModePositionSectionKey()
 end
 
 ---A frame setting for LibEditMode's AddFrameSettings: the shared Position section (Scale, Anchor,
----AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame", Revert), the same one Blizzard frames
+---AnchorParent, AnchorFrame, X, Y and "Quick anchor to frame"), the same one Blizzard frames
 ---get, with its collapse key `core:GetEditModePositionSectionKey()`.
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and
 ---y; `spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
----Scale uses `spec.scale`, the settings panel's binding, and is greyed out without one. Revert
----restores the position the frame had when it was selected. `options` are LibEditMode settings
+---Scale uses `spec.scale`, the settings panel's binding, and is greyed out without one. Declare
+---Revert separately with GetEditModeButtonSection. `options` are LibEditMode settings
 ---shown at the top of the section.
 ---@param spec SeamlessCore.EditModePosition
 ---@param options? table[]
 ---@return table setting
 function addon:GetEditModePositionSetting(spec, options)
     return { kind = lib.SettingType.Position, name = L["Position"], position = spec, options = options }
+end
+
+---@class SeamlessCore.EditModeButtonSection
+---@field kind "seamless-button-section"
+---@field options SeamlessCore.EditModeButton[] Explicit Button settings, in display order.
+
+---@class SeamlessCore.EditModeButton
+---@field kind "seamless-button"
+---@field name string
+---@field click fun(frame: table)
+---@field desc? string
+---@field hidden? boolean|fun(layout: string): boolean
+---@field disabled? boolean|fun(layout: string): boolean
+
+---Declare a footer explicitly. Position actions share the selected frame's Position binding;
+---custom Button settings may follow them. No footer is drawn without this declaration.
+---@param actions ("revert"|"resetPosition")[]
+---@param extra? SeamlessCore.EditModeButton[]
+---@return SeamlessCore.EditModeButtonSection
+function addon:GetEditModeButtonSection(actions, extra)
+    local function position(frame)
+        local settings = internal:GetFrameSettings(frame)
+        for _, setting in ipairs(settings or {}) do
+            if setting.kind == lib.SettingType.Position then
+                return PositionSection(setting, frame)
+            end
+        end
+    end
+    local options = {}
+    for _, action in ipairs(actions) do
+        assert(action == "revert" or action == "resetPosition", "Unknown Edit Mode footer action")
+        options[#options + 1] = {
+            kind = lib.SettingType.Button,
+            name = action == "revert" and (HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
+                or HUD_EDIT_MODE_RESET_POSITION,
+            disabled = function()
+                local frame = internal.dialog and internal.dialog.selection and internal.dialog.selection.parent
+                if not frame or InCombatLockdown() or not lib:IsInEditMode() then
+                    return true
+                end
+                if action == "resetPosition" then
+                    return fixedFrames[frame] == true or IsDefaultPosition(frame)
+                end
+                local section = position(frame)
+                return not section or section.revertButton.disabled()
+            end,
+            click = function(frame)
+                if
+                    InCombatLockdown()
+                    or not lib:IsInEditMode()
+                    or not internal.dialog.selection
+                    or internal.dialog.selection.parent ~= frame
+                then
+                    return
+                end
+                if action == "resetPosition" then
+                    if not fixedFrames[frame] then
+                        ResetPosition(frame)
+                    end
+                else
+                    local section = position(frame)
+                    if section and not section.revertButton.disabled() then
+                        section.revertButton.click()
+                    end
+                end
+            end,
+        }
+    end
+    for _, button in ipairs(extra or {}) do
+        options[#options + 1] = button
+    end
+    return { kind = lib.SettingType.ButtonSection, options = options }
 end

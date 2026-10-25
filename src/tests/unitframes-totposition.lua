@@ -208,6 +208,10 @@ local app = {
         GetPositionOptions = function(_, spec)
             return { type = "group", spec = spec }
         end,
+        GetEditModeButtonSection = function(_, actions)
+            assert(actions[1] == "revert" and actions[2] == "resetPosition")
+            return { kind = "buttons", options = actions }
+        end,
         GetEditModePositionSetting = function(_, spec)
             return { spec = spec }
         end,

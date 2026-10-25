@@ -418,6 +418,10 @@ end
 app.core.RegisterEditModeOptions = function(_, _, spec)
     previewOptions = spec.options
 end
+app.core.GetEditModeButtonSection = function(_, actions, extra)
+    assert(actions[1] == "revert" and actions[2] == "resetPosition")
+    return { kind = "buttons", options = extra or {} }
+end
 app.core.GetEditModePositionSetting = function(_, spec)
     positionSpecs[#positionSpecs + 1] = spec
     return { kind = "position", name = "Position", spec = spec }
@@ -530,7 +534,9 @@ assert(settings[1].name == "Position" and settings[2].name == "Style")
 assert(settings[1].spec.scale.min == 0.5 and settings[1].spec.scale.max == 2, "Scale comes from Core's Position rows")
 local byName = {}
 for _, setting in ipairs(settings) do
-    byName[setting.name] = setting
+    if setting.name then
+        byName[setting.name] = setting
+    end
 end
 assert(not byName["Spell icon"], "only the player bar has the icon option")
 app.db.profile.player.castTime.format = "ELAPSED_TOTAL"

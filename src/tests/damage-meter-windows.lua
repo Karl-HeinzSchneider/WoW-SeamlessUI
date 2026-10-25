@@ -1232,6 +1232,7 @@ function lem:AddFrame(frame, callback, defaults, name)
 end
 function lem:AddFrameSettings(frame, settings)
     controls[frame] = settings
+    buttons[frame] = settings[#settings].options
 end
 function lem:AddFrameSettingsButtons(frame, settings)
     buttons[frame] = settings
@@ -1252,6 +1253,10 @@ app.core.GetEditModeLibrary = function()
     return lem
 end
 local positionSpecs = {}
+app.core.GetEditModeButtonSection = function(_, actions, extra)
+    assert(actions[1] == "revert" and actions[2] == "resetPosition")
+    return { kind = "buttons", options = extra or {} }
+end
 app.core.GetEditModePositionSetting = function(_, spec, options)
     positionSpecs[#positionSpecs + 1] = spec
     return { name = "Position", kind = "position", options = options }
@@ -1299,7 +1304,9 @@ EditModeManagerFrame:EnterEditMode()
 assert(meter:IsShown())
 local order = {}
 for index, entry in ipairs(controls[meter]) do
-    order[entry.name] = index
+    if entry.name then
+        order[entry.name] = index
+    end
 end
 -- The lock sits at the top of the Position section, right under its header.
 local positionOptions = controls[meter][1].options

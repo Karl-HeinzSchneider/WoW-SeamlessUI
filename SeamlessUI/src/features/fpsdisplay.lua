@@ -191,6 +191,7 @@ function module:OnEnable()
         end
 
         settings[#settings + 1] = app.core:GetEditModePositionSetting(module:GetPositionBinding())
+        settings[#settings + 1] = app.core:GetEditModeButtonSection({ "revert", "resetPosition" })
         lib:AddFrameSettings(anchor, settings)
         CreateDisplay()
         HookNativeFramerate()

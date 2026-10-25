@@ -167,6 +167,10 @@ local app = {
             return lib
         end,
         RefreshEditModeOptions = function() end,
+        GetEditModeButtonSection = function(_, actions)
+            assert(actions[1] == "revert" and actions[2] == "resetPosition")
+            return { kind = "buttons", options = actions }
+        end,
         GetEditModePositionSetting = function(_, value)
             positionSpec = value
             return { name = "Position", kind = "position" }

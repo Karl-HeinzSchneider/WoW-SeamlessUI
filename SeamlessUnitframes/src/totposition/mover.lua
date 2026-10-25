@@ -143,6 +143,7 @@ local function Create(key)
                 return not position.active
             end,
         }),
+        app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
     })
     mover.movers[key] = frame
     mover.shown[key] = true

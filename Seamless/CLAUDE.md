@@ -150,10 +150,12 @@ so it returns this window. The vendored file stays untouched.
 
 - The window is drawn by the shared renderer (`core:LayoutEditModeSections`): it splits the
   frame's settings into sections at each Header, appends Reset To Default, and lists the frame's
-  buttons plus Reset Position below, under a divider, outside the scrolling list. Fixed width (370), the list scrolls past 400 pixels or 60%
+  explicit ButtonSection declarations below, under a divider, outside the scrolling list.
+  No footer buttons are inferred from the frame registration or legacy library buttons. Fixed width (370), the list scrolls past 400 pixels or 60%
   of the screen height, grows downward only and keeps its scroll offset across refreshes.
 - Supported kinds: Checkbox, Dropdown (`values`, `height` scrolls the menu), Slider (`minValue`,
-  `maxValue`, `valueStep`, `formatter`), `lib.SettingType.Header` and `lib.SettingType.Button`.
+  `maxValue`, `valueStep`, `formatter`), `lib.SettingType.Header`, `lib.SettingType.Button`,
+  `lib.SettingType.Position` and `lib.SettingType.ButtonSection`.
   Any other kind raises an error: add it to `ConvertSetting` and the renderer first.
 - `lib.SettingType.Header` (via `core:CreateEditModeHeader`): a collapsible header styled like the
   reputation headers (`name`, optional `key`, `hidden`). Collapsed sections are saved in
@@ -165,10 +167,17 @@ so it returns this window. The vendored file stays untouched.
   Blizzard frames get: Scale (from `spec.scale`, the settings panel's binding; greyed out without
   one), Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
   `spec.anchorFrames`, resolved by optional `spec.anchorFrame(value)` or the global name;
-  UIParent excluded) and Revert (back to the position at selection). Only changed fields reach
+  UIParent excluded). Revert is declared in the footer, below. Only changed fields reach
   `spec.set`. `options` are LibEditMode settings shown at the top of the section (Reset To Default
   resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
+- Every movable suite frame explicitly includes
+  `core:GetEditModeButtonSection({ "revert", "resetPosition" })` in its `AddFrameSettings`
+  declaration. This returns a `lib.SettingType.ButtonSection` with ordered Button settings;
+  `extra` may supply custom Button settings (e.g. the damage meter's window actions). Revert
+  restores the Position binding's snapshot at selection; Reset Position uses the frame's
+  registered default and movement callback. Omit actions or the whole section to omit buttons.
+  Empty sections draw nothing. The Position section itself does not add Revert to suite frames.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).
 - The window opens 16 pixels beside its frame (the side with more room).

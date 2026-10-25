@@ -35,6 +35,7 @@ for _, file in ipairs({
     "config/schema.lua",
     "config/registry.lua",
     "config/model.lua",
+    "config/position.lua",
     "core/options.lua",
 }) do
     assert(loadfile("Seamless/src/" .. file))("Seamless", coreApp)
@@ -48,9 +49,6 @@ assert(coreApp.config.categories["Seamless:profiles"])
 local core = coreApp.addon
 function core:GetNativePositionOptions(getFrame, scale)
     return { type = "group", order = 10, name = "Position and scale", args = {}, getFrame = getFrame, scale = scale }
-end
-function core:GetPositionOptions()
-    return { type = "group", name = "Position and scale", args = {} }
 end
 function core:GetNativeSettingScale(getFrame, setting)
     return { getFrame = getFrame, setting = setting }
@@ -97,6 +95,14 @@ local function feature(key)
     }
 end
 local apps = {}
+UIParent = {
+    GetWidth = function()
+        return 1920
+    end,
+    GetHeight = function()
+        return 1080
+    end,
+}
 for _, addon in ipairs({
     "SeamlessActionBars",
     "SeamlessCastbar",
@@ -190,6 +196,28 @@ for _, addon in ipairs({
     apps[addon] = app
 end
 local cast = apps.SeamlessCastbar
+-- The actual shared position builder must load before a feature's database exists.
+-- Its bounds are resolved later and follow the current profile, including off-screen offsets.
+local meter = apps.SeamlessDamageMeter
+function meter:GetWindowSetting(config, key)
+    return config.position[key]
+end
+meter.db.profile.windows[1] = { position = { x = 2500, y = -1400 } }
+local position = core:GetSettingsOption(
+    coreApp.options.panels.SeamlessDamageMeter.options,
+    { "window1", "position", "x" },
+    "SeamlessDamageMeter"
+)
+assert(position:Read("min") == -2500 and position:Read("max") == 2500)
+local vertical = core:GetSettingsOption(
+    coreApp.options.panels.SeamlessDamageMeter.options,
+    { "window1", "position", "y" },
+    "SeamlessDamageMeter"
+)
+assert(vertical:Read("min") == -1400 and vertical:Read("max") == 1400)
+meter.db.profile = { windows = { { position = { x = -3500, y = 40 } } } }
+assert(position:Read("min") == -3500 and position:Read("max") == 3500)
+assert(vertical:Read("min") == -1080 and vertical:Read("max") == 1080)
 assert(cast.optionPages.player.defaults.profile.player.icon.enabled)
 assert(not cast.optionPages.target.defaults.profile.target.icon)
 assert(cast.optionPages.player.config.args.rank.type == "toggle")

@@ -3,6 +3,7 @@ local active, combat, failed, writes = false, false, nil, {}
 local saved, callbacks = { [24] = 0, [25] = 1 }, {}
 local app = { addon = {}, db = { global = {} }, logger = {} }
 function app.logger:warn() end
+function app.logger:debug() end
 app.LibEditMode = {
     RegisterCallback = function(_, event, callback)
         callbacks[event] = callback
@@ -20,7 +21,18 @@ function lib:SetGlobalSetting(setting, value)
     saved[setting] = value
     writes[#writes + 1] = { setting, value }
 end
-function LibStub()
+function LibStub(name)
+    if name == "AceLocale-3.0" then
+        return {
+            GetLocale = function()
+                return setmetatable({}, {
+                    __index = function(_, key)
+                        return key
+                    end,
+                })
+            end,
+        }
+    end
     return lib
 end
 function InCombatLockdown()
@@ -72,13 +84,13 @@ assert(#writes == 3 and not core:EditModeVisibility(24))
 callbacks.enter()
 assert(#writes == 3)
 combat, active = false, false
-events.callback()
+events.callback(events, "PLAYER_REGEN_ENABLED")
 assert(#writes == 3, "Combat exit outside Edit Mode must keep the queue")
 active, failed = true, 24
 core:EditModeVisibility(25, true)
 assert(saved[25] == 1 and app.db.global.editModeVisibilityPending[24] == false)
 failed = nil
-events.callback()
+events.callback(events, "PLAYER_REGEN_ENABLED")
 assert(saved[24] == 0 and not next(app.db.global.editModeVisibilityPending))
 active = false
 core:EditModeVisibility(24, true)
@@ -86,7 +98,7 @@ combat, active = true, true
 callbacks.enter()
 assert(app.db.global.editModeVisibilityPending[24] == true)
 combat = false
-events.callback()
+events.callback(events, "PLAYER_REGEN_ENABLED")
 assert(saved[24] == 1 and not next(app.db.global.editModeVisibilityPending))
 app.db = nil
 callbacks.enter() -- Startup before AceDB initializes is harmless.

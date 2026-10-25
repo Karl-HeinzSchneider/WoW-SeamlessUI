@@ -281,11 +281,18 @@ function config:CreateWindow()
         local category = self.categories[self.selected]
         local callback = category and category.editModeVisibility
         local value = visibility:GetChecked() and true or false
+        app.logger:debug(
+            L["Edit Mode visibility: click page=%s value=%s callback=%s"],
+            tostring(self.selected),
+            tostring(value),
+            type(callback)
+        )
         if type(callback) ~= "function" then
             return
         end
         C_Timer.After(0, function()
             if InCombatLockdown() then
+                app.logger:debug(L["Edit Mode visibility: deferred click blocked by combat"])
                 self:RefreshEditModeVisibility()
                 return
             end

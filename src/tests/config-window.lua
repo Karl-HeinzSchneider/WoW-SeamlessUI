@@ -431,6 +431,7 @@ function InCombatLockdown()
     return combat
 end
 app.logger = {
+    debug = function() end,
     warn = function()
         warnings = warnings + 1
     end,

@@ -2,6 +2,33 @@
 local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local lastRead = {}
+local refresh
+local enterScheduled = false
+
+local function restoreEditMode()
+    if not refresh or not refresh.finished or not refresh.layoutUpdated or refresh.scheduled then
+        return
+    end
+    refresh.scheduled = true
+    C_Timer.After(0, function()
+        refresh.scheduled = false
+        if InCombatLockdown() then
+            return
+        end
+        local ok, err = pcall(function()
+            if not EditModeManagerFrame:IsEditModeActive() then
+                ShowUIPanel(EditModeManagerFrame)
+            end
+        end)
+        app.logger:debug(
+            L["Edit Mode visibility: refresh stage=%s success=%s error=%s"],
+            "restore",
+            tostring(ok),
+            tostring(err)
+        )
+        refresh = nil
+    end)
+end
 
 local function traceRead(setting, source, value)
     local state = source .. ":" .. tostring(value)
@@ -42,10 +69,17 @@ local function applyPending(source)
         tostring(EditModeManagerFrame and EditModeManagerFrame:IsEditModeActive()),
         tostring(InCombatLockdown())
     )
-    if not pending or not next(pending) or not canApply() then
+    if refresh or not pending or not next(pending) or not canApply() then
         return
     end
     local lib = LibStub("LibEditModeOverride-1.0")
+    local loaded, loadError = pcall(lib.LoadLayouts, lib)
+    if not loaded then
+        app.logger:warn("%s", loadError)
+        return
+    end
+    refresh = { finished = false, layoutUpdated = false }
+    local written = {}
     for setting, value in pairs(pending) do
         app.logger:debug(
             L["Edit Mode visibility: applying setting=%s value=%s"],
@@ -60,11 +94,37 @@ local function applyPending(source)
             tostring(err)
         )
         if ok then
-            pending[setting] = nil
+            written[setting] = value
         else
             app.logger:warn("%s", err)
         end
     end
+    if not next(written) then
+        refresh = nil
+        return
+    end
+    local applied, applyError = pcall(lib.ApplyChanges, lib)
+    app.logger:debug(
+        L["Edit Mode visibility: refresh stage=%s success=%s error=%s"],
+        "apply",
+        tostring(applied),
+        tostring(applyError)
+    )
+    if not applied then
+        app.logger:warn("%s", applyError)
+        refresh = nil
+        return
+    end
+    -- A setter succeeding is insufficient: only retire choices after the batch
+    -- refresh succeeds and its saved value can be read back through the library.
+    for setting, value in pairs(written) do
+        local ok, saved = pcall(lib.GetGlobalSetting, lib, setting)
+        if ok and saved == (value and 1 or 0) and pending[setting] == value then
+            pending[setting] = nil
+        end
+    end
+    refresh.finished = true
+    restoreEditMode()
 end
 
 ---Read the pending choice (including false), or the library's saved account value.
@@ -93,7 +153,17 @@ function app.addon:EditModeVisibility(setting, value)
 end
 
 app.LibEditMode:RegisterCallback("enter", function()
-    applyPending("LibEditMode.enter")
+    if refresh then
+        return
+    end
+    -- Leave the native entry stack before the library cycles Edit Mode.
+    if not enterScheduled then
+        enterScheduled = true
+        C_Timer.After(0, function()
+            enterScheduled = false
+            applyPending("LibEditMode.enter")
+        end)
+    end
 end)
 for _, event in ipairs({ "exit", "layout" }) do
     app.LibEditMode:RegisterCallback(event, function()
@@ -107,6 +177,10 @@ events:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED")
 events:SetScript("OnEvent", function(_, event)
     app.logger:debug(L["Edit Mode visibility: event=%s"], tostring(event))
     if event == "PLAYER_REGEN_ENABLED" then
+        restoreEditMode()
         applyPending(event)
+    elseif event == "EDIT_MODE_LAYOUTS_UPDATED" and refresh then
+        refresh.layoutUpdated = true
+        restoreEditMode()
     end
 end)

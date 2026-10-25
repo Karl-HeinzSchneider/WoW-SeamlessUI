@@ -105,11 +105,14 @@ in game.
 `core:EditModeVisibility(accountSettingID, value)` is the shared native visibility binding.
 With no value it reads the pending choice, or LibEditModeOverride's saved account value.
 With a boolean it stores the latest choice in `db.global.editModeVisibilityPending`, surviving
-reloads and profile changes. Inside Edit Mode it applies immediately through the library's
-`SetGlobalSetting`; outside it waits. The library's enter callback flushes every pending setting
-in one pass, with per-setting `pcall`; failed writes remain queued. Combat defers the flush
-until leaving combat while still in Edit Mode. It never calls `ApplyChanges` (which cycles Edit
-Mode), rewrites native caches, or touches frame previews. Each frame page declares its own
+reloads and profile changes. Inside Edit Mode it applies through the library; outside it waits.
+The library's enter callback schedules a flush after the native entry stack. Each batch calls
+`LoadLayouts`, each pending `SetGlobalSetting` with `pcall`, then `ApplyChanges` once. Choices
+clear only after that refresh succeeds and the getter confirms their value. Failed writes or
+refreshes stay queued. Since the library closes Edit Mode, the service waits for
+`EDIT_MODE_LAYOUTS_UPDATED` and reopens it on the next frame, after the native cache refresh.
+A guard prevents recursive flushes during this cycle. Combat defers writes and restoration.
+The service never rewrites native caches or directly touches frame previews. Each page declares its own
 `config.editModeVisibility = function(value) return core:EditModeVisibility(Enum.EditModeAccountSetting.ShowPetFrame, value) end`
 with its own setting ID. Run `lua src/tests/editmode-visibility.lua`.
 

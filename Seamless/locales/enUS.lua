@@ -148,6 +148,7 @@ L["Edit Mode visibility: event=%s"] = true
 L["Edit Mode visibility: flush source=%s pending=%s database=%s active=%s combat=%s"] = true
 L["Edit Mode visibility: queued setting=%s value=%s"] = true
 L["Edit Mode visibility: read setting=%s source=%s value=%s"] = true
+L["Edit Mode visibility: refresh stage=%s success=%s error=%s"] = true
 L["Edit Mode visibility: result setting=%s success=%s error=%s"] = true
 L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = true
 L["format error: "] = true

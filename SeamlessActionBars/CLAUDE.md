@@ -26,6 +26,12 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   Core's native Position and scale group. Scale is Icon Size for action bars, Size for status bars,
   the profile scale for the endcaps and disabled for the leave vehicle button. The endcap tabs
   also have Hide endcap, bound to the native Hidden setting. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
+- `src/micromenu.lua`: the Micro menu tab uses `MicroMenuContainer` for native position,
+  scale, orientation and order, saved in the active Edit Mode layout through Core's position
+  service. Scale binds the native Size setting. The Style section shares orientation, order and
+  artwork controls with the selected frame's extended Edit Mode details window. Profile
+  `microMenu.hideArtwork` (default false) hides only `MicroMenu.BorderArt` and `BackgroundArt`,
+  restoring their original alpha on profile changes and disable. The buttons stay intact.
 
 ## Rules
 

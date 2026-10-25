@@ -320,11 +320,11 @@ function module:Refresh()
         -- Hooking the table method cannot intercept that saved function. Run
         -- after the manager finishes dispatching the complete expand change.
         hooksecurefunc(MainMenuBarBagManager, "OnExpandBarChanged", layout)
-        -- Persist only the user's expand choice. Cursor-driven auto-expansion
-        -- uses SetExpandBarAuto and must not overwrite a collapsed preference.
-        hooksecurefunc(MainMenuBarBagManager, "SetExpandBar", function(manager)
+        -- Only the user's toggle owns the preference. Native initialization and
+        -- cursor auto-expansion must never overwrite the saved profile value.
+        hooksecurefunc(MainMenuBarBagManager, "ToggleExpandBar", function()
             if active and self:IsEnabled() and app.db.profile.bags.retailStyle then
-                app.db.profile.bags.expanded = not not manager:IsBarUserExpanded()
+                app.db.profile.bags.expanded = GetCVarBool("expandBagBar")
             end
         end)
     end
@@ -332,6 +332,16 @@ function module:Refresh()
     if MainMenuBarBagManager and GetCVarBool("expandBagBar") ~= app.db.profile.bags.expanded then
         -- Keep the native CVar in sync too: the existing arrow toggles that CVar.
         SetCVar("expandBagBar", app.db.profile.bags.expanded)
+    end
+    if MainMenuBarBagManager then
+        local expanded = app.db.profile.bags.expanded
+        if MainMenuBarBagManager:IsBarUserExpanded() ~= expanded then
+            MainMenuBarBagManager:SetExpandBar(expanded)
+        else
+            -- A matching CVar/manager value does not mean the buttons have been
+            -- hidden: Forever skipped that work while hideExpandToggle was true.
+            MainMenuBarBagManager:OnExpandBarChanged()
+        end
     end
 end
 
@@ -345,6 +355,7 @@ function module:OnEnable()
         end)
     end
     events:RegisterEvent("ADDON_LOADED")
+    events:RegisterEvent("PLAYER_ENTERING_WORLD")
     events:RegisterEvent("PLAYER_REGEN_ENABLED")
     self:Refresh()
 end

@@ -258,13 +258,18 @@ function BagBarExpandToggle:UpdateOrientation() end
 BagBarExpandToggle:SetSize(10, 16)
 BagBarExpandToggle:Hide()
 MainMenuBarBagManager = {
-    expanded = true,
+    expanded = false,
     IsBarUserExpanded = function(self)
         return self.expanded
     end,
     SetExpandBar = function(self, expanded)
-        self.expanded = expanded
-        self:OnExpandBarChanged()
+        if self.expanded ~= expanded then
+            self.expanded = expanded
+            self:OnExpandBarChanged()
+        end
+    end,
+    ToggleExpandBar = function()
+        SetCVar("expandBagBar", not GetCVarBool("expandBagBar"))
     end,
     EnumerateBagButtons = function()
         return ipairs(list)
@@ -278,7 +283,7 @@ MainMenuBarBagManager = {
         expandLayout(BagsBar)
     end,
 }
-local expandedCVar = true
+local expandedCVar = false
 GetCVarBool = function()
     return expandedCVar
 end
@@ -286,10 +291,15 @@ SetCVar = function(_, value)
     expandedCVar = value
     MainMenuBarBagManager:SetExpandBar(value)
 end
-app.db.profile.bags.expanded = true
+app.db.profile.bags.expanded = false
 app.db.profile.bags.retailStyle = true
 app.RefreshBagStyle()
 assert(hookCount == 10 and maskCount == 6)
+assert(not CharacterBag0Slot:IsShown(), "reload reapplies collapse even when the CVar and manager already match")
+MainMenuBarBagManager:SetExpandBar(true)
+assert(app.db.profile.bags.expanded == false, "native initialization does not overwrite the saved preference")
+app.RefreshBagStyle()
+assert(not CharacterBag0Slot:IsShown())
 assert(MainMenuBarBackpackButton:GetWidth() == 48 and MainMenuBarBackpackButton.icon:GetAlpha() == 0)
 assert(
     CharacterBag0Slot:GetWidth() == 30 and KeyRingButton:GetWidth() == 30 and CharacterReagentBag0Slot:GetWidth() == 30
@@ -372,7 +382,8 @@ end
 CharacterBag0Slot:UpdateTextures()
 assert(CharacterBag0Slot.normal:GetAtlas() == "bag-border", "native inventory redraw keeps the skin")
 local installedHooks = hookCount
-SetCVar("expandBagBar", false)
+SetCVar("expandBagBar", true)
+MainMenuBarBagManager:ToggleExpandBar()
 assert(app.db.profile.bags.expanded == false and not CharacterBag0Slot:IsShown())
 -- Temporary auto-expansion goes through the manager's change notification, not SetExpandBar.
 MainMenuBarBagManager.expanded = true

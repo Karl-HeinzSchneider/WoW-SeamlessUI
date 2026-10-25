@@ -94,7 +94,7 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = { profile = { bags = { retailStyle = false, spacing = 0 } } },
+    defaults = { profile = { bags = { retailStyle = false, spacing = 0, expanded = true } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

@@ -258,6 +258,14 @@ function BagBarExpandToggle:UpdateOrientation() end
 BagBarExpandToggle:SetSize(10, 16)
 BagBarExpandToggle:Hide()
 MainMenuBarBagManager = {
+    expanded = true,
+    IsBarUserExpanded = function(self)
+        return self.expanded
+    end,
+    SetExpandBar = function(self, expanded)
+        self.expanded = expanded
+        self:OnExpandBarChanged()
+    end,
     EnumerateBagButtons = function()
         return ipairs(list)
     end,
@@ -270,9 +278,18 @@ MainMenuBarBagManager = {
         expandLayout(BagsBar)
     end,
 }
+local expandedCVar = true
+GetCVarBool = function()
+    return expandedCVar
+end
+SetCVar = function(_, value)
+    expandedCVar = value
+    MainMenuBarBagManager:SetExpandBar(value)
+end
+app.db.profile.bags.expanded = true
 app.db.profile.bags.retailStyle = true
 app.RefreshBagStyle()
-assert(hookCount == 9 and maskCount == 6)
+assert(hookCount == 10 and maskCount == 6)
 assert(MainMenuBarBackpackButton:GetWidth() == 48 and MainMenuBarBackpackButton.icon:GetAlpha() == 0)
 assert(
     CharacterBag0Slot:GetWidth() == 30 and KeyRingButton:GetWidth() == 30 and CharacterReagentBag0Slot:GetWidth() == 30
@@ -355,6 +372,20 @@ end
 CharacterBag0Slot:UpdateTextures()
 assert(CharacterBag0Slot.normal:GetAtlas() == "bag-border", "native inventory redraw keeps the skin")
 local installedHooks = hookCount
+SetCVar("expandBagBar", false)
+assert(app.db.profile.bags.expanded == false and not CharacterBag0Slot:IsShown())
+-- Temporary auto-expansion goes through the manager's change notification, not SetExpandBar.
+MainMenuBarBagManager.expanded = true
+MainMenuBarBagManager:OnExpandBarChanged()
+assert(app.db.profile.bags.expanded == false, "auto expansion must not change the user's preference")
+local collapsedProfile = app.db.profile
+app.db.profile = { bags = { retailStyle = true, spacing = 0, expanded = true } }
+app.RefreshBagStyle()
+assert(expandedCVar and CharacterBag0Slot:IsShown(), "new profile restores expanded state")
+app.db.profile = collapsedProfile
+app.RefreshBagStyle()
+assert(not expandedCVar and not CharacterBag0Slot:IsShown(), "switching back restores collapsed state")
+SetCVar("expandBagBar", true)
 combat = true
 app.db.profile = { bags = { retailStyle = false, spacing = 4 } }
 app.RefreshBagStyle()
@@ -377,6 +408,7 @@ assert(BagBarExpandToggle:GetParent() == cluster, "restore the original arrow pa
 CharacterBag0Slot:UpdateTextures()
 assert(CharacterBag0Slot.normal:GetAtlas() == "square", "disabled hooks are inert")
 app.db.profile.bags.retailStyle = true
+app.db.profile.bags.expanded = true
 app.RefreshBagStyle()
 assert(hookCount == installedHooks and maskCount == 6, "re-enable reuses hooks and masks")
 addon.enabled = false

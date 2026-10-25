@@ -320,8 +320,19 @@ function module:Refresh()
         -- Hooking the table method cannot intercept that saved function. Run
         -- after the manager finishes dispatching the complete expand change.
         hooksecurefunc(MainMenuBarBagManager, "OnExpandBarChanged", layout)
+        -- Persist only the user's expand choice. Cursor-driven auto-expansion
+        -- uses SetExpandBarAuto and must not overwrite a collapsed preference.
+        hooksecurefunc(MainMenuBarBagManager, "SetExpandBar", function(manager)
+            if active and self:IsEnabled() and app.db.profile.bags.retailStyle then
+                app.db.profile.bags.expanded = not not manager:IsBarUserExpanded()
+            end
+        end)
     end
     layout()
+    if MainMenuBarBagManager and GetCVarBool("expandBagBar") ~= app.db.profile.bags.expanded then
+        -- Keep the native CVar in sync too: the existing arrow toggles that CVar.
+        SetCVar("expandBagBar", app.db.profile.bags.expanded)
+    end
 end
 
 function module:OnEnable()

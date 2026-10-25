@@ -40,8 +40,10 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   Position's Scale. These native settings stay in Edit Mode layouts.
 - `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
   selected-frame Edit Mode section. Profile `bags.spacing` (default 0, 0–20 pixels) controls the
-  gaps for this style; editing is disabled with the style off or during combat. Reuses the
-  client's `bag-*` atlases (BagSlots2x art) and
+  gaps for this style; editing is disabled with the style off or during combat. The profile's
+  `bags.expanded` (default true) remembers manual collapse/expand across reloads and
+  profile changes, synchronizing the native expand CVar. Cursor-driven auto-expansion is not saved.
+  Reuses the client's `bag-*` atlases (BagSlots2x art) and
   portrait mask, with a 48-pixel backpack and 30-pixel circular bags, reagent bag and keyring.
   Keeps the native buttons, scripts, inventory updates, free-slot counter and expand manager.
   The disabled module installs no hooks, events or masks until first enabled. Its native

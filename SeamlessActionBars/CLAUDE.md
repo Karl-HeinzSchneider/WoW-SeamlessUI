@@ -43,7 +43,9 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   portrait mask, with a 48-pixel backpack and 30-pixel circular bags, reagent bag and keyring.
   Keeps the native buttons, scripts, inventory updates, free-slot counter and expand manager.
   The disabled module installs no hooks, events or masks until first enabled. Its native
-  UpdateTextures/Layout post-hooks then remain inert when off. All size/layout changes defer
+  UpdateTextures/Layout and expand-manager post-hooks then remain inert when off. The manager
+  hook runs after the native cached Layout callback; native arrow dimensions are set while
+  active and restored on disable (Forever initializes them to zero). All size/layout changes defer
   in combat; a lazily created event frame survives module teardown to finish restoration.
   Restores textures, masks, icon anchors, button sizes, frame artwork and native expand policy on
   disable/profile changes, then runs the native bar layout. No retail templates/mixins are used.

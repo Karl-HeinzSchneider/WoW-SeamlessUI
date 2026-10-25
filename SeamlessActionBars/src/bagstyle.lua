@@ -155,7 +155,12 @@ local function layout()
     changing = true
     local bar = BagsBar
     if not barState then
-        barState = { borderAlpha = bar.BorderArt and bar.BorderArt:GetAlpha(), hideExpandToggle = bar.hideExpandToggle }
+        barState = {
+            borderAlpha = bar.BorderArt and bar.BorderArt:GetAlpha(),
+            hideExpandToggle = bar.hideExpandToggle,
+            arrowWidth = bar.bagBarExpandToggleInitialWidth,
+            arrowHeight = bar.bagBarExpandToggleInitialHeight,
+        }
         if BagBarExpandToggle then
             barState.arrow = capture(BagBarExpandToggle)
             barState.arrow.parent = BagBarExpandToggle:GetParent()
@@ -168,6 +173,11 @@ local function layout()
     -- Enable the client's existing expand button and manager, rather than replacing
     -- their click/drag/keybinding handlers. Restore this capability on disable.
     bar.hideExpandToggle = false
+    -- Forever initializes these to zero while its native toggle is hidden. The
+    -- native Layout callback also runs through a reference captured before our
+    -- hook, so it must have valid dimensions even when our combat guard defers.
+    bar.bagBarExpandToggleInitialWidth = 10
+    bar.bagBarExpandToggleInitialHeight = 16
     local visible = {}
     for _, button in MainMenuBarBagManager:EnumerateBagButtons() do
         prepare(button)
@@ -257,6 +267,8 @@ local function restoreStyle()
         BagsBar.BorderArt:SetAlpha(barState.borderAlpha)
     end
     BagsBar.hideExpandToggle = barState.hideExpandToggle
+    BagsBar.bagBarExpandToggleInitialWidth = barState.arrowWidth
+    BagsBar.bagBarExpandToggleInitialHeight = barState.arrowHeight
     if barState.arrow then
         BagBarExpandToggle:SetParent(barState.arrow.parent)
         restore(BagBarExpandToggle, barState.arrow)
@@ -279,9 +291,13 @@ function module:Refresh()
         return
     end
     active = true
-    if BagsBar and not installed then
+    if BagsBar and MainMenuBarBagManager and not installed then
         installed = true
         hooksecurefunc(BagsBar, "Layout", layout)
+        -- OnLoad registered the original Layout function with EventRegistry.
+        -- Hooking the table method cannot intercept that saved function. Run
+        -- after the manager finishes dispatching the complete expand change.
+        hooksecurefunc(MainMenuBarBagManager, "OnExpandBarChanged", layout)
     end
     layout()
 end

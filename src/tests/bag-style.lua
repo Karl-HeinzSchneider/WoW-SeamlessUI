@@ -219,6 +219,7 @@ local cluster = region()
 cluster:SetParent(BagsBar)
 BagBarExpandToggle:SetParent(cluster)
 BagsBar.hideExpandToggle, BagsBar.horizontal, BagsBar.reverse = true, true, true
+BagsBar.bagBarExpandToggleInitialWidth, BagsBar.bagBarExpandToggleInitialHeight = 0, 0
 BagsBar.BorderArt = region()
 function BagsBar:IsHorizontal()
     return self.horizontal
@@ -231,12 +232,20 @@ function BagsBar:IsDirectionUp()
 end
 function BagsBar:Layout()
     self:SetSize(self.horizontal and 315 or 45, self.horizontal and 45 or 315)
+    if not self.hideExpandToggle then
+        BagBarExpandToggle:SetSize(
+            self.horizontal and self.bagBarExpandToggleInitialWidth or self.bagBarExpandToggleInitialHeight,
+            self.horizontal and self.bagBarExpandToggleInitialHeight or self.bagBarExpandToggleInitialWidth
+        )
+    end
     for _, b in ipairs(list) do
         b:SetSize(45, 45)
         b:ClearAllPoints()
         b:SetPoint("CENTER", self, "CENTER", 0, 0)
     end
 end
+-- The client caches this callback at OnLoad, before the addon's table-method hook.
+local expandLayout = BagsBar.Layout
 function BagBarExpandToggle:UpdateOrientation() end
 BagBarExpandToggle:SetSize(10, 16)
 BagBarExpandToggle:Hide()
@@ -244,10 +253,18 @@ MainMenuBarBagManager = {
     EnumerateBagButtons = function()
         return ipairs(list)
     end,
+    OnExpandBarChanged = function(self)
+        for _, b in ipairs(list) do
+            if b ~= MainMenuBarBackpackButton and b ~= CharacterReagentBag0Slot and b ~= KeyRingButton then
+                b:SetShown(self.expanded)
+            end
+        end
+        expandLayout(BagsBar)
+    end,
 }
 app.db.profile.bags.retailStyle = true
 app.RefreshBagStyle()
-assert(hookCount == 8 and maskCount == 6)
+assert(hookCount == 9 and maskCount == 6)
 assert(MainMenuBarBackpackButton:GetWidth() == 48 and MainMenuBarBackpackButton.icon:GetAlpha() == 0)
 assert(
     CharacterBag0Slot:GetWidth() == 30 and KeyRingButton:GetWidth() == 30 and CharacterReagentBag0Slot:GetWidth() == 30
@@ -272,6 +289,22 @@ for _, horizontal in ipairs({ true, false }) do
         local point, anchor = KeyRingButton:GetPoint(1)
         assert(point == (horizontal and (reverse and "RIGHT" or "LEFT") or (reverse and "BOTTOM" or "TOP")))
         assert(anchor == CharacterReagentBag0Slot, "reagent and keyring both remain in the native order")
+        MainMenuBarBagManager.expanded = false
+        MainMenuBarBagManager:OnExpandBarChanged()
+        assert(not CharacterBag0Slot:IsShown(), "collapse hides ordinary bags")
+        assert(
+            BagBarExpandToggle:IsVisible() and BagBarExpandToggle:GetWidth() > 0 and BagBarExpandToggle:GetHeight() > 0
+        )
+        assert(
+            (horizontal and BagsBar:GetHeight() or BagsBar:GetWidth()) == 48,
+            "cached native callback is followed by retail layout"
+        )
+        MainMenuBarBagManager.expanded = true
+        MainMenuBarBagManager:OnExpandBarChanged()
+        assert(
+            CharacterBag0Slot:IsShown() and CharacterBag0Slot:GetWidth() == 30,
+            "re-expand works immediately without combat exit"
+        )
     end
 end
 CharacterBag0Slot:UpdateTextures()
@@ -284,6 +317,7 @@ assert(CharacterBag0Slot:GetWidth() == 30 and module.events.PLAYER_REGEN_ENABLED
 combat = false
 module:Refresh()
 assert(next(module.events) == nil and BagsBar.hideExpandToggle and not BagBarExpandToggle:IsShown())
+assert(BagsBar.bagBarExpandToggleInitialWidth == 0 and BagsBar.bagBarExpandToggleInitialHeight == 0)
 assert(BagsBar.BorderArt:GetAlpha() == 1 and MainMenuBarBackpackButton.icon:GetAlpha() == 1)
 for _, b in ipairs(list) do
     assert(b:GetWidth() == 45 and b.normal:GetAtlas() == "square")

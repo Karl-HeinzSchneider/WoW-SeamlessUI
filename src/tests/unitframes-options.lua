@@ -482,7 +482,7 @@ modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")
 print("PASS: PvP icons")
 
--- Persisting an account setting alone does not update the client's preview cache/control.
+-- Persisting an account setting alone does not update the Pet preview control.
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
 local savedPet, cachedPet, checkedPet, activePet, previews = 0, 0, false, false, 0
 local override = LibStub:NewLibrary("LibEditModeOverride-1.0", 999)
@@ -502,8 +502,7 @@ EditModeManagerFrame = {
         return activePet
     end,
     OnAccountSettingChanged = function(_, setting, value)
-        assert(setting == 24)
-        cachedPet = value and 1 or 0
+        error("Must not rebuild the shared native account-setting map from addon code")
     end,
     AccountSettings = {
         SetPetFrameShown = function(_, value)
@@ -524,7 +523,7 @@ EditModeManagerFrame = {
 local petVisibility = app.optionPages.pet.config.editModeVisibility
 assert(not petVisibility())
 petVisibility(true)
-assert(savedPet == 1 and cachedPet == 1 and checkedPet and previews == 0)
+assert(savedPet == 1 and cachedPet == 0 and checkedPet and previews == 0)
 activePet = true
 petVisibility(false)
 assert(savedPet == 0 and cachedPet == 0 and not checkedPet and previews == 1)
@@ -535,4 +534,4 @@ assert(not petVisibility())
 EditModeManagerFrame = nil
 petVisibility(true)
 assert(savedPet == 1 and petVisibility())
-print("PASS: pet visibility synchronizes saved, cached and live Edit Mode state")
+print("PASS: pet visibility updates only the saved flag and Pet preview, without rebuilding native caches")

@@ -22,6 +22,7 @@ L["Copy"] = true
 L["Debug"] = true
 L["Default"] = true
 L["Defaults"] = true
+L["Development Build"] = true
 L["Disabled"] = true
 L["EDIT MODE"] = true
 L["Enable"] = true
@@ -128,14 +129,20 @@ L["Added the %s Edit Mode layout. Choose it in Edit Mode, or copy it to make you
 L["Addon compartment entry"] = true
 L["Addons"] = true
 L["All account layout slots are in use. Delete one in Edit Mode to add the Seamless layout."] = true
+L["BuyMeACoffee"] = true
 L["Click an anchor point on another frame. Right-click or Escape cancels."] = true
 L["Click an anchor point on the selected frame. Right-click or Escape cancels."] = true
 L["Close Edit Mode first."] = true
 L["Commands: /seamless [options], /seamless loglevel <level>, /seamless reset"] = true
 L["Completed: %d  |  %s XP"] = true
+L["Contribute ideas & get support."] = true
+L["Copy the link below (Ctrl+C, Enter):"] = true
+L["Discord"] = true
 L["Edit Mode is not ready yet."] = true
 L["Edit Mode layout"] = true
+L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = true
 L["format error: "] = true
+L["GitHub"] = true
 L["How much Seamless writes to chat. Also /seamless loglevel <level>."] = true
 L["Interface"] = true
 L["Left-click: options"] = true
@@ -160,6 +167,7 @@ L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick
 L["Type /rl in chat to reload the user interface, just like /reload."] = true
 L["Unknown log level: %s"] = true
 L["Use Seamless layout"] = true
+L["View code, report issues & contribute."] = true
 
 -- SeamlessActionBars
 L["Action Bars"] = true

@@ -24,6 +24,105 @@ local function spacer(parent)
     return frame
 end
 
+local function toolbar(parent)
+    local popup = "SeamlessConfigLinkCopy"
+    StaticPopupDialogs[popup] = {
+        text = L["Copy the link below (Ctrl+C, Enter):"],
+        button1 = L["Close"],
+        hasEditBox = true,
+        editBoxWidth = 350,
+        maxLetters = 0,
+        OnShow = function(dialog, link)
+            local editBox = dialog:GetEditBox()
+            editBox:SetText(link)
+            editBox:HighlightText()
+            editBox:SetFocus()
+        end,
+        OnHide = function(dialog)
+            local editBox = dialog:GetEditBox()
+            editBox:ClearFocus()
+            editBox:SetText("")
+        end,
+        EditBoxOnEnterPressed = function(editBox)
+            editBox:GetParent():Hide()
+        end,
+        EditBoxOnEscapePressed = function(editBox)
+            editBox:GetParent():Hide()
+        end,
+        timeout = 0,
+        whileDead = true,
+        hideOnEscape = true,
+    }
+    local container = CreateFrame("Frame", nil, parent)
+    container:SetPoint("BOTTOMLEFT", 16, 16)
+    container:SetHeight(22)
+    local links = {
+        { L["Discord"], L["Contribute ideas & get support."], "https://discord.gg/D7CtUHT87G", "discord", 22 },
+        {
+            L["GitHub"],
+            L["View code, report issues & contribute."],
+            "https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI",
+            "github",
+            18,
+        },
+        {
+            L["BuyMeACoffee"],
+            L["Support further development with a slice of pizza!"],
+            "https://buymeacoffee.com/karlheinzschneider",
+            "coffee",
+            18,
+        },
+    }
+    local previous, width = nil, 0
+    for _, link in ipairs(links) do
+        local button = CreateFrame("Button", nil, container)
+        button:SetHeight(22)
+        if previous then
+            button:SetPoint("LEFT", previous, "RIGHT", 4, 0)
+        else
+            button:SetPoint("LEFT")
+        end
+        local icon = button:CreateTexture(nil, "ARTWORK")
+        icon:SetTexture("Interface\\AddOns\\Seamless\\assets\\core\\" .. link[4])
+        icon:SetSize(link[5], link[5])
+        icon:SetPoint("CENTER", button, "LEFT", 15, 0)
+        local text = label(button, "GameTooltipText", link[1], "LEFT", button, "LEFT", 30, 0)
+        button:SetWidth(34 + text:GetStringWidth())
+        local highlight = button:CreateTexture(nil, "HIGHLIGHT")
+        highlight:SetAllPoints()
+        highlight:SetColorTexture(1, 1, 1, 0.1)
+        button:SetScript("OnClick", function()
+            local _, dialog = StaticPopup_Visible(popup)
+            if dialog and dialog.data == link[3] then
+                StaticPopup_Hide(popup)
+            else
+                StaticPopup_Show(popup, nil, nil, link[3])
+            end
+        end)
+        button:SetScript("OnEnter", function()
+            GameTooltip:SetOwner(button, "ANCHOR_RIGHT")
+            GameTooltip:SetText(link[1], 1, 1, 1)
+            GameTooltip:AddLine(link[2], 1, 0.82, 0, true)
+            GameTooltip:Show()
+        end)
+        button:SetScript("OnLeave", function()
+            GameTooltip:Hide()
+        end)
+        button:SetScript("OnHide", function()
+            if GameTooltip:IsOwned(button) then
+                GameTooltip:Hide()
+            end
+        end)
+        width = width + button:GetWidth() + (previous and 4 or 0)
+        previous = button
+    end
+    container:SetWidth(width)
+    container:SetScript("OnHide", function()
+        StaticPopup_Hide(popup)
+    end)
+    return container
+end
+
 local function scroll(parent, x, width)
     local frame = CreateFrame("ScrollFrame", nil, parent)
     frame:SetPoint("TOPLEFT", x, -76)
@@ -135,6 +234,7 @@ function config:CreateWindow()
     done:SetScript("OnClick", function()
         frame:Hide()
     end)
+    self.toolbar = toolbar(frame)
 
     local tab = CreateFrame("Button", nil, frame, "MinimalTabTemplate")
     self.tab = tab
@@ -183,6 +283,7 @@ function config:SetMinimized(minimized)
     self.tab:SetShown(not minimized)
     self.inner:SetShown(not minimized)
     self.done:SetShown(not minimized)
+    self.toolbar:SetShown(not minimized)
     local x, topOffset = minimized and 18 or 233, minimized and 81 or 137
     self.contentScroll:ClearAllPoints()
     self.contentScroll:SetPoint("TOPLEFT", x - CONTENT_TAG_OVERHANG, -topOffset)

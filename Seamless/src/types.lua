@@ -27,6 +27,7 @@
 ---@field targetIcon? number 0–8; missing resolves to 0 (no raid marker).
 
 ---@class SeamlessCore.Config
+---@field toolbar Frame
 ---@field categories table<string, SeamlessCore.ConfigCategory>
 ---@field collapsed table<string, boolean>
 ---@field pages table<string, table>

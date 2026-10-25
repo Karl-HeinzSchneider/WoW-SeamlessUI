@@ -206,8 +206,12 @@ for _, name in ipairs({
 }) do
     methods[name] = function() end
 end
-function CreateFrame(_, name, parent, template)
+local toolbarButtons = {}
+function CreateFrame(kind, name, parent, template)
     local frame = object()
+    if kind == "Button" then
+        toolbarButtons[#toolbarButtons + 1] = frame
+    end
     frame.parent, frame.template = parent, template
     frame.level = (template == "UIPanelCloseButtonNoScripts" or template == "UIPanelCloseButtonDefaultAnchors") and 510
         or ((parent and parent:GetFrameLevel() or 0) + 1)
@@ -241,6 +245,10 @@ UIParent:SetSize(1920, 1080)
 UISpecialFrames = {}
 tinsert = table.insert
 NineSliceUtil = { ApplyLayoutByName = function() end }
+StaticPopupDialogs = {}
+function StaticPopup_Hide() end
+function methods:SetTexture() end
+function methods:SetColorTexture() end
 config.frame = nil
 C_AddOns = {
     GetAddOnMetadata = function()
@@ -266,6 +274,56 @@ core:RegisterConfigCategory("Page", {
     end,
 })
 core:OpenConfig("Page")
+local visiblePopup
+function StaticPopup_Visible()
+    return visiblePopup and "StaticPopup1", visiblePopup
+end
+function StaticPopup_Show(which, _, _, link)
+    assert(which == "SeamlessConfigLinkCopy")
+    visiblePopup = { data = link }
+end
+function StaticPopup_Hide()
+    visiblePopup = nil
+end
+local links = {}
+for _, button in ipairs(toolbarButtons) do
+    if button.parent == config.toolbar then
+        links[#links + 1] = button
+    end
+end
+assert(#links == 3)
+links[1].scripts.OnClick()
+assert(visiblePopup.data == "https://discord.gg/D7CtUHT87G")
+links[2].scripts.OnClick()
+assert(visiblePopup.data == "https://github.com/Karl-HeinzSchneider/WoW-SeamlessUI")
+links[2].scripts.OnClick()
+assert(not visiblePopup)
+links[3].scripts.OnClick()
+assert(visiblePopup.data == "https://buymeacoffee.com/karlheinzschneider")
+config.toolbar.scripts.OnHide()
+assert(not visiblePopup)
+local editBox = {}
+function editBox:SetText(text)
+    self.text = text
+end
+function editBox:HighlightText()
+    self.highlighted = true
+end
+function editBox:SetFocus()
+    self.focused = true
+end
+function editBox:ClearFocus()
+    self.focused = false
+end
+local dialog = {
+    GetEditBox = function()
+        return editBox
+    end,
+}
+StaticPopupDialogs.SeamlessConfigLinkCopy.OnShow(dialog, "https://example.com")
+assert(editBox.text == "https://example.com" and editBox.highlighted and editBox.focused)
+StaticPopupDialogs.SeamlessConfigLinkCopy.OnHide(dialog)
+assert(editBox.text == "" and not editBox.focused)
 assert(config.navigation:GetWidth() == 175)
 for _, row in ipairs(config.rows) do
     if row.id == "Page" then

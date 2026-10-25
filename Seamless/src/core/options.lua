@@ -27,7 +27,7 @@ local module = {}
 app.options = app.addon:NewModule("Options", module) --[[@as SeamlessCore.Options]]
 
 -- Keep stable paths for inherited accessors and AceDBOptions handler methods.
-local function RegisterConfigPages(name, title, args, flags)
+local function RegisterConfigPages(name, title, args, flags, root)
     local parent = name
     if name == appName then
         app.config.categories[name].new = flags.new
@@ -51,7 +51,6 @@ local function RegisterConfigPages(name, title, args, flags)
             blizzard = tab.blizzard,
             editMode = tab.editMode,
             create = function(page)
-                local root = module.panels[name].options
                 app.config:CreateOptionsPage(page, root, key, name)
                 page.optionsAppName = name
                 page:SetScript("OnUpdate", function()
@@ -110,7 +109,7 @@ function module:Register(name, spec)
     end
     local root = { type = "group", name = spec.title, childGroups = "tab", args = args }
     self.panels[name] = { title = spec.title, options = root }
-    RegisterConfigPages(name, spec.title, args, spec)
+    RegisterConfigPages(name, spec.title, args, spec, root)
 end
 
 -- Opens the shared config window on the addon's General page or requested tab.

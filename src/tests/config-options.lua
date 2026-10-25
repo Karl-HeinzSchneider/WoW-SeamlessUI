@@ -28,7 +28,7 @@ local coreApp = {
     defaultLayout = { LAYOUT_NAME = "Seamless" },
 }
 function coreApp.addon:NewModule(_, module)
-    return module
+    return setmetatable({}, { __index = module })
 end
 for _, file in ipairs({
     "core/db.lua",
@@ -120,8 +120,9 @@ for _, addon in ipairs({
         if type(module) ~= "table" then
             module = {}
         end
-        modules[name] = module
-        return module
+        local instance = setmetatable({}, { __index = module })
+        modules[name] = instance
+        return instance
     end
     function app.addon:GetModule(key)
         modules[key] = modules[key] or feature(key)
@@ -195,6 +196,18 @@ for _, addon in ipairs({
         assert(coreApp.config.categories[addon .. ":" .. key], "Missing page " .. key)
     end
     apps[addon] = app
+end
+-- AceAddon returns an instance inheriting from the prototype. Exercise every page's
+-- first-open callback after registration, rather than only inspecting its declaration.
+function coreApp.config:CreateOptionsPage(page, root, key, name)
+    page.option = self.Option:New(root, { key }, name)
+end
+for name, panel in pairs(coreApp.options.panels) do
+    for key in pairs(panel.options.args) do
+        local page = { SetScript = function() end }
+        coreApp.config.categories[name .. ":" .. key].create(page)
+        assert(page.option.root == panel.options and page.option.path[1] == key)
+    end
 end
 local cast = apps.SeamlessCastbar
 -- The actual shared position builder must load before a feature's database exists.

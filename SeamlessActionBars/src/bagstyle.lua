@@ -135,9 +135,9 @@ local function prepare(button)
     if not hooked[button] then
         hooked[button] = true
         hooksecurefunc(button, "UpdateTextures", function()
-            if active and not InCombatLockdown() and buttons[button] then
+            if active and buttons[button] and (not InCombatLockdown() or not button:IsProtected()) then
                 captureTextures(button, buttons[button])
-                if button == KeyRingButton then
+                if button == KeyRingButton and (button.bagAtlas or button.bagIcon) then
                     buttons[button].icon.texture = button.icon:GetTexture()
                     buttons[button].icon.atlas = button.icon:GetAtlas()
                     buttons[button].icon.coords = { button.icon:GetTexCoord() }
@@ -149,8 +149,22 @@ local function prepare(button)
 end
 
 local function layout()
-    if not active or changing or InCombatLockdown() or not BagsBar or not MainMenuBarBagManager then
+    if not active or changing or not BagsBar or not MainMenuBarBagManager then
         return
+    end
+    local combat = InCombatLockdown()
+    if combat then
+        -- Existing bag buttons are ordinary, unprotected ItemButtons. Keep their
+        -- skin/layout synchronized with native combat-time expand changes, but
+        -- never initialize a skin or modify protected frames during combat.
+        if not barState or BagsBar:IsProtected() or (BagBarExpandToggle and BagBarExpandToggle:IsProtected()) then
+            return
+        end
+        for _, button in MainMenuBarBagManager:EnumerateBagButtons() do
+            if not buttons[button] or button:IsProtected() then
+                return
+            end
+        end
     end
     changing = true
     local bar = BagsBar
@@ -172,12 +186,14 @@ local function layout()
     end
     -- Enable the client's existing expand button and manager, rather than replacing
     -- their click/drag/keybinding handlers. Restore this capability on disable.
-    bar.hideExpandToggle = false
-    -- Forever initializes these to zero while its native toggle is hidden. The
-    -- native Layout callback also runs through a reference captured before our
-    -- hook, so it must have valid dimensions even when our combat guard defers.
-    bar.bagBarExpandToggleInitialWidth = 10
-    bar.bagBarExpandToggleInitialHeight = 16
+    if not combat then
+        bar.hideExpandToggle = false
+        -- Forever initializes these to zero while its native toggle is hidden. The
+        -- native Layout callback also runs through a reference captured before our
+        -- hook, so it must have valid dimensions even when our combat guard defers.
+        bar.bagBarExpandToggleInitialWidth = 10
+        bar.bagBarExpandToggleInitialHeight = 16
+    end
     local visible, fullLength, count = {}, 0, 0
     for _, button in MainMenuBarBagManager:EnumerateBagButtons() do
         prepare(button)

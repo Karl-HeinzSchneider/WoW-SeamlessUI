@@ -30,8 +30,11 @@ local function region()
         return self.height
     end
     function r:SetSize(w, h)
-        assert(not combat)
+        assert(not combat or not self:IsProtected())
         self.width, self.height = w, h
+    end
+    function r:IsProtected()
+        return self.protected or false
     end
     function r:GetAlpha()
         return self.alpha
@@ -65,6 +68,7 @@ local function region()
     end
     function r:SetAtlas(atlas)
         self.atlas, self.texture = atlas, atlas
+        self.coords = atlas == "UI-HUD-ActionBar-Keyring-Small" and { 0.1, 0.3, 0.2, 0.4 } or { 0, 1, 0, 1 }
     end
     function r:GetTexCoord()
         return unpack(self.coords)
@@ -198,6 +202,9 @@ local function button(id)
         return self.highlight
     end
     function b:UpdateTextures()
+        if self.bagAtlas then
+            self.icon:SetAtlas(self.bagAtlas)
+        end
         self.normal:SetAtlas("square")
         self.pushed:SetAtlas("square")
         self.highlight:SetAtlas("square-highlight")
@@ -212,6 +219,7 @@ for i = 0, 3 do
     _G["CharacterBag" .. i .. "Slot"] = button(i + 1)
 end
 CharacterReagentBag0Slot, KeyRingButton = button(5), button(6)
+KeyRingButton.bagAtlas = "UI-HUD-ActionBar-Keyring-Small"
 KeyRingButton.icon:SetAtlas("UI-HUD-ActionBar-Keyring-Small")
 KeyRingButton.icon:SetTexCoord(0.1, 0.3, 0.2, 0.4)
 BagsBar, BagBarExpandToggle = region(), region()
@@ -318,6 +326,20 @@ for _, horizontal in ipairs({ true, false }) do
             CharacterBag0Slot:IsShown() and CharacterBag0Slot:GetWidth() == 30,
             "re-expand works immediately without combat exit"
         )
+        combat = true
+        MainMenuBarBagManager.expanded = false
+        MainMenuBarBagManager:OnExpandBarChanged()
+        assert(
+            KeyRingButton:GetWidth() == 30 and KeyRingButton:GetHeight() == 30,
+            "combat collapse keeps keyring circular"
+        )
+        assert(BagsBar:GetWidth() == expandedWidth and BagsBar:GetHeight() == expandedHeight)
+        KeyRingButton:UpdateTextures()
+        assert(KeyRingButton.normal:GetAtlas() == "bag-border", "combat inventory refresh keeps the retail skin")
+        MainMenuBarBagManager.expanded = true
+        MainMenuBarBagManager:OnExpandBarChanged()
+        assert(CharacterBag0Slot:IsShown() and KeyRingButton:GetWidth() == 30)
+        combat = false
     end
 end
 CharacterBag0Slot:UpdateTextures()

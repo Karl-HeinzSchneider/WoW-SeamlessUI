@@ -1,5 +1,5 @@
 ---@type string, SeamlessCore
-local _, app = ...
+local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = app.config
@@ -100,7 +100,11 @@ function config:CreateWindow()
     local border = CreateFrame("Frame", nil, frame, "NineSlicePanelTemplate")
     border:SetAllPoints()
     NineSliceUtil.ApplyLayoutByName(border, "ButtonFrameTemplateNoPortrait")
-    label(border, "GameFontNormal", L["Seamless"], "TOP", border, "TOP", 0, -5)
+    local version = (C_AddOns.GetAddOnMetadata(appName, "Version") or ""):gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+    if version == "@" .. "project-version@" or version == "" then
+        version = L["Development Build"]
+    end
+    label(border, "GameFontNormal", L["SeamlessUI"] .. " |cff8080ff" .. version .. "|r", "TOP", border, "TOP", 0, -5)
     local inner = frame:CreateTexture(nil, "OVERLAY", nil, 2)
     self.inner = inner
     inner:SetAtlas("Options_InnerFrame", true)

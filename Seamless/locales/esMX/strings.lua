@@ -24,6 +24,7 @@ end
 -- L["Debug"] = "Debug"
 -- L["Default"] = "Default"
 -- L["Defaults"] = "Defaults"
+-- L["Development Build"] = "Development Build"
 -- L["Disabled"] = "Disabled"
 -- L["EDIT MODE"] = "EDIT MODE"
 -- L["Enable"] = "Enable"

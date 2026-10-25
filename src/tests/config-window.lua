@@ -242,6 +242,11 @@ UISpecialFrames = {}
 tinsert = table.insert
 NineSliceUtil = { ApplyLayoutByName = function() end }
 config.frame = nil
+C_AddOns = {
+    GetAddOnMetadata = function()
+        return "|cff8080ff@project-version@|r"
+    end,
+}
 assert(loadfile("Seamless/src/config/window.lua"))("Seamless", app)
 function methods:SetTextToFit(value)
     self.text = value

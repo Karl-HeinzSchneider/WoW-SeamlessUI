@@ -21,6 +21,7 @@ L["Copy"] = true
 L["Debug"] = true
 L["Default"] = true
 L["Defaults"] = true
+L["Development Build"] = true
 L["Disabled"] = true
 L["EDIT MODE"] = true
 L["Enable"] = true

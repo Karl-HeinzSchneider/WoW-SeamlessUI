@@ -11,6 +11,8 @@ local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 app.optionPages.microMenu = {
     defaults = { profile = { microMenu = { hideArtwork = false } } },
     config = {
+        editModeFrame = getFrame,
+        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
         type = "group",
         name = L["Micro menu"],
         order = 130,

@@ -423,6 +423,7 @@ end
 ---@field name string? Header text; without one the rows have no header and never collapse.
 ---@field key string? Collapse key, see IsEditModeSectionCollapsed.
 ---@field hidden (boolean|fun(): boolean)? Hides the header only; its rows show uncollapsed.
+---@field revertButton? table Available position action; only explicit footer declarations display it.
 ---@field options table[] Rows: key, type, name, desc?, get, set, hidden?, disabled? (see Seamless/CLAUDE.md).
 
 ---Lay out sections in parent from y down, each under a collapsible header; returns the bottom.

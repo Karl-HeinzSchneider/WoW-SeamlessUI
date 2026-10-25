@@ -156,3 +156,19 @@ function module:RegisterAddon(name, spec)
     }
     self:Refresh()
 end
+
+---Read only a matching frame's explicit page declaration. No inferred default footer.
+---@param frame table
+---@return SeamlessCore.EditModeButtonSection?
+function app.addon:GetEditModeFrameButtonSection(frame)
+    if not frame then
+        return nil
+    end
+    for _, panel in pairs(app.options.panels or {}) do
+        for _, config in pairs(panel.options.args) do
+            if config.editModeFrame and config.editModeFrame() == frame then
+                return config.buttonSection
+            end
+        end
+    end
+end

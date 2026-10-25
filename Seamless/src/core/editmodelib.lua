@@ -439,12 +439,6 @@ local function PositionSection(data, frame)
             return apply(snapshot)
         end,
     })
-    for index, row in ipairs(section.options) do
-        if row.key == "revert" then
-            section.revertButton = table.remove(section.options, index)
-            break
-        end
-    end
     -- The feature's own rows sit at the top of the section, under its header.
     for index, extra in ipairs(data.options or {}) do
         table.insert(section.options, index, ConvertSetting(extra, "position" .. index, frame))
@@ -459,6 +453,15 @@ end
 ---@field key any What is shown (a Blizzard system); the list scrolls back to the top when it changes.
 ---@field sections fun(): SeamlessCore.EditModeSection[] Built again on every layout.
 ---@field changed? fun() Called after a row changed a value (default: lay the window out again).
+---@field buttonSection? SeamlessCore.EditModeButtonSection Explicit frame config declaration.
+---@field buttonBinding? SeamlessCore.EditModeButtonBinding Native position action callbacks.
+
+---@class SeamlessCore.EditModeButtonBinding
+---@field canEdit fun(): boolean
+---@field hasChanges fun(): boolean
+---@field revert fun(): boolean, string?
+---@field isDefault fun(): boolean
+---@field reset fun(): boolean, string?
 
 ---@class SeamlessCore.EditModeSettingsWindow : Frame
 ---@field selection table? LibEditMode's selection of the frame whose settings are shown.
@@ -592,9 +595,9 @@ local function CreateSettingsWindow()
     end
 
     -- Draw only declared footer sections, outside the scrolling list.
-    local function ButtonSections(frame)
+    local function ButtonSections(frame, declared)
         local sections = {}
-        local settings = internal:GetFrameSettings(frame)
+        local settings = declared and { declared } or internal:GetFrameSettings(frame)
         for index, data in ipairs(settings or {}) do
             if data.kind == lib.SettingType.ButtonSection and #data.options > 0 then
                 local options = { { key = "divider", type = "divider" } }
@@ -634,10 +637,11 @@ local function CreateSettingsWindow()
         local maximum = math.floor(math.min(MAX_HEIGHT, UIParent:GetHeight() * MAX_HEIGHT_SHARE))
         local scrollHeight = math.min(listHeight, maximum)
         scroll:SetHeight(math.max(1, scrollHeight))
-        local buttonsHeight = 0
-        if not attached then
-            buttonsHeight = addon:LayoutEditModeSections(buttons, ButtonSections(frame), 0, false, Redraw)
+        local footer = {}
+        if not attached or attached.buttonSection then
+            footer = ButtonSections(attached and attached.key or frame, attached and attached.buttonSection)
         end
+        local buttonsHeight = addon:LayoutEditModeSections(buttons, footer, 0, false, changed)
         -- An empty button list is left out of the window.
         buttons:SetShown(buttonsHeight > 0)
         buttons:SetHeight(math.max(1, buttonsHeight))
@@ -726,7 +730,7 @@ local function CreateSettingsWindow()
         elapsed = elapsed + delta
         if elapsed >= POLL then
             elapsed = 0
-            if addon:RefreshEditModeSections(list) then
+            if addon:RefreshEditModeSections(list) or addon:RefreshEditModeSections(buttons) then
                 self:LayoutContent()
             end
         end
@@ -889,9 +893,17 @@ function addon:GetEditModeButtonSection(actions, extra)
             name = action == "revert" and (HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"])
                 or HUD_EDIT_MODE_RESET_POSITION,
             disabled = function()
-                local frame = internal.dialog and internal.dialog.selection and internal.dialog.selection.parent
+                local dialog = internal.dialog
+                local frame = dialog
+                    and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
                 if not frame or InCombatLockdown() or not lib:IsInEditMode() then
                     return true
+                end
+                local binding = dialog and dialog.attached and dialog.attached.buttonBinding
+                if binding then
+                    return not binding.canEdit()
+                        or (action == "revert" and not binding.hasChanges())
+                        or (action == "resetPosition" and binding.isDefault())
                 end
                 if action == "resetPosition" then
                     return fixedFrames[frame] == true or IsDefaultPosition(frame)
@@ -900,12 +912,21 @@ function addon:GetEditModeButtonSection(actions, extra)
                 return not section or section.revertButton.disabled()
             end,
             click = function(frame)
-                if
-                    InCombatLockdown()
-                    or not lib:IsInEditMode()
-                    or not internal.dialog.selection
-                    or internal.dialog.selection.parent ~= frame
-                then
+                local dialog = internal.dialog
+                local current = dialog
+                    and (dialog.selection and dialog.selection.parent or dialog.attached and dialog.attached.key)
+                if InCombatLockdown() or not lib:IsInEditMode() or current ~= frame then
+                    return
+                end
+                local binding = dialog.attached and dialog.attached.buttonBinding
+                if binding then
+                    if binding.canEdit() then
+                        if action == "revert" then
+                            binding.revert()
+                        else
+                            binding.reset()
+                        end
+                    end
                     return
                 end
                 if action == "resetPosition" then

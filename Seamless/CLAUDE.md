@@ -171,14 +171,19 @@ so it returns this window. The vendored file stays untouched.
   `spec.set`. `options` are LibEditMode settings shown at the top of the section (Reset To Default
   resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
-- Every movable suite frame's `src/options/<frame>.lua` explicitly sets
+- Every frame's `src/options/<frame>.lua` explicitly sets
   `config.buttonSection = core:GetEditModeButtonSection({ "revert", "resetPosition" })`.
   Frame registration passes that config field to `AddFrameSettings`; it must never manufacture
-  a footer or substitute default actions when the field is absent. This returns a `lib.SettingType.ButtonSection` with ordered Button settings;
-  `extra` may supply custom Button settings (e.g. the damage meter's window actions). Revert
-  restores the Position binding's snapshot at selection; Reset Position uses the frame's
-  registered default and movement callback. Omit actions or the whole section to omit buttons.
-  Empty sections draw nothing. The Position section itself does not add Revert to suite frames.
+  a footer or substitute default actions when the field is absent. Native frame pages also
+  declare `config.editModeFrame`; Core looks up their explicit section with
+  `GetEditModeFrameButtonSection(frame)`. The attached window receives `buttonSection` and a
+  `buttonBinding` (canEdit, hasChanges, revert, isDefault, reset), so both native and suite frames
+  draw their declared footer outside the scroll. The helper returns a `lib.SettingType.ButtonSection`
+  with ordered Button settings; `extra` may supply custom Button settings (e.g. the damage meter's window actions). Revert
+  restores a suite frame's position snapshot at selection; Reset Position uses its registered
+  default and movement callback. Native bindings restore the saved layout baseline or preset
+  anchor through the native position service. Omit actions or the whole section to omit buttons.
+  Empty sections draw nothing. The Position section never inserts Revert into its controls.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).
 - The window opens 16 pixels beside its frame (the side with more room).
@@ -192,7 +197,8 @@ so it returns this window. The vendored file stays untouched.
   and the renderer sections `spec.sections()`, built again on every layout; `spec.key` names what
   is shown (the list scrolls to the top when it changes) and `spec.changed` runs after a row
   changes a value. Attached, it takes the anchor's width, sits above it, has no close button,
-  frame buttons or dragging, and polls `RefreshEditModeSections` every 0.15 s. Call it again to
+  automatic frame buttons or dragging, and polls `RefreshEditModeSections` every 0.15 s.
+  It draws a footer only when `spec.buttonSection` is explicitly supplied. Call it again to
   refresh. `core:DetachEditModeSettingsWindow()` hides it, but only while attached. Selecting a
   suite frame, or the library's Reset on a native selection, ends the attached placement.
 
@@ -256,7 +262,8 @@ never a second renderer.
 
 `core:CreateEditModePositionSection(id, binding)` returns a section for the renderer: Scale,
 Anchor, AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow with the value),
-"Quick anchor to frame", Revert and the last refusal message. The binding
+"Quick anchor to frame" and the last refusal message. Revert is an available action on the
+section (`revertButton`), drawn only by an explicit button section. The binding
 (`SeamlessCore.EditModePositionBinding`) reads, validates and applies; the section only builds rows
 and drops changes once `isCurrent()` is false. Build one per selected frame. SeamlessUI uses it for
 Blizzard frames; Seamless frames get it through `GetEditModePositionSetting`.

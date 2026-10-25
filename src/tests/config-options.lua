@@ -203,8 +203,25 @@ for _, addon in ipairs({
 end
 -- Footer ownership belongs to each frame page, not its Edit Mode registration module.
 for addon, keys in pairs({
-    SeamlessUnitframes = { "targettarget", "focustarget" },
-    SeamlessCastbar = { "target", "focus" },
+    SeamlessActionBars = {
+        "bar1",
+        "bar2",
+        "bar3",
+        "bar4",
+        "bar5",
+        "bar6",
+        "bar7",
+        "bar8",
+        "petBar",
+        "vehicleLeave",
+        "microMenu",
+        "statusBar1",
+        "statusBar2",
+        "endCapLeft",
+        "endCapRight",
+    },
+    SeamlessUnitframes = { "player", "pet", "target", "focus", "party", "targettarget", "focustarget" },
+    SeamlessCastbar = { "player", "target", "focus" },
     SeamlessUI = { "fpsDisplay" },
     SeamlessDamageMeter = { "window1", "window2", "window3", "window4", "window5", "window6" },
 }) do
@@ -227,6 +244,77 @@ for addon, keys in pairs({
     end
     assert(not apps[addon].optionPages.general.config.buttonSection, "unrelated pages do not inherit a footer")
 end
+local footerCount = 0
+for _, app in pairs(apps) do
+    for _, page in pairs(app.optionPages) do
+        local config = page.config
+        if config.buttonSection then
+            footerCount = footerCount + 1
+        end
+        local position = config.args.position
+        if position and position.getFrame then
+            assert(config.buttonSection and config.editModeFrame, "every native frame page declares its footer")
+        end
+    end
+end
+assert(footerCount == 32, "all 32 existing frame pages explicitly declare both actions")
+-- Every native frame resolves back to its actual per-frame page, with no default fallback.
+local nativePages = {
+    SeamlessActionBars = {
+        bar1 = "MainActionBar",
+        bar2 = "MultiBarBottomLeft",
+        bar3 = "MultiBarBottomRight",
+        bar4 = "MultiBarRight",
+        bar5 = "MultiBarLeft",
+        bar6 = "MultiBar5",
+        bar7 = "MultiBar6",
+        bar8 = "MultiBar7",
+        petBar = "PetActionBar",
+        vehicleLeave = "MainMenuBarVehicleLeaveButton",
+        microMenu = "MicroMenuContainer",
+        statusBar1 = "MainStatusTrackingBarContainer",
+        statusBar2 = "SecondaryStatusTrackingBarContainer",
+        endCapLeft = "TestLeftEndcap",
+        endCapRight = "TestRightEndcap",
+    },
+    SeamlessUnitframes = {
+        player = "PlayerFrame",
+        pet = "PetFrame",
+        target = "TargetFrame",
+        focus = "FocusFrame",
+        party = "PartyFrame",
+    },
+    SeamlessCastbar = { player = "PlayerCastingBarFrame" },
+}
+for _, pages in pairs(nativePages) do
+    for _, name in pairs(pages) do
+        _G[name] = {}
+    end
+end
+local bars = apps.SeamlessActionBars
+bars.EndCapFrame = function(entry)
+    return entry.key == "left" and TestLeftEndcap or TestRightEndcap
+end
+local nativeCount = 0
+for addon, pages in pairs(nativePages) do
+    for key, name in pairs(pages) do
+        local config = apps[addon].optionPages[key].config
+        assert(config.editModeFrame() == _G[name], addon .. ":" .. key .. " resolves the correct frame")
+        assert(
+            core:GetEditModeFrameButtonSection(_G[name]) == config.buttonSection,
+            "details use the declared config footer"
+        )
+        nativeCount = nativeCount + 1
+    end
+end
+assert(
+    nativeCount == 21 and not core:GetEditModeFrameButtonSection({}) and not core:GetEditModeFrameButtonSection(nil),
+    "all 21 native frame pages are covered without a fallback"
+)
+local declaredPlayer = apps.SeamlessUnitframes.optionPages.player.config.buttonSection
+apps.SeamlessUnitframes.optionPages.player.config.buttonSection = nil
+assert(not core:GetEditModeFrameButtonSection(PlayerFrame), "removing a declaration removes the footer")
+apps.SeamlessUnitframes.optionPages.player.config.buttonSection = declaredPlayer
 assert(not pcall(function()
     core:PrepareSettingsOptions({ type = "group", buttonSection = { kind = "wrong", options = {} } })
 end), "invalid footer schema is rejected")

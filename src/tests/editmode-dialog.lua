@@ -993,6 +993,53 @@ do
     assert(row.Button.checked == true, "the poll picks up changes made elsewhere")
     dialog.scripts.OnDragStart(dialog)
     assert(not dragged, "it follows the native dialog")
+    -- Native frames use the same explicit config declaration, bound to native layout actions.
+    local pending, atDefault, allowed, reverts, resets = true, false, true, 0, 0
+    spec.key = native
+    spec.buttonSection = app.addon:GetEditModeButtonSection({ "revert", "resetPosition" })
+    spec.buttonBinding = {
+        canEdit = function()
+            return allowed
+        end,
+        hasChanges = function()
+            return pending
+        end,
+        revert = function()
+            reverts = reverts + 1
+            pending = false
+            return true
+        end,
+        isDefault = function()
+            return atDefault
+        end,
+        reset = function()
+            resets = resets + 1
+            atDefault = true
+            return true
+        end,
+    }
+    app.addon:AttachEditModeSettingsWindow(spec)
+    local nativeRevert, nativeReset = Row(buttons, "Revert changes"), Row(buttons, "Reset Position")
+    assert(nativeRevert and nativeReset and not nativeRevert.option.disabled() and not nativeReset.option.disabled())
+    nativeRevert.option.click()
+    nativeReset.option.click()
+    assert(reverts == 1 and resets == 1 and nativeRevert.option.disabled() and nativeReset.option.disabled())
+    pending, atDefault = true, false
+    dialog.scripts.OnUpdate(dialog, 0.2)
+    assert(nativeRevert.Button.enabled and nativeReset.Button.enabled, "native footer values poll with the controls")
+    allowed = false
+    nativeRevert.option.click()
+    nativeReset.option.click()
+    assert(reverts == 1 and resets == 1, "native footer callbacks honor the position guards")
+    allowed = true
+    local staleReset = nativeReset.option.click
+    spec.key = {}
+    app.addon:AttachEditModeSettingsWindow(spec)
+    staleReset()
+    assert(resets == 1, "a stale footer cannot act on a different selection")
+    spec.buttonSection, spec.buttonBinding = nil, nil
+    app.addon:AttachEditModeSettingsWindow(spec)
+    assert(not buttons:IsShown(), "a native frame without a declaration has no footer")
     -- Selecting a suite frame takes the window back; detaching then leaves it alone.
     dialog:Update({ parent = frame, system = selection.system })
     assert(dialog.attached == nil and dialog.Close:IsShown() and dialog.width == 370)

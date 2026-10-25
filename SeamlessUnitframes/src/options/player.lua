@@ -33,6 +33,10 @@ app.optionPages.player = {
         },
     },
     config = {
+        editModeFrame = function()
+            return PlayerFrame
+        end,
+        buttonSection = app.core:GetEditModeButtonSection({ "revert", "resetPosition" }),
         type = "group",
         name = L["Player"],
         order = 10,

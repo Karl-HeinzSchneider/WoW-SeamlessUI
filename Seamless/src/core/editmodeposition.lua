@@ -245,17 +245,6 @@ function addon:CreateEditModePositionSection(id, binding)
             end,
         },
         {
-            key = "revert",
-            type = "button",
-            name = HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"],
-            disabled = function()
-                return not (binding.canEdit() and binding.hasChanges())
-            end,
-            click = function()
-                commit(binding.revert())
-            end,
-        },
-        {
             key = "error",
             type = "text",
             get = function()
@@ -265,6 +254,17 @@ function addon:CreateEditModePositionSection(id, binding)
                 return section.error == nil
             end,
         },
+    }
+    section.revertButton = {
+        key = "revert",
+        type = "button",
+        name = HUD_EDIT_MODE_REVERT_CHANGES or L["Revert changes"],
+        disabled = function()
+            return not (binding.canEdit() and binding.hasChanges())
+        end,
+        click = function()
+            commit(binding.revert())
+        end,
     }
     return section
 end

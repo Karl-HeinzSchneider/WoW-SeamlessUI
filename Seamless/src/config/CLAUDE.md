@@ -195,7 +195,13 @@ config = {
 }
 ```
 
-This is native schema metadata, validated by `PrepareSettingsOptions` and retained on the
+For a native frame page, also declare `editModeFrame = function() return MyFrame end` (or
+reuse the page's existing frame resolver). Core's `GetEditModeFrameButtonSection(frame)` reads
+the matching registered config; the native details extension passes that exact declaration to
+the renderer with its position callbacks. All frame pages must declare their footer explicitly,
+including native frames without a Position group in their standalone page.
+
+These are native schema fields, validated by `PrepareSettingsOptions` and retained on the
 config table. It supplies the selected frame's Edit Mode footer; it does not create rows in
 the standalone settings window. Frame registration only consumes this field. Omitting it means
 no footer, with no automatic fallback. Extra Button declarations may be passed as the helper's

@@ -313,9 +313,15 @@ local function createView(service)
     function view:Refresh(system)
         self.system = system
         self.section = service:GetSection(system)
-        app.core:LayoutEditModeSections(self.parent, { self.section }, 0, false, function()
-            self:Refresh(self.system)
-        end)
+        app.core:LayoutEditModeSections(
+            self.parent,
+            { self.section, { id = "explicit-buttons", options = { self.section.revertButton } } },
+            0,
+            false,
+            function()
+                self:Refresh(self.system)
+            end
+        )
         for _, created in ipairs(createdFrames) do
             if created.parent == self.parent and created.option then
                 self.controls[created.option.key] = created

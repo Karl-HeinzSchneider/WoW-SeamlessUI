@@ -192,7 +192,9 @@ window shows this as a checkbox at the right of its page header; compact mode an
 dialogs never show it. Omitting the function hides it. Reads and writes use `pcall`; writes
 run through `C_Timer.After(0)` and are blocked in combat. This defers the click stack but does
 not guarantee untainted execution. Visible state refreshes every 0.2 seconds to reflect external
-changes. The Pet page uses LibEditModeOverride's account-wide ShowPetFrame setting.
+changes. Native frame pages can delegate to `core:EditModeVisibility(accountSettingID, value)`:
+it returns the pending choice and queues writes made outside Edit Mode for the next entry.
+The Pet page uses this shared service with the account-wide ShowPetFrame setting.
 
 A frame page's config group may declare `buttonSection`, a
 `SeamlessCore.EditModeButtonSection`. Declare it in that frame's `src/options/<frame>.lua`:

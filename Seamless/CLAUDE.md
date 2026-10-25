@@ -102,6 +102,17 @@ in game.
 
 ## Shared Edit Mode panel (`editmode.lua`)
 
+`core:EditModeVisibility(accountSettingID, value)` is the shared native visibility binding.
+With no value it reads the pending choice, or LibEditModeOverride's saved account value.
+With a boolean it stores the latest choice in `db.global.editModeVisibilityPending`, surviving
+reloads and profile changes. Inside Edit Mode it applies immediately through the library's
+`SetGlobalSetting`; outside it waits. The library's enter callback flushes every pending setting
+in one pass, with per-setting `pcall`; failed writes remain queued. Combat defers the flush
+until leaving combat while still in Edit Mode. It never calls `ApplyChanges` (which cycles Edit
+Mode), rewrites native caches, or touches frame previews. Each frame page declares its own
+`config.editModeVisibility = function(value) return core:EditModeVisibility(Enum.EditModeAccountSetting.ShowPetFrame, value) end`
+with its own setting ID. Run `lua src/tests/editmode-visibility.lua`.
+
 The panel below the main Edit Mode window, with the native translucent border and the window's
 width. It is the public frame `SeamlessEditModeWindow` (created once it first has rows to show). Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
 enabled state or other outside values change; Core refreshes on Edit Mode enter/exit, layout

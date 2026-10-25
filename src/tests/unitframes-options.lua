@@ -482,44 +482,18 @@ modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")
 print("PASS: PvP icons")
 
--- The Pet header uses only the override library, never native manager state.
+-- The Pet declaration delegates to the shared account-visibility service.
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
-local savedPet, loadedPet, appliedPet = 0, false, 0
-local override = LibStub:NewLibrary("LibEditModeOverride-1.0", 999)
-function override:LoadLayouts()
-    loadedPet = true
-end
-function override:GetGlobalSetting(setting)
+local choice = false
+function app.core:EditModeVisibility(setting, value)
     assert(setting == 24)
-    return savedPet
+    if value ~= nil then
+        choice = value
+    end
+    return choice
 end
-function override:SetGlobalSetting(setting, value)
-    assert(loadedPet, "Load current layouts before each write")
-    assert(setting == 24 and type(value) == "number")
-    savedPet = value
-end
-function override:ApplyChanges()
-    assert(loadedPet)
-    loadedPet = false
-    appliedPet = appliedPet + 1
-end
-EditModeManagerFrame = setmetatable({}, {
-    __index = function()
-        error("Pet visibility must use only LibEditModeOverride")
-    end,
-    __newindex = function()
-        error("Pet visibility must not change native manager state")
-    end,
-})
-local petVisibility = app.optionPages.pet.config.editModeVisibility
-assert(not petVisibility())
-petVisibility(true)
-assert(savedPet == 1 and petVisibility() and appliedPet == 1)
-petVisibility(false)
-assert(savedPet == 0 and not petVisibility() and appliedPet == 2)
-savedPet = 1 -- External account-setting changes are read from the library.
-assert(petVisibility())
-EditModeManagerFrame = nil
-assert(petVisibility())
-assert(appliedPet == 2, "Reads must not apply changes")
-print("PASS: pet visibility uses the override library load, set and apply sequence")
+local visibility = app.optionPages.pet.config.editModeVisibility
+assert(not visibility())
+assert(visibility(true) and visibility())
+assert(not visibility(false) and not visibility())
+print("PASS: Pet header delegates visibility to Core")

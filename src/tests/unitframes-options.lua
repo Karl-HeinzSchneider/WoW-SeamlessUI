@@ -484,15 +484,24 @@ print("PASS: PvP icons")
 
 -- The Pet header uses only the override library, never native manager state.
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
-local savedPet = 0
+local savedPet, loadedPet, appliedPet = 0, false, 0
 local override = LibStub:NewLibrary("LibEditModeOverride-1.0", 999)
+function override:LoadLayouts()
+    loadedPet = true
+end
 function override:GetGlobalSetting(setting)
     assert(setting == 24)
     return savedPet
 end
 function override:SetGlobalSetting(setting, value)
+    assert(loadedPet, "Load current layouts before each write")
     assert(setting == 24 and type(value) == "number")
     savedPet = value
+end
+function override:ApplyChanges()
+    assert(loadedPet)
+    loadedPet = false
+    appliedPet = appliedPet + 1
 end
 EditModeManagerFrame = setmetatable({}, {
     __index = function()
@@ -505,11 +514,12 @@ EditModeManagerFrame = setmetatable({}, {
 local petVisibility = app.optionPages.pet.config.editModeVisibility
 assert(not petVisibility())
 petVisibility(true)
-assert(savedPet == 1 and petVisibility())
+assert(savedPet == 1 and petVisibility() and appliedPet == 1)
 petVisibility(false)
-assert(savedPet == 0 and not petVisibility())
+assert(savedPet == 0 and not petVisibility() and appliedPet == 2)
 savedPet = 1 -- External account-setting changes are read from the library.
 assert(petVisibility())
 EditModeManagerFrame = nil
 assert(petVisibility())
-print("PASS: pet visibility uses only the override library getter and setter")
+assert(appliedPet == 2, "Reads must not apply changes")
+print("PASS: pet visibility uses the override library load, set and apply sequence")

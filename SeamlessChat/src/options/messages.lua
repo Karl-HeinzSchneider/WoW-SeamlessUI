@@ -33,10 +33,6 @@ do
         INSTANCE_CHAT_LEADER = L["Instance leader"],
     }
 
-    -- The short name for one channel link, or nil to keep it.
-    ---@param data string the link's data: "channel:2" or "GUILD", "PARTY", ...
-    ---@param display string the shown name, without brackets: "2. Trade - City", "Party Leader"
-    ---@param chatType string? the line's chat type, which tells PARTY_LEADER from PARTY
     local args = {
         numbered = {
             type = "select",

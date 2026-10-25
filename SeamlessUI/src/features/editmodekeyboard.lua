@@ -1,7 +1,6 @@
 ---@type string, SeamlessUI
 local _, app = ...
 
-local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@class SeamlessUI.EditModeKeyboard : AceModule, AceEvent-3.0, AceHook-3.0
 local module = app.addon:NewModule("EditModeKeyboard", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessUI.EditModeKeyboard]]
 app.editModeKeyboard = module

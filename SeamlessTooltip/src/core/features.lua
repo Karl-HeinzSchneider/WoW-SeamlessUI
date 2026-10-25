@@ -1,8 +1,6 @@
 ---@type string, SeamlessTooltip
 local _, app = ...
 
-local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
-
 local addon = app.addon
 
 -- Every tooltip enhancement is a feature: one self-contained file in src\features\ that declares
@@ -125,7 +123,8 @@ end
 ---@param key string
 ---@return SeamlessTooltip.Feature
 function module:NewFeature(key)
-    return self:NewModule(key, prototype, "AceEvent-3.0", "AceHook-3.0")
+    local feature = self:NewModule(key, prototype, "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessTooltip.Feature]]
+    return feature
 end
 
 -- Runs before Ace enables the features themselves.

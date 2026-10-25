@@ -2,8 +2,9 @@
 local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
+---@class SeamlessTooltip.Options : AceModule, AceEvent-3.0
 local module = {}
-app.options = app.addon:NewModule("Options", module, "AceEvent-3.0")
+app.options = app.addon:NewModule("Options", module, "AceEvent-3.0") --[[@as SeamlessTooltip.Options]]
 function module:OnInitialize()
     app.core:RegisterOptions(appName, { title = L["Tooltip"], pages = app.optionPages })
 end

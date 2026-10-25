@@ -390,7 +390,7 @@ assert(editTag.Glow.vertexColor and editTag.Glow.vertexColor[3] == 1)
 assert(editTag.points.BOTTOMRIGHT[2] == toggle.Label)
 assert(toggle.featureTags.new.points.RIGHT[2] == editTag.Label)
 toggle.scripts.OnEnter()
-assert(GameTooltip.lines[#GameTooltip.lines] == "\n\n|cff8080ff[Saved in the Edit Mode layout]|r")
+assert(GameTooltip.lines[#GameTooltip.lines] == "|cff8080ff[Saved in the Edit Mode layout]|r")
 root.args.general.args.enabled.editMode, root.args.general.args.enabled.new = nil, nil
 root.args.general.args.heading.editMode = true
 app.config:RefreshOptionsPage(page)
@@ -401,7 +401,7 @@ assert(headingTag:IsShown() and headingTag.points.LEFT[2] == heading.Label)
 assert(headingTag.points.LEFT[3] == "LEFT" and headingTag.points.LEFT[4] == (60 + 8) / 0.8)
 assert(headingTag.Label.points.LEFT, "heading tags extend right of the heading text")
 toggle.scripts.OnEnter()
-assert(GameTooltip.lines[#GameTooltip.lines] ~= "\n\n|cff8080ff[Saved in the Edit Mode layout]|r")
+assert(GameTooltip.lines[#GameTooltip.lines] ~= "|cff8080ff[Saved in the Edit Mode layout]|r")
 root.args.general.args.heading.editMode = nil
 app.config:RefreshOptionsPage(page)
 assert(not headingTag:IsShown())
@@ -430,6 +430,28 @@ root.args.general.args.choice.default = "b"
 page.controlPools.select[1].scripts.OnEnter()
 assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffB|r)")
 root.args.general.args.choice.default = nil
+-- CVar metadata comes from both page resolvers and option-local default lookups.
+local resolver = app.config.optionInfo.Test
+app.config.optionInfo.Test = function(path)
+    local value, character = resolver(path)
+    return value, character, true
+end
+toggle.scripts.OnEnter()
+assert(GameTooltip.lines[2] == "|cff8080ff[Blizzard CVAR]|r")
+app.config.optionInfo.Test = resolver
+C_CVar = {
+    GetCVarInfo = function()
+        return "1", "0", false, true
+    end,
+}
+root.args.general.args.enabled.default = function()
+    return app.addon:GetCVarOptionInfo("testCVar")
+end
+toggle.scripts.OnEnter()
+assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffDisabled|r)")
+assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
+assert(GameTooltip.lines[3] == "|cff8080ff[Blizzard CVAR]|r")
+root.args.general.args.enabled.default = nil
 toggle:Commit(false)
 app.config:RefreshOptionsPage(page)
 assert(not profile.enabled and not slider.Control.enabled)

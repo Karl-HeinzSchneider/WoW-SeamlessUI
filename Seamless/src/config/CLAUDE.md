@@ -58,7 +58,7 @@ propagate to children or clear on hover/open.
 instead of the AceDB profile. Tag only those: `GetNativePositionOptions` tags its Position and
 scale group; profile-stored positions from `GetPositionOptions` stay untagged. Settings in a
 tagged group, or tagged themselves, also get the tooltip line
-`\n\n|cff8080ff[Saved in the Edit Mode layout]|r`.
+`|cff8080ff[Saved in the Edit Mode layout]|r`.
 
 `badges.lua` uses `NewFeatureLabelTemplate`. Tags are children of their rows, do not reserve
 layout space, and hide when pooled rows are reused. Setting rows place them left of the label;
@@ -115,7 +115,10 @@ defaults, never from the current value. Profile settings that control per-charac
 data remain profile settings. Actions and transient selections with no stored
 default display Not applicable. Select defaults use their localized choice labels;
 colors use RGBA hex. `GetOptionDefault` reads schemas with AceDB wildcard support;
-`GetCVarOptionInfo` reads the client default and server-character flag.
+`GetCVarOptionInfo` reads the client default and server-character flag, plus a third CVar
+marker. Forward all returns through page resolvers or option default functions so tooltips
+show `|cff8080ff[Blizzard CVAR]|r`. CVar and Edit Mode labels follow on the next line
+without an empty line.
 
 `StaticPopupDialogs.SeamlessConfigConfirm` is the owned confirmation dialog key.
 Run `lua src/tests/config-options.lua` and `lua src/tests/config-controls.lua`.

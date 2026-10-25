@@ -38,6 +38,21 @@ local function nativeOption(key, name, order)
 end
 
 local args = {}
+args.freeSlots = {
+    type = "toggle",
+    name = L["Show free bag slots"],
+    order = 50,
+    blizzard = true,
+    default = function()
+        return app.core:GetCVarOptionInfo("displayFreeBagSlots")
+    end,
+    get = function()
+        return GetCVarBool("displayFreeBagSlots")
+    end,
+    set = function(_, value)
+        SetCVar("displayFreeBagSlots", value)
+    end,
+}
 args.spacing = {
     type = "range",
     name = L["Bag button spacing"],

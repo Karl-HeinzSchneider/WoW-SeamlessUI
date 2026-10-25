@@ -207,6 +207,7 @@ end
 -- L["Shift (short)"] = "S"
 -- L["Short keybind labels"] = "Short keybind labels"
 -- L["Show action bars"] = "Show action bars"
+-- L["Show free bag slots"] = "Show free bag slots"
 -- L["Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N5 for num pad 5."] = "Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N5 for num pad 5."
 -- L["Space (short)"] = "Sp"
 -- L["Tab (short)"] = "Tab"

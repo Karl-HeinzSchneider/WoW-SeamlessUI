@@ -386,7 +386,19 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 4)
+assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 5)
+local showFreeSlots = false
+GetCVarBool = function(name)
+    assert(name == "displayFreeBagSlots")
+    return showFreeSlots
+end
+SetCVar = function(name, value)
+    assert(name == "displayFreeBagSlots")
+    showFreeSlots = value
+end
+assert(not bagStyle.freeSlots.get() and bagStyle.freeSlots.blizzard and not bagStyle.freeSlots.editMode)
+bagSpec.options[5].set(true)
+assert(bagStyle.freeSlots.get(), "the native CVar is shared by config and Edit Mode")
 app.db.profile.bags = { retailStyle = false, spacing = 4 }
 app.RefreshBagStyle = function() end
 InCombatLockdown = function()

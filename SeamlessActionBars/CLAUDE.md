@@ -38,6 +38,9 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   unavailable settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style
   controls into the selected frame's extended Edit Mode window. Native Size is exposed only as
   Position's Scale. These native settings stay in Edit Mode layouts.
+  Show free bag slots binds Blizzard's `displayFreeBagSlots` CVar directly and works with either
+  skin; the native backpack handles the count and its visibility. It is shared with Edit Mode's
+  Style section, and the config page refreshes on external CVar changes.
 - `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
   selected-frame Edit Mode section. Profile `bags.spacing` (default 0, 0–20 pixels) controls the
   gaps for this style; editing is disabled with the style off or during combat. The profile's

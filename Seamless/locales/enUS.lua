@@ -204,6 +204,7 @@ L["Right Arrow (short)"] = "Rt"
 L["Shift (short)"] = "S"
 L["Short keybind labels"] = true
 L["Show action bars"] = true
+L["Show free bag slots"] = true
 L["Show keybinds as short labels, such as SM4 for Shift and mouse button 4, or N5 for num pad 5."] = true
 L["Space (short)"] = "Sp"
 L["Tab (short)"] = "Tab"

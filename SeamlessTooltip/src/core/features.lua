@@ -6,32 +6,12 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local addon = app.addon
 
 -- Every tooltip enhancement is a feature: one self-contained file in src\features\ that declares
--- its options and its code through NewFeature (defaults live in db.lua), and that the options switch on and
--- off. Features are nested Ace modules of this one, so Ace calls their OnEnable/OnDisable and
+-- its code through NewFeature; pages in src/options/ own settings and defaults.
+-- Features are nested Ace modules of this one, so Ace calls their OnEnable/OnDisable and
 -- AceEvent/AceHook drop their events and hooks while they are off.
 ---@class SeamlessTooltip.Features : AceModule, AceAddon
 local module = {}
 app.features = addon:NewModule("Features", module) --[[@as SeamlessTooltip.Features]]
-
----@alias SeamlessTooltip.FeatureCategory "all"|"units"|"items"|"spells"
-
--- The options tabs features are sorted into, by FeatureInfo.category: by the tooltips they change.
--- Features for all tooltips go on the General tab.
----@type table<SeamlessTooltip.FeatureCategory, { name: string, order: integer }>
-local CATEGORIES = {
-    all = { name = L["General"], order = 0 },
-    units = { name = L["Units"], order = 20 },
-    items = { name = L["Items"], order = 30 },
-    spells = { name = L["Spells"], order = 40 },
-}
-module.CATEGORIES = CATEGORIES
-
----@class SeamlessTooltip.FeatureInfo
----@field category SeamlessTooltip.FeatureCategory The options tab it is listed on.
----@field name string The feature's section heading in the options.
----@field desc string One line on what it adds to the tooltip, shown under its Enable switch.
----@field order? integer Position among its category's features (default 100).
----@field options? table<string, table> AceConfig args; each key maps to its setting in src/core/db.lua.
 
 -- Set once the features are enabled (PLAYER_LOGIN); before that, profile refreshes only set the
 -- state Ace enables them with.
@@ -40,7 +20,6 @@ local started = false
 -- Methods every feature gets; a feature file adds its own (OnInitialize, OnEnable, ...) on the
 -- object NewFeature returns.
 ---@class SeamlessTooltip.Feature : AceModule, AceAddon, AceEvent-3.0, AceHook-3.0
----@field info SeamlessTooltip.FeatureInfo
 ---@field ApplySettings? fun(self: SeamlessTooltip.Feature) Re-applies settings that are not read at tooltip time.
 local prototype = {}
 
@@ -144,18 +123,9 @@ end
 -- Declares a feature. `key` is its module name and its settings' key under profile.features, so
 -- renaming it drops the users' saved settings. Call at file load, before AceDB reads the defaults.
 ---@param key string
----@param info SeamlessTooltip.FeatureInfo
 ---@return SeamlessTooltip.Feature
-function module:NewFeature(key, info)
-    if not CATEGORIES[info.category] then
-        error(("Feature %s: unknown category %s"):format(key, tostring(info.category)), 2)
-    end
-
-    assert(app.dbDefaults.profile.features[key], "Missing feature defaults: " .. key)
-
-    local feature = self:NewModule(key, prototype, "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessTooltip.Feature]]
-    feature.info = info
-    return feature
+function module:NewFeature(key)
+    return self:NewModule(key, prototype, "AceEvent-3.0", "AceHook-3.0")
 end
 
 -- Runs before Ace enables the features themselves.
@@ -168,33 +138,4 @@ function module:OnProfileRefresh()
     for _, feature in self:IterateModules() do
         feature:Refresh()
     end
-end
-
--- The features' options sections, by category: AceConfig args keyed by feature, ordered by the
--- features' order. Each is a section with the feature's Enable switch and its options.
----@return table<SeamlessTooltip.FeatureCategory, table<string, table>>
-function module:OptionsByCategory()
-    local result = {}
-    for category in pairs(CATEGORIES) do
-        result[category] = {}
-    end
-    for _, feature in self:IterateModules() do
-        local info = feature.info
-        result[info.category][feature.moduleName] = app.core.FeatureGroup({
-            name = info.name,
-            desc = info.desc,
-            order = info.order or 100,
-            options = info.options,
-            settings = function()
-                return feature:Settings()
-            end,
-            toggled = function()
-                feature:Refresh()
-            end,
-            changed = function()
-                feature:SettingsChanged()
-            end,
-        })
-    end
-    return result
 end

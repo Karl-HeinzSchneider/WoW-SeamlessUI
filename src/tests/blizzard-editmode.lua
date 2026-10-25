@@ -199,6 +199,7 @@ local function positionShown()
     return headers.Position ~= nil and headers.Position.shown
 end
 assert(loadfile("SeamlessUI/src/core/db.lua"))("SeamlessUI", app)
+dofile("src/tests/settings-support.lua").defaults("SeamlessUI", app)
 app.db.profile = app.dbDefaults.profile
 function app.addon:NewModule()
     module = { hooks = {}, events = {} }
@@ -248,6 +249,7 @@ function app.addon:NewModule()
 end
 assert(loadfile("SeamlessUI/src/features/systemoptions.lua"))("SeamlessUI", app)
 assert(loadfile("SeamlessUI/src/features/blizzardeditmode.lua"))("SeamlessUI", app)
+assert(loadfile("SeamlessUI/src/options/blizzardEditMode.lua"))("SeamlessUI", app)
 module:OnProfileRefresh() -- Native UI not loaded yet.
 assert(module.events.ADDON_LOADED and next(module.hooks) == nil)
 EditModeSystemSettingsDialog = frame()
@@ -266,7 +268,7 @@ do
     module:OnDialogAttached()
     assert(placedDialog == dialog)
     placedDialog = nil
-    local config = module:Options().args
+    local config = app.optionPages.blizzardEditMode.config.args
     config.snapSettingsDialog.set(nil, false)
     assert(beside == false and not config.snapSettingsDialog.get())
     module:OnDialogAttached()
@@ -288,7 +290,7 @@ setmetatable(app.db.profile.blizzardEditMode.frames, {
         return value
     end,
 })
-local config = module:Options().args
+local config = app.optionPages.blizzardEditMode.config.args
 -- Position and more options are global; each frame only has its own Extend Edit Mode switch.
 assert(config.addPosition.type == "toggle" and config.addMoreOptions.type == "toggle")
 assert(config.addPosition.get() and config.addMoreOptions.get())

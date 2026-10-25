@@ -7,34 +7,7 @@ local anySecret = app.features.AnySecret
 
 -- Colors the border of unit tooltips: players in their class color, NPCs in their hostile/friendly
 -- color, mobs another player has tapped in grey.
-local feature = app.features:NewFeature("UnitBorder", {
-    category = "units",
-    name = L["Border color"],
-    desc = L['Colors the border of unit tooltips by the unit. Works with the game\'s border and with "Border and background".'],
-    order = 35,
-    options = {
-        players = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Players in class color"],
-        },
-        npcs = {
-            type = "toggle",
-            order = 20,
-            width = "full",
-            name = L["NPCs in reaction color"],
-            desc = L["Hostile red, neutral yellow, friendly green."],
-        },
-        tapped = {
-            type = "toggle",
-            order = 30,
-            width = "full",
-            name = L["Tapped mobs in grey"],
-            desc = L["Mobs another player has tapped, which give you no loot or experience."],
-        },
-    },
-})
+local feature = app.features:NewFeature("UnitBorder")
 
 function feature:OnInitialize()
     self:AddTooltipPostCall(Enum.TooltipDataType.Unit, "OnUnitTooltip")

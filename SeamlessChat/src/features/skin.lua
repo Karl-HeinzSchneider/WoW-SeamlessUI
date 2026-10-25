@@ -14,16 +14,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field bar Frame? SeamlessChatButtonBar
 ---@field copyButton Button?
 ---@field optionsButton Button?
-local module = { optionsTab = "buttons" }
+local module = {}
 
 ---@class SeamlessChat.SkinSettings : SeamlessChat.FeatureSettings
 -- The running module; `module` is only its prototype, so the buttons it makes live here.
-local feature = app.features:New(
-    "skin",
-    module,
-    L["Chat buttons"],
-    L["The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."]
-) --[[@as SeamlessChat.Skin]]
+local feature = app.features:New("skin", module) --[[@as SeamlessChat.Skin]]
 
 local PLATE = { 0.04, 0.04, 0.05, 0.72 }
 local EDGE = { 0.32, 0.32, 0.34, 0.55 }
@@ -592,53 +587,6 @@ function module:OnDisable()
     self:Release()
 end
 
-function module:GetOptions()
-    local options = {
-        accent = {
-            type = "color",
-            order = 10,
-            name = L["Accent color"],
-            desc = L["The edge of a button under the mouse."],
-            get = function()
-                local color = self:Settings().accent
-                return color.r, color.g, color.b
-            end,
-            set = function(_, r, g, b)
-                local color = self:Settings().accent
-                color.r, color.g, color.b = r, g, b
-            end,
-        },
-    }
-    for i, entry in ipairs(BUTTONS) do
-        options["show_" .. entry.key] = {
-            type = "toggle",
-            order = 20 + i,
-            name = entry.name,
-            desc = entry.key == "log" and L["Same as the Chat log setting of the same name."]
-                or entry.key == "copy" and L["Opens the copy window for the selected chat tab. Needs Copy to be enabled."]
-                or entry.key == "options" and L["Opens the Chat settings."]
-                or L["Show this button in the bar."],
-            get = function()
-                if entry.key == "log" then
-                    return app.chatLog:GetSettings().showButton
-                end
-                return self:Settings().show[entry.key] ~= false
-            end,
-            set = function(_, value)
-                if entry.key == "log" then
-                    app.chatLog:GetSettings().showButton = value
-                    app.chatLog:UpdateButton()
-                else
-                    self:Settings().show[entry.key] = value
-                    -- A button switched back on comes back; the game decides for its own.
-                    local button = entry.frame()
-                    if value and button and not entry.own and not entry.game then
-                        button:Show()
-                    end
-                end
-                self:Arrange()
-            end,
-        }
-    end
-    return options
+function module:GetOptionButtons()
+    return BUTTONS
 end

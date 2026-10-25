@@ -1,13 +1,10 @@
 # Custom configuration window
 
 This folder owns the standalone SettingsPanel-style shell inside the core addon.
-TOC order: `registry.lua` (after `core/profiles.lua`), `badges.lua`, `window.lua`
-(the shell), `model.lua`, `controls.lua`, then `position.lua` after
-`core/frameposition.lua`. Keep this separate from `core/options.lua`, which owns
-the shared option declarations and registers each one in both this window and
-Blizzard's Settings > AddOns panels. The two panels run in parallel: every option
-added through `RegisterOptions` must work in both, so new control types or
-AceConfig keys need a renderer here and must stay valid AceConfig there.
+TOC order: `schema.lua`, `registry.lua`, `badges.lua`, `window.lua`, `model.lua`,
+`controls.lua`, then `position.lua` after `core/frameposition.lua`. `schema.lua` owns the shared
+page/default contract and feature bindings. `core/options.lua` registers explicit page tables
+from each addon's `src/options/` folder in this window. No Blizzard AddOns panels are registered.
 
 The shell uses the client's SharedXML primitives and Settings artwork, with its
 own window, category tree and page lifecycle. It does not inherit SettingsPanel
@@ -52,12 +49,10 @@ addon subview here as well.
 
 ## Feature tags
 
-Set `new = true`, `blizzard = true` or `editMode = true` on a `RegisterConfigCategory` spec,
-an individual option declaration, a group (section heading), a `FeatureGroup` spec, or a tab in
-`RegisterOptions(..., { tabs = { player = { name = L["Player"], order = 10,
-new = true, args = { ... } } } })`. The tab flag marks its subcategory in the
-left list; an option flag marks that setting or heading. Flags combine (EDIT MODE nearest the
-label, then BLIZZ, then NEW). Labels do not propagate to children or clear on hover/open.
+Set `new = true`, `blizzard = true` or `editMode = true` on a category spec or any config
+group/control. These fields belong to our schema and stay directly on the table. Page config
+flags mark the subcategory; individual control flags mark their row. Flags combine and do not
+propagate to children or clear on hover/open.
 
 `editMode` (glowing EDIT MODE, blue glow) marks settings stored in the active Edit Mode layout
 instead of the AceDB profile. Tag only those: `GetNativePositionOptions` tags its Position and
@@ -70,16 +65,13 @@ layout space, and hide when pooled rows are reused. Setting rows place them left
 section headings (`row.tagTrailing`) place them right of the heading text. Let parent
 visibility and scrolling manage them; do not add per-frame visibility polling or a separate overlay.
 
-`NormalizeOptionTags` removes these custom keys before passing declarations to
-AceConfigRegistry, retaining them in a weak-key side table. Dynamic declarations
-should call `core:RefreshOptions(addonName)` after rebuilding so flags are
-normalized before native options redraw. Never modify the vendored AceConfig
-validator to accept custom keys.
+`RefreshOptions(addonName)` schedules a refresh for that addon's created pages. The renderer
+refreshes on the next frame, after the originating control's callback has finished.
 
 ## Settings rows
 
 `core/options.lua` registers one category header per addon and one child page per
-existing tab, including General. Only Core has Profiles. Unavailable tabs stay
+declared page, including General. Only Core has Profiles. Unavailable tabs stay
 hidden. The initial Core General placeholder receives its real page callbacks
 when the Options module initializes.
 
@@ -117,9 +109,8 @@ controls on the next frame, after the originating callback has finished.
 Tooltips use one anchor for both the row and its control: tooltip BOTTOMLEFT to
 label TOPRIGHT, padded 12 pixels right and 8 up. Every setting gets the localized
 `\n(Default: |cff8080ff%s|r)` line; per-character settings also get
-`\n\n|cff8080ff[Per-character setting]|r`. `RegisterOptions` accepts a `tooltip(path)`
-resolver returning the declared default and a per-character boolean. Keep this
-metadata outside AceConfig tables. Resolve defaults from addon schemas or CVar
+`\n\n|cff8080ff[Per-character setting]|r`. Each page accepts a `tooltip(path)`
+resolver returning the declared default and a per-character boolean. Metadata belongs to the page declaration. Resolve defaults from addon schemas or CVar
 defaults, never from the current value. Profile settings that control per-character
 data remain profile settings. Actions and transient selections with no stored
 default display Not applicable. Select defaults use their localized choice labels;
@@ -165,9 +156,8 @@ optional spec `default(key)` and adds **Reset to default position** (spec `reset
 disabled by `isDefault()`), which applies the preset anchor with
 `isInDefaultPosition = true` through the same `Apply` path.
 
-Any option may carry its own `default` (a value or a function returning it). It is
-stripped with the `new`/`blizzard` tags before AceConfig sees the table and wins over
-the addon's `tooltip(path)` resolver; use it for values only the game knows.
+Any option may carry its own `default` (a value or function). It stays on the declaration and
+wins over the page's `tooltip(path)` resolver; use it for values only the game knows.
 
 Scale is always shown but disabled without an explicit `scale` binding containing
 both `get()` and `set(value)`. Scale uses multipliers (1 = 100%); defaults are

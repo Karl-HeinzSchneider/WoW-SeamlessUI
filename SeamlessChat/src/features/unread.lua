@@ -13,15 +13,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@class SeamlessChat.Unread : SeamlessChat.Feature
 ---@field counts table<Frame, integer> unread messages by chat window
 ---@field badges table<Frame, Frame> the badge of each chat window's tab
-local module = { optionsTab = "windows" }
+local module = {}
 
 ---@class SeamlessChat.UnreadSettings : SeamlessChat.FeatureSettings
-local feature = app.features:New(
-    "unread",
-    module,
-    L["Unread counts"],
-    L["Shows how many messages came in on a chat tab while another tab was selected, as a badge on its corner. Selecting the tab clears it."]
-) --[[@as SeamlessChat.Unread]]
+local feature = app.features:New("unread", module) --[[@as SeamlessChat.Unread]]
 
 -- Before the other transforms; it only counts.
 local ORDER = 1
@@ -154,31 +149,4 @@ function module:Refresh()
     for chatFrame in pairs(self.counts) do
         self:UpdateBadge(chatFrame)
     end
-end
-
-function module:GetOptions()
-    return {
-        channels = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Count channel messages"],
-            desc = L["Messages in numbered channels such as General and Trade count too."],
-        },
-        color = {
-            type = "color",
-            order = 20,
-            name = L["Badge color"],
-            desc = L["The background of the unread count."],
-            get = function()
-                local color = self:Settings().color
-                return color.r, color.g, color.b
-            end,
-            set = function(_, r, g, b)
-                local color = self:Settings().color
-                color.r, color.g, color.b = r, g, b
-                self:Refresh()
-            end,
-        },
-    }
 end

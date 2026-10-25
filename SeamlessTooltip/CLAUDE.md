@@ -27,18 +27,15 @@ live in the `SeamlessTooltip` namespace in `SeamlessDB`; feature keys there are 
 ## Features and conventions
 
 A feature is one file in `src/features/` plus its TOC entry. It declares itself through
-`app.features:NewFeature(key, info)`, where `key` is the persistent key in `profile.features`.
-Never rename an existing key without migration. `info` declares category (`all`, `units`, `items`,
-`spells`), name, description (`desc`), order, options; define enabled and setting defaults in `src/core/db.lua`.
+`app.features:NewFeature(key)`, where `key` is the persistent key in `profile.features`.
+Never rename an existing key without migration. Page files own category placement, headings,
+descriptions, order, controls and defaults.
 
-Options are AceConfig args; each key maps to the same key in the feature's settings, read and
-written by `core.FeatureGroup` (colors as `{ r, g, b, a }` tables) unless the option has its own
-get/set. Each feature is an inline section on its category's tab: an Enable toggle with `desc`
-under it, then its options, disabled while the feature is off.
-
-Features are sorted by `order` within their tab. An option's own `disabled` replaces the
-feature-off check, so include `not settings.enabled` in it.
-Feature options need no manual edits in `options.lua`; define defaults in `src/core/db.lua`.
+Settings and defaults live in `src/options/general.lua`, `units.lua`, `items.lua` and
+`spells.lua`, using the shared `defaults`/`config` page shape. Features declare behavior only.
+Each page lists its sections explicitly as `feature = true` groups bound to `feature:Settings()`.
+Keep persistent feature keys unchanged. An explicit disabled predicate must preserve the
+feature-off check for subordinate controls and leave its Enable switch usable.
 
 Features are nested Ace modules with AceEvent/AceHook. Register hooks/events in `OnEnable` and
 undo frame changes in `OnDisable`. TooltipDataProcessor wrappers register once from `OnInitialize`
@@ -48,3 +45,8 @@ never write to the game's tooltip data tables or call Show from post-calls.
 Read settings through `self:Settings()` at use time. `ApplySettings()` reapplies frame changes
 when enabled settings or profiles change; `OnEnable` applies settings on activation.
 Update the suite README when adding features.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.
+
+Run `lua src/tests/tooltip-loading.lua` after changing feature registration or settings ownership.
+It loads every runtime feature before AceDB, then the page declarations, and checks item-quality choices and border behavior.

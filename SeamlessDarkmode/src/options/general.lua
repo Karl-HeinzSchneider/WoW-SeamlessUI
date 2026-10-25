@@ -1,32 +1,34 @@
 ---@type string, SeamlessDarkmode
 local appName, app = ...
-
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
-local options = app.addon:NewModule("Options")
-function options:OnInitialize()
-    local groups = {}
-    for index, group in ipairs(app.groups) do
-        local key = group.key
-        groups[key] = {
-            type = "toggle",
-            order = index,
-            name = group.name,
-            get = function()
-                return app.db.profile.groups[key]
-            end,
-            set = function(_, value)
-                app.db.profile.groups[key] = value
-                app.addon:Refresh()
-            end,
-        }
-    end
-    app.core:RegisterOptions(appName, {
-        tooltip = function(path)
-            return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
+local groups = {}
+for index, group in ipairs(app.groups) do
+    local key = group.key
+    groups[key] = {
+        type = "toggle",
+        order = index,
+        name = group.name,
+        get = function()
+            return app.db.profile.groups[key]
         end,
-        title = L["Darkmode"],
-        general = {
+        set = function(_, value)
+            app.db.profile.groups[key] = value
+            app.addon:Refresh()
+        end,
+    }
+end
+---@type SeamlessCore.SettingsPage
+app.optionPages.general = {
+    tooltip = function(path)
+        return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
+    end,
+    defaults = { profile = { enabled = true, color = { r = 0.22, g = 0.22, b = 0.22 }, groups = { ["*"] = true } } },
+    config = {
+        type = "group",
+        name = L["General"],
+        order = 0,
+        args = {
             enabled = {
                 type = "toggle",
                 order = 1,
@@ -75,26 +77,5 @@ function options:OnInitialize()
                 args = groups,
             },
         },
-    })
-end
-
--- Global option in the shared Edit Mode window, the same master switch as the options panel.
-app.core:RegisterEditModeOptions(appName, {
-    enabled = function()
-        return app.db and app.addon:IsEnabled()
-    end,
-    options = {
-        {
-            key = "enabled",
-            type = "toggle",
-            name = L["Enable darkmode"],
-            get = function()
-                return app.db.profile.enabled
-            end,
-            set = function(value)
-                app.db.profile.enabled = value
-                app.addon:Refresh()
-            end,
-        },
     },
-})
+}

@@ -110,3 +110,5 @@ Run `lua src/tests/editmode-keyboard.lua`.
 Feature modules go in `src/features/`, listed in the TOC in dependency order. Register hooks and
 events in `OnEnable`, restore changes in `OnDisable`, read `app.db.profile` at use time and
 implement `OnProfileRefresh` for profile-dependent behavior.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

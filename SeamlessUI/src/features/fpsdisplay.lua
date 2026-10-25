@@ -177,75 +177,20 @@ function module:OnEnable()
                 lib:RefreshFrameSettings(anchor)
             end
         end, defaults, L["FPS display"])
-        local settings = {
-            {
-                name = L["Show FPS on startup"],
+        local settings = {}
+        local args = app.optionPages.fpsDisplay.config.args
+        for _, key in ipairs({ "startup", "showLatency", "whiteLatency", "roundFramerate" }) do
+            local option = args[key]
+            settings[#settings + 1] = {
+                name = option.name,
                 kind = lib.SettingType.Checkbox,
-                default = false,
-                get = function()
-                    return app.core.db.profile.tweaks.showFramerateOnStartup
-                end,
-                set = function(_, value)
-                    app.core.db.profile.tweaks.showFramerateOnStartup = value
-                    visibilityBeforeEditMode = value
-                    module:Refresh()
-                end,
-            },
-            {
-                name = L["Show latency"],
-                kind = lib.SettingType.Checkbox,
-                default = false,
-                get = function()
-                    return app.db.profile.fpsDisplay.showLatency
-                end,
-                set = function(_, value)
-                    app.db.profile.fpsDisplay.showLatency = value
-                    module:Refresh()
-                end,
-            },
-            {
-                name = L["White latency text"],
-                kind = lib.SettingType.Checkbox,
-                default = false,
-                get = function()
-                    return app.db.profile.fpsDisplay.whiteLatency
-                end,
-                set = function(_, value)
-                    app.db.profile.fpsDisplay.whiteLatency = value
-                    UpdateDisplay()
-                end,
-            },
-            {
-                name = L["Round FPS"],
-                kind = lib.SettingType.Checkbox,
-                default = false,
-                get = function()
-                    return app.db.profile.fpsDisplay.roundFramerate
-                end,
-                set = function(_, value)
-                    app.db.profile.fpsDisplay.roundFramerate = value
-                    UpdateDisplay()
-                end,
-            },
-        }
-        settings[#settings + 1] = app.core:GetEditModePositionSetting({
-            get = function(key)
-                return CurrentPosition()[key]
-            end,
-            set = function(key, value)
-                local name = lib:GetActiveLayoutName()
-                if not name or not module:IsEnabled() then
-                    return
-                end
-                local current = CurrentPosition()
-                current[key] = value
-                app.db.profile.fpsDisplay.layouts[name] = current
-                module:Refresh()
-            end,
-            anchorFrames = function()
-                return app.blizzardPosition:GetAnchorFrames(anchor)
-            end,
-        })
+                default = option.default,
+                get = option.get,
+                set = option.set,
+            }
+        end
+
+        settings[#settings + 1] = app.core:GetEditModePositionSetting(module:GetPositionBinding())
         lib:AddFrameSettings(anchor, settings)
         CreateDisplay()
         HookNativeFramerate()
@@ -346,3 +291,40 @@ lib:RegisterCallback("delete", function(name)
         layouts[name] = nil
     end)
 end)
+
+function module:SetOption(key, value)
+    if key == "startup" then
+        app.core.db.profile.tweaks.showFramerateOnStartup = value
+        visibilityBeforeEditMode = value
+        self:Refresh()
+    else
+        app.db.profile.fpsDisplay[key] = value
+        if key == "showLatency" then
+            self:Refresh()
+        else
+            UpdateDisplay()
+        end
+    end
+    app.core:RefreshOptions("SeamlessUI")
+end
+
+function module:GetPositionBinding()
+    return {
+        get = function(key)
+            return CurrentPosition()[key]
+        end,
+        set = function(key, value)
+            local name = lib:GetActiveLayoutName()
+            if not name or not module:IsEnabled() then
+                return
+            end
+            local current = CurrentPosition()
+            current[key] = value
+            app.db.profile.fpsDisplay.layouts[name] = current
+            module:Refresh()
+        end,
+        anchorFrames = function()
+            return app.blizzardPosition:GetAnchorFrames(anchor)
+        end,
+    }
+end

@@ -7,12 +7,7 @@ local anySecret = app.features.AnySecret
 local unitTooltip = app.unitTooltip
 
 -- Leaves a player's title ("Private", "the Explorer") out of the name line.
-local feature = app.features:NewFeature("HideTitle", {
-    category = "units",
-    name = L["Hide titles"],
-    desc = L['Leaves player titles ("Private", "the Explorer") out of the name.'],
-    order = 21,
-})
+local feature = app.features:NewFeature("HideTitle")
 
 function feature:OnInitialize()
     self:AddLinePostCall(Enum.TooltipDataLineType.UnitName, "OnNameLine")

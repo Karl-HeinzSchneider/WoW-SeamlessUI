@@ -15,15 +15,10 @@ local log = app.logger
 ---@class SeamlessChat.History : SeamlessChat.Feature
 ---@field restored boolean this session's saved chat was put back
 ---@field dividers table<string, true> the divider lines shown, never saved
-local module = { optionsTab = "windows" }
+local module = {}
 
 ---@class SeamlessChat.HistorySettings : SeamlessChat.FeatureSettings
-app.features:New(
-    "history",
-    module,
-    L["Chat history"],
-    L["Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session."]
-)
+app.features:New("history", module)
 
 ---@class SeamlessChat.SavedHistory
 ---@field savedAt integer time()
@@ -198,43 +193,4 @@ end
 
 function module:Refresh()
     setMaxLines(self:Settings().maxLines)
-end
-
-function module:GetOptions()
-    return {
-        maxLines = {
-            type = "range",
-            order = 10,
-            width = "double",
-            name = L["Messages per chat window"],
-            desc = L["How many messages each chat window keeps. Lowering it drops the oldest ones."],
-            min = BLIZZARD_MAX_LINES,
-            max = 10000,
-            softMax = 5000,
-            step = 1,
-            bigStep = 100,
-        },
-        persist = {
-            type = "toggle",
-            order = 20,
-            width = "full",
-            name = L["Keep the chat across logins and reloads"],
-            desc = L["Saves each chat window's messages when you log out or reload and puts them back at the next login of the same character, above a divider line."],
-        },
-        savedLines = {
-            type = "range",
-            order = 30,
-            width = "double",
-            name = L["Messages saved per chat window"],
-            desc = L["How many of the last messages of each chat window are saved. At login, a window takes back as many as fit into Messages per chat window."],
-            min = 10,
-            max = 10000,
-            softMax = 5000,
-            step = 1,
-            bigStep = 100,
-            disabled = function()
-                return not (self:Settings().enabled and self:Settings().persist)
-            end,
-        },
-    }
 end

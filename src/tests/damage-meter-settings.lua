@@ -8,6 +8,7 @@ local registry = LibStub("AceConfigRegistry-3.0")
 local app = {}
 dofile("src/tests/locale-support.lua")
 assert(loadfile(root .. "db.lua"))("SeamlessDamageMeter", app)
+dofile("src/tests/settings-support.lua").defaults("SeamlessDamageMeter", app)
 assert(loadfile(root .. "service.lua"))("SeamlessDamageMeter", app)
 dofile("src/tests/locale-support.lua")
 assert(loadfile(root .. "archive.lua"))("SeamlessDamageMeter", app)
@@ -71,13 +72,6 @@ end
 local coreApp = { addon = {} }
 dofile("src/tests/locale-support.lua")
 assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
--- Core strips its custom `default` key before AceConfig sees an option.
-local function StripDefaults(option)
-    option.default = nil
-    for _, child in pairs(option.args or {}) do
-        StripDefaults(child)
-    end
-end
 app.core = {
     RefreshOptions = function() end,
     GetPositionOptions = function(_, spec)
@@ -85,26 +79,19 @@ app.core = {
     end,
     RegisterOptions = function(_, name, spec)
         app.optionSpec = spec
-        local args =
-            { general = { type = "group", name = "General", args = spec.general }, windows = spec.tabs.windows }
-        args.windows.type = "group"
-        for key, tab in pairs(spec.tabs) do
-            tab.type = "group"
-            args[key] = tab
+        for _, page in pairs(spec.pages) do
+            assert(page.config.type == "group")
         end
-        local root = { type = "group", name = "Test", args = args }
-        StripDefaults(root)
-        registry:ValidateOptionsTable(root, name)
     end,
 }
 dofile("src/tests/locale-support.lua")
-assert(loadfile(root .. "options.lua"))("SeamlessDamageMeter", app)
+dofile("src/tests/settings-support.lua").pages("SeamlessDamageMeter", app)
 app:RegisterOptions()
 local refreshed = 0
 app.RefreshWindows = function()
     refreshed = refreshed + 1
 end
-local favoriteLimit = app.optionSpec.general.windows.args.maxVisibleFavorites
+local favoriteLimit = app.optionSpec.pages.general.config.args.windows.args.maxVisibleFavorites
 favoriteLimit.set(nil, 3)
 assert(favoriteLimit.get() == 3 and refreshed == 1 and app.db.profile.favorites[2] == "HealingDone")
 local values = app.windowTabs.window2.args
@@ -163,16 +150,16 @@ app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
 app:BuildWindowOptions()
 assert(#app.db.profile.windows == app.MAX_WINDOWS and app.MAX_WINDOWS == 6)
 for id = 1, app.MAX_WINDOWS do
-    local tab = app.optionSpec.tabs["window" .. id]
+    local tab = app.optionSpec.pages["window" .. id].config
     assert(tab == app.windowTabs["window" .. id] and tab.name == "Window " .. id, "Every slot has its own tab")
     assert(tab.args.management.args.enabled.get() == (id == 1))
 end
-assert(app.optionSpec.tabs.window7 == nil and app.optionSpec.tabs.credits == nil)
+assert(app.optionSpec.pages.window7 == nil and app.optionSpec.pages.credits == nil)
 assert(app:CanAnchorTo(app.db.profile.windows[1], 6), "Inactive windows must remain anchor targets")
 local targets = app.windowTabs.window1.args.position.args.relativeTo.values()
 assert(targets["6"] == "Window 6" and targets["7"] == nil)
-local enabledDefault = app.optionSpec.tooltip({ "window1", "management", "enabled" })
-assert(enabledDefault == true and app.optionSpec.tooltip({ "window2", "management", "enabled" }) == false)
+local enabledDefault = app.optionSpec.pages.window1.tooltip({ "window1", "management", "enabled" })
+assert(enabledDefault == true and app.optionSpec.pages.window2.tooltip({ "window2", "management", "enabled" }) == false)
 assert(defaults.width.get() == 400)
 local highID = { id = 18, anchorTo = 27, overrides = { fontSize = 19 } }
 local anchor = { id = 27, overrides = {} }

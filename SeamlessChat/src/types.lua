@@ -6,12 +6,13 @@
 -- When a file adds something to `app`, add a matching ---@field here.
 
 ---@class SeamlessChat
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field core SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessChat.Addon
 ---@field dbDefaults SeamlessChat.DBDefaults
 ---@field db SeamlessChat.DB
----@field options SeamlessChat.Options  # AceConfig panel under Settings > AddOns > Seamless
+---@field options SeamlessChat.Options  # Custom settings pages
 ---@field chatState SeamlessChat.ChatState  # reads and writes the game's chat setup
 ---@field sync SeamlessChat.Sync  # keeps the chat setup the same on every character
 ---@field features SeamlessChat.Features  # the optional features (src/features/)
@@ -27,3 +28,8 @@
 ---@field profile SeamlessChat.DB.Profile
 ---@field char SeamlessChat.DB.Char
 ---@field global SeamlessChat.DB.Global
+
+---@class SeamlessChat.DBDefaults : AceDB.Schema
+---@class SeamlessChat.DB.Profile
+---@class SeamlessChat.DB.Char
+---@class SeamlessChat.DB.Global

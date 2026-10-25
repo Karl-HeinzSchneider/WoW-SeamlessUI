@@ -19,6 +19,7 @@ src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
 src\core\profiles.lua
+src\config\schema.lua
 src\config\registry.lua
 src\config\badges.lua
 src\config\window.lua
@@ -41,3 +42,7 @@ src\core\defaultlayout-data.lua
 src\core\defaultlayout.lua
 src\core\options.lua
 src\core\minimapbutton.lua
+
+src\options\general.lua
+src\options\tweaks.lua
+src\options\profiles.lua

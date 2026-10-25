@@ -7,43 +7,7 @@ local anySecret = app.features.AnySecret
 
 -- Hides the tooltips of units in the world while in combat (or always), unless a modifier key is
 -- held; pressing it while hovering a unit brings its tooltip back.
-local feature = app.features:NewFeature("HideUnits", {
-    category = "units",
-    name = L["Hide in combat"],
-    desc = L["Hides unit tooltips in combat, so they don't cover what you are fighting. Hold the modifier key to see them anyway."],
-    order = 60,
-    options = {
-        when = {
-            type = "select",
-            order = 10,
-            name = L["Hide"],
-            values = {
-                COMBAT = L["In combat"],
-                ALWAYS = L["Always"],
-            },
-            sorting = { "COMBAT", "ALWAYS" },
-        },
-        modifier = {
-            type = "select",
-            order = 20,
-            name = L["Show while holding"],
-            values = {
-                NONE = L["Nothing"],
-                SHIFT = L["Shift"],
-                CTRL = L["Ctrl"],
-                ALT = L["Alt"],
-            },
-            sorting = { "NONE", "SHIFT", "CTRL", "ALT" },
-        },
-        unitFrames = {
-            type = "toggle",
-            order = 30,
-            width = "full",
-            name = L["Unit frames too"],
-            desc = L["Also hides the tooltips of the player, target, party and raid frames; off hides only units in the world."],
-        },
-    },
-})
+local feature = app.features:NewFeature("HideUnits")
 
 -- Whether a modifier setting's key is held.
 local MODIFIER_DOWN = {

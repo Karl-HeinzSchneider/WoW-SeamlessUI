@@ -4,23 +4,7 @@ local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- Sizes the tooltips on their own, apart from the UI scale.
-local feature = app.features:NewFeature("Scale", {
-    category = "all",
-    name = L["Scale"],
-    desc = L["Makes the tooltips bigger or smaller, apart from the rest of the interface."],
-    order = 40,
-    options = {
-        scale = {
-            type = "range",
-            order = 10,
-            name = L["Scale"],
-            min = 0.5,
-            max = 2,
-            step = 0.05,
-            isPercent = true,
-        },
-    },
-})
+local feature = app.features:NewFeature("Scale")
 
 -- The top-level tooltips, and the comparison tooltips beside them (not their children, so they
 -- need a scale of their own).

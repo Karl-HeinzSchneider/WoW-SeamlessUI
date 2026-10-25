@@ -15,15 +15,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field first integer index of the oldest record in db.records
 ---@field last integer index of the newest
 ---@field onAdd fun(record: SeamlessChat.LogRecord)? called for every new record (the log window)
-local module = { optionsTab = "log" }
+local module = {}
 
 ---@class SeamlessChat.LogSettings : SeamlessChat.FeatureSettings
-app.chatLog = app.features:New(
-    "log",
-    module,
-    L["Chat log"],
-    L["Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character."]
-) --[[@as SeamlessChat.ChatLog]]
+app.chatLog = app.features:New("log", module) --[[@as SeamlessChat.ChatLog]]
 
 ---@class SeamlessChat.LogDB
 ---@field version integer
@@ -502,71 +497,4 @@ end
 function module:Refresh()
     self:Prune()
     self:UpdateButton()
-end
-
-function module:GetOptions()
-    return {
-        status = {
-            type = "description",
-            order = 5,
-            fontSize = "medium",
-            name = function()
-                local count = self:Count()
-                if count == 0 then
-                    return L["The log is empty.\n"]
-                end
-                local oldest = self.db.records[self.first].time
-                return (L["%d messages, the oldest from %s.\n"]):format(count, date("%Y-%m-%d %H:%M", oldest))
-            end,
-        },
-        open = {
-            type = "execute",
-            order = 6,
-            name = L["Open the chat log"],
-            desc = L["Search and filter the logged messages. Same as /seamlesschat log."],
-            func = function()
-                SeamlessChatLogWindow:Open()
-            end,
-        },
-        showButton = {
-            type = "toggle",
-            order = 7,
-            width = "full",
-            name = L["Chat log button beside the chat"],
-            desc = L["A button in the main chat window's button column, above the chat menu button, that opens the chat log."],
-        },
-        maxMessages = {
-            type = "range",
-            order = 10,
-            width = "double",
-            name = L["Messages kept"],
-            desc = L["The oldest messages are dropped past this many. A big log makes the login a little slower."],
-            min = 1000,
-            max = 200000,
-            softMax = 100000,
-            step = 1,
-            bigStep = 1000,
-        },
-        maxDays = {
-            type = "range",
-            order = 20,
-            width = "double",
-            name = L["Days kept"],
-            desc = L["Messages older than this are dropped."],
-            min = 1,
-            max = 365,
-            step = 1,
-        },
-        clear = {
-            type = "execute",
-            order = 30,
-            name = L["Delete the log"],
-            desc = L["Deletes every logged message of this character."],
-            confirm = true,
-            confirmText = L["Delete every logged chat message of this character?"],
-            func = function()
-                self:Clear()
-            end,
-        },
-    }
 end

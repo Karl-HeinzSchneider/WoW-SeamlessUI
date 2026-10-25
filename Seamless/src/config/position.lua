@@ -71,9 +71,17 @@ function app.addon:GetPositionOptions(spec)
     end
     for i, key in ipairs({ "x", "y" }) do
         local row = option(key, i == 1 and L["X"] or L["Y"], i + 3, "range")
-        local extent = math.ceil(i == 1 and UIParent:GetWidth() or UIParent:GetHeight())
-        local current = math.ceil(math.abs(spec.get(key) or 0))
-        row.min, row.max, row.step = -math.max(extent, current), math.max(extent, current), 1
+        -- Page declarations load before AceDB. Resolve bounds only when a control reads them,
+        -- so profile switches and offsets beyond the screen also get the correct range.
+        local function extent()
+            local screen = math.ceil(key == "x" and UIParent:GetWidth() or UIParent:GetHeight())
+            return math.max(screen, math.ceil(math.abs(spec.get(key) or 0)))
+        end
+        row.min = function()
+            return -extent()
+        end
+        row.max = extent
+        row.step = 1
     end
     local scale = spec.scale or {}
     local scaleRow = {

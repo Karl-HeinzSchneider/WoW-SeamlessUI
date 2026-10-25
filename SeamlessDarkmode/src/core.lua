@@ -32,6 +32,7 @@ local function restore(texture)
 end
 
 function app.addon:OnInitialize()
+    app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "Refresh", "SeamlessDarkmodeDB")
     self:RegisterChatCommand("seamlessdarkmode", function()
         app.core:OpenOptions(appName)

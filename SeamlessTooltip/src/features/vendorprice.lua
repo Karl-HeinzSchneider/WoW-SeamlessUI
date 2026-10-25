@@ -8,21 +8,7 @@ local lines = app.lines
 
 -- Shows what an item sells for at a vendor, for the whole stack and for one item, in place of the
 -- game's own sell price line (and where the game shows none).
-local feature = app.features:NewFeature("VendorPrice", {
-    category = "items",
-    name = L["Vendor price"],
-    desc = L["Shows what an item sells for at a vendor; for a stack, also what one of it sells for."],
-    order = 25,
-    options = {
-        perItem = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Price per item"],
-            desc = L['Adds the price of one item behind a stack\'s price ("1s 20c (6c each)").'],
-        },
-    },
-})
+local feature = app.features:NewFeature("VendorPrice")
 
 local LABEL = L["Sell Price"]
 

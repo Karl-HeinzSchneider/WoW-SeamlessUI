@@ -16,18 +16,18 @@ saved lines and the chat log.
 `/seamlesschat` opens the Chat panel; `save`, `apply`, `log`, `search <text>`, `reset` and
 `loglevel` (delegated to Core) are subcommands. LibEditModeOverride comes from Core.
 
-Each feature is an inline section (`core.FeatureGroup`) on the tab named by its prototype's
-`optionsTab` (`messages`, `windows`, `buttons`, `log`; the `TABS` table in `options.lua`), in TOC
-order. Its `GetOptions()` args are plain AceConfig: get/set default to the feature's settings, an
-own `disabled` must include the feature-off check, unknown keys are rejected.
+Settings pages and their defaults live together in `src/options/general.lua`, `messages.lua`,
+`windows.lua`, `buttons.lua` and `log.lua`. Each file declares the same `defaults`/`config` page
+shape. Features contain runtime behavior; options no longer come from feature `GetOptions()`
+methods. Feature groups bind to the current `GetSettings()` table and refresh their module.
 
-### `src/chat/` — the same chat on every character
+### `src/chat/` â€” the same chat on every character
 
 The game keeps the chat setup per character (windows via `GetChatWindowInfo` / `SetChatWindow*`,
 colors via `ChangeChatColor`, channels via `GetChannelList`). The profile holds one snapshot
 (`profile.chat`, `SeamlessChat.Snapshot`) that every character using it applies at login.
 
-- `state.lua` — `app.chatState`, stateless: `Capture*` reads the game's setup, `Apply*` writes a
+- `state.lua` â€” `app.chatState`, stateless: `Capture*` reads the game's setup, `Apply*` writes a
   snapshot back, `*Equal` compares. Applying diffs first and only touches what differs, so a
   character that already matches doesn't touch Blizzard's chat frames (less taint). Window layout
   (open/closed, dock order, name, color, position) is written with the `SetChatWindow*` setters and
@@ -40,7 +40,7 @@ colors via `ChangeChatColor`, channels via `GetChannelList`). The profile holds 
   LibEditModeOverride (`ReanchorFrame`, `SetFrameSetting`, `ApplyChanges`, which briefly opens and
   closes Edit Mode). `ApplyChatFrame` says why it couldn't: not loaded yet, Edit Mode open, combat,
   a preset layout (not editable), a missing anchor frame.
-- `sync.lua` — `app.sync`, the Ace module that decides when: 2 s after the first
+- `sync.lua` â€” `app.sync`, the Ace module that decides when: 2 s after the first
   `PLAYER_ENTERING_WORLD` it applies the snapshot (or saves one if the profile has none); after
   that, secure hooks on every setter (`WATCHED_FUNCTIONS`) save a changed setup, debounced. Saving
   is blocked (`ready = false`) while applying. The chat window position is applied after the
@@ -50,7 +50,7 @@ colors via `ChangeChatColor`, channels via `GetChannelList`). The profile holds 
   layout) doesn't overwrite it for everyone. Channels a window should show but the game refused
   on this character (`missingChannels`) are kept in the snapshot, so one character can't drop them
   for everyone; the channel list only grows by capture and shrinks on a `YOU_LEFT` notice.
-- `lines.lua` — `app.lines`, the only wrapper of the chat frames' `AddMessage` (ChatFrame1-10 at
+- `lines.lua` â€” `app.lines`, the only wrapper of the chat frames' `AddMessage` (ChatFrame1-10 at
   file load, temporary windows via `FCF_OpenTemporaryWindow`; the combat log is passed through).
   Features change chat lines by `app.lines:Register(order, func(chatFrame, message, chatType),
 secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argument (so
@@ -58,15 +58,15 @@ secretSafe)`: `chatType` comes from the event AddMessage gets as 7th extra argum
   feature's switch; secret lines only reach `secretSafe` transforms, which may only concatenate.
   Orders: unread counts 1 (only counts), URLs 10, channel names 20, timestamps 1000 (last, so its copy link holds the final line).
   Never wrap AddMessage anywhere else.
-- `input.lua` — `app.input`: plain arrow keys browse the chat input's sent lines (not secure slash
+- `input.lua` â€” `app.input`: plain arrow keys browse the chat input's sent lines (not secure slash
   commands, no consecutive repeats; Down past the newest empties the input), `inputHistoryLines`
   deep, per window; with `persistInputHistory` kept in `db.char.inputHistory` (temporary windows not).
 
 ### Feature integration
 
-`app.features:New(key, prototype, name, desc, ...libs)` creates an Ace module. Its prototype's
-`optionsTab` selects Messages, Windows, Buttons or Log. Defaults live in `src/core/db.lua`;
-`GetSettings()` reads `profile.features[key]`, `GetOptions()` declares controls, and `Refresh()`
+`app.features:New(key, prototype, ...libs)` creates an Ace module. Its settings page
+selects Messages, Windows, Buttons or Log. Defaults live beside that page in `src/options/`;
+`GetSettings()` reads `profile.features[key]`, the page declares controls, and `Refresh()`
 reapplies changes. Add the file to the TOC after `features.lua` and document it in the README.
 
 Set up in `OnEnable`, undo changes in `OnDisable`. Install permanent hooks once and guard them
@@ -88,9 +88,11 @@ with `self:IsEnabled()`. Preserve these ownership boundaries:
 ## Conventions
 
 - Feature keys are persistent compatibility contracts; retain old SavedVariables names for migration.
-- New feature settings belong in `src/core/db.lua` and their `GetOptions()` definitions.
+- New feature settings and defaults belong in their page under `src/options/`.
 - Keep the single AddMessage wrapper in `src/chat/lines.lua`; transforms must preserve secret-value handling.
 - Logout code reading settings registers AceDB `OnDatabaseShutdown`, never `PLAYER_LOGOUT`, because
   AceDB removes defaults when serializing its SavedVariables.
 - Preserve combat, Edit Mode readiness and preset-layout guards in chat synchronization.
 - The custom copy/log windows stay native Lua/XML UI; the options panel does not replace them.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

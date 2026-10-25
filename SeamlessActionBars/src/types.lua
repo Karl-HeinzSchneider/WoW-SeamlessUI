@@ -1,5 +1,6 @@
 -- Annotations only; not loaded by the TOC.
 ---@class SeamlessActionBars
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessActionBars.Addon
 ---@field dbDefaults AceDB.Schema
@@ -27,3 +28,6 @@
 
 ---@class SeamlessActionBars.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessActionBars.Addon)
+
+---@class SeamlessActionBars
+---@field optionFrameGetters (fun(): table?)[]

@@ -17,7 +17,6 @@ src\core\ace.lua
 src\core\unitframes.lua
 src\core\questicons.lua
 src\core\style.lua
-src\core\options.lua
 src\core\editmode.lua
 
 src\layout\atlas.lua
@@ -33,3 +32,14 @@ src\totposition\mover.lua
 src\core\previewcharacters.lua
 
 SeamlessUnitframes.lua
+
+src\options\shared.lua
+src\options\general.lua
+src\options\player.lua
+src\options\pet.lua
+src\options\target.lua
+src\options\targettarget.lua
+src\options\focus.lua
+src\options\focustarget.lua
+src\options\party.lua
+src\options\register.lua

@@ -8,15 +8,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- chatClassColorOverride: "0" colors every name, "1" none, anything else leaves it to the types.
 -- This sets it to "0" while enabled and restores the previous value when disabled.
 ---@class SeamlessChat.ClassColors : SeamlessChat.Feature
-local module = { optionsTab = "messages" }
+local module = {}
 
 ---@class SeamlessChat.ClassColorSettings : SeamlessChat.FeatureSettings
-app.features:New(
-    "classColors",
-    module,
-    L["Class colored names"],
-    L["Shows every player name in the chat in its class color, in all chat types and channels."]
-)
+app.features:New("classColors", module)
 
 -- The CVar's value before this feature changed it (account-wide, like the CVar).
 ---@class SeamlessChat.DB.Global

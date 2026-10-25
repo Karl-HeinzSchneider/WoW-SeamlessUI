@@ -1,3 +1,4 @@
+unpack = unpack or table.unpack
 -- Run from the repository root: lua src/tests/unitframes-options.lua
 local root = "SeamlessUnitframes/src/core/"
 
@@ -131,13 +132,20 @@ local function load(file)
 end
 load("unitframes.lua")
 load("style.lua")
-load("options.lua")
+app.optionPages, app.dbDefaults = {}, {}
+local coreApp = { addon = app.core, config = {} }
+assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
+dofile("src/tests/settings-support.lua").pages("SeamlessUnitframes", app)
+dofile("src/tests/settings-support.lua").defaults("SeamlessUnitframes", app)
 load("editmode.lua")
 
 -- Options: layout stays in General, every unit frame has a tab of its own.
 modules.Options.RegisterEvent = function() end
 modules.Options:OnInitialize()
-local general, tabs = registeredOptions.general, registeredOptions.tabs
+local general, tabs = registeredOptions.pages.general.config.args, {}
+for key, page in pairs(registeredOptions.pages) do
+    tabs[key] = page.config
+end
 assert(general.layout and not general.healthBarColors, "only the layout is global")
 for _, key in ipairs({ "player", "pet", "target", "targettarget", "focus", "focustarget", "party" }) do
     assert(tabs[key], "tab for " .. key)

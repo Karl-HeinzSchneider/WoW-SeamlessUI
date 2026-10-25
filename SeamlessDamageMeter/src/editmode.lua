@@ -360,7 +360,6 @@ local function RegisterControls(frame)
             click = function()
                 if not InCombatLockdown() then
                     app.core:OpenOptions("SeamlessDamageMeter", "skin")
-                    LibStub("AceConfigDialog-3.0"):SelectGroup("SeamlessDamageMeter", "skin", frame.config.skin)
                 end
             end,
         },

@@ -7,15 +7,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- the fade takes. Applies to every chat window (temporary ones too); the game's values come back
 -- when disabled.
 ---@class SeamlessChat.Fading : SeamlessChat.Feature
-local module = { optionsTab = "windows" }
+local module = {}
 
 ---@class SeamlessChat.FadingSettings : SeamlessChat.FeatureSettings
-app.features:New(
-    "fading",
-    module,
-    L["Fade-out"],
-    L["Whether chat messages fade out after a while, how long they stay, and how long the fade takes."]
-)
+app.features:New("fading", module)
 
 -- What the game's chat windows use (ChatFrameMixin:OnLoad, ScrollingMessageFrameMixin:OnPreLoad).
 local BLIZZARD = { fade = true, timeVisible = 120, fadeDuration = 3 }
@@ -58,44 +53,4 @@ end
 
 function module:Refresh()
     apply(self:Settings())
-end
-
-function module:GetOptions()
-    local function fadingOff()
-        local settings = self:Settings()
-        return not (settings.enabled and settings.fade)
-    end
-    return {
-        fade = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Fade out old messages"],
-            desc = L["Off keeps every message visible."],
-        },
-        timeVisible = {
-            type = "range",
-            order = 20,
-            width = "double",
-            name = L["Seconds visible"],
-            desc = L["How long a message stays before it fades out. The game uses 120."],
-            min = 5,
-            max = 3600,
-            softMax = 600,
-            step = 1,
-            bigStep = 5,
-            disabled = fadingOff,
-        },
-        fadeDuration = {
-            type = "range",
-            order = 30,
-            width = "double",
-            name = L["Fade duration"],
-            desc = L["How many seconds the fade itself takes. The game uses 3."],
-            min = 0,
-            max = 10,
-            step = 0.5,
-            disabled = fadingOff,
-        },
-    }
 end

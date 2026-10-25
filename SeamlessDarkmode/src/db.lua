@@ -1,4 +1,5 @@
 ---@type string, SeamlessDarkmode
-local _, app = ...
+local appName, app = ...
 
-app.dbDefaults = { profile = { enabled = true, color = { r = 0.22, g = 0.22, b = 0.22 }, groups = { ["*"] = true } } }
+app.optionPages = {}
+app.dbDefaults = {}

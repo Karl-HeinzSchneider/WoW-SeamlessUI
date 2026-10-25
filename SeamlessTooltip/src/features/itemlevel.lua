@@ -7,21 +7,7 @@ local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds the item level to the tooltips of weapons and armor, unless the game shows it already.
-local feature = app.features:NewFeature("ItemLevel", {
-    category = "items",
-    name = L["Item level"],
-    desc = L["Adds the item level to weapons and armor."],
-    order = 15,
-    options = {
-        qualityColor = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["In quality color"],
-            desc = L["Shows the item level in the color of the item's quality (green, blue, purple, ...)."],
-        },
-    },
-})
+local feature = app.features:NewFeature("ItemLevel")
 
 local LABEL = L["Item Level"]
 

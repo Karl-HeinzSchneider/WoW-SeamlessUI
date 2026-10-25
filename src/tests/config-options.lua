@@ -1,46 +1,16 @@
--- Shared options keep their original AceConfig paths inside the custom shell.
-dofile("Seamless/lib/LibStub/LibStub.lua")
-dofile("Seamless/lib/CallbackHandler-1.0/CallbackHandler-1.0.lua")
-dofile("Seamless/lib/AceConfig-3.0/AceConfigRegistry-3.0/AceConfigRegistry-3.0.lua")
-local realRegistry = LibStub("AceConfigRegistry-3.0")
-local callbacks, tables, opens = {}, {}, {}
-local registry = {
-    RegisterCallback = function(owner, _, callback)
-        callbacks[owner] = callback
+-- The complete page contract, without AceConfigRegistry/AceConfigDialog or a game client.
+unpack = unpack or table.unpack
+local L = setmetatable({}, {
+    __index = function(_, key)
+        return key
     end,
-    RegisterOptionsTable = function(_, name, options)
-        tables[name] = options
-        realRegistry:RegisterOptionsTable(name, options)
-    end,
-    NotifyChange = function(_, name)
-        for _, callback in pairs(callbacks) do
-            callback("ConfigTableChange", name)
-        end
-    end,
-}
-local dialog = {
-    AddToBlizOptions = function(_, name)
-        return {}, name
-    end,
-    Open = function()
-        error("Custom config must not use AceConfigDialog rendering")
-    end,
-}
-function registry:GetOptionsTable(name, uiType, uiName)
-    return realRegistry:GetOptionsTable(name, uiType, uiName)
-end
-local libraries = {
+})
+local libs = {
     ["AceLocale-3.0"] = {
         GetLocale = function()
-            return setmetatable({}, {
-                __index = function(_, key)
-                    return key
-                end,
-            })
+            return L
         end,
     },
-    ["AceConfigRegistry-3.0"] = registry,
-    ["AceConfigDialog-3.0"] = dialog,
     ["AceDBOptions-3.0"] = {
         GetOptionsTable = function()
             return { type = "group", name = "Profiles", args = {} }
@@ -48,206 +18,301 @@ local libraries = {
     },
 }
 function LibStub(name)
-    return assert(libraries[name], name)
+    return assert(libs[name], "Unexpected library: " .. name)
 end
-local app = { addon = {}, db = { RegisterCallback = function() end } }
-function app.addon:NewModule(_, module)
-    return module
+local support = dofile("src/tests/settings-support.lua")
+local coreApp = {
+    addon = {},
+    db = { RegisterCallback = function() end },
+    logger = { level = { INFO = 1 } },
+    defaultLayout = { LAYOUT_NAME = "Seamless" },
+}
+function coreApp.addon:NewModule(_, module)
+    return setmetatable({}, { __index = module })
 end
-assert(loadfile("Seamless/src/config/registry.lua"))("Seamless", app)
-assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
-assert(
-    app.addon:GetOptionDefault({ frames = { ["*"] = { enabled = false } } }, { "frames", "player", "enabled" }) == false
-)
+for _, file in ipairs({
+    "core/db.lua",
+    "config/schema.lua",
+    "config/registry.lua",
+    "config/model.lua",
+    "config/position.lua",
+    "core/options.lua",
+}) do
+    assert(loadfile("Seamless/src/" .. file))("Seamless", coreApp)
+end
+support.pages("Seamless", coreApp)
+coreApp.dbDefaults = coreApp.addon:GetOptionsDefaults(coreApp.optionPages, coreApp.dbDefaults)
+coreApp.options:OnInitialize()
+assert(coreApp.dbDefaults.profile.tweaks.reloadShortcut)
+assert(coreApp.config.categories["Seamless:tweaks"].parent == "Seamless")
+assert(coreApp.config.categories["Seamless:profiles"])
+local core = coreApp.addon
+function core:GetNativePositionOptions(getFrame, scale)
+    return { type = "group", order = 10, name = "Position and scale", args = {}, getFrame = getFrame, scale = scale }
+end
+function core:GetNativeSettingScale(getFrame, setting)
+    return { getFrame = getFrame, setting = setting }
+end
+function core:GetFramePositionService()
+    return {
+        ReadSetting = function()
+            return 0
+        end,
+    }
+end
+function core:RegisterOptions(name, spec)
+    coreApp.options:RegisterAddon(name, spec)
+end
+function core:RefreshOptions() end
+function core:RegisterEditModeOptions() end
+function InCombatLockdown()
+    return false
+end
+function time()
+    return 1
+end
+Enum = { EditModeUnitFrameSetting = { FrameSize = 1 }, EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
+Settings = {}
 C_CVar = {
-    GetCVarInfo = function()
-        return "0", "1", false, true
+    GetCVar = function()
+        return "1"
     end,
 }
-assert(
-    app.addon:GetOptionDefault(
-        { frames = { ["**"] = { enabled = false }, player = { color = "class" } } },
-        { "frames", "player", "enabled" }
-    ) == false
-)
-local cvarDefault, character = app.addon:GetCVarOptionInfo("test")
-assert(cvarDefault == true and character == true)
-function app.config:CreateOptionsPage(page, root, key, name)
+C_Item = { GetItemQualityColor = function() end }
+local function noop() end
+local function feature(key)
+    return {
+        featureName = key,
+        featureDesc = key,
+        GetOptionButtons = function()
+            return {}
+        end,
+        Settings = function()
+            return {}
+        end,
+        GetSettings = function()
+            return {}
+        end,
+    }
+end
+local apps = {}
+UIParent = {
+    GetWidth = function()
+        return 1920
+    end,
+    GetHeight = function()
+        return 1080
+    end,
+}
+for _, addon in ipairs({
+    "SeamlessActionBars",
+    "SeamlessCastbar",
+    "SeamlessChat",
+    "SeamlessDamageMeter",
+    "SeamlessDarkmode",
+    "SeamlessTooltip",
+    "SeamlessUI",
+    "SeamlessUnitframes",
+}) do
+    local modules = {}
+    local app = { core = core, addon = {}, optionPages = {}, MAX_WINDOWS = 6 }
+    function app.addon:NewModule(name, module)
+        if type(module) ~= "table" then
+            module = {}
+        end
+        local instance = setmetatable({}, { __index = module })
+        modules[name] = instance
+        return instance
+    end
+    function app.addon:GetModule(key)
+        modules[key] = modules[key] or feature(key)
+        return modules[key]
+    end
+    app.features = {
+        GetModule = function(_, key)
+            return app.addon:GetModule(key)
+        end,
+    }
+    app.endCaps = { { key = "left", name = "Left endcap" }, { key = "right", name = "Right endcap" } }
+    app.EndCapScale = function()
+        return {}
+    end
+    app.EndCapHiddenOption = function()
+        return { type = "toggle", name = "Hide" }
+    end
+    app.EndCapFrame = function() end
+    app.MicroMenuOptions = function()
+        return { type = "group", name = "Style", args = {} }
+    end
+    app.position = {
+        GetOptions = function()
+            return { type = "group", args = {} }
+        end,
+    }
+    app.totPosition = app.position
+    app.groups = { { key = "unitFrames", name = "Unit frames" } }
+    app.media = {
+        LSM = { MediaType = {} },
+        Values = function()
+            return {}
+        end,
+    }
+    app.archive, app.combatService = { maxSegments = 1000 }, { saveSessions = false }
+    app.addon.Refresh = noop
+    app.fpsDisplay = {
+        GetPositionBinding = function()
+            return {}
+        end,
+    }
+    app.blizzardEditMode = {
+        GetOptionsFrames = function()
+            return {}, {}
+        end,
+    }
+    local file = (
+        addon == "SeamlessChat"
+        or addon == "SeamlessTooltip"
+        or addon == "SeamlessUI"
+        or addon == "SeamlessUnitframes"
+    )
+            and "core/db.lua"
+        or "db.lua"
+    assert(loadfile(addon .. "/src/" .. file))(addon, app)
+    if addon == "SeamlessUnitframes" then
+        assert(loadfile(addon .. "/src/core/unitframes.lua"))(addon, app)
+    end
+    support.pages(addon, app)
+    app.dbDefaults = core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
+    app.db = { profile = app.dbDefaults.profile }
+    if addon == "SeamlessDamageMeter" then
+        app.PrepareWindowSettings, app.BuildWindowOptions, app.BuildSkinOptions = noop, noop, noop
+        app.MAX_WINDOWS = 6
+        app:RegisterOptions()
+    else
+        modules.Options:OnInitialize()
+    end
+    for key, page in pairs(app.optionPages) do
+        assert(page.config.type == "group" and type(page.config.args) == "table", addon .. ":" .. key)
+        assert(coreApp.config.categories[addon .. ":" .. key], "Missing page " .. key)
+    end
+    apps[addon] = app
+end
+-- AceAddon returns an instance inheriting from the prototype. Exercise every page's
+-- first-open callback after registration, rather than only inspecting its declaration.
+function coreApp.config:CreateOptionsPage(page, root, key, name)
     page.option = self.Option:New(root, { key }, name)
 end
-function app.config:RefreshOptionsPage(page)
-    opens[#opens + 1] = { page.option.appName, page.option.path[1] }
+for name, panel in pairs(coreApp.options.panels) do
+    for key in pairs(panel.options.args) do
+        local page = { SetScript = function() end }
+        coreApp.config.categories[name .. ":" .. key].create(page)
+        assert(page.option.root == panel.options and page.option.path[1] == key)
+    end
 end
-assert(loadfile("Seamless/src/core/options.lua"))("Seamless", app)
-local options = app.options
-options.panels, options.addons, options.addonButtons = {}, {}, {}
-options:Register("Seamless", { title = "Seamless", general = {} })
-options:Register("SeamlessTweaks", { title = "Tweaks", general = {} })
-assert(app.config.categories["SeamlessTweaks:general"].parent == "Seamless")
-assert(app.config.categories["SeamlessTweaks:general"].name == "Tweaks")
-assert(not app.config.categories.SeamlessTweaks)
-options:RegisterAddon("Unitframes", {
-    title = "Unit frames",
-    general = {},
-    tabs = {
-        player = {
-            name = "PlayerFrame",
-            order = 10,
-            new = true,
-            blizzard = true,
-            args = {
-                tagged = { type = "toggle", name = "Tagged", new = true, editMode = true, default = true },
-            },
-        },
-        target = { name = "TargetFrame", order = 20, args = {} },
-        missing = {
-            name = "Missing",
-            order = 30,
-            args = {},
-            hidden = function()
-                return true
-            end,
-        },
-    },
-})
-local config = app.config
-assert(config.categories.Unitframes.header)
-local children = config:GetChildren("Unitframes")
-assert(#children == 3)
-assert(children[1].id == "Unitframes:general")
-assert(children[2].id == "Unitframes:player")
-assert(children[3].id == "Unitframes:target")
-assert(children[2].new and children[2].blizzard)
-local playerTab = tables.Unitframes.args.player
-assert(playerTab.new == nil and playerTab.blizzard == nil)
-assert(playerTab.args.tagged.new == nil)
-assert(config:GetOptionTags(playerTab.args.tagged).new)
-assert(playerTab.args.tagged.editMode == nil and config:GetOptionTags(playerTab.args.tagged).editMode)
-assert(config.Option:New(tables.Unitframes, { "player", "tagged" }, "Unitframes"):InEditModeLayout())
-assert(not config.Option:New(tables.Unitframes, { "player" }, "Unitframes"):InEditModeLayout())
-assert(playerTab.args.tagged.default == nil, "AceConfig never sees our default key")
-assert(config:GetOptionTags(playerTab.args.tagged).default == true)
-assert(config.Option:New(tables.Unitframes, { "player", "tagged" }, "Unitframes"):Read("new"))
-assert(config.categories["Seamless:profiles"] and not config.categories["Unitframes:profiles"])
-local page = {}
-function page:GetWidth()
-    return 627
+local cast = apps.SeamlessCastbar
+-- The actual shared position builder must load before a feature's database exists.
+-- Its bounds are resolved later and follow the current profile, including off-screen offsets.
+local meter = apps.SeamlessDamageMeter
+function meter:GetWindowSetting(config, key)
+    return config.position[key]
 end
-function page:SetHeight(height)
-    self.height = height
-end
-function page:SetScript(_, callback)
-    self.update = callback
-end
-children[2].create(page)
-children[2].refresh(page)
-assert(page.option.root == tables.Unitframes)
-assert(opens[1][1] == "Unitframes" and opens[1][2] == "player")
-options:Refresh("Unitframes")
-assert(#opens == 1) -- Do not release widgets during their own callbacks.
-page.update()
-assert(#opens == 2 and opens[2][2] == "player")
-options:Refresh("Seamless")
-page.update()
-assert(#opens == 2)
-function app.addon:OpenConfig(id)
-    self.opened = id
-end
-options:Open("Unitframes", "target")
-assert(app.addon.opened == "Unitframes:target")
-options:Open("Unitframes")
-assert(app.addon.opened == "Unitframes:general")
-print("Config options OK")
+meter.db.profile.windows[1] = { position = { x = 2500, y = -1400 } }
+local position = core:GetSettingsOption(
+    coreApp.options.panels.SeamlessDamageMeter.options,
+    { "window1", "position", "x" },
+    "SeamlessDamageMeter"
+)
+assert(position:Read("min") == -2500 and position:Read("max") == 2500)
+local vertical = core:GetSettingsOption(
+    coreApp.options.panels.SeamlessDamageMeter.options,
+    { "window1", "position", "y" },
+    "SeamlessDamageMeter"
+)
+assert(vertical:Read("min") == -1400 and vertical:Read("max") == 1400)
+meter.db.profile = { windows = { { position = { x = -3500, y = 40 } } } }
+assert(position:Read("min") == -3500 and position:Read("max") == 3500)
+assert(vertical:Read("min") == -1080 and vertical:Read("max") == 1080)
+assert(cast.optionPages.player.defaults.profile.player.icon.enabled)
+assert(not cast.optionPages.target.defaults.profile.target.icon)
+assert(cast.optionPages.player.config.args.rank.type == "toggle")
+assert(cast.optionPages.player.config.args.castTime.args.enabled)
+assert(cast.optionPages.player.config.args.hold.args.success.max == 3)
+cast.db.profile.player = { enabled = true, rank = { enabled = true } }
+local rank =
+    core:GetSettingsOption(coreApp.options.panels.SeamlessCastbar.options, { "player", "rank" }, "SeamlessCastbar")
+rank:Read("set", false)
+assert(not rank:Read("get") and not rank:Read("disabled"), "A disabled feature can be enabled again")
+rank:Read("set", true)
+assert(rank:Read("get"))
+cast.db.profile.player = { enabled = false, rank = { enabled = true } }
+assert(rank:Read("disabled"), "Bar enable state guards its feature switches")
+assert(coreApp.config.categories.SeamlessTooltip.header)
+assert(coreApp.config.categories["SeamlessTooltip:units"])
+assert(apps.SeamlessChat.dbDefaults.profile.features.timestamps.format == "%H:%M:%S")
+assert(apps.SeamlessChat.dbDefaults.profile.sync.windows)
+assert(apps.SeamlessTooltip.dbDefaults.profile.features.Backdrop.backgroundColor.r == 0.09)
+assert(apps.SeamlessUnitframes.dbDefaults.profile.unitFrames.player.healthBarColor == "class")
 
--- The shared declaration must be simple in both the custom and native panels.
-local settings, toggles = { enabled = true }, 0
-local switch = options.FeatureGroup({
-    name = "Short keybind labels",
+-- Metadata survives registration and refresh; changes are deferred past widget callbacks.
+local profile = { enabled = true, color = { r = 1, g = 0, b = 0 } }
+local changes = 0
+local tagged = {
+    type = "group",
+    feature = true,
+    new = true,
+    blizzard = true,
+    editMode = true,
+    name = "Feature",
     settings = function()
-        return settings
+        return profile
     end,
     toggled = function()
-        toggles = toggles + 1
+        changes = changes + 1
     end,
-})
-assert(switch.type == "toggle" and switch.name == "Short keybind labels" and not switch.args)
-switch.set({ "general", "keybinds" }, false)
-assert(not settings.enabled and toggles == 1 and not switch.disabled())
-settings = { enabled = true }
-assert(switch.get())
-local castOptions, castSpec, castLocked = nil, nil, 0
-local savedEnum, savedCastBar = Enum, PlayerCastingBarFrame
-Enum = { EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
-PlayerCastingBarFrame = {}
-local cast = {
-    core = {
-        GetOptionDefault = app.addon.GetOptionDefault,
-        FeatureGroup = options.FeatureGroup,
-        RegisterOptions = function(_, _, spec)
-            castSpec = spec
-        end,
-        GetFramePositionService = function()
-            return {
-                ReadSetting = function(_, _, setting)
-                    return setting == 2 and castLocked or 100
-                end,
-            }
-        end,
-        GetNativePositionOptions = function(_, getFrame, scale)
-            return { type = "group", inline = true, args = {}, getFrame = getFrame, scale = scale }
-        end,
-        GetNativeSettingScale = function(_, getFrame, setting)
-            return { getFrame = getFrame, setting = setting }
-        end,
-    },
-    addon = {
-        NewModule = function()
-            castOptions = {}
-            return castOptions
-        end,
-        Refresh = function()
-            toggles = toggles + 1
-        end,
-    },
-    db = { profile = { player = { enabled = true, rank = { enabled = true } } } },
-    position = {
-        GetOptions = function(_, key)
-            return key ~= "player" and { type = "group", inline = true, args = {} } or nil
-        end,
-    },
+    args = { color = { type = "color", name = "Color", default = false } },
 }
-assert(loadfile("SeamlessCastbar/src/options.lua"))("SeamlessCastbar", cast)
-assert(loadfile("SeamlessCastbar/src/db.lua"))("SeamlessCastbar", cast)
-castOptions:OnInitialize()
-for _, key in ipairs({ "rank", "ticks", "icon" }) do
-    local option = castSpec.tabs.player.args[key]
-    assert(option.type == "toggle" and option.name ~= "Enable" and not option.args)
+coreApp.options:RegisterAddon("Test", {
+    title = "Test",
+    pages = {
+        general = { defaults = {}, config = { type = "group", name = "General", args = { tagged = tagged } } },
+    },
+})
+assert(tagged.new and tagged.blizzard and tagged.editMode and tagged.args.color.default == false)
+core:PrepareSettingsOptions(tagged) -- Repeated preparation must not duplicate the Enable row.
+local tree = coreApp.options.panels.Test.options
+local enabled = core:GetSettingsOption(tree, { "general", "tagged", "enabled" }, "Test")
+enabled:Read("set", false)
+assert(not profile.enabled and changes == 1)
+profile = { enabled = true, color = { r = 0, g = 1, b = 0 } }
+assert(enabled:Read("get"), "Getters follow the current profile")
+local color = core:GetSettingsOption(tree, { "general", "tagged", "color" }, "Test")
+assert(color:InEditModeLayout() and color:Read("default") == false)
+color:Read("set", 0.2, 0.3, 0.4)
+assert(profile.color.r == 0.2 and profile.color.b == 0.4)
+local refreshed = 0
+function coreApp.config:CreateOptionsPage() end
+function coreApp.config:RefreshOptionsPage()
+    refreshed = refreshed + 1
 end
-assert(castSpec.tabs.player.args.castTime.type == "group")
-assert(castSpec.tabs.target.args.position.order == 5)
--- The player bar's native group: its Edit Mode layout position, Bar Size as scale.
-local playerPosition = castSpec.tabs.player.args.position
-assert(playerPosition.order == 5 and playerPosition.scale.setting == 1)
-assert(playerPosition.getFrame() == PlayerCastingBarFrame and playerPosition.scale.getFrame() == PlayerCastingBarFrame)
-castLocked = 1
-assert(playerPosition.getFrame() == nil, "no position while locked to the player frame")
-assert(playerPosition.scale.getFrame() == PlayerCastingBarFrame)
-Enum, PlayerCastingBarFrame = savedEnum, savedCastBar
-assert(castSpec.tabs.player.args.hold.type == "group")
-assert(castSpec.tooltip({ "player", "rank" }) == true)
-assert(castSpec.tooltip({ "player", "hold", "enabled" }) == false)
-assert(castSpec.tooltip({ "player", "hold", "success" }) == 0.2)
-local rank = castSpec.tabs.player.args.rank
-rank.set(nil, false)
-assert(not cast.db.profile.player.rank.enabled and not rank.disabled({ "player", "rank" }))
-cast.db.profile.player.enabled = false
-assert(rank.disabled({ "player", "rank" }))
-print("Standalone feature options OK")
-playerTab.args.tagged.new = false
-playerTab.args.tagged.blizzard = true
-options:Refresh("Unitframes")
-assert(not config:GetOptionTags(playerTab.args.tagged).new)
-assert(config:GetOptionTags(playerTab.args.tagged).blizzard)
-assert(playerTab.args.tagged.new == nil and playerTab.args.tagged.blizzard == nil)
-realRegistry:GetOptionsTable("Unitframes", "dialog", "SeamlessConfig-1.0")
-print("Feature tag metadata and AceConfig compatibility OK")
+local page = {
+    SetScript = function(self, _, fn)
+        self.update = fn
+    end,
+}
+coreApp.config.categories["Test:general"].create(page)
+coreApp.config.pages["Test:general"] = page
+coreApp.options:Refresh("Test")
+assert(refreshed == 0)
+page.update()
+assert(refreshed == 1)
+coreApp.options:Refresh("Seamless")
+page.update()
+assert(refreshed == 1)
+local ok = pcall(function()
+    core:GetOptionsDefaults({
+        one = { defaults = { profile = { value = 1 } }, config = {} },
+        two = { defaults = { profile = { value = 2 } }, config = {} },
+    })
+end)
+assert(not ok, "Conflicting defaults must fail before AceDB starts")
+print("All addon page declarations, defaults, profile bindings, metadata and deferred refresh OK")

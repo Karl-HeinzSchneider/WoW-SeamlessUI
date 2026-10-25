@@ -63,6 +63,7 @@ local app = { addon = {
     end,
 } }
 assert(loadfile("SeamlessUI/src/core/db.lua"))("SeamlessUI", app)
+dofile("src/tests/settings-support.lua").defaults("SeamlessUI", app)
 app.db = { profile = app.dbDefaults.profile }
 assert(app.db.profile.editModeKeyboard == true, "enabled by default")
 assert(loadfile("SeamlessUI/src/features/editmodekeyboard.lua"))("SeamlessUI", app)
@@ -79,7 +80,9 @@ loggedIn = true
 module:OnProfileRefresh()
 assert(next(module.hooks) == nil and next(module.events) == nil)
 EditModeSystemSettingsDialog = nil
-local option = module:Options()
+app.optionPages = {}
+assert(loadfile("SeamlessUI/src/options/general.lua"))("SeamlessUI", app)
+local option = app.optionPages.general.config.args.editModeKeyboard
 option.set(nil, true) -- Native addon may load later.
 assert(module:IsEnabled() and module.events.ADDON_LOADED and next(module.hooks) == nil)
 EditModeSystemSettingsDialog = {
@@ -139,9 +142,9 @@ app.blizzardEditMode = {
 app.addon.NewModule = function(_, _, implementation)
     return implementation
 end
-assert(loadfile("SeamlessUI/src/core/options.lua"))("SeamlessUI", app)
+assert(loadfile("SeamlessUI/src/options/register.lua"))("SeamlessUI", app)
 app.options:OnInitialize()
-assert(registered.general.editModeKeyboard.get() == true)
-registered.general.editModeKeyboard.set(nil, false)
+assert(registered.pages.general.config.args.editModeKeyboard.get() == true)
+registered.pages.general.config.args.editModeKeyboard.set(nil, false)
 assert(app.db.profile.editModeKeyboard == false)
 print("UI General keyboard option registration OK")

@@ -6,8 +6,8 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 ## Ownership
 
 - `src/core/`: lifecycle, database defaults, unit-frame registry, options and Edit Mode sections.
-  `unitframes.lua` maps keys to native systems or linked frames; `style.lua` is the single
-  source for per-frame settings (`StyleGroups`, `StyleOptions`).
+  `unitframes.lua` maps keys to native systems or linked frames; `src/options/` is the single source for page defaults and per-frame settings; `style.lua`
+  adapts those declarations for Edit Mode (`StyleOptions`).
 - `src/healthcolor/`, `src/name/`, `src/portrait/`, `src/pvpicon/`, `src/questicon/`: visual
   features reading `profile.unitFrames[key]`. Preserve secret-value guards and restore only
   regions the feature changed. Pets use the player's class color; native class-icon CVars win
@@ -19,8 +19,8 @@ Native Player, Pet, Target and Focus position controls use Core's `GetNativePosi
 `GetNativeSettingScale`, reading the active layout without a SeamlessUI dependency. ToT frames
 use `app.totPosition:GetOptions`. Linked frames' Style rows appear with their parent.
 
-New per-frame settings need a default in `db.lua` and a row in `style.lua`, which puts them in both
-the frame's tab and its Edit Mode Style section; global settings go in `options.lua`'s General tab.
+New per-frame settings need a default and control in that frame's `src/options/<frame>.lua`.
+Edit Mode derives its Style rows from the same declaration. Global settings belong to General.
 Run `lua src/tests/unitframes-options.lua`.
 
 ## `src/totposition/`: movable ToT frames
@@ -120,3 +120,5 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.
 - `src/types.lua`: annotations for `app.*` and `SeamlessUnitframes.DB`; not in the TOC.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

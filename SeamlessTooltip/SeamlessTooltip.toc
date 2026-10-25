@@ -18,7 +18,6 @@ src\core\media.lua
 src\core\lines.lua
 src\core\unittooltip.lua
 src\core\border.lua
-src\core\options.lua
 
 src\features\cursoranchor.lua
 src\features\actionbuttonanchor.lua
@@ -45,3 +44,9 @@ src\features\spellids.lua
 src\features\aurasource.lua
 
 SeamlessTooltip.lua
+
+src\options\general.lua
+src\options\units.lua
+src\options\items.lua
+src\options\spells.lua
+src\options\register.lua

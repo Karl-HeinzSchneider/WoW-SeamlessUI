@@ -74,6 +74,8 @@ local function applyPending(source)
         end
     end
     applying = false
+    -- The shared panel may have rendered during entry, before this deferred batch.
+    app.addon:RefreshEditModeOptions()
 end
 
 ---Read the pending choice (including false), or the registered visibility binding.

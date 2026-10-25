@@ -3,6 +3,11 @@ local active, combat, failed, updateFails = false, false, nil, false
 local saved, preview = { [24] = 0, [25] = 1 }, {}
 local callbacks, timers, events, writes = {}, {}, nil, {}
 local app = { addon = {}, db = { global = {} }, logger = {} }
+local panelRefreshes, panelSnapshot = 0, {}
+function app.addon:RefreshEditModeOptions()
+    panelRefreshes = panelRefreshes + 1
+    panelSnapshot[24], panelSnapshot[25] = preview[24], preview[25]
+end
 function app.logger:warn() end
 function app.logger:debug() end
 app.LibEditMode = {
@@ -99,12 +104,17 @@ callbacks.enter()
 assert(#writes == 0)
 tick()
 assert(active and #writes == 2 and preview[24] == true and preview[25] == false)
+assert(
+    panelRefreshes == 1 and panelSnapshot[24] == true and panelSnapshot[25] == false,
+    "Refresh the shared checkboxes once, after the whole deferred batch"
+)
 assert(not next(app.db.global.editModeVisibilityPending))
 callbacks.enter()
 tick()
 assert(#writes == 2)
 core:EditModeVisibility(24, false)
 assert(active and #writes == 3 and preview[24] == false)
+assert(panelRefreshes == 2 and panelSnapshot[24] == false, "Immediate changes also refresh the panel")
 active = false -- User closes it; events/timers must never reopen it.
 callbacks.exit()
 events.callback(events, "EDIT_MODE_LAYOUTS_UPDATED")

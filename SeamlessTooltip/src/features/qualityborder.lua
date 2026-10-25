@@ -6,23 +6,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local anySecret = app.features.AnySecret
 
 -- Colors the border of item tooltips in the item's quality color (green, blue, purple, ...).
-local feature = app.features:NewFeature("QualityBorder", {
-    category = "items",
-    name = L["Quality border"],
-    desc = L["Colors the border of item tooltips in the item's quality color. Works with the game's border and with \"Border and background\"."],
-    order = 30,
-    options = {
-        minQuality = {
-            type = "select",
-            order = 10,
-            name = L["From quality"],
-            desc = L["Items of a lower quality keep the normal border."],
-            -- Filled below from the game's quality names and colors.
-            values = {},
-            sorting = {},
-        },
-    },
-})
+local feature = app.features:NewFeature("QualityBorder")
 
 -- Poor (grey) up to Heirloom; the select shows each in its own color.
 local qualityOption = feature.info.options.minQuality

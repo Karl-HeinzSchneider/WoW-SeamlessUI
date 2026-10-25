@@ -7,12 +7,7 @@ local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds who cast a buff or debuff to its tooltip, the name in the caster's class color.
-local feature = app.features:NewFeature("AuraSource", {
-    category = "spells",
-    name = L["Aura caster"],
-    desc = L["Adds who cast a buff or debuff to its tooltip. Players are shown in their class color."],
-    order = 20,
-})
+local feature = app.features:NewFeature("AuraSource")
 
 -- How an aura tooltip was filled (its processing info's getterName) and how to look the aura up
 -- from the same (unit, index or auraInstanceID, filter) arguments.

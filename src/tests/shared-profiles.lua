@@ -88,6 +88,7 @@ for _, name in ipairs({ "ActionBars", "Castbar", "Chat", "DamageMeter", "Darkmod
     local file = (name == "Chat" or name == "Tooltip" or name == "UI" or name == "Unitframes") and "src/core/db.lua"
         or "src/db.lua"
     assert(loadfile(folder .. "/" .. file))(folder, app)
+    dofile("src/tests/settings-support.lua").defaults(folder, app)
     assert(type(app.dbDefaults.profile) == "table", folder .. " needs explicit defaults")
 end
 print("PASS: shared profiles, migration, copy/reset, character data and reload")

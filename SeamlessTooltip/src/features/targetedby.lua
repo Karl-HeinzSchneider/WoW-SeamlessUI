@@ -7,27 +7,7 @@ local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Lists the members of your group or raid that target the unit: "Targeted by (2)  Name, Name".
-local feature = app.features:NewFeature("TargetedBy", {
-    category = "units",
-    name = L["Targeted by"],
-    desc = L["Lists the members of your group or raid that target the unit."],
-    order = 26,
-    options = {
-        names = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Names"],
-            desc = L["Lists who targets the unit, in class color; off shows only how many."],
-        },
-        you = {
-            type = "toggle",
-            order = 20,
-            width = "full",
-            name = L["Count yourself"],
-        },
-    },
-})
+local feature = app.features:NewFeature("TargetedBy")
 
 local LABEL = L["Targeted by"]
 -- More names than this are cut off with "...".

@@ -33,6 +33,7 @@ function app.Buttons()
 end
 
 function app.addon:OnInitialize()
+    app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "Refresh", "SeamlessActionBarsDB")
     self:RegisterChatCommand("seamlessactionbars", function()
         app.core:OpenOptions(appName)

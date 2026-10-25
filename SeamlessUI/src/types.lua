@@ -1,6 +1,7 @@
 -- Annotations only; not loaded by the TOC.
 
 ---@class SeamlessUI
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field core SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessUI.Addon
@@ -18,3 +19,8 @@
 ---@field profile SeamlessUI.DB.Profile
 ---@field char SeamlessUI.DB.Char
 ---@field global SeamlessUI.DB.Global
+
+---@class SeamlessUI.DBDefaults : AceDB.Schema
+---@class SeamlessUI.DB.Profile
+---@class SeamlessUI.DB.Char
+---@class SeamlessUI.DB.Global

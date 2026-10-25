@@ -22,4 +22,16 @@ src\blizzard.lua
 src\settings.lua
 src\editmode.lua
 src\windows.lua
-src\options.lua
+
+src\options\shared.lua
+src\options\general.lua
+src\options\skin.lua
+src\options\windows.lua
+src\options\window1.lua
+src\options\window2.lua
+src\options\window3.lua
+src\options\window4.lua
+src\options\window5.lua
+src\options\window6.lua
+src\options\history.lua
+src\options\register.lua

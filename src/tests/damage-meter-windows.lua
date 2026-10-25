@@ -278,6 +278,7 @@ LibStub = function()
 end
 dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessDamageMeter/src/db.lua"))("SeamlessDamageMeter", app)
+dofile("src/tests/settings-support.lua").defaults("SeamlessDamageMeter", app)
 assert(loadfile("SeamlessDamageMeter/src/settings.lua"))("SeamlessDamageMeter", app)
 app.db.profile.windowDefaults = app.windowDefaults
 assert(app.windowDefaults.fixedHeight and app.windowDefaults.visibleLines == 7)

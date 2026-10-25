@@ -7,25 +7,7 @@ local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds the item ID, and its icon's file ID, to item tooltips.
-local feature = app.features:NewFeature("ItemIDs", {
-    category = "items",
-    name = L["Item IDs"],
-    desc = L["Adds the item's ID, and its icon's ID, to item tooltips."],
-    order = 10,
-    options = {
-        item = {
-            type = "toggle",
-            order = 10,
-            name = L["Item ID"],
-        },
-        icon = {
-            type = "toggle",
-            order = 20,
-            name = L["Icon ID"],
-            desc = L["The file ID of the item's icon."],
-        },
-    },
-})
+local feature = app.features:NewFeature("ItemIDs")
 
 function feature:OnInitialize()
     self:AddTooltipPostCall(Enum.TooltipDataType.Item, "OnItemTooltip")

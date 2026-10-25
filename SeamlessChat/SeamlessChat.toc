@@ -14,7 +14,6 @@
 src\core\bootstrap.lua
 src\core\db.lua
 src\core\ace.lua
-src\core\options.lua
 
 src\chat\state.lua
 src\chat\sync.lua
@@ -39,3 +38,10 @@ src\features\unread.lua
 src\features\skin.lua
 
 SeamlessChat.lua
+
+src\options\general.lua
+src\options\messages.lua
+src\options\windows.lua
+src\options\buttons.lua
+src\options\log.lua
+src\options\register.lua

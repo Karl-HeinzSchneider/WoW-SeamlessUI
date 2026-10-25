@@ -8,12 +8,7 @@ local unitTooltip = app.unitTooltip
 
 -- Puts the unit's raid target marker (skull, cross, ...) in front of its name, kept up to date
 -- while the tooltip is shown.
-local feature = app.features:NewFeature("RaidIcon", {
-    category = "units",
-    name = L["Raid target icon"],
-    desc = L["Shows the unit's raid target marker (skull, cross, ...) in front of its name."],
-    order = 23,
-})
+local feature = app.features:NewFeature("RaidIcon")
 
 -- GetRaidTargetIndex returns a secret to addon code, so the marker can't be named in the text.
 -- Like Blizzard's target frame, a texture shows it: the secret goes straight to SetSpriteSheetCell.

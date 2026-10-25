@@ -8,6 +8,7 @@ app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEven
 local addon = app.addon
 
 function addon:OnInitialize()
+    app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     app.db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "RefreshProfile", "SeamlessDamageMeterDB")
     app.combatService:Initialize(app.db.char)
     app.combatService:Subscribe(app, function(owner, historyChanged)

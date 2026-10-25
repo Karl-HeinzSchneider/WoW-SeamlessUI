@@ -7,25 +7,7 @@ local anySecret = app.features.AnySecret
 local lines = app.lines
 
 -- Adds the spell ID, and its icon's file ID, to spell and aura (buff/debuff) tooltips.
-local feature = app.features:NewFeature("SpellIDs", {
-    category = "spells",
-    name = L["Spell IDs"],
-    desc = L["Adds the spell's ID, and its icon's ID, to spell tooltips and to buffs and debuffs."],
-    order = 10,
-    options = {
-        spell = {
-            type = "toggle",
-            order = 10,
-            name = L["Spell ID"],
-        },
-        icon = {
-            type = "toggle",
-            order = 20,
-            name = L["Icon ID"],
-            desc = L["The file ID of the spell's icon."],
-        },
-    },
-})
+local feature = app.features:NewFeature("SpellIDs")
 
 -- Buffs and debuffs are a tooltip type of their own; their data's id is the aura's spell ID too.
 -- Aura data is secret while auras are restricted (in combat); no line then.

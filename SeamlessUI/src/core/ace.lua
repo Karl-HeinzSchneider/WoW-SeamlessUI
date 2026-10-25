@@ -13,6 +13,7 @@ app.addon = addon
 
 -- Called once, after ADDON_LOADED for this addon: SavedVariables are available now.
 function addon:OnInitialize()
+    app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     local db = app.core:RegisterAddonDatabase(appName, app.dbDefaults, self, "OnProfileRefresh", "SeamlessUIDB") --[[@as SeamlessUI.DB]]
     self.db = db
     app.db = db

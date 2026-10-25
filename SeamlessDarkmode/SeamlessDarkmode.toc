@@ -13,4 +13,6 @@
 src\frames.lua
 src\db.lua
 src\core.lua
-src\options.lua
+
+src\options\general.lua
+src\options\register.lua

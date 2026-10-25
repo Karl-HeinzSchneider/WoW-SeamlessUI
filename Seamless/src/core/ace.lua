@@ -18,6 +18,8 @@ end
 
 -- Called once, after ADDON_LOADED for this addon: SavedVariables are available now.
 function addon:OnInitialize()
+    app.dbDefaults = self:GetOptionsDefaults(app.optionPages, app.dbDefaults)
+    app.dbDefaults = self:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     local db = LibStub("AceDB-3.0"):New("SeamlessDB", app.dbDefaults, true) --[[@as SeamlessCore.DB]]
     self.db = db
     app.db = db
@@ -78,7 +80,7 @@ end
 -- Available at file load to dependent addons through AceAddon:GetAddon("Seamless").
 addon.logger = app.logger
 
--- Gives a feature addon its panel in Settings > AddOns > Seamless: a General tab, `spec.tabs`
+-- Registers a feature addon header and its explicit settings pages.
 -- Call from the addon's OnInitialize, once its database exists. Profiles are managed in Core.
 ---@param name string The addon's folder name, also its AceConfig app name.
 ---@param spec SeamlessCore.OptionsSpec
@@ -86,7 +88,7 @@ function addon:RegisterOptions(name, spec)
     app.options:RegisterAddon(name, spec)
 end
 
--- Opens the native Settings window on an addon's panel (Seamless when nil), optionally on a tab.
+-- Opens our settings window on an addon page (Seamless General when omitted).
 ---@param name? string
 ---@param tab? string
 function addon:OpenOptions(name, tab)

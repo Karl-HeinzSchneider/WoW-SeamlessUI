@@ -19,14 +19,14 @@ system, so they are not part of this addon.
 
 ## Ownership
 
-- `src/db.lua`: per-bar defaults. `src/core.lua`: lifecycle, hooks, `app.Settings(bar)` and
+- `src/options/`: per-bar defaults and page declarations. `src/core.lua`: lifecycle, hooks, `app.Settings(bar)` and
   `app.Active(bar)`.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
   text when disabled. The player reuses native cast-time text and visibility; target/focus get
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
-- `src/options.lua`, `src/editmode.lua`: options and shared Style declarations.
+- `src/options/`, `src/editmode.lua`: options and shared Style declarations.
   The Player tab's Position and scale group is Core's native group for the cast bar system
   (`GetNativePositionOptions`, Bar Size via `GetNativeSettingScale`), stored in the Edit Mode
   layout; position is unavailable while Lock to Player Frame is on.
@@ -67,3 +67,5 @@ casts and interruptions, channel pushback, spell ranks, profile changes and Edit
 Moved target/focus bars: drag, Position rows, Scale, Reset Position, layout switch, target with aura
 rows and a ToT, casts in combat.
 Check `/console taintLog 1` stays clean.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

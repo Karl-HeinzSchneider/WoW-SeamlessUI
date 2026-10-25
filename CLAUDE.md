@@ -57,23 +57,46 @@ TypeScript uses strict ESM with `.js` extensions in relative imports; `tsx` runs
 use the BigWigs packager, which substitutes `@project-version@` in TOCs. Never publish a release
 unless requested.
 
-## Options: two settings panels in parallel
+## Settings pages
 
-Every option exists in two places, built from one declaration:
+Seamless owns one AceConfig-shaped settings format and its custom window. Blizzard's AddOns
+options panels are intentionally not registered. AceDBOptions is used only to build Core's
+Profiles page; AceConfigRegistry, AceConfigDialog and AceGUI are not loaded for settings.
 
-- **Custom config window** (`Seamless/src/config/`, `SeamlessConfigWindow`): our own
-  Settings-style window with a category tree (one header per addon, one page per tab). It is the
-  main UI: `/seamless`, the minimap button and `core:OpenOptions` open it.
-- **Blizzard AddOns options** (Settings > AddOns > Seamless and its children): the same options as
-  AceConfig panels, kept in parallel.
+Every navigation page is a separate file in its addon's `src/options/` folder. Declare
+`app.optionPages.<key> = { defaults = <AceDB schema fragment>, config = <group>, tooltip = <optional resolver> }`.
+The `config` group uses readable `type`, `name`, `order`, `args`, `get`, `set`, `disabled`,
+`hidden`, `values`, `min`, `max` and `step` fields. `new`, `blizzard`, `editMode` and `default`
+are native fields of our schema: they stay on the table and are never stripped.
 
-Declare an option once, as plain AceConfig args through `core:RegisterOptions` (or
-`core.FeatureGroup` inside it); Core registers it in both. Never add an option to only one panel,
-build controls for one of them by hand, or use AceConfig keys our window can't render without
-checking `Seamless/src/config/CLAUDE.md`. Custom-window-only extras (`new`/`blizzard`/`editMode` tags,
-`tooltip` defaults) are stripped before AceConfig sees them. Settings a frame shows in Edit Mode
-are also offered on its addon's options tab, built from the same rows (see Castbar, Unitframes).
-Test a new option in both panels.
+Keep the page's defaults beside its declaration, at existing SavedVariables paths. Database
+files contain only the schema skeleton and non-option data. Before AceDB initializes,
+`core:GetOptionsDefaults(app.optionPages, app.dbDefaults)` combines the page fragments and
+rejects conflicting defaults. Never change saved keys as part of reorganizing pages.
+
+Each addon registers once with `core:RegisterOptions(addonName, { title = L["Title"],
+pages = app.optionPages })`. Its header contains the page groups in `order`; General is first,
+and only Core has Profiles. List every page in the TOC before the registration module and before
+AceDB's `OnInitialize` runs. Page declarations must not read a live profile at file load.
+
+Switchable sections use a plain group with `feature = true`, `settings = function() return
+app.db.profile.feature end`, `toggled`, optional `changed`, and subordinate controls in `args`.
+Core supplies their accessors, Enable switch and disabled behavior. With no subordinate controls,
+the feature becomes one named toggle. An explicit `disabled` must include the feature-off check
+for subordinate controls while leaving the Enable switch usable. Getters always resolve the
+current profile; never cache its tables. Use small shared helpers for repeated controls such as
+position, scale and window inheritance, rather than factories for entire pages.
+
+`tooltip(path)` returns a declared default and an optional per-character boolean. A control's
+own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
+bindings. Castbar and Unitframes derive their Edit Mode Style rows from these same page trees;
+do not declare those settings a second time.
+
+`OpenOptions(addonName, page)` opens a page; `RefreshOptions(addonName)` schedules its existing
+controls to refresh after the current callback. The window and controls live in `src/config/`;
+read its `CLAUDE.md` when changing rendering. Run `lua src/tests/config-options.lua`, plus the
+affected addon's harnesses. Check navigation, controls, defaults, profile changes and Edit Mode
+in game.
 
 ## Shared Edit Mode controls
 

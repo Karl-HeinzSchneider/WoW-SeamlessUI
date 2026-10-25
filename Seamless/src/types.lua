@@ -36,9 +36,6 @@
 ---@field selected? string
 ---@field minimized? boolean
 ---@field optionInfo table<string, fun(path: string[]): any, boolean?>
----@field optionTags table<table, { new?: boolean, blizzard?: boolean, editMode?: boolean, default?: any }> `default`: tooltip default value or a function returning it.
----@field GetOptionTags fun(self: SeamlessCore.Config, option: table): table
----@field NormalizeOptionTags fun(self: SeamlessCore.Config, option: table)
 ---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
 ---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
 ---@field ControlRow table Base class for Settings-style control rows.
@@ -60,6 +57,7 @@
 ---@field refresh? fun(page: table) Called when the page is selected or RefreshConfig runs.
 
 ---@class SeamlessCore
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field framePosition SeamlessCore.FramePosition
 ---@field config SeamlessCore.Config
 ---@field IsEditModeSectionCollapsed fun(key: string): boolean
@@ -120,7 +118,6 @@
 ---@field IsEditModeAnchorPickerActive fun(self: SeamlessCore.Addon): boolean
 ---@field logger SeamlessCore.Logger
 ---@field db SeamlessCore.DB
----@field FeatureGroup fun(spec: SeamlessCore.FeatureSpec): table
 
 ---@alias SeamlessCore.FrameResolver fun(): table?
 
@@ -214,3 +211,10 @@
 
 ---@class SeamlessCore.Addon
 ---@field RegisterAddonDatabase fun(self: SeamlessCore.Addon, name: string, defaults: AceDB.Schema, owner: table, refresh: string, legacyName?: string): AceDBObject-3.0
+
+---@class SeamlessCore.Addon
+---@field GetOptionsDefaults fun(self: SeamlessCore.Addon, pages: table<string, SeamlessCore.SettingsPage>, defaults?: AceDB.Schema): AceDB.Schema
+---@field PrepareSettingsOptions fun(self: SeamlessCore.Addon, option: SeamlessCore.SettingsOption)
+---@field GetSettingsOption fun(self: SeamlessCore.Addon, root: table, path: string[], name: string): table
+---@class SeamlessCore.Config
+---@field NotifyChange fun(self: SeamlessCore.Config, name?: string)

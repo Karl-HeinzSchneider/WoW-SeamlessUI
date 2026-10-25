@@ -59,6 +59,10 @@ function Option:New(root, path, name)
     return setmetatable({ root = root, path = path, appName = name }, { __index = self })
 end
 
+function app.addon:GetSettingsOption(root, path, name)
+    return Option:New(root, path, name)
+end
+
 function Option:TooltipDetails()
     local resolver = app.config.optionInfo and app.config.optionInfo[self.appName]
     local value, perCharacter = self:Read("default"), nil
@@ -119,8 +123,8 @@ function Option:Read(member, ...)
     if not inherited[member] then
         value = group[member]
     end
-    if member == "new" or member == "blizzard" or member == "editMode" or member == "default" then
-        return app.config:GetOptionTags(group)[member]
+    if member == "default" then
+        return value
     end
     info.option, info.type, info.arg, info.handler = group, group.type, group.arg, handler
     if type(value) == "function" then
@@ -141,7 +145,7 @@ function Option:InEditModeLayout()
         if not group then
             return false
         end
-        if app.config:GetOptionTags(group).editMode then
+        if group.editMode then
             return true
         end
     end

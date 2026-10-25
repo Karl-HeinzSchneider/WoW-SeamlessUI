@@ -7,15 +7,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- at the start of a chat line (|Hchannel:...|h[...]|h); the link stays, so clicking it still
 -- switches the chat input to that channel.
 ---@class SeamlessChat.Channels : SeamlessChat.Feature
-local module = { optionsTab = "messages" }
+local module = {}
 
 ---@class SeamlessChat.ChannelSettings : SeamlessChat.FeatureSettings
-local channels = app.features:New(
-    "channels",
-    module,
-    L["Short channel names"],
-    L['Shortens the channel names in front of chat messages: "[2. Trade - City]" to "[2]", "[Guild]" to "[G]".']
-) --[[@as SeamlessChat.Channels]]
+local channels = app.features:New("channels", module) --[[@as SeamlessChat.Channels]]
 
 ---@return SeamlessChat.ChannelSettings
 function module:Settings()
@@ -103,47 +98,3 @@ app.lines:Register(20, function(_, message, chatType)
         end)
     )
 end)
-
-function module:GetOptions()
-    local args = {
-        numbered = {
-            type = "select",
-            order = 10,
-            name = L["Numbered channels"],
-            desc = L["How General, Trade and the other numbered channels are shown."],
-            values = NUMBERED_LABELS,
-            sorting = NUMBERED_ORDER,
-        },
-        groups = {
-            type = "toggle",
-            order = 20,
-            width = "full",
-            name = L["Shorten guild, party, raid and instance"],
-        },
-        shortHeader = {
-            type = "header",
-            order = 30,
-            name = L["Short names"],
-        },
-    }
-    for i, chatType in ipairs(GROUP_ORDER) do
-        args["short" .. chatType] = {
-            type = "input",
-            order = 30 + i,
-            width = "half",
-            name = GROUP_LABELS[chatType],
-            desc = L["Empty keeps the game's name."],
-            disabled = function()
-                local settings = self:Settings()
-                return not (settings.enabled and settings.groups)
-            end,
-            get = function()
-                return self:Settings().short[chatType]
-            end,
-            set = function(_, value)
-                self:Settings().short[chatType] = value
-            end,
-        }
-    end
-    return args
-end

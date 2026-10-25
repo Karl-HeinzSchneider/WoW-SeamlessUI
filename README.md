@@ -6,7 +6,7 @@ instead of replacing it: each part is a separate addon you can switch on or off.
 ## Addons
 
 - **Seamless** (required): the core. Shared libraries, logging, one minimap button and the
-  **Seamless** entry in Settings > AddOns. It also adds small tweaks: `/rl` to reload, completed
+  **Seamless** settings window (`/seamless`). It also adds small tweaks: `/rl` to reload, completed
   quests and their XP in the quest log, and more XP details on the experience bar tooltip.
 - **SeamlessUnitframes**: per-frame settings for the player, pet, target, target of target, focus,
   target of focus and party frames: health colors (default, class, reaction or class and reaction),
@@ -41,12 +41,9 @@ Extract the release zip into your client's `Interface/AddOns` folder. Keep **Sea
 and choose the other addons in the game's AddOns screen, then reload. Every addon needs Seamless;
 Seamless works on its own.
 
-Every addon has one entry under Settings > AddOns > Seamless, with tabs: General first, then the
-addon's own sections. The core panel's Profiles tab selects, creates, copies, deletes
-and resets the shared suite profile. All addons share Core's profiles; selecting, copying or resetting a profile applies to
-the whole suite. Feature settings are stored in separate namespaces of `SeamlessDB`, with
-editable defaults in each addon's `src/db.lua` or `src/core/db.lua`. Existing standalone settings
-are imported automatically the first time each addon loads.
+Open `/seamless` for the suite's settings window. Each addon has a header with separate pages:
+General first, followed by its frame or feature pages. Core's Profiles page manages the whole
+suite. Blizzard's AddOns options panels are currently not registered.
 
 ## Commands
 

@@ -7,21 +7,7 @@ local anySecret = app.features.AnySecret
 
 -- Adds the unit's target to unit tooltips: "T: Name", the name in class or hostile/friendly color,
 -- ">>YOU<<" when it targets you. Kept up to date while the tooltip is shown.
-local feature = app.features:NewFeature("TargetLine", {
-    category = "units",
-    name = L["Target"],
-    desc = L['Adds what the unit is targeting as "T: Name" to its tooltip.'],
-    order = 25,
-    options = {
-        you = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L[">>YOU<< for you"],
-            desc = L['Shows "T: >>YOU<<" when the unit targets you.'],
-        },
-    },
-})
+local feature = app.features:NewFeature("TargetLine")
 
 local LABEL = NORMAL_FONT_COLOR:WrapTextInColorCode(L["T:"])
 local YOU_COLOR = CreateColor(1, 0.25, 0.25)

@@ -47,7 +47,7 @@ At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamles
   counting quests under collapsed headers without changing the selection. Call again on
   `QUEST_LOG_UPDATE`.
 - `core:RegisterAddonDatabase`: a feature's AceDB namespace, see Shared feature databases.
-- `core:RegisterOptions`, `OpenOptions`, `RefreshOptions`, `core.FeatureGroup`,
+- `core:RegisterOptions`, `OpenOptions`, `RefreshOptions`, `GetSettingsOption`,
   `GetOptionDefault`, `GetCVarOptionInfo`: see Options.
 - Custom config window: `RegisterConfigCategory`, `OpenConfig`, `ToggleConfig`, `RefreshConfig`,
   and the Position groups `GetPositionOptions`, `GetNativePositionOptions`,
@@ -59,46 +59,46 @@ Core never references a feature by name or loads disabled features; core profile
 feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
 on the suite profile.
 
-## Options: two panels in parallel, one panel per addon, tabs inside
+## Settings pages
 
-Each `RegisterOptions` call feeds two panels from the same AceConfig table:
+Seamless owns one AceConfig-shaped settings format and its custom window. Blizzard's AddOns
+options panels are intentionally not registered. AceDBOptions is used only to build Core's
+Profiles page; AceConfigRegistry, AceConfigDialog and AceGUI are not loaded for settings.
 
-- our **custom config window**: a category header per addon with one child page per tab, drawn
-  with our Settings-style controls (`src/config/`). It is what `/seamless`, the minimap button
-  and `OpenOptions` show;
-- the **Blizzard AddOns options**: one AceConfig panel per addon in Settings > AddOns, Core's
-  "Seamless" panel as the parent, kept alongside the custom window.
+Every navigation page is a separate file in its addon's `src/options/` folder. Declare
+`app.optionPages.<key> = { defaults = <AceDB schema fragment>, config = <group>, tooltip = <optional resolver> }`.
+The `config` group uses readable `type`, `name`, `order`, `args`, `get`, `set`, `disabled`,
+`hidden`, `values`, `min`, `max` and `step` fields. `new`, `blizzard`, `editMode` and `default`
+are native fields of our schema: they stay on the table and are never stripped.
 
-Add every option through this declaration so it shows in both; never build it for one panel only.
-Only keys both renderers understand belong in it (the custom-only `new`/`blizzard` tags and the
-`tooltip` resolver are kept outside AceConfig). Check a new option in both panels.
-Tabs are always **General**, then the addon's own tabs (`order` 1–999; few and broad, related
-controls in inline groups). Only the core Seamless panel has a **Profiles** tab.
+Keep the page's defaults beside its declaration, at existing SavedVariables paths. Database
+files contain only the schema skeleton and non-option data. Before AceDB initializes,
+`core:GetOptionsDefaults(app.optionPages, app.dbDefaults)` combines the page fragments and
+rejects conflicting defaults. Never change saved keys as part of reorganizing pages.
 
-- `core:RegisterOptions(addonName, spec)`, from `OnInitialize` after the database exists: `title`,
-  `general` (args of the General tab), optional `tabs` (groups by key with `order` and `name`;
-  `type = "group"` is filled in).
-  `tooltip(path)` optionally returns the declared default and a per-character boolean for
-  the custom window's info tooltip. Use `core:GetOptionDefault(schema, path, first)` for
-  schema lookup or `core:GetCVarOptionInfo(name)` for CVar defaults and scope.
-  Add `new = true` or `blizzard = true` to a tab or individual option to show a native
-  glowing label in the custom config view; the flags are removed before AceConfig validation.
-  The same flags work on `FeatureGroup` specs and `RegisterConfigCategory` specs.
-- `core:OpenOptions(addonName, tab)`: opens the addon's page in the custom config window,
-  optionally on a tab; no name opens Seamless General.
-- `core:RefreshOptions(addonName)`: redraws after an outside change (CVar, slash command). Profile
-  changes redraw on their own.
-- `core.FeatureGroup(spec)`: an inline group for one switchable feature: Enable toggle with its
-  description, then the options. Features without subordinate options instead return a standalone
-  toggle named after the feature, in both the custom and native options windows. Features with
-  subordinate controls retain their section and Enable toggle. Options without their own `get`/`set` use
-  `spec.settings()[key]` (colors as `{ r, g, b, a }`) and are disabled while the feature is off
-  unless they define `disabled`. `spec.toggled` runs after the switch, `spec.changed` after any
-  other setting.
+Each addon registers once with `core:RegisterOptions(addonName, { title = L["Title"],
+pages = app.optionPages })`. Its header contains the page groups in `order`; General is first,
+and only Core has Profiles. List every page in the TOC before the registration module and before
+AceDB's `OnInitialize` runs. Page declarations must not read a live profile at file load.
 
-Always read `app.db.profile` inside accessors (a cached table breaks profile switching). Put shared
-`get`/`set` on the group (`info[#info]` is the key). AceConfigRegistry rejects unknown keys. Use
-`width = "full"` and `descStyle = "inline"` for toggles whose description should show.
+Switchable sections use a plain group with `feature = true`, `settings = function() return
+app.db.profile.feature end`, `toggled`, optional `changed`, and subordinate controls in `args`.
+Core supplies their accessors, Enable switch and disabled behavior. With no subordinate controls,
+the feature becomes one named toggle. An explicit `disabled` must include the feature-off check
+for subordinate controls while leaving the Enable switch usable. Getters always resolve the
+current profile; never cache its tables. Use small shared helpers for repeated controls such as
+position, scale and window inheritance, rather than factories for entire pages.
+
+`tooltip(path)` returns a declared default and an optional per-character boolean. A control's
+own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
+bindings. Castbar and Unitframes derive their Edit Mode Style rows from these same page trees;
+do not declare those settings a second time.
+
+`OpenOptions(addonName, page)` opens a page; `RefreshOptions(addonName)` schedules its existing
+controls to refresh after the current callback. The window and controls live in `src/config/`;
+read its `CLAUDE.md` when changing rendering. Run `lua src/tests/config-options.lua`, plus the
+affected addon's harnesses. Check navigation, controls, defaults, profile changes and Edit Mode
+in game.
 
 ## Shared Edit Mode panel (`editmode.lua`)
 

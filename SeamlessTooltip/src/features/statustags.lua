@@ -8,46 +8,7 @@ local unitTooltip = app.unitTooltip
 
 -- Adds a player's state behind the name: <AFK>, <DND>, <Offline>, <Dead>, <Ghost>, <PvP>; the
 -- game's own "PvP" line can go.
-local feature = app.features:NewFeature("StatusTags", {
-    category = "units",
-    name = L["Status tags"],
-    desc = L["Adds a player's state behind the name, e.g. <AFK> or <Dead>."],
-    order = 22,
-    options = {
-        afk = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["<AFK> and <DND>"],
-        },
-        offline = {
-            type = "toggle",
-            order = 20,
-            width = "full",
-            name = L["<Offline>"],
-        },
-        dead = {
-            type = "toggle",
-            order = 30,
-            width = "full",
-            name = L["<Dead> and <Ghost>"],
-        },
-        pvp = {
-            type = "toggle",
-            order = 40,
-            width = "full",
-            name = L["<PvP>"],
-            desc = L["For players flagged for PvP."],
-        },
-        hidePvpLine = {
-            type = "toggle",
-            order = 50,
-            width = "full",
-            name = L['Hide the "PvP" line'],
-            desc = L["The line the game adds for players flagged for PvP."],
-        },
-    },
-})
+local feature = app.features:NewFeature("StatusTags")
 
 local TAG_COLOR = CreateColor(0.65, 0.65, 0.65)
 local AFK = L["<AFK>"]

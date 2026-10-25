@@ -1,4 +1,5 @@
 ---@class SeamlessDamageMeter
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field ApplyEditModeLayout fun(self: SeamlessDamageMeter) Restore the current native layout in the active profile.
 ---@field RefreshThreatWindows fun(self: SeamlessDamageMeter) Refresh visible threat windows immediately from client events.
 ---@field core SeamlessCore.Addon
@@ -22,3 +23,9 @@
 ---@field detailTooltip table? Currently active hover panel; never saved.
 ---@field combatSpellTooltip table? Pooled combat spell-only hover panel.
 ---@field postCombatTooltip table? Pooled post-combat hover panel with target analysis.
+
+---@class SeamlessDamageMeter
+---@field WindowAppearanceOptions fun(windowID?: number): table
+---@field WindowPositionOptions fun(windowID: number): table
+---@field meterSettingDefinitions table[]
+---@field MeterSettingControl fun(definition: table, windowID?: number, inherited?: boolean, skin?: table): table

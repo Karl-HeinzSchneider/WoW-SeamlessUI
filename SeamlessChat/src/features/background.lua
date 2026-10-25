@@ -12,15 +12,10 @@ local log = app.logger
 -- FCF_SetWindowAlpha (login, new whisper windows, reset, the tab menu); hooks on them paint ours
 -- over it.
 ---@class SeamlessChat.Background : SeamlessChat.Feature
-local module = { optionsTab = "windows" }
+local module = {}
 
 ---@class SeamlessChat.BackgroundSettings : SeamlessChat.FeatureSettings
-app.features:New(
-    "background",
-    module,
-    L["Background"],
-    L["The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect."]
-)
+app.features:New("background", module)
 
 -- Set while painting, so the hooks don't answer our own calls.
 local painting = false
@@ -88,37 +83,4 @@ function module:Refresh()
     if self:IsEnabled() then
         self:OnEnable()
     end
-end
-
-function module:GetOptions()
-    return {
-        color = {
-            type = "color",
-            order = 10,
-            name = L["Background"],
-            desc = L["Color and opacity of every chat window's background. Opacity 0 hides it; the game shows it at least at 25% while the mouse is over the chat."],
-            hasAlpha = true,
-            get = function()
-                local color = self:Settings().color
-                return color.r, color.g, color.b, color.a
-            end,
-            set = function(_, r, g, b, a)
-                local color = self:Settings().color
-                color.r, color.g, color.b, color.a = r, g, b, a
-                self:Refresh()
-            end,
-        },
-        reset = {
-            type = "execute",
-            order = 20,
-            name = L["Black"],
-            desc = L["Back to black, fully opaque."],
-            func = function()
-                local color = self:Settings().color
-                color.r, color.g, color.b, color.a = 0, 0, 0, 1
-                self:Refresh()
-                app.options:Refresh()
-            end,
-        },
-    }
 end

@@ -3,7 +3,6 @@ local _, app = ...
 
 local config = app.config
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
-local Registry = LibStub("AceConfigRegistry-3.0")
 
 -- Our row base and control factories own behavior and layout. Reuse SharedXML
 -- primitives and the Settings panel's art without inheriting its setting/CVar
@@ -128,7 +127,7 @@ function Row:Commit(...)
             return
         end
         option:Read(option:Read("type") == "execute" and "func" or "set", unpack(values))
-        Registry:NotifyChange(option.appName)
+        config:NotifyChange(option.appName)
     end
     local confirm = option:Read("confirm", unpack(values))
     if confirm then
@@ -372,7 +371,7 @@ function creators.color(page)
                 return
             end
             option:Read("set", red, green, blue, alpha)
-            Registry:NotifyChange(option.appName)
+            config:NotifyChange(option.appName)
         end
         local function changed()
             local red, green, blue = ColorPickerFrame:GetColorRGB()

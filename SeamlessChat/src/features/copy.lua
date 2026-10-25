@@ -17,15 +17,10 @@ local log = app.logger
 ---@field lines table<integer, string> recent chat lines by link id
 ---@field nextId integer
 ---@field buttons table<Frame, Button> the copy button of each chat window
-local module = { optionsTab = "windows" }
+local module = {}
 
 ---@class SeamlessChat.CopySettings : SeamlessChat.FeatureSettings
-app.copy = app.features:New(
-    "copy",
-    module,
-    L["Copy chat"],
-    L["Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C."]
-) --[[@as SeamlessChat.Copy]]
+app.copy = app.features:New("copy", module) --[[@as SeamlessChat.Copy]]
 
 -- Lines kept for their links, the quick way to find them (FindLine).
 local MAX_LINES = 1000
@@ -313,35 +308,4 @@ end
 
 function module:Refresh()
     self:UpdateButtons()
-end
-
-function module:GetOptions()
-    return {
-        clickTimestamp = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Click a timestamp to copy its message"],
-            desc = L["Needs Timestamps to be enabled."],
-        },
-        showButton = {
-            type = "toggle",
-            order = 20,
-            width = "full",
-            name = L["Copy button in the chat windows"],
-            desc = L["A button in the top right corner of each chat window, shown while the mouse is over the chat. It opens a window with the last messages, selected, ready for Ctrl+C."],
-        },
-        windowLines = {
-            type = "range",
-            order = 30,
-            width = "double",
-            name = L["Messages in the copy window"],
-            desc = L["How many of the last messages the copy window shows, at most as many as the chat window keeps (Chat history)."],
-            min = 10,
-            max = 10000,
-            softMax = 2000,
-            step = 1,
-            bigStep = 50,
-        },
-    }
 end

@@ -75,7 +75,9 @@ NORMAL_FONT_COLOR = { r = 1, g = 0.82, b = 0 }
 module:ShowTooltip()
 assert(rows["Rested:"] == "500 (20.00%)")
 assert(rows["Time to max rested:"] == "13d 8h 0m")
-local options = module:Options()
-assert(options.options.restedXPCap and options.options.restedXPRate)
+app.optionPages = {}
+assert(loadfile("SeamlessUI/src/options/general.lua"))("SeamlessUI", app)
+local options = app.optionPages.general.config.args.xpBarTooltip
+assert(options.args.restedXPCap and options.args.restedXPRate)
 assert(options.settings() == profile)
 print("UI XP tooltip ownership and migration OK")

@@ -278,6 +278,9 @@ function methods:SetTextToFit(value)
     self.text = value
 end
 assert(loadfile("Seamless/src/config/badges.lua"))("Seamless", app)
+app.config.NotifyChange = function(_, name)
+    LibStub("AceConfigRegistry-3.0"):NotifyChange(name)
+end
 assert(loadfile("Seamless/src/config/controls.lua"))("Seamless", app)
 local profile = { enabled = true, amount = 5, choice = "b", input = "old" }
 local root = {

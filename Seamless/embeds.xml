@@ -14,9 +14,7 @@
 	<Include file="lib\AceComm-3.0\AceComm-3.0.xml" />
 	<Include file="lib\AceSerializer-3.0\AceSerializer-3.0.xml" />
 	<Include file="lib\AceTab-3.0\AceTab-3.0.xml" />
-	<!-- Options: AceConfigDialog renders with AceGUI; AceDBOptions builds the Profiles tabs. -->
-	<Include file="lib\AceGUI-3.0\AceGUI-3.0.xml" />
-	<Include file="lib\AceConfig-3.0\AceConfig-3.0.xml" />
+	<!-- AceDBOptions supplies only the Profiles page declaration; Seamless owns rendering. -->
 	<Include file="lib\AceDBOptions-3.0\AceDBOptions-3.0.xml" />
 
 	<Script file="lib\LibDBIcon-1.0\LibDataBroker-1.1\LibDataBroker-1.1.lua" />

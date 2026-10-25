@@ -1,5 +1,6 @@
 -- Annotations only; not loaded by the TOC.
 ---@class SeamlessCastbar
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessCastbar.Addon
 ---@field dbDefaults AceDB.Schema
@@ -34,3 +35,6 @@
 
 ---@class SeamlessCastbar.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessCastbar.Addon)
+
+---@class SeamlessCastbar
+---@field PlayerCastbarPosition fun(): table?

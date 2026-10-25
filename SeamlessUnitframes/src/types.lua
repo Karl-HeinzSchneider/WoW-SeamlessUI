@@ -6,15 +6,15 @@
 -- When a file adds something to `app`, add a matching ---@field here.
 
 ---@class SeamlessUnitframes
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field previewCharacters SeamlessUnitframes.PreviewCharacters
 ---@field core SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessUnitframes.Addon
 ---@field dbDefaults SeamlessUnitframes.DBDefaults
 ---@field db SeamlessUnitframes.DB
----@field options SeamlessUnitframes.Options  # AceConfig panel under Settings > AddOns > Seamless
+---@field options SeamlessUnitframes.Options  # Custom settings pages
 ---@field editMode SeamlessUnitframes.EditMode  # Style sections in the unit frames' Edit Mode settings
----@field StyleGroups fun(key: string): SeamlessUnitframes.StyleGroup[]
 ---@field StyleOptions fun(entry: SeamlessUnitframes.UnitFrame): SeamlessCore.EditModeSystemOption[]
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
@@ -34,3 +34,11 @@
 ---@field profile SeamlessUnitframes.DB.Profile
 ---@field char SeamlessUnitframes.DB.Char
 ---@field global SeamlessUnitframes.DB.Global
+
+---@class SeamlessUnitframes
+---@field UnitFramePositionOptions fun(entry: SeamlessUnitframes.UnitFrame): table?
+
+---@class SeamlessUnitframes.DBDefaults : AceDB.Schema
+---@class SeamlessUnitframes.DB.Profile
+---@class SeamlessUnitframes.DB.Char
+---@class SeamlessUnitframes.DB.Global

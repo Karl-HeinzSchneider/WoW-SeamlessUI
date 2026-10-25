@@ -121,3 +121,5 @@ In game: tracking on, a second window with another statistic, current/overall se
 scrolling in a group, drag/resize/hide/show, deactivating every window, reload and profile
 switch/reset, restricted combat values in and out of combat, inherited versus overridden settings,
 windows anchored to each other, Edit Mode dragging, arrow keys, sliders, layouts and reload.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

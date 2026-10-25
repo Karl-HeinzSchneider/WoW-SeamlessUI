@@ -6,6 +6,7 @@
 -- When a file adds something to `app`, add a matching ---@field here.
 
 ---@class SeamlessTooltip
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field core SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessTooltip.Addon
@@ -16,7 +17,7 @@
 ---@field unitTooltip SeamlessTooltip.UnitTooltip  # the unit and line helpers of the unit text features
 ---@field border SeamlessTooltip.Border  # the border color features paint by a tooltip's content
 ---@field features SeamlessTooltip.Features  # the registry of tooltip features (src\features\), each switchable in the options
----@field options SeamlessTooltip.Options  # AceConfig panel under Settings > AddOns > Seamless
+---@field options SeamlessTooltip.Options  # Custom settings pages
 
 -- The AceDB object, with profile/char/global narrowed to the shape of app.dbDefaults.
 -- Ace3 API types (AceAddon, AceDBObject-3.0, ...) come from the ketho.wow-api extension.
@@ -24,3 +25,8 @@
 ---@field profile SeamlessTooltip.DB.Profile
 ---@field char SeamlessTooltip.DB.Char
 ---@field global SeamlessTooltip.DB.Global
+
+---@class SeamlessTooltip.DBDefaults : AceDB.Schema
+---@class SeamlessTooltip.DB.Profile
+---@class SeamlessTooltip.DB.Char
+---@class SeamlessTooltip.DB.Global

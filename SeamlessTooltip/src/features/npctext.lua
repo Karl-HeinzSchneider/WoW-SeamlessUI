@@ -8,22 +8,7 @@ local unitTooltip = app.unitTooltip
 
 -- Changes the text lines of NPC tooltips: a short level line ("10 Beast (Elite)") with the level in
 -- its difficulty color and the creature type moved into it, the faction left out.
-local feature = app.features:NewFeature("NpcText", {
-    category = "units",
-    name = L["NPC text"],
-    desc = L["Changes the text of NPC tooltips."],
-    order = 20,
-    options = {
-        shortLevel = {
-            type = "toggle",
-            order = 10,
-            width = "full",
-            name = L["Short level line"],
-            desc = L['Shows "Level 10 (Elite)" and the creature type line ("Beast") as "10 Beast (Elite)", the level in its difficulty color.'],
-        },
-        faction = unitTooltip.FactionOption(20),
-    },
-})
+local feature = app.features:NewFeature("NpcText")
 
 -- Per tooltip whose lines are being processed: whether its level line was handled yet, its pieces,
 -- and the creature type taken from its own line. The type line may come before or after the level

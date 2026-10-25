@@ -8,12 +8,7 @@ local lines = app.lines
 
 -- Adds a creature's family (Wolf, Cat, Spider, ...) to its tooltip; handy for hunters looking for a
 -- pet.
-local feature = app.features:NewFeature("CreatureFamily", {
-    category = "units",
-    name = L["Creature family"],
-    desc = L["Adds a beast's family (Wolf, Cat, Spider, ...) to its tooltip."],
-    order = 27,
-})
+local feature = app.features:NewFeature("CreatureFamily")
 
 function feature:OnInitialize()
     self:AddTooltipPostCall(Enum.TooltipDataType.Unit, "OnUnitTooltip")

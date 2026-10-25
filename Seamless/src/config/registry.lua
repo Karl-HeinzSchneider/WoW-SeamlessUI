@@ -3,42 +3,14 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local config = { categories = {}, collapsed = {}, pages = {}, rows = {}, optionInfo = {} }
-config.optionTags = setmetatable({}, { __mode = "k" })
 app.config = config
 
-function config:GetOptionTags(option)
-    local saved = self.optionTags[option] or {}
-    local new, blizzard, editMode = option.new, option.blizzard, option.editMode
-    if new == nil then
-        new = saved.new
-    end
-    if blizzard == nil then
-        blizzard = saved.blizzard
-    end
-    if editMode == nil then
-        editMode = saved.editMode
-    end
-    local default = option.default
-    if default == nil then
-        default = saved.default
-    end
-    return { new = new, blizzard = blizzard, editMode = editMode, default = default }
-end
-
--- These convenience flags are ours, not AceConfig schema fields. `editMode` marks
--- settings stored in the Edit Mode layout rather than the profile. `default` is the
--- value (or a function returning it) the custom window's tooltip shows; it wins
--- over the addon's `tooltip` resolver, for values only the game knows.
-function config:NormalizeOptionTags(option)
-    if option.new ~= nil or option.blizzard ~= nil or option.editMode ~= nil or option.default ~= nil then
-        assert(option.new == nil or type(option.new) == "boolean", "Option new must be a boolean")
-        assert(option.blizzard == nil or type(option.blizzard) == "boolean", "Option blizzard must be a boolean")
-        assert(option.editMode == nil or type(option.editMode) == "boolean", "Option editMode must be a boolean")
-        self.optionTags[option] = self:GetOptionTags(option)
-        option.new, option.blizzard, option.editMode, option.default = nil, nil, nil, nil
-    end
-    for _, child in pairs(option.args or {}) do
-        self:NormalizeOptionTags(child)
+-- Defer redraw until the originating widget callback has finished.
+function config:NotifyChange(name)
+    for _, page in pairs(self.pages) do
+        if not name or page.optionsAppName == name then
+            page.optionsDirty = true
+        end
     end
 end
 

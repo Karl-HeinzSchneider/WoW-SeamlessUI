@@ -178,6 +178,12 @@ local app = {
 }
 dofile("src/tests/locale-support.lua")
 assert(loadfile("SeamlessUI/src/features/fpsdisplay.lua"))("SeamlessUI", app)
+app.optionPages = {}
+app.core.GetPositionOptions = function()
+    return { type = "group", args = {} }
+end
+app.core.RefreshOptions = function() end
+assert(loadfile("SeamlessUI/src/options/fpsDisplay.lua"))("SeamlessUI", app)
 module:OnEnable()
 assert(FramerateFrame.points[1][2] == frame, "counter must follow custom anchor")
 assert(not frame.shown, "anchor must hide outside Edit Mode")

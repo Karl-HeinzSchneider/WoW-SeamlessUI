@@ -19,4 +19,8 @@ src\features\blizzardposition.lua
 src\features\systemoptions.lua
 src\features\blizzardeditmode.lua
 src\features\fpsdisplay.lua
-src\core\options.lua
+
+src\options\general.lua
+src\options\blizzardEditMode.lua
+src\options\fpsDisplay.lua
+src\options\register.lua

@@ -11,17 +11,11 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field unstampedSince number GetTime() since when lines went in without a stamp
 ---@field cachedTime integer? time() the cached stamp is for
 ---@field cachedStamp string?
-local module = { optionsTab = "messages" }
+local module = {}
 
 ---@class SeamlessChat.TimestampSettings : SeamlessChat.FeatureSettings
-local defaults = app.dbDefaults.profile.features.timestamps
 
-local timestamps = app.features:New(
-    "timestamps",
-    module,
-    L["Timestamps"],
-    L["Shows the time in front of every chat message. Replaces the game's own chat timestamps while enabled."]
-) --[[@as SeamlessChat.Timestamps]]
+local timestamps = app.features:New("timestamps", module) --[[@as SeamlessChat.Timestamps]]
 
 -- Where the game's chat timestamp setting was before this feature switched it off (account-wide,
 -- like the CVar), so disabling the feature can restore it.
@@ -50,7 +44,7 @@ local function formatStamp(settings, timeValue, pattern)
     -- TimeUtil.BetterDate localizes %p; a broken custom format falls back to the default.
     local ok, text = pcall(TimeUtil.BetterDate, pattern, timeValue)
     if not ok then
-        text = date(defaults.format, timeValue)
+        text = date(app.dbDefaults.profile.features.timestamps.format, timeValue)
     end
     local brackets = BRACKETS[settings.brackets] or BRACKETS.square
     text = brackets[1] .. text .. brackets[2]
@@ -165,87 +159,10 @@ function module:Refresh()
     self.cachedTime = nil
 end
 
-function module:GetOptions()
-    local settings = function()
-        return self:GetSettings() --[[@as SeamlessChat.TimestampSettings]]
-    end
-
-    return {
-        preview = {
-            type = "description",
-            order = 5,
-            fontSize = "medium",
-            name = function()
-                return L["Preview:  %s [Thrall]: Lok'tar!\n"]:format(formatStamp(settings(), EXAMPLE_TIME))
-            end,
-        },
-        format = {
-            type = "select",
-            order = 10,
-            name = L["Format"],
-            values = function()
-                local values = { custom = L["Custom"] }
-                for _, pattern in ipairs(FORMATS) do
-                    values[pattern] = TimeUtil.BetterDate(pattern, EXAMPLE_TIME)
-                end
-                return values
-            end,
-            sorting = { FORMATS[1], FORMATS[2], FORMATS[3], FORMATS[4], "custom" },
-        },
-        customFormat = {
-            type = "input",
-            order = 11,
-            name = L["Custom format"],
-            desc = L["A date() pattern: %H hour (00-23), %I hour (01-12), %M minute, %S second, %p AM/PM, %d day, %m month."],
-            hidden = function()
-                return settings().format ~= "custom"
-            end,
-            validate = function(_, value)
-                if value == "" or not pcall(date, value) then
-                    return L["Not a valid time format."]
-                end
-                return true
-            end,
-        },
-        brackets = {
-            type = "select",
-            order = 20,
-            name = L["Brackets"],
-            values = function()
-                local values = {}
-                for key, brackets in pairs(BRACKETS) do
-                    values[key] = brackets[1] .. "18:14" .. brackets[2]
-                end
-                return values
-            end,
-            sorting = BRACKET_ORDER,
-        },
-        colored = {
-            type = "toggle",
-            order = 30,
-            name = L["Own color"],
-            desc = L["Color the timestamp instead of showing it in the message's color."],
-        },
-        color = {
-            type = "color",
-            order = 31,
-            name = L["Color"],
-            disabled = function()
-                return not (settings().enabled and settings().colored)
-            end,
-            get = function()
-                local color = settings().color
-                return color.r, color.g, color.b
-            end,
-            set = function(_, r, g, b)
-                local color = settings().color
-                color.r, color.g, color.b = r, g, b
-                self:Refresh()
-            end,
-        },
-    }
-end
-
 -- Lines printed before the settings are known go in unstamped; OnInitialize backfills them.
 timestamps.stamping = false
 timestamps.unstampedSince = 0
+
+function module:FormatStamp(settings, timestamp)
+    return formatStamp(settings, timestamp)
+end

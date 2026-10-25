@@ -1,5 +1,6 @@
 -- Annotations only; not loaded by the TOC.
 ---@class SeamlessDarkmode
+---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessDarkmode.Addon
 ---@field dbDefaults AceDB.Schema

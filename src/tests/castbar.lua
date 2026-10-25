@@ -270,6 +270,21 @@ app.addon = {
     end,
 }
 Enum = { EditModeSystem = { CastBar = 11 } }
+local coreApp = { addon = app.core, config = {} }
+assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
+assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
+app.optionPages = {}
+app.dbDefaults = {}
+app.position = { GetOptions = function() end }
+load("options/shared.lua")
+load("options/general.lua")
+load("options/player.lua")
+load("options/target.lua")
+load("options/focus.lua")
+for _, page in pairs(app.optionPages) do
+    app.core:PrepareSettingsOptions(page.config)
+end
+app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages)
 load("editmode.lua")
 app.RegisterEditMode()
 app.RegisterEditMode()

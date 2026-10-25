@@ -16,6 +16,12 @@ src\text.lua
 src\ticks.lua
 src\hold.lua
 src\position.lua
-src\options.lua
 src\editmode.lua
 src\preview.lua
+
+src\options\shared.lua
+src\options\general.lua
+src\options\player.lua
+src\options\target.lua
+src\options\focus.lua
+src\options\register.lua

@@ -7,7 +7,7 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
 
 ## Ownership
 
-- `src/db.lua`: defaults. `src/core.lua`: lifecycle, `app.Buttons()` (main and seven multi bars),
+- `src/options/`: page defaults and declarations; `src/db.lua`: schema skeleton. `src/core.lua`: lifecycle, `app.Buttons()` (main and seven multi bars),
   hooks and restoration. Filter the global range hook because pet buttons call it too.
 - `src/icons.lua`: range tint before mana tint; restore the client's white/light-blue/grey
   usability colors. Leave secret values alone.
@@ -20,7 +20,7 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   offsets in place), outside combat only (re-applied on `PLAYER_REGEN_ENABLED`), restored to 1 on
   disable. The same binding goes to the settings tab and, through
   `core:RegisterEditModeSystemScale`, to SeamlessUI's Edit Mode Position section.
-- `src/options.lua`: on General, a Show action bars button opening the game's Action Bars
+- `src/options/`: on General, a Show action bars button opening the game's Action Bars
   settings (`Settings.OpenToCategory(Settings.ACTION_BAR_CATEGORY_ID)`), then the feature groups;
   then one tab per native Edit Mode frame (action bars 1-8, both XP / reputation bars, pet action bar, leave vehicle button, left and right endcap) holding
   Core's native Position and scale group. Scale is Icon Size for action bars, Size for status bars,
@@ -49,3 +49,5 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
 Manual validation: target a mob and step in and out of range; run out of mana, rage and energy;
 check every multi bar, page switching (stance, stealth), bound/unbound buttons, Shift/Ctrl/Alt,
 mouse button, wheel and num pad bindings, toggling each option and switching profiles.
+
+All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

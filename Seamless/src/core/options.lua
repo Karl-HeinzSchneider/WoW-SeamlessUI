@@ -50,6 +50,7 @@ local function RegisterConfigPages(name, title, args, flags, root)
             new = tab.new,
             blizzard = tab.blizzard,
             editMode = tab.editMode,
+            editModeVisibility = tab.editModeVisibility,
             create = function(page)
                 app.config:CreateOptionsPage(page, root, key, name)
                 page.optionsAppName = name

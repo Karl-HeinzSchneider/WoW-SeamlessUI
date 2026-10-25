@@ -14,6 +14,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field changed? fun() Reapply subordinate settings.
 ---@field args? table<string, SeamlessCore.SettingsOption>
 ---@field editModeFrame? SeamlessCore.FrameResolver Native frame whose Edit Mode details consume this config.
+---@field editModeVisibility? fun(value?: boolean): boolean? Read with no argument; write with a boolean. Standalone full window header only.
 ---@field buttonSection? SeamlessCore.EditModeButtonSection Explicit Edit Mode footer for this frame; never inferred or shown in the settings window.
 
 ---@class SeamlessCore.SettingsPage
@@ -162,6 +163,10 @@ function app.addon:PrepareSettingsOptions(option)
         end
     end
     assert(option.editModeFrame == nil or type(option.editModeFrame) == "function", "editModeFrame must be a resolver")
+    assert(
+        option.editModeVisibility == nil or type(option.editModeVisibility) == "function",
+        "editModeVisibility must be a function"
+    )
     if option.buttonSection ~= nil then
         local section = option.buttonSection
         assert(

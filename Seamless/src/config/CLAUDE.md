@@ -186,6 +186,14 @@ Larger Frame).
 
 ## Edit Mode button sections
 
+Frame page config groups may declare `editModeVisibility(value)`: with no argument it returns
+a boolean; with a boolean it changes the frame's Edit Mode visibility. The full standalone
+window shows this as a checkbox at the right of its page header; compact mode and Edit Mode
+dialogs never show it. Omitting the function hides it. Reads and writes use `pcall`; writes
+run through `C_Timer.After(0)` and are blocked in combat. This defers the click stack but does
+not guarantee untainted execution. Visible state refreshes every 0.2 seconds to reflect external
+changes. The Pet page uses LibEditModeOverride's account-wide ShowPetFrame setting.
+
 A frame page's config group may declare `buttonSection`, a
 `SeamlessCore.EditModeButtonSection`. Declare it in that frame's `src/options/<frame>.lua`:
 

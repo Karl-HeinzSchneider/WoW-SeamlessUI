@@ -199,6 +199,9 @@ for _, name in ipairs({
     "EnableMouseWheel",
     "SetSelected",
     "SetNormalAtlas",
+    "SetCheckedTexture",
+    "SetChecked",
+    "SetEnabled",
     "SetPushedAtlas",
     "SetHighlightAtlas",
     "SetAlpha",
@@ -416,3 +419,65 @@ assert(config.navigationBar:IsShown() and config.navigationBar.alpha == 0.45)
 config.navigation:SetHeight(100)
 assert(config.navigationBar.scrollAllowed and config.navigationBar.alpha == 1)
 print("Persistent navigation scrollbar OK")
+
+-- Header callbacks are optional, protected and deferred; queued writes retain their page.
+local pending, state, combat, warnings = nil, true, false, 0
+C_Timer = {
+    After = function(_, callback)
+        pending = callback
+    end,
+}
+function InCombatLockdown()
+    return combat
+end
+app.logger = {
+    warn = function()
+        warnings = warnings + 1
+    end,
+}
+function methods:SetChecked(value)
+    self.checked = value
+end
+function methods:GetChecked()
+    return self.checked
+end
+function methods:SetEnabled(value)
+    self.enabled = value
+end
+assert(not config.editModeVisibility:IsShown())
+config.categories.Page.editModeVisibility = function(value)
+    if value ~= nil then
+        state = value
+    end
+    return state
+end
+config:RefreshEditModeVisibility()
+local checkbox = config.editModeVisibility
+assert(checkbox:IsShown() and checkbox.checked and checkbox.enabled)
+checkbox.checked = false
+checkbox.scripts.OnClick()
+assert(state and pending)
+pending()
+assert(not state and not checkbox.checked)
+combat = true
+checkbox.checked = true
+checkbox.scripts.OnClick()
+pending()
+assert(not state and not checkbox.enabled)
+combat = false
+config.categories.Page.editModeVisibility = function()
+    error("callback failed")
+end
+config:RefreshEditModeVisibility()
+assert(warnings == 1 and not checkbox.enabled)
+config.categories.Page.editModeVisibility = function()
+    return true
+end
+config:SetMinimized(true)
+assert(not checkbox:IsShown())
+config:SetMinimized(false)
+assert(checkbox:IsShown())
+config.categories.Page.editModeVisibility = nil
+config:RefreshEditModeVisibility()
+assert(not checkbox:IsShown())
+print("Optional protected Edit Mode visibility header OK")

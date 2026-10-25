@@ -25,6 +25,7 @@ L["Defaults"] = true
 L["Development Build"] = true
 L["Disabled"] = true
 L["EDIT MODE"] = true
+L["Edit Mode Visibility"] = true
 L["Enable"] = true
 L["Enabled"] = true
 L["Error"] = true

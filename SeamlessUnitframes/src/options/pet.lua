@@ -33,6 +33,14 @@ app.optionPages.pet = {
         },
     },
     config = {
+        editModeVisibility = function(value)
+            local lib = LibStub("LibEditModeOverride-1.0")
+            local setting = Enum.EditModeAccountSetting.ShowPetFrame
+            if value ~= nil then
+                lib:SetGlobalSetting(setting, value and 1 or 0)
+            end
+            return lib:GetGlobalSetting(setting) == 1
+        end,
         editModeFrame = function()
             return PetFrame
         end,

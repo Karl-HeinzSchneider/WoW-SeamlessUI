@@ -67,7 +67,7 @@ local function toolbar(parent)
         },
         {
             L["BuyMeACoffee"],
-            L["Support further development with a slice of pizza!"],
+            L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"],
             "https://buymeacoffee.com/karlheinzschneider",
             "coffee",
             18,

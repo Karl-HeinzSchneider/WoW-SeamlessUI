@@ -23,5 +23,13 @@
 
 ---@class SeamlessUI.DBDefaults : AceDB.Schema
 ---@class SeamlessUI.DB.Profile
+---@field minimap SeamlessUI.MinimapSettings
+---@field hideMinimapDayNight boolean
+---@class SeamlessUI.MinimapSettings
+---@field hideAddonCompartment boolean
+---@field hideTracking boolean
+---@field hideCalendar boolean
+---@field hideZoneText boolean
+---@field hideHeader boolean
 ---@class SeamlessUI.DB.Char
 ---@class SeamlessUI.DB.Global

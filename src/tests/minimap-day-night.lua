@@ -1,10 +1,22 @@
 -- Run from the repository root: lua src/tests/minimap-day-night.lua
-local module = { hooks = {} }
+local module = { hooks = {}, functionHooks = {} }
 function module:IsEnabled()
     return true
 end
-function module:IsHooked(frame)
-    return self.hooks[frame] ~= nil
+function module:IsHooked(frame, method)
+    if method == "OnShow" then
+        return self.hooks[frame] ~= nil
+    end
+    return self.functionHooks[frame] and self.functionHooks[frame][method] ~= nil
+end
+function module:SecureHook(object, method, handler)
+    self.functionHooks[object] = self.functionHooks[object] or {}
+    local original = object[method]
+    self.functionHooks[object][method] = original
+    object[method] = function(...)
+        original(...)
+        self[handler](self)
+    end
 end
 function module:SecureHookScript(frame, _, method)
     self.hooks[frame] = method
@@ -13,6 +25,12 @@ function module:RegisterEvent() end
 function module:UnregisterAllEvents() end
 function module:UnhookAll()
     self.hooks = {}
+    for object, methods in pairs(self.functionHooks) do
+        for method, original in pairs(methods) do
+            object[method] = original
+        end
+    end
+    self.functionHooks = {}
 end
 function IsLoggedIn()
     return true
@@ -24,7 +42,7 @@ local app = {
             return module
         end,
     },
-    db = { profile = { hideMinimapDayNight = false } },
+    db = { profile = { hideMinimapDayNight = false, minimap = {} } },
 }
 assert(loadfile("SeamlessUI/src/features/minimap.lua"))("SeamlessUI", app)
 -- Load the real page and verify Edit Mode uses its Style control and callbacks.
@@ -86,7 +104,7 @@ assert(row.get(), "Edit Mode writes the shared profile preference")
 assert(not frame.shown, "toggle hides the indicator")
 frame:Show()
 assert(not frame.shown, "native Show cannot undo the preference")
-app.db.profile = { hideMinimapDayNight = false }
+app.db.profile = { hideMinimapDayNight = false, minimap = {} }
 module:OnProfileRefresh()
 assert(frame.shown, "profile change restores the indicator")
 app.db.profile.hideMinimapDayNight = true
@@ -96,3 +114,113 @@ assert(frame.shown, "addon disable restores the indicator")
 module:OnEnable()
 assert(not frame.shown, "re-enable reapplies the preference")
 print("Minimap day/night visibility OK")
+
+local function newFrame()
+    return setmetatable({ shown = true }, { __index = frame })
+end
+local cluster = MinimapCluster
+AddonCompartmentFrame, GameTimeFrame = newFrame(), newFrame()
+cluster.Tracking, cluster.ZoneTextButton, cluster.IndicatorFrame = newFrame(), newFrame(), newFrame()
+local container = { width = 215, height = 226, scale = 1 }
+cluster.MinimapContainer = container
+function container:GetWidth()
+    return self.width
+end
+function container:GetHeight()
+    return self.height
+end
+function container:GetScale()
+    return self.scale
+end
+function container:ClearAllPoints()
+    self.point = nil
+end
+function container:SetPoint(...)
+    self.point = { ... }
+end
+function cluster:GetFixedSize()
+    return self.fixedWidth, self.fixedHeight
+end
+function cluster:SetFixedSize(width, height)
+    self.fixedWidth, self.fixedHeight = width, height
+end
+function cluster:GetWidthPadding()
+    return 20
+end
+function cluster:GetHeightPadding()
+    return 0
+end
+function cluster:Layout()
+    self.width = self.fixedWidth or (container.width * container.scale + 20)
+    self.height = self.fixedHeight or (container.height * container.scale + 30)
+end
+function cluster:GetSettingValueBool()
+    return self.headerUnderneath
+end
+function cluster:SetHeaderUnderneath(value)
+    self.headerUnderneath = value
+    container:SetPoint(value and "BOTTOM" or "TOP", self, value and "BOTTOM" or "TOP", 10, value and 30 or -30)
+end
+function cluster:SetEditModeScale(scale)
+    container.scale = scale
+    self:SetHeaderUnderneath(self.headerUnderneath)
+    self:Layout()
+end
+function cluster:UpdateMinimapConfig()
+    container.width, container.height = 240, 240
+end
+Enum.EditModeMinimapSetting = { HeaderUnderneath = 1 }
+local controls = {
+    { "hideAddonCompartment", AddonCompartmentFrame },
+    { "hideTracking", cluster.Tracking },
+    { "hideCalendar", GameTimeFrame },
+    { "hideZoneText", cluster.ZoneTextButton },
+}
+local rows = {}
+for _, option in ipairs(registration.options) do
+    rows[option.key] = option
+end
+assert(#registration.options == 6, "all Style settings reach Edit Mode")
+-- Exhaust every combination of individual switches, independently of the header switch.
+for combination = 0, 15 do
+    for index, control in ipairs(controls) do
+        rows[control[1]].set(math.floor(combination / 2 ^ (index - 1)) % 2 == 1)
+    end
+    for _, control in ipairs(controls) do
+        assert(control[2]:IsShown() == not rows[control[1]].get(), "independent button visibility")
+    end
+    rows.hideHeader.set(true)
+    for _, control in ipairs(controls) do
+        assert(not control[2]:IsShown(), "header overrides individual choices")
+    end
+    assert(not cluster.IndicatorFrame:IsShown())
+    assert(cluster.height == container.height * container.scale, "header space removed")
+    GameTimeFrame:Show()
+    assert(not GameTimeFrame:IsShown(), "native Show respects header override")
+    rows.hideHeader.set(false)
+    for _, control in ipairs(controls) do
+        assert(control[2]:IsShown() == not rows[control[1]].get(), "header restores individual choices")
+    end
+    assert(cluster.IndicatorFrame:IsShown() and cluster.fixedHeight == nil)
+end
+for _, underneath in ipairs({ false, true }) do
+    cluster:SetHeaderUnderneath(underneath)
+    rows.hideHeader.set(true)
+    for _, scale in ipairs({ 0.75, 1, 1.5 }) do
+        cluster:SetEditModeScale(scale)
+        assert(cluster.height == container.height * scale, "compact bounds follow native scale")
+        assert(container.point[1] == "TOP" and container.point[5] == 0, "no header anchor gap")
+    end
+    cluster:UpdateMinimapConfig()
+    assert(cluster.width == 240 * container.scale + 20, "bounds follow rotation geometry")
+    rows.hideHeader.set(false)
+    assert(container.point[1] == (underneath and "BOTTOM" or "TOP"), "native header placement restored")
+end
+rows.hideHeader.set(true)
+app.db.profile = { hideMinimapDayNight = false, minimap = {} }
+module:OnProfileRefresh()
+assert(cluster.fixedHeight == nil and GameTimeFrame:IsShown(), "profile restores native header")
+rows.hideHeader.set(true)
+module:OnDisable()
+assert(cluster.fixedHeight == nil and cluster.ZoneTextButton:IsShown(), "disable restores layout and visibility")
+print("Minimap visibility combinations, Edit Mode rows, header bounds, scale and restoration OK")

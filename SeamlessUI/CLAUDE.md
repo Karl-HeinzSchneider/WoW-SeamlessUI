@@ -104,6 +104,15 @@ Run `lua src/tests/fps-display.lua`.
 
 ## Adding improvements
 
+`features/minimap.lua` owns minimap visibility. `options/minimap.lua` declares the page and
+Style controls; Edit Mode derives its Style rows from that declaration. New visibility settings
+live in profile `minimap`; the existing `hideMinimapDayNight` key stays at its original path.
+Individual switches combine independently. `hideHeader` overrides the header buttons and status
+indicators, fits the cluster's fixed bounds to the scaled map container, and removes its header
+anchor gap. Native scale, header placement and rotation updates reapply that compact layout.
+Restoring the header restores the native layout sizing and current header placement; disabling
+the addon restores frames it hid. Run `lua src/tests/minimap-day-night.lua`.
+
 `editmodekeyboard.lua` owns the General option "Pass unused Edit Mode keys through"
 (`editModeKeyboard`, default on), independently of the Edit Mode extensions toggle. Native
 key handlers stay intact; arrows, Escape and Print Screen are consumed, other keys propagate.

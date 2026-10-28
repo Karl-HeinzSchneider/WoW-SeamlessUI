@@ -33,6 +33,7 @@ app.optionPages.player = {
                     nameDisplay = "full",
                     classIcon = false,
                     hidePvPIcon = false,
+                    levelDisplay = "default",
                     portraitDragon = "none",
                 },
             },
@@ -124,6 +125,22 @@ app.optionPages.player = {
                         set = function(_, value)
                             app.db.profile.unitFrames[key].healthBarColor = value
                             app.healthColor:Refresh()
+                            changed()
+                        end,
+                    },
+                    player_levelDisplay = {
+                        order = 35,
+                        type = "select",
+                        name = L["Level display"],
+                        desc = L["Sets the size of the level number and its circle background. Smaller uses 70% of the default size. Hidden also hides the high-level skull. Changes made during combat apply when combat ends."],
+                        values = { default = L["Default"], smaller = L["Smaller"], hidden = L["Hidden"] },
+                        sorting = { "default", "smaller", "hidden" },
+                        get = function()
+                            return app.db.profile.unitFrames[key].levelDisplay
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].levelDisplay = value
+                            app.levelDisplay:Refresh()
                             changed()
                         end,
                     },

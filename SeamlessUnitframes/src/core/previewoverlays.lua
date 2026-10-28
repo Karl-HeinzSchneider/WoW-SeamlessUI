@@ -32,10 +32,6 @@ local function Create(key)
     local frame = CreateFrame("Frame", appName .. app.unitFrames:Get(key).frameName .. "Preview", UIParent)
     frame:Hide()
     frame:EnableMouse(false)
-    frame:SetFrameStrata("MEDIUM")
-    -- The client's selection is MEDIUM/1000. All our children stay below that box and
-    -- above the LOW native unit-frame contents, without changing either one's level.
-    frame:SetFrameLevel(990)
     frame:SetSize(key == "pet" and 120 or 232, key == "pet" and 49 or 100)
     frame.unit = "player"
     frame.portrait = Texture(frame)
@@ -49,7 +45,7 @@ local function Create(key)
     frame.ReputationColor = Texture(frame, "ARTWORK")
     local content = CreateFrame("Frame", nil, frame)
     content:SetAllPoints(frame)
-    content:SetFrameLevel(992)
+    frame.Content = content
     frame.name = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     frame.Name = frame.name
     frame.LevelBackground = Texture(content, "OVERLAY")
@@ -58,7 +54,6 @@ local function Create(key)
     frame.LevelText:SetPoint("CENTER", frame.LevelBackground, "CENTER")
     for _, kind in ipairs({ "Health", "Mana" }) do
         local bar = CreateFrame("StatusBar", nil, frame)
-        bar:SetFrameLevel(991)
         bar.unit, bar.unitFrame, bar.lockColor = "player", frame, true
         bar:SetStatusBarTexture("Interface/Buttons/WHITE8X8")
         bar.Background = Texture(bar)
@@ -76,6 +71,29 @@ local function Create(key)
     frame.healthbar = frame.HealthBar
     module.frames[key] = frame
     return frame
+end
+
+-- Template levels can change at runtime when the client sets up its systems. Follow
+-- the actual selection instead of assuming the XML's MEDIUM/1000 survives setup.
+-- Only our own frames move in the draw stack; native frames and selections stay untouched.
+local function Layer(frame, real)
+    local selection = real.Selection
+    if not Readable(selection) then
+        return false
+    end
+    local strata, level = selection:GetFrameStrata(), selection:GetFrameLevel()
+    if not Readable(strata) or not Readable(level) or level < 3 then
+        return false
+    end
+    frame:SetFrameStrata(strata)
+    frame:SetFrameLevel(level - 3)
+    frame.HealthBar:SetFrameStrata(strata)
+    frame.ManaBar:SetFrameStrata(strata)
+    frame.Content:SetFrameStrata(strata)
+    frame.HealthBar:SetFrameLevel(level - 2)
+    frame.ManaBar:SetFrameLevel(level - 2)
+    frame.Content:SetFrameLevel(level - 1)
+    return true
 end
 
 local function Geometry(frame, key, character)
@@ -185,7 +203,7 @@ function module:Refresh()
             visible = character ~= nil
             if visible then
                 local scale, parentScale = real:GetEffectiveScale(), UIParent:GetEffectiveScale()
-                if Readable(scale) and Readable(parentScale) then
+                if Readable(scale) and Readable(parentScale) and Layer(frame, real) then
                     frame:SetScale(scale / parentScale)
                     Place(frame, real, "TOPLEFT", "TOPLEFT", 0, 0)
                     Geometry(frame, key, character)

@@ -120,8 +120,10 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - `src/core/previewoverlays.lua` owns visual-only UIParent children named
   `SeamlessUnitframes<frameName>Preview`. They follow the native frame's anchor/effective scale
   and visibility only in Edit Mode, outside combat, with the addon enabled and a VIP available.
-  MEDIUM/990 roots and children below 1000 place them above the LOW native artwork and below
-  the client's MEDIUM/1000 selection. Never register them as movers, enable mouse input, parent
+  Roots use the native selection's current strata and level minus three, bars minus two and
+  content minus one. Read the actual selection at runtime; never assume the XML's MEDIUM/1000
+  survives client setup. Hide overlays until a readable selection with room for those levels exists.
+  Never register them as movers, enable mouse input, parent
   them to native frames, or write native regions/scripts/state. Fixed geometry and existing
   layout artwork support both skins; explicit preview adapters render names, portraits,
   health/power, level and portrait decoration. A session-only driver checks visibility/scale

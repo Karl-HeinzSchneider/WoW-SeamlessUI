@@ -100,6 +100,23 @@ for _, name in pairs(names) do
     _G[name] = setmetatable({
         visible = true,
         scale = 1.2,
+        Selection = setmetatable({
+            strata = "MEDIUM",
+            level = 20,
+            GetFrameStrata = function(self)
+                return self.strata
+            end,
+            GetFrameLevel = function(self)
+                return self.level
+            end,
+        }, {
+            __index = function(_, key)
+                error("Forbidden selection access: " .. key)
+            end,
+            __newindex = function()
+                error("Forbidden selection write")
+            end,
+        }),
         IsShown = function(self)
             return self.visible
         end,
@@ -169,13 +186,26 @@ editing = true
 callbacks.enter()
 for key, frame in pairs(module.frames) do
     assert(frame.shown and frame.parent == UIParent and frame.mouse == false)
-    assert(frame.strata == "MEDIUM" and frame.level < 1000)
-    assert(frame.HealthBar.level > frame.level and frame.HealthBar.level < 1000)
+    assert(frame.strata == "MEDIUM" and frame.level == 17)
+    assert(frame.HealthBar.level == 18 and frame.ManaBar.level == 18 and frame.Content.level == 19)
     assert(math.abs(frame.scale - 1.5) < 0.001)
     assert(frame.point[2] == _G[names[key]])
     assert(frame.HealthBar.value == 37 and frame.HealthBar.high == 100)
     assert(frame.ManaBar.value == 21 and frame.ManaBar.high == 60)
 end
+-- Selection levels/strata after native setup need not match the XML template.
+PlayerFrame.Selection.strata, PlayerFrame.Selection.level = "LOW", 12
+module.driver.scripts.OnUpdate(nil, 0.2)
+assert(module.frames.player.strata == "LOW" and module.frames.player.level == 9)
+assert(module.frames.player.HealthBar.strata == "LOW" and module.frames.player.ManaBar.strata == "LOW")
+assert(module.frames.player.Content.strata == "LOW")
+assert(module.frames.player.HealthBar.level == 10 and module.frames.player.Content.level == 11)
+PlayerFrame.Selection.level = 2
+module:Refresh()
+assert(not module.frames.player.shown, "never draw over a selection without room below it")
+PlayerFrame.Selection.level = 20
+module:Refresh()
+assert(module.frames.player.shown)
 TargetFrame.visible = false
 module.driver.scripts.OnUpdate(nil, 0.2)
 assert(not module.frames.target.shown and module.frames.player.shown)

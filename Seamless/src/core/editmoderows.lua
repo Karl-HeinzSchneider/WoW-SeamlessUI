@@ -133,13 +133,23 @@ function creators.toggle(parent, changed)
     local row = CreateFrame("Frame", nil, parent, "EditModeSettingCheckboxTemplate")
     row.Button:SetPropagateMouseMotion(true)
     hover(row, row.Button)
+    row:EnableMouse(true)
+    row:SetScript("OnMouseUp", function(self, button)
+        if button == "LeftButton" then
+            self:OnCheckButtonClick()
+        end
+    end)
     -- The template's button calls this; replace the native handler on our own row only.
     function row:OnCheckButtonClick()
+        if not self.enabled then
+            return
+        end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         self.option.set(not self.option.get())
         changed()
     end
     function row:Refresh(enabled)
+        self.enabled = enabled
         self.Button:SetChecked(not not self.option.get())
         self.Button:SetEnabled(enabled)
         setLabelEnabled(self, enabled)

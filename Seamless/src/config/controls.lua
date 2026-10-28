@@ -161,6 +161,11 @@ function creators.toggle(page)
     button:SetScript("OnClick", function()
         row:Commit(button:GetChecked())
     end)
+    row:SetScript("OnMouseUp", function(self, mouseButton)
+        if mouseButton == "LeftButton" then
+            self:Commit(not self.option:Read("get"))
+        end
+    end)
     tooltip(button, row)
     function row:Update()
         button:SetChecked(not not self.option:Read("get"))

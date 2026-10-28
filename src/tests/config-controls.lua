@@ -459,9 +459,37 @@ assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffDisabled|r)")
 assert(GameTooltip.lines[2] == "|cff8080ff[Per-character setting]|r")
 assert(GameTooltip.lines[3] == "|cff8080ff[Blizzard CVAR]|r")
 root.args.general.args.enabled.default = nil
-toggle:Commit(false)
+-- The label and empty row space share the checkbox's guarded commit path.
+toggle.scripts.OnMouseUp(toggle, "RightButton")
+assert(profile.enabled, "Right-clicking a checkbox row must not toggle it")
+local enabledOption = root.args.general.args.enabled
+enabledOption.disabled = true
+app.config:RefreshOptionsPage(page)
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+assert(profile.enabled, "Disabled checkbox rows must not toggle")
+enabledOption.disabled = nil
+enabledOption.validate = function()
+    return false
+end
+app.config:RefreshOptionsPage(page)
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+assert(profile.enabled, "Row clicks must honor validation")
+enabledOption.validate = nil
+enabledOption.confirm = true
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+assert(profile.enabled and pending, "Row clicks must honor confirmation")
+pending()
+pending = nil
+enabledOption.confirm = nil
 app.config:RefreshOptionsPage(page)
 assert(not profile.enabled and not slider.Control.enabled)
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+app.config:RefreshOptionsPage(page)
+assert(profile.enabled and toggle.Control:GetChecked(), "Row clicks must also enable a checkbox")
+toggle.Control:SetChecked(false)
+toggle.Control.scripts.OnClick()
+app.config:RefreshOptionsPage(page)
+assert(not profile.enabled and not toggle.Control:GetChecked(), "Direct checkbox clicks must still work")
 slider:Commit(9)
 assert(profile.amount == 7)
 local input = page.controlPools.input[1]

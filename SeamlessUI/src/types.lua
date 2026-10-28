@@ -14,6 +14,7 @@
 ---@field systemOptions SeamlessUI.SystemOptions
 ---@field fpsDisplay SeamlessUI.FPSDisplay
 ---@field editModeKeyboard SeamlessUI.EditModeKeyboard
+---@field minimap SeamlessUI.Minimap
 
 ---@class SeamlessUI.DB : AceDBObject-3.0
 ---@field profile SeamlessUI.DB.Profile
@@ -22,5 +23,14 @@
 
 ---@class SeamlessUI.DBDefaults : AceDB.Schema
 ---@class SeamlessUI.DB.Profile
+---@field minimap SeamlessUI.MinimapSettings
+---@field hideMinimapDayNight boolean
+---@class SeamlessUI.MinimapSettings
+---@field hideAddonCompartment boolean
+---@field hideTracking boolean
+---@field hideCalendar boolean
+---@field hideClock boolean
+---@field hideZoneText boolean
+---@field hideHeader boolean
 ---@class SeamlessUI.DB.Char
 ---@class SeamlessUI.DB.Global

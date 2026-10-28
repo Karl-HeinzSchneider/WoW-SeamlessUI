@@ -87,6 +87,9 @@ app.optionPages.general = {
         type = "group",
         name = L["General"],
         order = 0,
-        args = { editModeKeyboard = editModeKeyboardOption, xpBarTooltip = xpBarTooltipOption },
+        args = {
+            editModeKeyboard = editModeKeyboardOption,
+            xpBarTooltip = xpBarTooltipOption,
+        },
     },
 }

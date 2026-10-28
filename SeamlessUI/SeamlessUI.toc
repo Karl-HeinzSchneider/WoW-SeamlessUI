@@ -15,6 +15,7 @@ src\core\db.lua
 src\core\ace.lua
 src\features\xpbartooltip.lua
 src\features\editmodekeyboard.lua
+src\features\minimap.lua
 src\features\blizzardposition.lua
 src\features\systemoptions.lua
 src\features\blizzardeditmode.lua
@@ -23,4 +24,5 @@ src\features\fpsdisplay.lua
 src\options\general.lua
 src\options\blizzardEditMode.lua
 src\options\fpsDisplay.lua
+src\options\minimap.lua
 src\options\register.lua

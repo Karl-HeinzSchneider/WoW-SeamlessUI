@@ -236,7 +236,7 @@ for addon, keys in pairs({
     },
     SeamlessUnitframes = { "player", "pet", "target", "focus", "party", "targettarget", "focustarget" },
     SeamlessCastbar = { "player", "target", "focus" },
-    SeamlessUI = { "fpsDisplay" },
+    SeamlessUI = { "fpsDisplay", "minimap" },
     SeamlessDamageMeter = { "window1", "window2", "window3", "window4", "window5", "window6" },
 }) do
     for _, key in ipairs(keys) do
@@ -272,9 +272,10 @@ for _, app in pairs(apps) do
         end
     end
 end
-assert(footerCount == 33, "all 33 frame pages explicitly declare both actions")
+assert(footerCount == 34, "all 34 frame pages explicitly declare both actions")
 -- Every native frame resolves back to its actual per-frame page, with no default fallback.
 local nativePages = {
+    SeamlessUI = { minimap = "MinimapCluster" },
     SeamlessActionBars = {
         bar1 = "MainActionBar",
         bar2 = "MultiBarBottomLeft",
@@ -324,8 +325,8 @@ for addon, pages in pairs(nativePages) do
     end
 end
 assert(
-    nativeCount == 22 and not core:GetEditModeFrameButtonSection({}) and not core:GetEditModeFrameButtonSection(nil),
-    "all 22 native frame pages are covered without a fallback"
+    nativeCount == 23 and not core:GetEditModeFrameButtonSection({}) and not core:GetEditModeFrameButtonSection(nil),
+    "all 23 native frame pages are covered without a fallback"
 )
 local declaredPlayer = apps.SeamlessUnitframes.optionPages.player.config.buttonSection
 apps.SeamlessUnitframes.optionPages.player.config.buttonSection = nil

@@ -185,6 +185,23 @@ assert(tabs.targettarget.args.position and tabs.targettarget.args.style, "the To
 assert(tabs.focustarget.args.position and find(tabs.targettarget, "targettarget_healthBarColor"))
 assert(#positioned == 4 and positioned[1] == PlayerFrame and positioned[2] == PetFrame)
 assert(positioned[3] == TargetFrame and positioned[4] == FocusFrame, "each group resolves its own frame")
+local levelRefreshes = 0
+app.levelDisplay = {
+    Refresh = function()
+        levelRefreshes = levelRefreshes + 1
+    end,
+}
+for _, key in ipairs({ "player", "target", "focus" }) do
+    local option = find(tabs[key], key .. "_levelDisplay")
+    assert(option.type == "select" and #option.sorting == 3)
+    assert(app.optionPages[key].defaults.profile.unitFrames[key].levelDisplay == "default")
+    option.set(nil, "smaller")
+    assert(option.get() == "smaller" and app.db.profile.unitFrames[key].levelDisplay == "smaller")
+end
+assert(levelRefreshes == 3)
+assert(not find(tabs.pet, "pet_levelDisplay") and not find(tabs.party, "party_levelDisplay"))
+-- Keep the pre-existing refresh-count assertions below independent of these controls.
+counts.optionRefreshes, counts.systemRefreshes = 0, 0
 assert(tabs.player.args.style.args.player_classIcon.type == "toggle")
 assert(tabs.player.args.style.args.player_hidePvPIcon.type == "toggle")
 for _, option in pairs(tabs.player.args.style.args) do

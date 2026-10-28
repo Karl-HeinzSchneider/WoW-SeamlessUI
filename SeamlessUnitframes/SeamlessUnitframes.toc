@@ -27,6 +27,7 @@ src\name\namedisplay.lua
 src\portrait\classicon.lua
 src\portrait\dragon.lua
 src\pvpicon\pvpicon.lua
+src\level\level.lua
 src\questicon\targetquesticon.lua
 src\totposition\totposition.lua
 src\totposition\mover.lua

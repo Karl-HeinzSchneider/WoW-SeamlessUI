@@ -94,6 +94,9 @@ function methods:CreateTexture()
     return frame()
 end
 function methods:GetStringHeight()
+    if self.width and self.text then
+        return 14 * math.max(1, math.ceil(#self.text * 7 / self.width))
+    end
     return 14
 end
 function methods:GetStringWidth()
@@ -671,4 +674,20 @@ app.config:RefreshOptionsPage(page)
 assert(edit:GetText() == "1.5" and not edit:HasFocus(), "refresh discards stale profile input")
 range.Control.callback(range.Control.owner, 2.5)
 assert(profile.amount == 2.5 and edit:GetText() == "2.5", "dragging updates the numeric field")
+-- A fresh page measures long names before its rows have screen anchors. Clicking must not
+-- change the label column or reveal a second line that was clipped on the first display.
+root.args.general.args.enabled.name = "Pass unused Edit Mode keys through"
+local wrappedPage = frame()
+app.config:CreateOptionsPage(wrappedPage, root, "general", "Test")
+app.config:RefreshOptionsPage(wrappedPage)
+local wrapped = wrappedPage.controlPools.toggle[1]
+local wrappedWidth, wrappedHeight = wrapped.Label.width, wrapped:GetHeight()
+assert(wrappedWidth == 627 / 2 - 85 - 37, "Label width must be explicit before measuring wrapped text")
+assert(wrappedHeight == 40, "Long option names need space for two lines on first display")
+wrapped.scripts.OnMouseUp(wrapped, "LeftButton")
+app.config:RefreshOptionsPage(wrappedPage)
+assert(wrapped.Label.width == wrappedWidth and wrapped:GetHeight() == wrappedHeight)
+root.args.general.args.enabled.name = "Enabled"
+app.config:RefreshOptionsPage(wrappedPage)
+assert(wrapped:GetHeight() == 32, "Pooled rows must shrink again for short names")
 print("Native config controls OK")

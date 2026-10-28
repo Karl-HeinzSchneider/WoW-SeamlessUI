@@ -64,7 +64,10 @@ function Row:New(page)
     row:SetWidth(page:GetWidth())
     row.Label = text(row)
     row.Label:SetPoint("LEFT", 37, 0)
-    row.Label:SetPoint("RIGHT", row, "CENTER", -85, 0)
+    -- Resolve the label column before measuring text, even before the row is anchored or shown.
+    -- Anchor-derived widths can lag until the next refresh and truncate an initially wrapped name.
+    row.Label:SetWidth(math.max(1, page:GetWidth() / 2 - 85 - 37))
+    row.Label:SetHeight(0)
     row.Label:SetWordWrap(true)
     row:EnableMouse(true)
     row.Hover = row:CreateTexture(nil, "BACKGROUND")

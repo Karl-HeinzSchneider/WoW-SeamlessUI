@@ -2,14 +2,15 @@
 local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
----@class SeamlessUI.EditModeHistory : AceModule, AceEvent-3.0
-local module = app.addon:NewModule("EditModeHistory", "AceEvent-3.0") --[[@as SeamlessUI.EditModeHistory]]
+---@class SeamlessUI.EditModeHistory : AceModule, AceEvent-3.0, AceHook-3.0
+local module = app.addon:NewModule("EditModeHistory", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessUI.EditModeHistory]]
 app.editModeHistory = module
 module:SetEnabledState(false)
 local lib = app.core:GetEditModeLibrary()
 local position = app.core:GetFramePositionService()
 local LIMIT = 25
 local history, baseline = {}, {}
+local dragVersions = {}
 local window, list, undo, status, scroll
 local active, restoring, elapsed = false, false, 0
 
@@ -45,9 +46,23 @@ function module:GetSources()
     for _, frame in ipairs(manager.registeredSystemFrames or {}) do
         local info = manager:GetActiveLayoutSystemInfo(frame.system, frame.systemIndex)
         if info then
+            if frame.OnDragStop and not self:IsHooked(frame, "OnDragStop") then
+                self:SecureHook(frame, "OnDragStop", function()
+                    dragVersions[frame] = (dragVersions[frame] or 0) + 1
+                end)
+            end
             sources[#sources + 1] = {
                 frame = frame,
                 key = "native:position",
+                dragVersion = dragVersions[frame] or 0,
+                positionPath = "anchorInfo",
+                positionFields = {
+                    { key = "relativeTo", name = L["AnchorFrame"] },
+                    { key = "point", name = L["Anchor"] },
+                    { key = "relativePoint", name = L["AnchorParent"] },
+                    { key = "offsetX", name = L["X"] },
+                    { key = "offsetY", name = L["Y"] },
+                },
                 name = L["Dragged"],
                 disabled = function()
                     return not position:CanEdit(frame)
@@ -121,33 +136,79 @@ function module:Sample(reset)
         local frame, key = source.frame, source.key
         local value = copy(source.get())
         nextBaseline[frame] = nextBaseline[frame] or {}
-        nextBaseline[frame][key] = { value = value }
+        nextBaseline[frame][key] = { value = value, dragVersion = source.dragVersion }
         local previous = baseline[frame] and baseline[frame][key]
         if not reset and previous and not equal(value, previous.value) then
-            changes[#changes + 1] = { source = source, value = previous.value }
+            changes[#changes + 1] = {
+                source = source,
+                value = previous.value,
+                current = value,
+                dragged = source.dragVersion ~= previous.dragVersion,
+            }
         end
     end
     baseline = nextBaseline
-    if #changes > 0 then
-        local source = changes[1].source
-        for _, change in ipairs(changes) do
-            if change.source.key ~= "position" and change.source.key ~= "native:position" then
-                source = change.source
-                break
-            end
-        end
+    if #changes == 0 then
+        return
+    end
+    local function append(items, source, label)
         local frame = source.frame
         local name = source.frameName
             or frame.GetSystemName and frame:GetSystemName()
             or frame.editModeName
             or frame:GetName()
             or L["Unknown"]
-        history[#history + 1] = { changes = changes, text = string.format(L["%s: %s"], name, source.name) }
+        history[#history + 1] = { changes = items, text = string.format(L["%s: %s"], name, label) }
         if #history > LIMIT then
             table.remove(history, 1)
         end
-        self:Render()
     end
+    -- Settings can move dependent frames; keep those side effects in the setting's undo.
+    local setting, dragged
+    for _, change in ipairs(changes) do
+        if change.dragged then
+            dragged = change.source
+        end
+    end
+    for _, change in ipairs(changes) do
+        if not change.source.positionFields then
+            setting = change.source
+            break
+        end
+    end
+    if setting then
+        append(changes, setting, setting.name)
+    elseif dragged then
+        append(changes, dragged, L["Dragged"])
+    else
+        for _, change in ipairs(changes) do
+            local source = change.source
+            -- Build intermediate snapshots so X and Y edits are separately undoable.
+            local staged, edits = copy(change.value), {}
+            local beforeFields = source.positionPath and change.value[source.positionPath] or change.value
+            local afterFields = source.positionPath and change.current[source.positionPath] or change.current
+            for _, field in ipairs(source.positionFields) do
+                if not equal(beforeFields and beforeFields[field.key], afterFields and afterFields[field.key]) then
+                    local previous = copy(staged)
+                    local fields = source.positionPath and staged[source.positionPath] or staged
+                    fields[field.key] = copy(afterFields[field.key])
+                    if source.positionPath then
+                        staged.anchorInfo2 = copy(change.current.anchorInfo2)
+                        staged.isInDefaultPosition = change.current.isInDefaultPosition
+                    end
+                    edits[#edits + 1] = { value = previous, name = field.name }
+                end
+            end
+            if #edits == 0 then
+                append({ change }, source, L["Position"])
+            else
+                for _, edit in ipairs(edits) do
+                    append({ { source = source, value = edit.value } }, source, edit.name)
+                end
+            end
+        end
+    end
+    self:Render()
 end
 
 function module:Undo()
@@ -271,6 +332,7 @@ function module:OnEnable()
     self:Reset()
 end
 function module:OnDisable()
+    self:UnhookAll()
     self:UnregisterAllEvents()
     self:Reset()
 end

@@ -1031,6 +1031,8 @@ end
 
 -- Read-only descriptors for the optional history consumer. Library internals stay in Core.
 -- Restore callbacks resolve the current layout/profile through the original setting bindings.
+local historyDragVersions = setmetatable({}, { __mode = "k" })
+local historyDragHooks = setmetatable({}, { __mode = "k" })
 function addon:GetEditModeHistorySources()
     local sources = {}
     local function add(frame, key, name, get, set, disabled)
@@ -1042,9 +1044,23 @@ function addon:GetEditModeHistorySources()
             set = set,
             disabled = disabled,
             frameName = lib.frameSelections[frame] and lib.frameSelections[frame].system:GetSystemName(),
+            dragVersion = historyDragVersions[frame] or 0,
+            positionFields = key == "position" and {
+                { key = "relativeTo", name = L["AnchorFrame"] },
+                { key = "point", name = L["Anchor"] },
+                { key = "relativePoint", name = L["AnchorParent"] },
+                { key = "x", name = L["X"] },
+                { key = "y", name = L["Y"] },
+            } or nil,
         }
     end
-    for frame in pairs(lib.frameSelections) do
+    for frame, selection in pairs(lib.frameSelections) do
+        if not historyDragHooks[selection] then
+            historyDragHooks[selection] = true
+            selection:HookScript("OnDragStop", function()
+                historyDragVersions[frame] = (historyDragVersions[frame] or 0) + 1
+            end)
+        end
         local settings = internal:GetFrameSettings(frame)
         local hasPosition = false
         local function visit(data, key)

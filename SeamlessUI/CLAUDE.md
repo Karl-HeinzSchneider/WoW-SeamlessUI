@@ -134,7 +134,9 @@ General's `editModeHistory` toggle defaults on, independently of native frame ex
 The compact window follows the left edge of Blizzard's main Edit Mode window and lists the
 last 25 changes, newest first. History is session-only; exit, layout/profile switches, combat
 and disabling reset it. Mouse-held position/slider updates coalesce into one transaction on
-release, including mirrored settings. Undo restores that transaction without recording itself.
+release, including mirrored settings. Actual frame drags are identified by drag-stop callbacks
+and listed as Dragged; edits through position controls use X, Y or the anchor field's label
+and undo separately. Undo restores that transaction without recording itself.
 Core's `GetEditModeHistorySources` exposes suite settings/position bindings and registered native
 extensions without exposing library internals. Native values use the active draft and guarded
 position service; native Save/Revert retain ownership of persistence and their saved baselines.

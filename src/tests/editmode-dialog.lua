@@ -1146,6 +1146,12 @@ print("PASS: suite frame settings window")
 
 -- The history bridge exposes unselected suite settings without changing renderer rows.
 do
+    for _, item in pairs(lib.frameSelections) do
+        if not item.HookScript then
+            item.scripts = item.scripts or {}
+            item.HookScript = methods.HookScript
+        end
+    end
     local sources = app.addon:GetEditModeHistorySources()
     local found
     for _, source in ipairs(sources) do

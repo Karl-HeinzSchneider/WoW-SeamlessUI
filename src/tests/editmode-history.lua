@@ -113,6 +113,17 @@ function module:Disable()
 end
 function module:RegisterEvent() end
 function module:UnregisterAllEvents() end
+local hooks = {}
+function module:IsHooked(frame, method)
+    return hooks[frame] and hooks[frame][method]
+end
+function module:SecureHook(frame, method, callback)
+    hooks[frame] = hooks[frame] or {}
+    hooks[frame][method] = callback
+end
+function module:UnhookAll()
+    hooks = {}
+end
 local library = {
     IsInEditMode = function()
         return editing
@@ -153,6 +164,7 @@ local nativeInfo = {
     settings = { { setting = 1, value = 100 } },
 }
 local native = {
+    OnDragStop = function() end,
     system = 1,
     systemIndex = 1,
     savedSystemInfo = CopyTable(nativeInfo),
@@ -279,6 +291,35 @@ callbacks.layout()
 flush()
 module:Undo()
 assert(values.x == 10 and not button.enabled, "layout changes clear history")
+local function shows(text)
+    for _, obj in ipairs(objects) do
+        if obj.text == text then
+            return true
+        end
+    end
+    return false
+end
+nativeInfo.anchorInfo.offsetX = 17
+module:Sample()
+assert(shows("Native: X"), "typing X names the field rather than calling it a drag")
+module:Undo()
+nativeInfo.anchorInfo.offsetY = 23
+module:Sample()
+assert(shows("Native: Y"))
+module:Undo()
+nativeInfo.anchorInfo.offsetX, nativeInfo.anchorInfo.offsetY = 5, 8
+module:Sample()
+module:Undo()
+assert(
+    nativeInfo.anchorInfo.offsetX == 5 and nativeInfo.anchorInfo.offsetY == 0,
+    "non-drag X and Y changes undo separately"
+)
+module:Undo()
+assert(nativeInfo.anchorInfo.offsetX == 0)
+nativeInfo.anchorInfo.relativePoint = "TOP"
+module:Sample()
+assert(shows("Native: AnchorParent"))
+module:Undo()
 nativeInfo.settings[1].value = 150
 module:Sample()
 module:Undo()
@@ -287,11 +328,46 @@ mouse = true
 nativeInfo.anchorInfo.offsetX = 20
 module:Sample()
 nativeInfo.anchorInfo.offsetX = 40
+nativeInfo.anchorInfo.offsetY = 15
 module:Sample()
+hooks[native].OnDragStop()
 mouse = false
 module:Sample()
+assert(shows("Native: Dragged"), "only an actual drag gets the Dragged label")
 module:Undo()
+assert(nativeInfo.anchorInfo.offsetY == 0, "both drag axes undo in one step")
 assert(nativeInfo.anchorInfo.offsetX == 0, "native dragging uses a copied pre-drag anchor")
+local suitePosition = { x = 0, y = 0 }
+local suiteSource = {
+    frame = frame,
+    key = "position",
+    name = "Dragged",
+    frameName = "Suite",
+    dragVersion = 0,
+    positionFields = { { key = "x", name = "X" }, { key = "y", name = "Y" } },
+    get = function()
+        return suitePosition
+    end,
+    set = function(value)
+        suitePosition = value
+    end,
+}
+sources[#sources + 1] = suiteSource
+module:Sample(true)
+suitePosition.x = 25
+module:Sample()
+assert(shows("Suite: X"), "suite X edits retain their field label")
+module:Undo()
+assert(suitePosition.x == 0)
+mouse = true
+suitePosition.x, suitePosition.y = 30, 40
+module:Sample()
+suiteSource.dragVersion = 1
+mouse = false
+module:Sample()
+assert(shows("Suite: Dragged"))
+module:Undo()
+assert(suitePosition.x == 0 and suitePosition.y == 0)
 values.x = 11
 module:Sample()
 module:OnProfileRefresh()

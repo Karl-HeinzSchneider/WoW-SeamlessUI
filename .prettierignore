@@ -3,3 +3,5 @@ package-lock.json
 docs/atlas/AtlasInfo.*.json
 # Human-only file; agents never write to it (see CLAUDE.md).
 description.md
+# Written by VS Code and extensions (ketho.wow-api updates Lua.* on startup); keep their formatting.
+.vscode/settings.json

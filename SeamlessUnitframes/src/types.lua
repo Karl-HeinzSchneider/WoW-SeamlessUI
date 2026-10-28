@@ -43,4 +43,5 @@
 ---@class SeamlessUnitframes.DBDefaults : AceDB.Schema
 ---@class SeamlessUnitframes.DB.Profile
 ---@class SeamlessUnitframes.DB.Char
+---@field nameOverride string
 ---@class SeamlessUnitframes.DB.Global

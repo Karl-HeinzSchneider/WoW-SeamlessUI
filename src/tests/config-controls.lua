@@ -421,7 +421,7 @@ toggle.Control.scripts.OnEnter()
 assert(GameTooltip.point[2] == toggle.Label and GameTooltip.owner == toggle)
 slider.scripts.OnEnter()
 assert(GameTooltip.lines[1] == "\n(Default: |cff8080ff3|r)")
-assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
+assert(GameTooltip.lines[2] == "|cff8080ff[Per-character setting]|r")
 page.controlPools.select[1].scripts.OnEnter()
 assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffA|r)")
 -- An option's own default (a value only the game knows) wins over the resolver,
@@ -431,7 +431,7 @@ root.args.general.args.amount.default = function()
 end
 slider.scripts.OnEnter()
 assert(GameTooltip.lines[1] == "\n(Default: |cff8080ff6|r)")
-assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
+assert(GameTooltip.lines[2] == "|cff8080ff[Per-character setting]|r")
 root.args.general.args.amount.default = nil
 root.args.general.args.choice.default = "b"
 page.controlPools.select[1].scripts.OnEnter()
@@ -456,7 +456,7 @@ root.args.general.args.enabled.default = function()
 end
 toggle.scripts.OnEnter()
 assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffDisabled|r)")
-assert(GameTooltip.lines[2] == "\n\n|cff8080ff[Per-character setting]|r")
+assert(GameTooltip.lines[2] == "|cff8080ff[Per-character setting]|r")
 assert(GameTooltip.lines[3] == "|cff8080ff[Blizzard CVAR]|r")
 root.args.general.args.enabled.default = nil
 toggle:Commit(false)

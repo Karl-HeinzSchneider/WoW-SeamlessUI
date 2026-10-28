@@ -41,6 +41,7 @@ Enum = { EditModeUnitFrameSetting = { FrameSize = 9 }, EditModeAccountSetting = 
 local modules = {}
 local app = {
     db = {
+        char = { nameOverride = "" },
         profile = {
             layout = "current",
             unitFrames = setmetatable({}, {
@@ -236,6 +237,23 @@ scale.set(nil, 0.30000000000000004 + 2)
 assert(app.db.profile.targetQuestIcon.scale == 2.3 and counts.questLayout == 1)
 print("PASS: one options tab per unit frame, layout in General")
 
+-- Player-only choices and a character-scoped input below the name dropdown.
+local playerName = find(tabs.player, "player_nameDisplay")
+local customName = find(tabs.player, "player_nameOverride")
+assert(playerName.values.combine == "Combine" and playerName.values.override == "Override")
+assert(not partyName.values.combine and not partyName.values.override)
+assert(customName.hidden() and customName.order > playerName.order)
+playerName.set(nil, "override")
+assert(not customName.hidden())
+customName.set(nil, "My Hero")
+assert(app.db.char.nameOverride == "My Hero" and not app.db.profile.unitFrames.player.nameOverride)
+local originalChar = app.db.char
+app.db.char = { nameOverride = "Other Hero" }
+assert(customName.get() == "Other Hero", "input resolves the current character")
+app.db.char = originalChar
+playerName.set(nil, "full")
+assert(customName.hidden())
+
 -- Edit Mode: a Style section for each unit frame system, with linked frames in their owner's.
 Enum = {
     EditModeSystem = { UnitFrame = 0 },
@@ -326,6 +344,34 @@ hooked(TargetFrame)
 assert(TargetFrame.name:GetText() == "Hogger", "NPCs keep their name")
 hooked(member)
 assert(member.name:GetText() == "Smith", "joined surname")
+app.db.profile.unitFrames.player.nameDisplay = "combine"
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "AnnaWeber", "combined names have no separator")
+names.player = { "Anna-Weber" }
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "AnnaWeber", "combined regional name")
+names.player = { "Anna" }
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "Anna", "combine without surname")
+names.player = { "Anna", "Weber" }
+app.db.profile.unitFrames.player.nameDisplay = "override"
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "My Hero")
+PlayerFrame.name:SetText("Anna Weber")
+hooked(PlayerFrame)
+assert(PlayerFrame.name:GetText() == "My Hero", "native updates preserve the override")
+app.db.char = { nameOverride = "Other Hero" }
+nameDisplay:OnProfileRefresh()
+assert(PlayerFrame.name:GetText() == "Other Hero", "reads current character storage")
+app.db.char.nameOverride = ""
+nameDisplay:Refresh()
+assert(PlayerFrame.name:GetText() == "Anna Weber", "empty override restores native name")
+app.db.char.nameOverride = "My Hero"
+nameDisplay:Refresh()
+enabled = false
+nameDisplay:OnDisable()
+assert(PlayerFrame.name:GetText() == "Anna Weber", "disable restores override")
+enabled = true
 app.db.profile.unitFrames.player.nameDisplay = "last"
 nameDisplay:Refresh()
 assert(PlayerFrame.name:GetText() == "Weber")

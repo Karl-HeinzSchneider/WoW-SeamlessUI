@@ -8,12 +8,13 @@ local unitFrames = app.unitFrames
 -- surname, chosen per unit frame (profile.unitFrames[key].nameDisplay). The client gives
 -- characters a first name and an optional surname (UnitName returns both); the game shows both.
 -- NPCs always keep their name; a character without a surname keeps its first name.
+-- The player frame also supports joined names and a character-specific custom name.
 ---@class SeamlessUnitframes.NameDisplay : AceModule
 local module = {}
 app.nameDisplay = addon:NewModule("NameDisplay", module) --[[@as SeamlessUnitframes.NameDisplay]]
 
--- The choices of profile.unitFrames[key].nameDisplay; the labels are in style.lua.
----@alias SeamlessUnitframes.NameDisplayMode "full"|"first"|"last"
+-- The choices of profile.unitFrames[key].nameDisplay; labels live in the options pages.
+---@alias SeamlessUnitframes.NameDisplayMode "full"|"first"|"last"|"combine"|"override"
 
 -- The game's own text of each name we changed, keyed by frame, to put back for "full".
 ---@type table<Frame, string>
@@ -58,10 +59,19 @@ local function Apply(frame, key)
     local mode = app.db.profile.unitFrames[key].nameDisplay
     local text
     if mode ~= "full" and addon:IsEnabled() then
-        local isPlayer = UnitIsPlayer(unit)
-        if Readable(isPlayer) and isPlayer then
-            local first, surname = NameParts(unit)
-            text = mode == "first" and first or surname or first
+        if key == "player" and mode == "override" then
+            local custom = app.db.char.nameOverride
+            text = custom ~= "" and custom or nil
+        else
+            local isPlayer = UnitIsPlayer(unit)
+            if Readable(isPlayer) and isPlayer then
+                local first, surname = NameParts(unit)
+                if key == "player" and mode == "combine" then
+                    text = first and (first .. (surname or ""))
+                else
+                    text = mode == "first" and first or surname or first
+                end
+            end
         end
     end
     if not text then

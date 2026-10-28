@@ -41,7 +41,7 @@ local function tooltip(frame, row)
                 local default, perCharacter, blizzardCVar = row.option:TooltipDetails()
                 GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], default), nil, nil, nil, true)
                 if perCharacter then
-                    GameTooltip:AddLine(L["\n\n|cff8080ff[Per-character setting]|r"], nil, nil, nil, true)
+                    GameTooltip:AddLine(L["|cff8080ff[Per-character setting]|r"], nil, nil, nil, true)
                 end
                 if blizzardCVar then
                     GameTooltip:AddLine(L["|cff8080ff[Blizzard CVAR]|r"], nil, nil, nil, true)

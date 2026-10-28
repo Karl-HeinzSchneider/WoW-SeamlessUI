@@ -15,6 +15,9 @@ local healthBarColorDesc =
 app.optionPages.player = {
     tooltip = function(path)
         local name, defaults = path[#path], app.dbDefaults.profile
+        if name == "player_nameOverride" then
+            return app.dbDefaults.char.nameOverride, true
+        end
         if name == "threatPercentage" then
             return app.core:GetCVarOptionInfo("threatShowNumeric")
         end
@@ -26,6 +29,7 @@ app.optionPages.player = {
         return defaults.unitFrames[path[1]][field]
     end,
     defaults = {
+        char = { nameOverride = "" },
         profile = {
             unitFrames = {
                 player = {
@@ -80,14 +84,37 @@ app.optionPages.player = {
                         order = 10,
                         type = "select",
                         name = L["Name display"],
-                        desc = L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."],
-                        values = { full = L["Full name"], first = L["First name only"], last = L["Surname only"] },
-                        sorting = { "full", "first", "last" },
+                        desc = L["Full name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one.\nCombine: first name and surname without a space.\nOverride: use this character's custom name."],
+                        values = {
+                            full = L["Full name"],
+                            first = L["First name only"],
+                            last = L["Surname only"],
+                            combine = L["Combine"],
+                            override = L["Override"],
+                        },
+                        sorting = { "full", "first", "last", "combine", "override" },
                         get = function()
                             return app.db.profile.unitFrames[key].nameDisplay
                         end,
                         set = function(_, value)
                             app.db.profile.unitFrames[key].nameDisplay = value
+                            app.nameDisplay:Refresh()
+                            changed()
+                        end,
+                    },
+                    player_nameOverride = {
+                        order = 11,
+                        type = "input",
+                        name = L["Custom name"],
+                        desc = L["Shown on your player frame when Override is selected. Saved separately for each character. Leave empty to show the normal name."],
+                        hidden = function()
+                            return app.db.profile.unitFrames[key].nameDisplay ~= "override"
+                        end,
+                        get = function()
+                            return app.db.char.nameOverride
+                        end,
+                        set = function(_, value)
+                            app.db.char.nameOverride = value
                             app.nameDisplay:Refresh()
                             changed()
                         end,

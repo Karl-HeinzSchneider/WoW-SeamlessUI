@@ -24,4 +24,5 @@ src\features\fpsdisplay.lua
 src\options\general.lua
 src\options\blizzardEditMode.lua
 src\options\fpsDisplay.lua
+src\options\minimap.lua
 src\options\register.lua

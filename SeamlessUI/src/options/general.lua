@@ -75,7 +75,6 @@ app.optionPages.general = {
     defaults = {
         profile = {
             editModeKeyboard = true,
-            hideMinimapDayNight = false,
             xpBarTooltip = {
                 enabled = true,
                 completedQuests = true,
@@ -91,19 +90,6 @@ app.optionPages.general = {
         args = {
             editModeKeyboard = editModeKeyboardOption,
             xpBarTooltip = xpBarTooltipOption,
-            hideMinimapDayNight = {
-                type = "toggle",
-                order = 40,
-                width = "full",
-                name = L["Hide minimap day/night indicator"],
-                get = function()
-                    return app.db.profile.hideMinimapDayNight
-                end,
-                set = function(_, value)
-                    app.db.profile.hideMinimapDayNight = value
-                    app.minimap:OnProfileRefresh()
-                end,
-            },
         },
     },
 }

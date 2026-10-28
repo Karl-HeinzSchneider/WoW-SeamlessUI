@@ -36,7 +36,7 @@
 ---@field frame? table
 ---@field selected? string
 ---@field minimized? boolean
----@field optionInfo table<string, fun(path: string[]): any, boolean?>
+---@field optionInfo table<string, fun(path: string[]): any, boolean?, boolean?>
 ---@field UpdateFeatureTags fun(self: SeamlessCore.Config, owner: table, anchor: table, tags: table)
 ---@field Option table Option declaration adapter; preserves inherited accessors and original paths.
 ---@field ControlRow table Base class for Settings-style control rows.
@@ -83,13 +83,13 @@
 
 ---@class SeamlessCore.Addon
 ---@field EditModeVisibility fun(self: SeamlessCore.Addon, setting: number|string, value?: boolean): boolean
----@field GetCustomEditModeVisibility fun(self: SeamlessCore.Addon, id: string, get: fun(): boolean, set: fun(value: boolean)): fun(value?: boolean): boolean
+---@field GetCustomEditModeVisibility fun(self: SeamlessCore.Addon, id: string, get: (fun(): boolean), set: fun(value: boolean)): fun(value?: boolean): boolean
 ---@field GetEditModeVisibility fun(self: SeamlessCore.Addon, setting: number, update: fun(value: boolean)): fun(value?: boolean): boolean
 ---@field RegisterPreviewCharacter fun(self: SeamlessCore.Addon, id: string, record: SeamlessCore.PreviewCharacter)
 ---@field GetPreviewCharacter fun(self: SeamlessCore.Addon, consumer: string): SeamlessCore.PreviewCharacter?
 ---@field RegisterConfigCategory fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.ConfigCategory)
 ---@field GetOptionDefault fun(self: SeamlessCore.Addon, defaults: table?, path: string[], first?: number): any
----@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean
+---@field GetCVarOptionInfo fun(self: SeamlessCore.Addon, name: string): any, boolean, boolean
 ---@field OpenConfig fun(self: SeamlessCore.Addon, id?: string)
 ---@field ToggleConfig fun(self: SeamlessCore.Addon)
 ---@field RefreshConfig fun(self: SeamlessCore.Addon)

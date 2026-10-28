@@ -20,7 +20,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@class SeamlessCore.SettingsPage
 ---@field defaults AceDB.Schema Saved defaults at their existing database paths.
 ---@field config SeamlessCore.SettingsOption A group displayed as one navigation page.
----@field tooltip? fun(path: string[]): any, boolean?
+---@field tooltip? fun(path: string[]): any, boolean?, boolean?
 
 local function merge(target, source)
     for key, value in pairs(source) do

@@ -25,6 +25,7 @@ src\layout\geometry.lua
 src\healthcolor\healthcolor.lua
 src\name\namedisplay.lua
 src\portrait\classicon.lua
+src\portrait\dragon.lua
 src\pvpicon\pvpicon.lua
 src\questicon\targetquesticon.lua
 src\totposition\totposition.lua

@@ -20,6 +20,7 @@
 ---@field healthColor SeamlessUnitframes.HealthColor
 ---@field nameDisplay SeamlessUnitframes.NameDisplay
 ---@field classIcon SeamlessUnitframes.ClassIcon
+---@field portraitDragon SeamlessUnitframes.PortraitDragon
 ---@field pvpIcon SeamlessUnitframes.PvPIcon
 ---@field legacyLayout SeamlessUnitframes.LegacyLayout
 ---@field legacyAtlases table<string, table>

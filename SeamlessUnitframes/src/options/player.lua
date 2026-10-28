@@ -28,7 +28,13 @@ app.optionPages.player = {
     defaults = {
         profile = {
             unitFrames = {
-                player = { healthBarColor = "class", nameDisplay = "full", classIcon = false, hidePvPIcon = false },
+                player = {
+                    healthBarColor = "class",
+                    nameDisplay = "full",
+                    classIcon = false,
+                    hidePvPIcon = false,
+                    portraitDragon = "none",
+                },
             },
         },
     },
@@ -54,6 +60,21 @@ app.optionPages.player = {
                 order = 20,
                 name = L["Style"],
                 args = {
+                    player_portraitDragon = {
+                        order = 25,
+                        type = "select",
+                        name = L["Portrait dragon"],
+                        values = { none = L["None"], elite = L["Elite"], rare = L["Rare"], boss = L["Boss"] },
+                        sorting = { "none", "elite", "rare", "boss" },
+                        get = function()
+                            return app.db.profile.unitFrames[key].portraitDragon
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].portraitDragon = value
+                            app.portraitDragon:Refresh()
+                            changed()
+                        end,
+                    },
                     player_nameDisplay = {
                         order = 10,
                         type = "select",

@@ -819,6 +819,7 @@ L["Y"] = true
 
 -- SeamlessUnitframes
 L["\n\nA pet takes its owner's class color."] = true
+L["Boss"] = true
 L["Class icon"] = true
 L["Class"] = true
 L["Class, reaction for NPCs"] = true
@@ -826,6 +827,7 @@ L["Commands: /seamlessunitframes [options], /seamlessunitframes loglevel <level>
 L["Current (70425)"] = true
 L["Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."] = true
 L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] = true
+L["Elite"] = true
 L["First name only"] = true
 L["Full name"] = true
 L["Health bar color"] = true
@@ -836,9 +838,11 @@ L["Legacy (before 70425)"] = true
 L["Legacy unit frames: %s; skipping this operation"] = true
 L["Name display"] = true
 L["Name"] = true
+L["Portrait dragon"] = true
 L["Portrait"] = true
 L["PvP"] = true
 L["Quest icon"] = true
+L["Rare"] = true
 L["Reaction"] = true
 L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."] = true
 L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."] = true

@@ -6,18 +6,19 @@ local module = {}
 app.portraitDragon = app.addon:NewModule("PortraitDragon", module, "AceEvent-3.0")
 
 local texture
-local prefix = "UI-HUD-UnitFrame-Target-PortraitOn-"
--- Fixed offsets relative to the target portrait's TOPRIGHT (-26, -19).
--- Mirroring both the art and anchor puts the dragon on the player's outer edge.
+-- Fixed 70425 atlas records from docs/atlas/AtlasInfo.1.60.1.70425.json.
+-- Keep each sheet, crop and logical size together: runtime atlas selection can
+-- choose a different atlas set from the one described by GetAtlasInfo.
+-- Offsets mirror the native target decoration around its portrait (-26, -19).
 local current = {
-    elite = { "Boss-Gold", 26, 20 },
-    rare = { "Boss-Rare-Silver-Winged", 34, 12 },
-    boss = { "Boss-Gold-Winged", 37, 15 },
+    elite = { 100.0, 100.0, 0.001953125, 0.392578125, 0.001953125, 0.392578125, 26, 20 },
+    rare = { 109.0, 88.5, 0.435546875, 0.861328125, 0.396484375, 0.7421875, 34, 12 },
+    boss = { 110.0, 90.0, 0.001953125, 0.431640625, 0.396484375, 0.748046875, 37, 15 },
 }
 local legacy = {
-    elite = { "Boss-Gold", 15, 11 },
-    rare = { "Boss-Rare-Silver", 15, 11 },
-    boss = { "Boss-Gold-Winged", 34, 11 },
+    elite = { 80.0, 79.0, 0.001953125, 0.314453125, 0.322265625, 0.630859375, 15, 11 },
+    rare = { 80.0, 79.0, 0.001953125, 0.314453125, 0.634765625, 0.943359375, 15, 11 },
+    boss = { 99.0, 81.0, 0.001953125, 0.388671875, 0.001953125, 0.318359375, 34, 11 },
 }
 
 function module:Refresh()
@@ -39,23 +40,11 @@ function module:Refresh()
     if not texture then
         texture = frame.PlayerFrameContainer:CreateTexture(nil, "OVERLAY", nil, 1)
     end
-    local atlas = prefix .. definition[1]
-    if old then
-        local data = app.legacyAtlases[atlas:lower()]
-        texture:SetTexture("Interface/HUD/UIUnitFrameBoss2x")
-        texture:SetSize(data[2], data[3])
-        texture:SetTexCoord(data[5], data[4], data[6], data[7])
-    else
-        local data = C_Texture.GetAtlasInfo(atlas)
-        if not data then
-            texture:Hide()
-            return
-        end
-        texture:SetAtlas(atlas, true)
-        texture:SetTexCoord(data.rightTexCoord, data.leftTexCoord, data.topTexCoord, data.bottomTexCoord)
-    end
+    texture:SetTexture(old and "Interface/HUD/UIUnitFrameBoss2x" or "Interface/HUD/UIUnitFrameBossC602x")
+    texture:SetSize(definition[1], definition[2])
+    texture:SetTexCoord(definition[4], definition[3], definition[5], definition[6])
     texture:ClearAllPoints()
-    texture:SetPoint("TOPLEFT", frame.portrait, "TOPLEFT", -definition[2], definition[3])
+    texture:SetPoint("TOPLEFT", frame.portrait, "TOPLEFT", -definition[7], definition[8])
     texture:Show()
 end
 

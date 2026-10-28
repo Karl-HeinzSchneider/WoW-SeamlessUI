@@ -238,7 +238,18 @@ end
 function BagsBar:IsDirectionUp()
     return not self.horizontal and self.reverse
 end
+local divider = region()
+local dividerPool = {
+    EnumerateActive = function()
+        return pairs({ [divider] = true })
+    end,
+}
+BagsBar.HorizontalDividersPool, BagsBar.VerticalDividersPool = dividerPool, dividerPool
+function BagsBar:UpdateDividers()
+    divider:Show()
+end
 function BagsBar:Layout()
+    self:UpdateDividers()
     self:SetSize(self.horizontal and 315 or 45, self.horizontal and 45 or 315)
     if not self.hideExpandToggle then
         BagBarExpandToggle:SetSize(
@@ -294,7 +305,12 @@ end
 app.db.profile.bags.expanded = false
 app.db.profile.bags.retailStyle = true
 app.RefreshBagStyle()
-assert(hookCount == 10 and maskCount == 6)
+assert(hookCount == 11 and maskCount == 6)
+BagsBar:UpdateDividers()
+assert(not divider:IsShown(), "direct native divider refresh stays hidden with retail style")
+expandLayout(BagsBar)
+assert(not divider:IsShown(), "cached login layout cannot restore native dividers")
+app.RefreshBagStyle()
 assert(not CharacterBag0Slot:IsShown(), "reload reapplies collapse even when the CVar and manager already match")
 MainMenuBarBagManager:SetExpandBar(true)
 assert(app.db.profile.bags.expanded == false, "native initialization does not overwrite the saved preference")
@@ -418,6 +434,8 @@ assert(KeyRingButton.icon.coords[1] == 0.1 and KeyRingButton.icon.coords[4] == 0
 assert(BagBarExpandToggle:GetParent() == cluster, "restore the original arrow parent")
 CharacterBag0Slot:UpdateTextures()
 assert(CharacterBag0Slot.normal:GetAtlas() == "square", "disabled hooks are inert")
+BagsBar:UpdateDividers()
+assert(divider:IsShown(), "disabled style leaves native dividers visible")
 app.db.profile.bags.retailStyle = true
 app.db.profile.bags.expanded = true
 app.RefreshBagStyle()

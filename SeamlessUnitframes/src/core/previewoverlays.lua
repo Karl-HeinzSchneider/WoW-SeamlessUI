@@ -73,26 +73,37 @@ local function Create(key)
     return frame
 end
 
--- Template levels can change at runtime when the client sets up its systems. Follow
--- the actual selection instead of assuming the XML's MEDIUM/1000 survives setup.
--- Only our own frames move in the draw stack; native frames and selections stay untouched.
+local strataOrder =
+    { BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5, FULLSCREEN = 6, FULLSCREEN_DIALOG = 7, TOOLTIP = 8 }
+
+-- Keep the entire preview in the unit frame's stratum (LOW in this client), above
+-- its contents. Selection belongs to a separate, higher stratum (MEDIUM). Do not
+-- put preview art in the selection's stratum: its BORDER nine-slice must remain
+-- above every preview region, including ARTWORK status bars and OVERLAY text.
 local function Layer(frame, real)
     local selection = real.Selection
     if not Readable(selection) then
         return false
     end
-    local strata, level = selection:GetFrameStrata(), selection:GetFrameLevel()
-    if not Readable(strata) or not Readable(level) or level < 3 then
+    local strata, level = real:GetFrameStrata(), real:GetFrameLevel()
+    local selectionStrata = selection:GetFrameStrata()
+    if not Readable(strata) or not Readable(level) or not Readable(selectionStrata) then
         return false
     end
-    frame:SetFrameStrata(strata)
-    frame:SetFrameLevel(level - 3)
-    frame.HealthBar:SetFrameStrata(strata)
-    frame.ManaBar:SetFrameStrata(strata)
-    frame.Content:SetFrameStrata(strata)
-    frame.HealthBar:SetFrameLevel(level - 2)
-    frame.ManaBar:SetFrameLevel(level - 2)
-    frame.Content:SetFrameLevel(level - 1)
+    local nativeOrder, selectionOrder = strataOrder[strata], strataOrder[selectionStrata]
+    if not nativeOrder or not selectionOrder or nativeOrder >= selectionOrder then
+        return false
+    end
+    for _, region in ipairs({ frame, frame.HealthBar, frame.ManaBar, frame.Content }) do
+        region:SetFixedFrameStrata(true)
+        region:SetFixedFrameLevel(true)
+        region:SetFrameStrata(strata)
+    end
+    -- Native unit-frame contents occupy the first few levels above their root.
+    frame:SetFrameLevel(level + 20)
+    frame.HealthBar:SetFrameLevel(level + 21)
+    frame.ManaBar:SetFrameLevel(level + 21)
+    frame.Content:SetFrameLevel(level + 22)
     return true
 end
 

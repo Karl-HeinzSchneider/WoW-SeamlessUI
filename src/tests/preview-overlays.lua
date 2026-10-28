@@ -28,6 +28,12 @@ local function Frame(parent)
     function frame:SetFrameStrata(value)
         self.strata = value
     end
+    function frame:SetFixedFrameStrata(value)
+        self.fixedStrata = value
+    end
+    function frame:SetFixedFrameLevel(value)
+        self.fixedLevel = value
+    end
     function frame:EnableMouse(value)
         self.mouse = value
     end
@@ -100,6 +106,14 @@ for _, name in pairs(names) do
     _G[name] = setmetatable({
         visible = true,
         scale = 1.2,
+        strata = "LOW",
+        level = 500,
+        GetFrameStrata = function(self)
+            return self.strata
+        end,
+        GetFrameLevel = function(self)
+            return self.level
+        end,
         Selection = setmetatable({
             strata = "MEDIUM",
             level = 20,
@@ -186,26 +200,30 @@ editing = true
 callbacks.enter()
 for key, frame in pairs(module.frames) do
     assert(frame.shown and frame.parent == UIParent and frame.mouse == false)
-    assert(frame.strata == "MEDIUM" and frame.level == 17)
-    assert(frame.HealthBar.level == 18 and frame.ManaBar.level == 18 and frame.Content.level == 19)
+    assert(frame.strata == "LOW" and frame.level == 520)
+    assert(frame.HealthBar.level == 521 and frame.ManaBar.level == 521 and frame.Content.level == 522)
+    for _, region in ipairs({ frame, frame.HealthBar, frame.ManaBar, frame.Content }) do
+        assert(region.strata == "LOW" and region.fixedStrata and region.fixedLevel)
+    end
     assert(math.abs(frame.scale - 1.5) < 0.001)
     assert(frame.point[2] == _G[names[key]])
     assert(frame.HealthBar.value == 37 and frame.HealthBar.high == 100)
     assert(frame.ManaBar.value == 21 and frame.ManaBar.high == 60)
 end
--- Selection levels/strata after native setup need not match the XML template.
-PlayerFrame.Selection.strata, PlayerFrame.Selection.level = "LOW", 12
+-- Even a lower selection level must draw over ALL preview layers by strata.
+PlayerFrame.Selection.level = 1
 module.driver.scripts.OnUpdate(nil, 0.2)
-assert(module.frames.player.strata == "LOW" and module.frames.player.level == 9)
+assert(module.frames.player.strata == "LOW" and module.frames.player.level == 520)
 assert(module.frames.player.HealthBar.strata == "LOW" and module.frames.player.ManaBar.strata == "LOW")
 assert(module.frames.player.Content.strata == "LOW")
-assert(module.frames.player.HealthBar.level == 10 and module.frames.player.Content.level == 11)
-PlayerFrame.Selection.level = 2
+assert(PlayerFrame.Selection.strata == "MEDIUM" and PlayerFrame.Selection.level == 1)
+PlayerFrame.Selection.strata = "LOW"
 module:Refresh()
-assert(not module.frames.player.shown, "never draw over a selection without room below it")
-PlayerFrame.Selection.level = 20
+assert(not module.frames.player.shown, "never put preview artwork into the selection stratum")
+PlayerFrame.Selection.strata = "MEDIUM"
+PlayerFrame.level = 25
 module:Refresh()
-assert(module.frames.player.shown)
+assert(module.frames.player.shown and module.frames.player.level == 45 and module.frames.player.Content.level == 47)
 TargetFrame.visible = false
 module.driver.scripts.OnUpdate(nil, 0.2)
 assert(not module.frames.target.shown and module.frames.player.shown)

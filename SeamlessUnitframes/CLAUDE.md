@@ -120,9 +120,10 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - `src/core/previewoverlays.lua` owns visual-only UIParent children named
   `SeamlessUnitframes<frameName>Preview`. They follow the native frame's anchor/effective scale
   and visibility only in Edit Mode, outside combat, with the addon enabled and a VIP available.
-  Roots use the native selection's current strata and level minus three, bars minus two and
-  content minus one. Read the actual selection at runtime; never assume the XML's MEDIUM/1000
-  survives client setup. Hide overlays until a readable selection with room for those levels exists.
+  Keep every preview frame explicitly fixed in the native frame's LOW stratum, with root/bar/text
+  levels 20/21/22 above its root. The selection must occupy a higher stratum (MEDIUM in this
+  client); never put preview art into that stratum based on a selection-level offset. Hide
+  previews when those readable, separate strata are unavailable.
   Never register them as movers, enable mouse input, parent
   them to native frames, or write native regions/scripts/state. Fixed geometry and existing
   layout artwork support both skins; explicit preview adapters render names, portraits,

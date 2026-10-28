@@ -14,6 +14,7 @@
 ---@field systemOptions SeamlessUI.SystemOptions
 ---@field fpsDisplay SeamlessUI.FPSDisplay
 ---@field editModeKeyboard SeamlessUI.EditModeKeyboard
+---@field minimap SeamlessUI.Minimap
 
 ---@class SeamlessUI.DB : AceDBObject-3.0
 ---@field profile SeamlessUI.DB.Profile

@@ -788,6 +788,7 @@ end
 -- L["Could not set the anchor: %s"] = "Could not set the anchor: %s"
 -- L["Enable Blizzard Edit Mode extensions"] = "Enable Blizzard Edit Mode extensions"
 -- L["FPS:"] = "FPS:"
+-- L["Hide minimap day/night indicator"] = "Hide minimap day/night indicator"
 -- L["Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."] = "Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."
 -- L["MS:"] = "MS:"
 -- L["Move settings next to the Edit Mode window"] = "Move settings next to the Edit Mode window"

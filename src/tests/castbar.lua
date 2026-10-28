@@ -280,7 +280,6 @@ app.position = { GetOptions = function() end }
 app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
 app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
 load("options/shared.lua")
-load("options/general.lua")
 load("options/player.lua")
 load("options/target.lua")
 load("options/focus.lua")

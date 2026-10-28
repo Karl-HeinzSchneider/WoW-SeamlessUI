@@ -256,7 +256,8 @@ for addon, keys in pairs({
             )
         end
     end
-    assert(not apps[addon].optionPages.general.config.buttonSection, "unrelated pages do not inherit a footer")
+    local general = apps[addon].optionPages.general
+    assert(not general or not general.config.buttonSection, "unrelated pages do not inherit a footer")
 end
 local footerCount = 0
 for _, app in pairs(apps) do

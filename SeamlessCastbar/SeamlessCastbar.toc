@@ -20,7 +20,6 @@ src\editmode.lua
 src\preview.lua
 
 src\options\shared.lua
-src\options\general.lua
 src\options\player.lua
 src\options\target.lua
 src\options\focus.lua

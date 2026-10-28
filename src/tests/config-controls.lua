@@ -94,6 +94,9 @@ function methods:CreateTexture()
     return frame()
 end
 function methods:GetStringHeight()
+    if self.width and self.text then
+        return 14 * math.max(1, math.ceil(#self.text * 7 / self.width))
+    end
     return 14
 end
 function methods:GetStringWidth()
@@ -459,9 +462,37 @@ assert(GameTooltip.lines[1] == "\n(Default: |cff8080ffDisabled|r)")
 assert(GameTooltip.lines[2] == "|cff8080ff[Per-character setting]|r")
 assert(GameTooltip.lines[3] == "|cff8080ff[Blizzard CVAR]|r")
 root.args.general.args.enabled.default = nil
-toggle:Commit(false)
+-- The label and empty row space share the checkbox's guarded commit path.
+toggle.scripts.OnMouseUp(toggle, "RightButton")
+assert(profile.enabled, "Right-clicking a checkbox row must not toggle it")
+local enabledOption = root.args.general.args.enabled
+enabledOption.disabled = true
+app.config:RefreshOptionsPage(page)
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+assert(profile.enabled, "Disabled checkbox rows must not toggle")
+enabledOption.disabled = nil
+enabledOption.validate = function()
+    return false
+end
+app.config:RefreshOptionsPage(page)
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+assert(profile.enabled, "Row clicks must honor validation")
+enabledOption.validate = nil
+enabledOption.confirm = true
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+assert(profile.enabled and pending, "Row clicks must honor confirmation")
+pending()
+pending = nil
+enabledOption.confirm = nil
 app.config:RefreshOptionsPage(page)
 assert(not profile.enabled and not slider.Control.enabled)
+toggle.scripts.OnMouseUp(toggle, "LeftButton")
+app.config:RefreshOptionsPage(page)
+assert(profile.enabled and toggle.Control:GetChecked(), "Row clicks must also enable a checkbox")
+toggle.Control:SetChecked(false)
+toggle.Control.scripts.OnClick()
+app.config:RefreshOptionsPage(page)
+assert(not profile.enabled and not toggle.Control:GetChecked(), "Direct checkbox clicks must still work")
 slider:Commit(9)
 assert(profile.amount == 7)
 local input = page.controlPools.input[1]
@@ -643,4 +674,20 @@ app.config:RefreshOptionsPage(page)
 assert(edit:GetText() == "1.5" and not edit:HasFocus(), "refresh discards stale profile input")
 range.Control.callback(range.Control.owner, 2.5)
 assert(profile.amount == 2.5 and edit:GetText() == "2.5", "dragging updates the numeric field")
+-- A fresh page measures long names before its rows have screen anchors. Clicking must not
+-- change the label column or reveal a second line that was clipped on the first display.
+root.args.general.args.enabled.name = "Pass unused Edit Mode keys through"
+local wrappedPage = frame()
+app.config:CreateOptionsPage(wrappedPage, root, "general", "Test")
+app.config:RefreshOptionsPage(wrappedPage)
+local wrapped = wrappedPage.controlPools.toggle[1]
+local wrappedWidth, wrappedHeight = wrapped.Label.width, wrapped:GetHeight()
+assert(wrappedWidth == 627 / 2 - 85 - 37, "Label width must be explicit before measuring wrapped text")
+assert(wrappedHeight == 40, "Long option names need space for two lines on first display")
+wrapped.scripts.OnMouseUp(wrapped, "LeftButton")
+app.config:RefreshOptionsPage(wrappedPage)
+assert(wrapped.Label.width == wrappedWidth and wrapped:GetHeight() == wrappedHeight)
+root.args.general.args.enabled.name = "Enabled"
+app.config:RefreshOptionsPage(wrappedPage)
+assert(wrapped:GetHeight() == 32, "Pooled rows must shrink again for short names")
 print("Native config controls OK")

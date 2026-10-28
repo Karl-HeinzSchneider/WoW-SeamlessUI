@@ -787,6 +787,7 @@ L["Enable Blizzard Edit Mode extensions"] = true
 L["FPS:"] = true
 L["Hide addon compartment button"] = true
 L["Hide calendar button"] = true
+L["Hide clock"] = true
 L["Hide complete minimap header"] = true
 L["Hide minimap day/night indicator"] = true
 L["Hide tracking button"] = true

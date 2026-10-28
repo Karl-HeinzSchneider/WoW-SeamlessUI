@@ -29,6 +29,7 @@
 ---@field hideAddonCompartment boolean
 ---@field hideTracking boolean
 ---@field hideCalendar boolean
+---@field hideClock boolean
 ---@field hideZoneText boolean
 ---@field hideHeader boolean
 ---@class SeamlessUI.DB.Char

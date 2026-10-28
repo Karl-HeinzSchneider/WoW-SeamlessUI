@@ -120,6 +120,7 @@ local function newFrame()
 end
 local cluster = MinimapCluster
 AddonCompartmentFrame, GameTimeFrame = newFrame(), newFrame()
+TimeManagerClockButton = newFrame()
 cluster.Tracking, cluster.ZoneTextButton, cluster.IndicatorFrame = newFrame(), newFrame(), newFrame()
 local container = { width = 215, height = 226, scale = 1 }
 cluster.MinimapContainer = container
@@ -174,15 +175,16 @@ local controls = {
     { "hideAddonCompartment", AddonCompartmentFrame },
     { "hideTracking", cluster.Tracking },
     { "hideCalendar", GameTimeFrame },
+    { "hideClock", TimeManagerClockButton },
     { "hideZoneText", cluster.ZoneTextButton },
 }
 local rows = {}
 for _, option in ipairs(registration.options) do
     rows[option.key] = option
 end
-assert(#registration.options == 6, "all Style settings reach Edit Mode")
+assert(#registration.options == 7, "all Style settings reach Edit Mode")
 -- Exhaust every combination of individual switches, independently of the header switch.
-for combination = 0, 15 do
+for combination = 0, 31 do
     for index, control in ipairs(controls) do
         rows[control[1]].set(math.floor(combination / 2 ^ (index - 1)) % 2 == 1)
     end
@@ -197,6 +199,8 @@ for combination = 0, 15 do
     assert(cluster.height == container.height * container.scale, "header space removed")
     GameTimeFrame:Show()
     assert(not GameTimeFrame:IsShown(), "native Show respects header override")
+    TimeManagerClockButton:Show()
+    assert(not TimeManagerClockButton:IsShown(), "header override also hides the clock")
     rows.hideHeader.set(false)
     for _, control in ipairs(controls) do
         assert(control[2]:IsShown() == not rows[control[1]].get(), "header restores individual choices")

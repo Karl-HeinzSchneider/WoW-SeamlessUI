@@ -790,6 +790,7 @@ end
 -- L["FPS:"] = "FPS:"
 -- L["Hide addon compartment button"] = "Hide addon compartment button"
 -- L["Hide calendar button"] = "Hide calendar button"
+-- L["Hide clock"] = "Hide clock"
 -- L["Hide complete minimap header"] = "Hide complete minimap header"
 -- L["Hide minimap day/night indicator"] = "Hide minimap day/night indicator"
 -- L["Hide tracking button"] = "Hide tracking button"

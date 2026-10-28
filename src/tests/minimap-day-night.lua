@@ -18,6 +18,7 @@ function IsLoggedIn()
     return true
 end
 local app = {
+    core = { RefreshEditModeSystemOptions = function() end },
     addon = {
         NewModule = function()
             return module
@@ -26,6 +27,43 @@ local app = {
     db = { profile = { hideMinimapDayNight = false } },
 }
 assert(loadfile("SeamlessUI/src/features/minimap.lua"))("SeamlessUI", app)
+-- Load the real page and verify Edit Mode uses its Style control and callbacks.
+function LibStub()
+    return {
+        GetLocale = function()
+            return setmetatable({}, {
+                __index = function(_, key)
+                    return key
+                end,
+            })
+        end,
+    }
+end
+Enum = { EditModeSystem = { Minimap = 42 } }
+app.optionPages = {}
+app.core.GetEditModeButtonSection = function()
+    return {}
+end
+app.core.GetEditModePositionButton = function()
+    return {}
+end
+app.core.GetNativePositionOptions = function()
+    return {}
+end
+app.addon.IsEnabled = function()
+    return true
+end
+local registration
+function app.core:RegisterEditModeSystemOptions(_, spec)
+    registration = spec
+end
+assert(loadfile("SeamlessUI/src/options/minimap.lua"))("SeamlessUI", app)
+module:OnInitialize()
+assert(registration.system == Enum.EditModeSystem.Minimap and registration.name == "Style")
+assert(registration.enabled())
+local row = registration.options[1]
+assert(row.get == app.optionPages.minimap.config.args.style.args.hideMinimapDayNight.get)
+assert(row.default == false and row.type == "toggle")
 module:OnEnable() -- Also safe before Blizzard_Minimap loads.
 local frame = { shown = true }
 function frame:IsShown()
@@ -43,8 +81,8 @@ end
 MinimapCluster = { DielFrame = frame }
 module:Apply()
 assert(frame.shown, "visible by default")
-app.db.profile.hideMinimapDayNight = true
-module:OnProfileRefresh()
+row.set(true)
+assert(row.get(), "Edit Mode writes the shared profile preference")
 assert(not frame.shown, "toggle hides the indicator")
 frame:Show()
 assert(not frame.shown, "native Show cannot undo the preference")

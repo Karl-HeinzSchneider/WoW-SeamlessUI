@@ -76,10 +76,8 @@ end
 local strataOrder =
     { BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5, FULLSCREEN = 6, FULLSCREEN_DIALOG = 7, TOOLTIP = 8 }
 
--- Keep the entire preview in the unit frame's stratum (LOW in this client), above
--- its contents. Selection belongs to a separate, higher stratum (MEDIUM). Do not
--- put preview art in the selection's stratum: its BORDER nine-slice must remain
--- above every preview region, including ARTWORK status bars and OVERLAY text.
+-- Keep the preview in the native frame's stratum, above its contents. Player's
+-- selection shares LOW at level 1000; Target/Focus/Pet selections use MEDIUM.
 local function Layer(frame, real)
     local selection = real.Selection
     if not Readable(selection) then
@@ -91,12 +89,21 @@ local function Layer(frame, real)
         return false
     end
     local nativeOrder, selectionOrder = strataOrder[strata], strataOrder[selectionStrata]
-    if not nativeOrder or not selectionOrder or nativeOrder >= selectionOrder then
+    if not nativeOrder or not selectionOrder or nativeOrder > selectionOrder then
         return false
     end
-    for _, region in ipairs({ frame, frame.HealthBar, frame.ManaBar, frame.Content }) do
-        region:SetFixedFrameStrata(true)
-        region:SetFixedFrameLevel(true)
+    if nativeOrder == selectionOrder then
+        local selectionLevel = selection:GetFrameLevel()
+        if not Readable(selectionLevel) or level + 22 >= selectionLevel then
+            return false
+        end
+    end
+    local regions = { frame, frame.HealthBar, frame.ManaBar, frame.Content }
+    -- Forever ignores layer setters while these locks are enabled. Unlock on
+    -- every refresh, apply the whole stack, then lock our frames again.
+    for _, region in ipairs(regions) do
+        region:SetFixedFrameStrata(false)
+        region:SetFixedFrameLevel(false)
         region:SetFrameStrata(strata)
     end
     -- Native unit-frame contents occupy the first few levels above their root.
@@ -104,6 +111,10 @@ local function Layer(frame, real)
     frame.HealthBar:SetFrameLevel(level + 21)
     frame.ManaBar:SetFrameLevel(level + 21)
     frame.Content:SetFrameLevel(level + 22)
+    for _, region in ipairs(regions) do
+        region:SetFixedFrameStrata(true)
+        region:SetFixedFrameLevel(true)
+    end
     return true
 end
 

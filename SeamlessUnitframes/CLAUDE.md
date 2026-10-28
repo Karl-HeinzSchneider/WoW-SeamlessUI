@@ -121,9 +121,11 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
   `SeamlessUnitframes<frameName>Preview`. They follow the native frame's anchor/effective scale
   and visibility only in Edit Mode, outside combat, with the addon enabled and a VIP available.
   Keep every preview frame explicitly fixed in the native frame's LOW stratum, with root/bar/text
-  levels 20/21/22 above its root. The selection must occupy a higher stratum (MEDIUM in this
-  client); never put preview art into that stratum based on a selection-level offset. Hide
-  previews when those readable, separate strata are unavailable.
+  levels 20/21/22 above its root. Player's selection shares LOW at level 1000; keep all preview
+  levels below it. Target/Focus/Pet selections use MEDIUM. Hide only when the readable native
+  and selection layers leave no space between their contents.
+  Unlock the preview's fixed strata/level flags before setting its layers on every refresh,
+  then lock them again; this client ignores layer writes while those flags are enabled.
   Never register them as movers, enable mouse input, parent
   them to native frames, or write native regions/scripts/state. Fixed geometry and existing
   layout artwork support both skins; explicit preview adapters render names, portraits,

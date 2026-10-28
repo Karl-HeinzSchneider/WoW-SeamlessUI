@@ -9,7 +9,7 @@ function lib:RegisterCallback(event, callback)
     callbacks[event] = callback
 end
 local function Frame(parent)
-    local frame = { parent = parent, shown = true, scripts = {} }
+    local frame = { parent = parent, shown = true, scripts = {}, strata = "MEDIUM", level = 1 }
     function frame:SetPoint(...)
         self.point = { ... }
     end
@@ -23,10 +23,14 @@ local function Frame(parent)
         self.scale = value
     end
     function frame:SetFrameLevel(value)
-        self.level = value
+        if not self.fixedLevel then
+            self.level = value
+        end
     end
     function frame:SetFrameStrata(value)
-        self.strata = value
+        if not self.fixedStrata then
+            self.strata = value
+        end
     end
     function frame:SetFixedFrameStrata(value)
         self.fixedStrata = value
@@ -219,7 +223,13 @@ assert(module.frames.player.Content.strata == "LOW")
 assert(PlayerFrame.Selection.strata == "MEDIUM" and PlayerFrame.Selection.level == 1)
 PlayerFrame.Selection.strata = "LOW"
 module:Refresh()
-assert(not module.frames.player.shown, "never put preview artwork into the selection stratum")
+assert(not module.frames.player.shown, "hide only when a shared stratum has no room below the selection")
+-- Runtime PlayerFrame values: LOW/1 with Selection LOW/1000. Shared strata are valid.
+PlayerFrame.level, PlayerFrame.Selection.level = 1, 1000
+module:Refresh()
+assert(module.frames.player.shown and module.frames.player.level == 21)
+assert(module.frames.player.Content.level == 23 and module.frames.player.Content.strata == "LOW")
+assert(PlayerFrame.Selection.level == 1000 and PlayerFrame.level == 1)
 PlayerFrame.Selection.strata = "MEDIUM"
 PlayerFrame.level = 25
 module:Refresh()

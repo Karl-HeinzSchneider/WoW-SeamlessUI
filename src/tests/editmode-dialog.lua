@@ -623,6 +623,16 @@ assert(Divider(buttons) and not Divider(list), "the divider stays with the butto
 assert(-Divider(buttons).points.TOPLEFT[2] < -feature.points.TOPLEFT[2], "above the buttons")
 
 -- Settings write the active layout; disabled states follow.
+on.scripts.OnMouseUp(on, "RightButton")
+assert(store.on == true, "Right-clicking a checkbox row must not toggle it")
+on.scripts.OnMouseUp(on, "LeftButton")
+assert(store.on == false and not on.Button.checked, "Clicking the row toggles and refreshes its checkbox")
+on:Refresh(false)
+on.scripts.OnMouseUp(on, "LeftButton")
+assert(store.on == false, "Disabled checkbox rows must not toggle")
+on:Refresh(true)
+on.scripts.OnMouseUp(on, "LeftButton")
+assert(store.on == true and on.Button.checked)
 on:OnCheckButtonClick()
 assert(store.on == false and store.fromReset == false and not style.Dropdown.enabled)
 local radios = {}

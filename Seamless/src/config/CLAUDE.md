@@ -108,7 +108,7 @@ controls on the next frame, after the originating callback has finished.
 Tooltips use one anchor for both the row and its control: tooltip BOTTOMLEFT to
 label TOPRIGHT, padded 12 pixels right and 8 up. Every setting gets the localized
 `\n(Default: |cff8080ff%s|r)` line; per-character settings also get
-`\n\n|cff8080ff[Per-character setting]|r`. Each page accepts a `tooltip(path)`
+`|cff8080ff[Per-character setting]|r`. Each page accepts a `tooltip(path)`
 resolver returning the declared default and a per-character boolean. Metadata belongs to the page declaration. Resolve defaults from addon schemas or CVar
 defaults, never from the current value. Profile settings that control per-character
 data remain profile settings. Actions and transient selections with no stored

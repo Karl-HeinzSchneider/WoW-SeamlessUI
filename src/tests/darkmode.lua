@@ -92,6 +92,12 @@ local totPreview = texture()
 SeamlessUnitframesTargetFrameToTPreview = { FrameTexture = totPreview }
 local focusTotPreview = texture()
 SeamlessUnitframesFocusFrameToTPreview = { FrameTexture = focusTotPreview }
+local overlays = {}
+for _, name in ipairs({ "PlayerFrame", "TargetFrame", "FocusFrame", "PetFrame" }) do
+    local preview = { FrameTexture = texture(), LevelBackground = texture(), Portrait = texture() }
+    _G["SeamlessUnitframes" .. name .. "Preview"] = preview
+    overlays[#overlays + 1] = preview
+end
 MinimapCompassTexture = texture()
 MinimapCluster = { ZoneTextButton = {} }
 AddonCompartmentFrame = { StateTexture = texture(0.7), AddTexture = texture(), Text = texture() }
@@ -186,6 +192,11 @@ equal(targetFrame.color, { 0.2, 0.3, 0.4, 1 }, "target frame tinted")
 equal(targetCircle.color, { 0.2, 0.3, 0.4, 1 }, "target level circle tinted")
 equal(totPreview.color, { 0.2, 0.3, 0.4, 1 }, "ToT Edit Mode preview tinted")
 equal(focusTotPreview.color, { 0.2, 0.3, 0.4, 1 }, "focus ToT Edit Mode preview tinted")
+for _, preview in ipairs(overlays) do
+    equal(preview.FrameTexture.color, { 0.2, 0.3, 0.4, 1 }, "VIP overlay border tinted")
+    equal(preview.LevelBackground.color, { 0.2, 0.3, 0.4, 1 }, "VIP overlay level circle tinted")
+    equal(preview.Portrait.color, { 1, 1, 1, 1 }, "VIP portrait untouched")
+end
 equal(MinimapCompassTexture.color, { 0.2, 0.3, 0.4, 1 }, "minimap ring tinted")
 equal(ring.color, { 0.2, 0.3, 0.4, 1 }, "minimap button border tinted")
 equal(iconTexture.color, { 1, 1, 1, 1 }, "minimap button icon untouched")
@@ -210,6 +221,10 @@ addon:Refresh()
 equal(frame.color, { 1, 1, 1, 0.5 }, "unit frames off restores")
 equal(totPreview.color, { 1, 1, 1, 1 }, "unit frames off restores the ToT preview")
 equal(focusTotPreview.color, { 1, 1, 1, 1 }, "unit frames off restores the focus ToT preview")
+for _, preview in ipairs(overlays) do
+    equal(preview.FrameTexture.color, { 1, 1, 1, 1 }, "VIP overlay border restored")
+    equal(preview.LevelBackground.color, { 1, 1, 1, 1 }, "VIP overlay level circle restored")
+end
 equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "other groups stay tinted")
 app.db.profile.groups.unitframes = true
 

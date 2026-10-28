@@ -32,6 +32,7 @@ src\questicon\targetquesticon.lua
 src\totposition\totposition.lua
 src\totposition\mover.lua
 src\core\previewcharacters.lua
+src\core\previewoverlays.lua
 
 SeamlessUnitframes.lua
 

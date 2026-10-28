@@ -107,15 +107,26 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 ## Conventions
 
 - `src/core/previewcharacters.lua` consumes Core's VIP catalogue only for the addon-owned
-  Target of Target and Target of Focus Edit Mode stand-ins. Getters require both an allowed key
-  and the exact frame in `totMover.movers`; native frames cannot consume VIP data. No native
+  ToT stand-ins and Player, Target, Focus and Pet overlays. Getters require the exact frame in
+  `totMover.movers` or `previewOverlays.frames`; native frames cannot consume VIP data. No native
   frame enumeration, native update hooks or native refresh/restoration calls belong in this
   controller. Native name, portrait and health-color paths never consult the catalogue; only
   their explicit `ApplyPreview` methods do. The stand-ins render names, portraits, health/power
-  and configured health colors. Combat/disable refresh only those custom frames with live
-  fallback data. Core retains metadata for future custom-frame consumers.
+  and configured health colors. Combat/disable refresh only those custom frames: ToT stand-ins
+  use live fallback data and the native-frame overlays hide. Core retains metadata for custom consumers.
   Run `lua src/tests/preview-unitframes.lua`, `lua src/tests/unitframes-options.lua` and
   `lua src/tests/unitframes-totposition.lua`. The isolation test rejects native hooks and calls.
+
+- `src/core/previewoverlays.lua` owns visual-only UIParent children named
+  `SeamlessUnitframes<frameName>Preview`. They follow the native frame's anchor/effective scale
+  and visibility only in Edit Mode, outside combat, with the addon enabled and a VIP available.
+  MEDIUM/990 roots and children below 1000 place them above the LOW native artwork and below
+  the client's MEDIUM/1000 selection. Never register them as movers, enable mouse input, parent
+  them to native frames, or write native regions/scripts/state. Fixed geometry and existing
+  layout artwork support both skins; explicit preview adapters render names, portraits,
+  health/power, level and portrait decoration. A session-only driver checks visibility/scale
+  every 0.1 seconds; owned module refresh hooks apply style changes synchronously.
+  Run `lua src/tests/preview-overlays.lua` for lifecycle, layering and native-write isolation.
 
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.

@@ -8,6 +8,7 @@
 ---@class SeamlessUnitframes
 ---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field previewCharacters SeamlessUnitframes.PreviewCharacters
+---@field previewOverlays SeamlessUnitframes.PreviewOverlays
 ---@field core SeamlessCore.Addon
 ---@field logger SeamlessCore.Logger
 ---@field addon SeamlessUnitframes.Addon

@@ -10,6 +10,8 @@ reputation border).
     `BossFrames` (frame texture, level background circle). Target and focus also paint their
     ToT frames and SeamlessUnitframes' public Edit Mode stand-ins for them
     (`SeamlessUnitframesTargetFrameToTPreview`, `SeamlessUnitframesFocusFrameToTPreview`).
+    Player, Target, Focus and Pet also paint their public
+    `SeamlessUnitframes<frameName>Preview` overlays' `FrameTexture` and `LevelBackground`.
   - Minimap: `Minimap` (`MinimapCompassTexture`, its rotating underlay, the zone header) and
     `AddonCompartmentButton` (its `StateTexture`, leaving text, notifications and additive
     interaction highlights untouched), and `MinimapButtons`

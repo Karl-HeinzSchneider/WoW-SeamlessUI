@@ -662,6 +662,10 @@ function module:ApplyToTPreview(frame, powerType)
     Small(frame, false, app.db.profile.layout == "legacy", powerType)
 end
 
+function module:ApplyPreviewPower(bar, family, powerType)
+    Power(bar, family, "player", nil, powerType)
+end
+
 local function Party(frame, old)
     if
         not module:CheckPaths(frame, "Party", {

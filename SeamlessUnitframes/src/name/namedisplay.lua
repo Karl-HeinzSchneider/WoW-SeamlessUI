@@ -114,7 +114,13 @@ function module:ApplyPreview(frame, key)
         local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
         local surname = character.surname ~= "" and character.surname or nil
         local full = character.name .. (surname and separator .. surname or "")
-        fontString:SetText(mode == "first" and character.name or mode == "last" and (surname or character.name) or full)
+        local text = mode == "first" and character.name or mode == "last" and (surname or character.name) or full
+        if key == "player" and mode == "combine" then
+            text = character.name .. (surname or "")
+        elseif key == "player" and mode == "override" and app.db.char.nameOverride ~= "" then
+            text = app.db.char.nameOverride
+        end
+        fontString:SetText(text)
         return
     end
     native[frame] = nil

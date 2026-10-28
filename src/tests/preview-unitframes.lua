@@ -4,6 +4,8 @@ local event
 local refreshes, requests = 0, 0
 local target, focus, native = {}, {}, {}
 local app = { addon = {}, core = {}, totMover = { movers = { targettarget = target, focustarget = focus } } }
+local overlays = { player = {}, target = {}, focus = {}, pet = {} }
+app.previewOverlays = { frames = overlays, Refresh = function() end }
 function app.addon:IsEnabled()
     return enabled
 end
@@ -50,6 +52,12 @@ assert(module:Get(nil, "targettarget") == nil)
 assert(requests == 0, "native frames never even request catalogue data")
 assert(module:Get(target, "targettarget").name == "unitframes:targettarget")
 assert(module:Get(focus, "focustarget").name == "unitframes:focustarget")
+for key, overlay in pairs(overlays) do
+    assert(module:Get(overlay, key).name == "unitframes:" .. key)
+    assert(module:Get(native, key) == nil)
+    assert(module:Get(target, key) == nil)
+end
+assert(module:Get(overlays.player, "target") == nil, "an overlay cannot impersonate another consumer")
 combat = true
 event()
 assert(refreshes == 2 and module:Get(target, "targettarget") == nil)

@@ -15,8 +15,16 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@alias SeamlessDarkmode.Paint fun(texture: Texture?)
 
+local function UnitPreview(paint, frame)
+    if frame then
+        paint(frame.FrameTexture)
+        paint(frame.LevelBackground)
+    end
+end
+
 ---@param paint SeamlessDarkmode.Paint
 local function PlayerFrame(paint)
+    UnitPreview(paint, _G.SeamlessUnitframesPlayerFramePreview)
     local frame = _G.PlayerFrame
     if not frame then
         return
@@ -41,6 +49,7 @@ end
 
 ---@param paint SeamlessDarkmode.Paint
 local function TargetFrame(paint)
+    UnitPreview(paint, _G.SeamlessUnitframesTargetFramePreview)
     TargetFrameTemplate(paint, _G.TargetFrame)
     paint(_G.TargetFrameToT and _G.TargetFrameToT.FrameTexture)
     paint(_G.SeamlessUnitframesTargetFrameToTPreview and _G.SeamlessUnitframesTargetFrameToTPreview.FrameTexture)
@@ -48,6 +57,7 @@ end
 
 ---@param paint SeamlessDarkmode.Paint
 local function FocusFrame(paint)
+    UnitPreview(paint, _G.SeamlessUnitframesFocusFramePreview)
     TargetFrameTemplate(paint, _G.FocusFrame)
     paint(_G.FocusFrameToT and _G.FocusFrameToT.FrameTexture)
     paint(_G.SeamlessUnitframesFocusFrameToTPreview and _G.SeamlessUnitframesFocusFrameToTPreview.FrameTexture)
@@ -55,6 +65,7 @@ end
 
 ---@param paint SeamlessDarkmode.Paint
 local function PetFrame(paint)
+    UnitPreview(paint, _G.SeamlessUnitframesPetFramePreview)
     paint(_G.PetFrameTexture)
 end
 

@@ -1,16 +1,15 @@
 ---@type string, SeamlessUnitframes
 local _, app = ...
 
--- Only addon-owned ToT stand-ins consume VIP records. Never hook or refresh native units here.
+-- Only exact addon-owned stand-ins/overlays consume VIP records.
 ---@class SeamlessUnitframes.PreviewCharacters : AceModule
 local module = {}
 app.previewCharacters = app.addon:NewModule("PreviewCharacters", module)
 
 function module:Get(frame, key)
-    if key ~= "targettarget" and key ~= "focustarget" then
-        return nil
-    end
-    if frame ~= app.totMover.movers[key] or frame == nil then
+    local owned = (key == "targettarget" or key == "focustarget") and app.totMover.movers[key]
+        or app.previewOverlays and app.previewOverlays.frames[key]
+    if frame ~= owned or frame == nil then
         return nil
     end
     if not self:IsEnabled() or not app.addon:IsEnabled() then
@@ -21,6 +20,9 @@ end
 
 function module:Refresh()
     app.totMover:Refresh()
+    if app.previewOverlays then
+        app.previewOverlays:Refresh()
+    end
 end
 
 function module:OnInitialize()

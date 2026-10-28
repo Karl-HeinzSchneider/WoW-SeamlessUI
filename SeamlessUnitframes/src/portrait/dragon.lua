@@ -21,6 +21,49 @@ local legacy = {
     boss = { 99.0, 81.0, 0.001953125, 0.388671875, 0.001953125, 0.318359375, 34, 11 },
 }
 
+-- Draw only on the supplied addon-owned overlay; native state is never consulted.
+function module:ApplyPreview(frame, key, character)
+    local old = app.db.profile.layout == "legacy"
+    local decoration = frame.PreviewDecoration
+    if not decoration then
+        decoration = frame:CreateTexture(nil, "OVERLAY", nil, 1)
+        frame.PreviewDecoration = decoration
+    end
+    decoration:Hide()
+    if key == "pet" then
+        return
+    end
+    if key == "player" then
+        local definition = (old and legacy or current)[app.db.profile.unitFrames.player.portraitDragon]
+        if not definition or not self:IsEnabled() then
+            return
+        end
+        decoration:SetTexture(old and "Interface/HUD/UIUnitFrameBoss2x" or "Interface/HUD/UIUnitFrameBossC602x")
+        decoration:SetSize(definition[1], definition[2])
+        decoration:SetTexCoord(definition[4], definition[3], definition[5], definition[6])
+        decoration:ClearAllPoints()
+        decoration:SetPoint("TOPLEFT", frame.portrait, "TOPLEFT", -definition[7], definition[8])
+    else
+        local rare = character.classification == "rare" or character.classification == "rareelite"
+        local boss = character.classification == "worldboss"
+        if not rare and not boss and character.classification ~= "elite" then
+            return
+        end
+        local atlas = boss and "Boss-Gold-Winged"
+            or (rare and (old and "Boss-Rare-Silver" or "Boss-Rare-Silver-Winged") or "Boss-Gold")
+        app.legacyLayout:Art(decoration, "UI-HUD-UnitFrame-Target-PortraitOn-" .. atlas, true)
+        decoration:ClearAllPoints()
+        decoration:SetPoint(
+            "TOPRIGHT",
+            frame,
+            "TOPRIGHT",
+            boss and (old and 8 or 11) or (old and -11 or (rare and 8 or 0)),
+            old and -8 or (boss and -4 or (rare and -7 or 1))
+        )
+    end
+    decoration:Show()
+end
+
 function module:Refresh()
     local old = app.db.profile.layout == "legacy"
     local definition = (old and legacy or current)[app.db.profile.unitFrames.player.portraitDragon]

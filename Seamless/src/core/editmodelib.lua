@@ -1028,3 +1028,122 @@ function addon:GetEditModePositionButton(action)
         end,
     }
 end
+
+-- Read-only descriptors for the optional history consumer. Library internals stay in Core.
+-- Restore callbacks resolve the current layout/profile through the original setting bindings.
+local historyDragVersions = setmetatable({}, { __mode = "k" })
+local historyDragHooks = setmetatable({}, { __mode = "k" })
+function addon:GetEditModeHistorySources()
+    local sources = {}
+    local function add(frame, key, name, get, set, disabled)
+        sources[#sources + 1] = {
+            frame = frame,
+            key = key,
+            name = name,
+            get = get,
+            set = set,
+            disabled = disabled,
+            frameName = lib.frameSelections[frame] and lib.frameSelections[frame].system:GetSystemName(),
+            dragVersion = historyDragVersions[frame] or 0,
+            positionFields = key == "position" and {
+                { key = "relativeTo", name = L["AnchorFrame"] },
+                { key = "point", name = L["Anchor"] },
+                { key = "relativePoint", name = L["AnchorParent"] },
+                { key = "x", name = L["X"] },
+                { key = "y", name = L["Y"] },
+            } or nil,
+        }
+    end
+    for frame, selection in pairs(lib.frameSelections) do
+        if not historyDragHooks[selection] then
+            historyDragHooks[selection] = true
+            selection:HookScript("OnDragStop", function()
+                historyDragVersions[frame] = (historyDragVersions[frame] or 0) + 1
+            end)
+        end
+        local settings = internal:GetFrameSettings(frame)
+        local hasPosition = false
+        local function visit(data, key)
+            if data.kind == lib.SettingType.Position then
+                hasPosition = true
+                local spec = data.position
+                add(frame, "position", L["Dragged"], function()
+                    local values = {}
+                    for _, field in ipairs(POSITION_FIELDS) do
+                        values[field[1]] = spec.get(field[1])
+                    end
+                    return values
+                end, function(values)
+                    if spec.disabled and spec.disabled() then
+                        return false
+                    end
+                    local target = values.relativeTo and _G[values.relativeTo]
+                    if
+                        values.relativeTo and (not target or not app.framePosition:IsValidAnchorTarget(target, frame))
+                    then
+                        return false
+                    end
+                    for _, field in ipairs(POSITION_FIELDS) do
+                        spec.set(field[1], values[field[1]])
+                    end
+                    lib:RefreshFrameSettings(frame)
+                    return true
+                end)
+                if spec.scale and spec.scale.get and spec.scale.set then
+                    add(frame, "scale", L["Scale"], spec.scale.get, spec.scale.set, spec.scale.disabled)
+                end
+                for index, extra in ipairs(data.options or {}) do
+                    visit(extra, key .. ":" .. index)
+                end
+            elseif data.get and data.set then
+                add(frame, key, data.name, function()
+                    local value = data.get(lib:GetActiveLayoutName())
+                    if value == nil then
+                        return data.default
+                    end
+                    return value
+                end, function(value)
+                    return data.set(lib:GetActiveLayoutName(), value, false)
+                end, Resolver(data.disabled))
+            end
+        end
+        for index, data in ipairs(settings or {}) do
+            visit(data, tostring(index))
+        end
+        if not hasPosition and not fixedFrames[frame] then
+            add(frame, "position", L["Dragged"], function()
+                local point, relativeTo, relativePoint, x, y = frame:GetPoint()
+                return {
+                    point = point,
+                    relativeTo = relativeTo and relativeTo:GetName(),
+                    relativePoint = relativePoint,
+                    x = x,
+                    y = y,
+                }
+            end, function(values)
+                local target = values.relativeTo and _G[values.relativeTo] or frame:GetParent()
+                if not target or not app.framePosition:IsValidAnchorTarget(target, frame) then
+                    return false
+                end
+                frame:ClearAllPoints()
+                frame:SetPoint(values.point, target, values.relativePoint, values.x, values.y)
+                internal:TriggerCallback(frame, values.point, values.x, values.y)
+                return true
+            end)
+        end
+    end
+    -- Enumerate registered native extensions even before their settings window opens.
+    local manager = EditModeManagerFrame
+    for _, frame in ipairs(manager and manager.registeredSystemFrames or {}) do
+        for _, section in ipairs(addon:GetEditModeSystemOptions(frame)) do
+            for _, row in ipairs(section.options) do
+                add(frame, section.id .. ":" .. row.key, row.name, row.get, row.set, row.disabled)
+            end
+        end
+        local scale = addon:GetEditModeSystemScale(frame)
+        if scale then
+            add(frame, "custom:scale", L["Scale"], scale.get, scale.set, scale.disabled)
+        end
+    end
+    return sources
+end

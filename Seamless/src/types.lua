@@ -106,6 +106,7 @@
 ---@field RefreshEditModeSystemOptions fun(self: SeamlessCore.Addon)
 ---@field GetEditModeSystemOptionsMessage fun(self: SeamlessCore.Addon): string
 ---@field RegisterEditModeSystemScale fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemScale)
+---@field GetEditModeHistorySources fun(self: SeamlessCore.Addon): table[] History bindings without exposing library internals.
 ---@field GetEditModeSystemScale fun(self: SeamlessCore.Addon, system: table): SeamlessCore.PositionScale?
 ---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
 ---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean

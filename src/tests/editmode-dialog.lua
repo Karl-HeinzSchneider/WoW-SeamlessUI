@@ -1143,3 +1143,27 @@ end
 print("PASS: the window attaches below Blizzard's settings dialog")
 
 print("PASS: suite frame settings window")
+
+-- The history bridge exposes unselected suite settings without changing renderer rows.
+do
+    for _, item in pairs(lib.frameSelections) do
+        if not item.HookScript then
+            item.scripts = item.scripts or {}
+            item.HookScript = methods.HookScript
+        end
+    end
+    local sources = app.addon:GetEditModeHistorySources()
+    local found
+    for _, source in ipairs(sources) do
+        if source.frame == frame and source.name == "On" then
+            found = source
+        end
+    end
+    assert(found and found.frameName == "Seamless Damage 1")
+    local before = found.get()
+    found.set(not before)
+    assert(store.on == not before and store.fromReset == false)
+    found.set(before)
+    assert(found.get() == before)
+end
+print("PASS: Core history bindings read and restore suite settings")

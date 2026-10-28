@@ -15,6 +15,7 @@ src\core\db.lua
 src\core\ace.lua
 src\features\xpbartooltip.lua
 src\features\editmodekeyboard.lua
+src\features\editmodehistory.lua
 src\features\minimap.lua
 src\features\blizzardposition.lua
 src\features\systemoptions.lua

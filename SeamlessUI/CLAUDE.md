@@ -127,3 +127,15 @@ events in `OnEnable`, restore changes in `OnDisable`, read `app.db.profile` at u
 implement `OnProfileRefresh` for profile-dependent behavior.
 
 All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.
+
+## Edit Mode history (`editmodehistory.lua`)
+
+General's `editModeHistory` toggle defaults on, independently of native frame extensions.
+The compact window follows the left edge of Blizzard's main Edit Mode window and lists the
+last 25 changes, newest first. History is session-only; exit, layout/profile switches, combat
+and disabling reset it. Mouse-held position/slider updates coalesce into one transaction on
+release, including mirrored settings. Undo restores that transaction without recording itself.
+Core's `GetEditModeHistorySources` exposes suite settings/position bindings and registered native
+extensions without exposing library internals. Native values use the active draft and guarded
+position service; native Save/Revert retain ownership of persistence and their saved baselines.
+Run `lua src/tests/editmode-history.lua` and the Edit Mode dialog/position harnesses.

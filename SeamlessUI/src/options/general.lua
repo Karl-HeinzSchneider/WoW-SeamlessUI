@@ -75,6 +75,7 @@ app.optionPages.general = {
     defaults = {
         profile = {
             editModeKeyboard = true,
+            editModeHistory = true,
             xpBarTooltip = {
                 enabled = true,
                 completedQuests = true,
@@ -89,6 +90,21 @@ app.optionPages.general = {
         order = 0,
         args = {
             editModeKeyboard = editModeKeyboardOption,
+            editModeHistory = {
+                type = "toggle",
+                order = 40,
+                width = "full",
+                name = L["Edit Mode history"],
+                desc = L["Show the last 25 frame changes beside Edit Mode and undo the latest change. History resets when you leave Edit Mode or change layouts or profiles."],
+                disabled = InCombatLockdown,
+                get = function()
+                    return app.db.profile.editModeHistory
+                end,
+                set = function(_, value)
+                    app.db.profile.editModeHistory = value
+                    app.editModeHistory:OnProfileRefresh()
+                end,
+            },
             xpBarTooltip = xpBarTooltipOption,
         },
     },

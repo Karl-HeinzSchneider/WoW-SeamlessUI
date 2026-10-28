@@ -13,6 +13,7 @@
 ---@field blizzardPosition SeamlessUI.BlizzardPosition
 ---@field systemOptions SeamlessUI.SystemOptions
 ---@field fpsDisplay SeamlessUI.FPSDisplay
+---@field editModeHistory SeamlessUI.EditModeHistory
 ---@field editModeKeyboard SeamlessUI.EditModeKeyboard
 ---@field minimap SeamlessUI.Minimap
 
@@ -23,6 +24,7 @@
 
 ---@class SeamlessUI.DBDefaults : AceDB.Schema
 ---@class SeamlessUI.DB.Profile
+---@field editModeHistory boolean
 ---@field minimap SeamlessUI.MinimapSettings
 ---@field hideMinimapDayNight boolean
 ---@class SeamlessUI.MinimapSettings

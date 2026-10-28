@@ -332,3 +332,8 @@ Named legacy profiles and non-profile scopes are copied; the current character's
 feature profile also seeds the active core profile. An existing namespace is never reimported.
 Disabled addons import when first loaded. Chat's separate per-character log/history stores stay
 separate. Run `lua src/tests/shared-profiles.lua`.
+
+`GetEditModeHistorySources()` returns frame/key/name/get/set/disabled descriptors for the
+optional UI history consumer. The bridge in `editmodelib.lua` owns access to library settings
+and position callbacks; native extensions come from the public system-options/scale registries.
+Bindings resolve the current profile/layout when called. History itself belongs to SeamlessUI.

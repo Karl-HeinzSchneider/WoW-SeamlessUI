@@ -822,6 +822,7 @@ end
 
 -- SeamlessUnitframes
 -- L["\n\nA pet takes its owner's class color."] = "\n\nA pet takes its owner's class color."
+-- L["Boss"] = "Boss"
 -- L["Class icon"] = "Class icon"
 -- L["Class"] = "Class"
 -- L["Class, reaction for NPCs"] = "Class, reaction for NPCs"
@@ -829,6 +830,7 @@ end
 -- L["Current (70425)"] = "Current (70425)"
 -- L["Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."] = "Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."
 -- L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] = "Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."
+-- L["Elite"] = "Elite"
 -- L["First name only"] = "First name only"
 -- L["Full name"] = "Full name"
 -- L["Health bar color"] = "Health bar color"
@@ -839,9 +841,11 @@ end
 -- L["Legacy unit frames: %s; skipping this operation"] = "Legacy unit frames: %s; skipping this operation"
 -- L["Name display"] = "Name display"
 -- L["Name"] = "Name"
+-- L["Portrait dragon"] = "Portrait dragon"
 -- L["Portrait"] = "Portrait"
 -- L["PvP"] = "PvP"
 -- L["Quest icon"] = "Quest icon"
+-- L["Rare"] = "Rare"
 -- L["Reaction"] = "Reaction"
 -- L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."] = "Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."
 -- L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."] = "Shows a player character's class icon instead of the portrait. NPCs keep their portrait."

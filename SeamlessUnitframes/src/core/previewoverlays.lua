@@ -27,7 +27,7 @@ local function Texture(parent, layer)
 end
 
 local function Create(key)
-    -- No native templates, scripts, unit bindings or parent propagation. These visual-only
+    -- No native unit-frame templates, scripts, unit bindings or parent propagation. These visual-only
     -- UIParent children never participate in native frame updates or Edit Mode selection.
     local frame = CreateFrame("Frame", appName .. app.unitFrames:Get(key).frameName .. "Preview", UIParent)
     frame:Hide()
@@ -48,6 +48,10 @@ local function Create(key)
     frame.Content = content
     frame.name = content:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     frame.Name = frame.name
+    -- Opaque backing keeps a shorter VIP name from revealing live text below it.
+    frame.NameBacking = Texture(frame)
+    frame.NameBacking:SetColorTexture(0, 0, 0, 1)
+    frame.NameBacking:SetAllPoints(frame.name)
     frame.LevelBackground = Texture(content, "OVERLAY")
     frame.LevelBackground:SetAtlas(P .. "SmallCircle", true)
     frame.LevelText = content:CreateFontString(nil, "OVERLAY", "WhiteLargeNumberFont")
@@ -73,49 +77,70 @@ local function Create(key)
     return frame
 end
 
-local strataOrder =
-    { BACKGROUND = 1, LOW = 2, MEDIUM = 3, HIGH = 4, DIALOG = 5, FULLSCREEN = 6, FULLSCREEN_DIALOG = 7, TOOLTIP = 8 }
+-- Reproduce only the selection artwork on our own surface. The native selection
+-- retains all mouse, drag, snapping and settings behavior underneath this visual.
+local selectionLayout = {
+    TopRightCorner = { atlas = "%s-NineSlice-Corner", mirrorLayout = true, x = 8, y = 8 },
+    TopLeftCorner = { atlas = "%s-NineSlice-Corner", mirrorLayout = true, x = -8, y = 8 },
+    BottomLeftCorner = { atlas = "%s-NineSlice-Corner", mirrorLayout = true, x = -8, y = -8 },
+    BottomRightCorner = { atlas = "%s-NineSlice-Corner", mirrorLayout = true, x = 8, y = -8 },
+    TopEdge = { atlas = "_%s-NineSlice-EdgeTop" },
+    BottomEdge = { atlas = "_%s-NineSlice-EdgeBottom" },
+    LeftEdge = { atlas = "!%s-NineSlice-EdgeLeft" },
+    RightEdge = { atlas = "!%s-NineSlice-EdgeRight" },
+    Center = { atlas = "%s-NineSlice-Center", x = -8, y = 8, x1 = 8, y1 = -8 },
+}
 
--- Keep the preview in the native frame's stratum, above its contents. Player's
--- selection shares LOW at level 1000; Target/Focus/Pet selections use MEDIUM.
-local function Layer(frame, real)
-    local selection = real.Selection
-    if not Readable(selection) then
+local function UpdateSelection(frame, real)
+    local native = real.Selection
+    local visual = frame.SelectionVisual
+    local shown = Readable(native) and native:IsShown()
+    if not Readable(shown) or not shown then
+        visual:Hide()
         return false
     end
-    local strata, level = real:GetFrameStrata(), real:GetFrameLevel()
-    local selectionStrata = selection:GetFrameStrata()
-    if not Readable(strata) or not Readable(level) or not Readable(selectionStrata) then
-        return false
+    visual:SetAllPoints(native)
+    local selected = native:IsSelected()
+    local kit = Readable(selected) and selected and "editmode-actionbar-selected" or "editmode-actionbar-highlight"
+    if visual.kit ~= kit then
+        NineSliceUtil.ApplyLayout(visual, selectionLayout, kit)
+        visual.kit = kit
     end
-    local nativeOrder, selectionOrder = strataOrder[strata], strataOrder[selectionStrata]
-    if not nativeOrder or not selectionOrder or nativeOrder > selectionOrder then
-        return false
-    end
-    if nativeOrder == selectionOrder then
-        local selectionLevel = selection:GetFrameLevel()
-        if not Readable(selectionLevel) or level + 22 >= selectionLevel then
-            return false
-        end
-    end
-    local regions = { frame, frame.HealthBar, frame.ManaBar, frame.Content }
-    -- Forever ignores layer setters while these locks are enabled. Unlock on
-    -- every refresh, apply the whole stack, then lock our frames again.
-    for _, region in ipairs(regions) do
-        region:SetFixedFrameStrata(false)
-        region:SetFixedFrameLevel(false)
-        region:SetFrameStrata(strata)
-    end
-    -- Native unit-frame contents occupy the first few levels above their root.
-    frame:SetFrameLevel(level + 20)
-    frame.HealthBar:SetFrameLevel(level + 21)
-    frame.ManaBar:SetFrameLevel(level + 21)
-    frame.Content:SetFrameLevel(level + 22)
-    for _, region in ipairs(regions) do
+    local hover = native.MouseOverHighlight
+    local hovered = Readable(hover) and hover:IsShown()
+    visual.Hover:SetShown(Readable(hovered) and hovered or false)
+    local label = native.Label
+    local labelShown = Readable(label) and label:IsShown()
+    local text = Readable(labelShown) and labelShown and label:GetText()
+    visual.Label:SetText(Readable(text) and text or "")
+    visual.Label:SetShown(Readable(labelShown) and labelShown or false)
+    visual:Show()
+    return true
+end
+
+local function CreateSelection(frame)
+    local visual = CreateFrame("Frame", nil, frame, "NineSliceCodeTemplate")
+    visual:EnableMouse(false)
+    visual.Hover = CreateFrame("Frame", nil, visual, "NineSliceCodeTemplate")
+    visual.Hover:EnableMouse(false)
+    visual.Hover:SetAllPoints(visual)
+    NineSliceUtil.ApplyLayout(visual.Hover, selectionLayout, "editmode-actionbar-highlight")
+    visual.Hover:SetBlendMode("ADD")
+    visual.Hover:SetAlpha(0.4)
+    visual.Hover:Hide()
+    visual.Label = visual:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+    visual.Label:SetAllPoints(visual)
+    frame.SelectionVisual = visual
+    -- One owned stack above native unit art and native selections. The matching
+    -- selection surface always draws over the VIP, independent of native strata.
+    for index, region in ipairs({ frame, frame.HealthBar, frame.ManaBar, frame.Content, visual, visual.Hover }) do
+        region:EnableMouse(false)
+        region:SetFrameStrata("MEDIUM")
+        region:SetFrameLevel(2000 + index)
         region:SetFixedFrameStrata(true)
         region:SetFixedFrameLevel(true)
     end
-    return true
+    return frame
 end
 
 local function Geometry(frame, key, character)
@@ -220,12 +245,12 @@ function module:Refresh()
         local shown = active and Readable(real) and real:IsShown()
         local visible = Readable(shown) and shown
         if visible then
-            frame = frame or Create(key)
+            frame = frame or CreateSelection(Create(key))
             local character = app.previewCharacters:Get(frame, key)
             visible = character ~= nil
             if visible then
                 local scale, parentScale = real:GetEffectiveScale(), UIParent:GetEffectiveScale()
-                if Readable(scale) and Readable(parentScale) and Layer(frame, real) then
+                if Readable(scale) and Readable(parentScale) and UpdateSelection(frame, real) then
                     frame:SetScale(scale / parentScale)
                     Place(frame, real, "TOPLEFT", "TOPLEFT", 0, 0)
                     Geometry(frame, key, character)
@@ -257,7 +282,7 @@ end
 
 function module:OnInitialize()
     for _, key in ipairs(keys) do
-        Create(key)
+        CreateSelection(Create(key))
     end
     local driver = CreateFrame("Frame")
     self.driver = driver
@@ -269,6 +294,16 @@ function module:OnInitialize()
     end)
     local elapsed = 0
     driver:SetScript("OnUpdate", function(_, delta)
+        -- Keep hover/selection feedback synchronous with the next draw, without
+        -- repainting VIP artwork or touching a native script on every frame.
+        for key, frame in pairs(self.frames) do
+            if frame:IsShown() then
+                local real = _G[app.unitFrames:Get(key).frameName]
+                if not Readable(real) or not UpdateSelection(frame, real) then
+                    frame:Hide()
+                end
+            end
+        end
         elapsed = elapsed + delta
         if elapsed >= 0.1 then
             elapsed = 0

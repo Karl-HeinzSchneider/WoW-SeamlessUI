@@ -1,4 +1,4 @@
--- Native writes throw: VIP overlays must only read visibility/scale and anchor their own frames.
+-- Native writes throw: previews only read visibility, scale and selection state/bounds.
 local editing, combat, enabled, empty = false, false, true, false
 local callbacks = {}
 local lib = {}
@@ -44,6 +44,18 @@ local function Frame(parent)
     function frame:SetShown(value)
         self.shown = value
     end
+    function frame:IsShown()
+        return self.shown
+    end
+    function frame:SetAllPoints(target)
+        self.allPoints = target
+    end
+    function frame:SetAlpha(alpha)
+        self.alpha = alpha
+    end
+    function frame:SetBlendMode(blend)
+        self.blend = blend
+    end
     function frame:Hide()
         self.shown = false
     end
@@ -72,7 +84,6 @@ local function Frame(parent)
     end
     for _, method in ipairs({
         "SetAtlas",
-        "SetAllPoints",
         "AddMaskTexture",
         "SetStatusBarTexture",
         "SetStatusBarColor",
@@ -97,6 +108,13 @@ GetCVarBool = function()
     return true
 end
 SetPortraitTexture = function() end
+NineSliceUtil = {
+    ApplyLayout = function(frame, layout, kit)
+        assert(frame.parent, "selection art must belong to an addon-owned frame")
+        assert(layout.Center and layout.TopEdge and layout.BottomRightCorner)
+        frame.artKit = kit
+    end,
+}
 hooksecurefunc = function(object, method)
     assert(object.Refresh and method == "Refresh", "only owned refresh methods may be hooked")
 end
@@ -107,34 +125,60 @@ UIParent = {
 }
 local names = { player = "PlayerFrame", target = "TargetFrame", focus = "FocusFrame", pet = "PetFrame" }
 for _, name in pairs(names) do
+    local selection = {
+        strata = "MEDIUM",
+        level = 1000,
+        shown = true,
+        selected = false,
+        hovered = false,
+        labelShown = false,
+        labelText = name,
+        GetFrameStrata = function()
+            error("preview must not depend on native selection strata")
+        end,
+        GetFrameLevel = function()
+            error("preview must not depend on native selection levels")
+        end,
+        IsShown = function(self)
+            return self.shown
+        end,
+        IsSelected = function(self)
+            return self.selected
+        end,
+    }
+    selection.MouseOverHighlight = {
+        IsShown = function()
+            return selection.hovered
+        end,
+    }
+    selection.Label = {
+        IsShown = function()
+            return selection.labelShown
+        end,
+        GetText = function()
+            return selection.labelText
+        end,
+    }
+    setmetatable(selection, {
+        __index = function(_, key)
+            error("Forbidden selection access: " .. key)
+        end,
+        __newindex = function()
+            error("Forbidden selection write")
+        end,
+    })
     _G[name] = setmetatable({
         visible = true,
         scale = 1.2,
         strata = "LOW",
         level = 500,
-        GetFrameStrata = function(self)
-            return self.strata
+        GetFrameStrata = function()
+            error("preview must not depend on native strata")
         end,
-        GetFrameLevel = function(self)
-            return self.level
+        GetFrameLevel = function()
+            error("preview must not depend on native levels")
         end,
-        Selection = setmetatable({
-            strata = "MEDIUM",
-            level = 20,
-            GetFrameStrata = function(self)
-                return self.strata
-            end,
-            GetFrameLevel = function(self)
-                return self.level
-            end,
-        }, {
-            __index = function(_, key)
-                error("Forbidden selection access: " .. key)
-            end,
-            __newindex = function()
-                error("Forbidden selection write")
-            end,
-        }),
+        Selection = selection,
         IsShown = function(self)
             return self.visible
         end,
@@ -204,36 +248,48 @@ editing = true
 callbacks.enter()
 for key, frame in pairs(module.frames) do
     assert(frame.shown and frame.parent == UIParent and frame.mouse == false)
-    assert(frame.strata == "LOW" and frame.level == 520)
-    assert(frame.HealthBar.level == 521 and frame.ManaBar.level == 521 and frame.Content.level == 522)
-    for _, region in ipairs({ frame, frame.HealthBar, frame.ManaBar, frame.Content }) do
-        assert(region.strata == "LOW" and region.fixedStrata and region.fixedLevel)
+    assert(frame.strata == "MEDIUM" and frame.level == 2001)
+    assert(frame.SelectionVisual.level > frame.Content.level)
+    assert(frame.SelectionVisual.level > frame.HealthBar.level and frame.SelectionVisual.level > frame.ManaBar.level)
+    assert(frame.SelectionVisual.allPoints == _G[names[key]].Selection)
+    assert(frame.SelectionVisual.artKit == "editmode-actionbar-highlight")
+    for _, region in ipairs({
+        frame,
+        frame.HealthBar,
+        frame.ManaBar,
+        frame.Content,
+        frame.SelectionVisual,
+        frame.SelectionVisual.Hover,
+    }) do
+        assert(region.strata == "MEDIUM" and region.fixedStrata and region.fixedLevel and region.mouse == false)
     end
     assert(math.abs(frame.scale - 1.5) < 0.001)
     assert(frame.point[2] == _G[names[key]])
     assert(frame.HealthBar.value == 37 and frame.HealthBar.high == 100)
     assert(frame.ManaBar.value == 21 and frame.ManaBar.high == 60)
 end
--- Even a lower selection level must draw over ALL preview layers by strata.
-PlayerFrame.Selection.level = 1
-module.driver.scripts.OnUpdate(nil, 0.2)
-assert(module.frames.player.strata == "LOW" and module.frames.player.level == 520)
-assert(module.frames.player.HealthBar.strata == "LOW" and module.frames.player.ManaBar.strata == "LOW")
-assert(module.frames.player.Content.strata == "LOW")
-assert(PlayerFrame.Selection.strata == "MEDIUM" and PlayerFrame.Selection.level == 1)
-PlayerFrame.Selection.strata = "LOW"
+-- Actual client combinations no longer affect the preview stack or hide Player.
+PlayerFrame.level, PlayerFrame.Selection.strata, PlayerFrame.Selection.level = 1, "LOW", 1000
 module:Refresh()
-assert(not module.frames.player.shown, "hide only when a shared stratum has no room below the selection")
--- Runtime PlayerFrame values: LOW/1 with Selection LOW/1000. Shared strata are valid.
-PlayerFrame.level, PlayerFrame.Selection.level = 1, 1000
+assert(module.frames.player.shown and module.frames.player.level == 2001)
+assert(PlayerFrame.level == 1 and PlayerFrame.Selection.strata == "LOW" and PlayerFrame.Selection.level == 1000)
+-- Mirror selection, hover and label on the next draw, independent of VIP repaint cadence.
+local selection, surface = TargetFrame.Selection, module.frames.target.SelectionVisual
+selection.selected, selection.hovered, selection.labelShown, selection.labelText = true, true, true, "Target"
+module.driver.scripts.OnUpdate(nil, 0.01)
+assert(surface.artKit == "editmode-actionbar-selected")
+assert(surface.Hover.shown and surface.Hover.blend == "ADD" and surface.Hover.alpha == 0.4)
+assert(surface.Label.shown and surface.Label.text == "Target")
+selection.selected, selection.hovered, selection.labelShown = false, false, false
+module.driver.scripts.OnUpdate(nil, 0.01)
+assert(surface.artKit == "editmode-actionbar-highlight" and not surface.Hover.shown and not surface.Label.shown)
+-- Turning off a native Frames checkbox hides the owned preview, without changing the live frame.
+selection.shown = false
+module.driver.scripts.OnUpdate(nil, 0.01)
+assert(not module.frames.target.shown and TargetFrame.visible)
+selection.shown = true
 module:Refresh()
-assert(module.frames.player.shown and module.frames.player.level == 21)
-assert(module.frames.player.Content.level == 23 and module.frames.player.Content.strata == "LOW")
-assert(PlayerFrame.Selection.level == 1000 and PlayerFrame.level == 1)
-PlayerFrame.Selection.strata = "MEDIUM"
-PlayerFrame.level = 25
-module:Refresh()
-assert(module.frames.player.shown and module.frames.player.level == 45 and module.frames.player.Content.level == 47)
+assert(module.frames.target.shown)
 TargetFrame.visible = false
 module.driver.scripts.OnUpdate(nil, 0.2)
 assert(not module.frames.target.shown and module.frames.player.shown)
@@ -262,4 +318,4 @@ assert(not module.driver.shown)
 for _, frame in pairs(module.frames) do
     assert(not frame.shown)
 end
-print("VIP overlay lifecycle, layering and native isolation tests passed")
+print("Owned VIP/selection composition, input isolation and lifecycle tests passed")

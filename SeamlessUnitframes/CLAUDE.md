@@ -120,12 +120,16 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - `src/core/previewoverlays.lua` owns visual-only UIParent children named
   `SeamlessUnitframes<frameName>Preview`. They follow the native frame's anchor/effective scale
   and visibility only in Edit Mode, outside combat, with the addon enabled and a VIP available.
-  Keep every preview frame explicitly fixed in the native frame's LOW stratum, with root/bar/text
-  levels 20/21/22 above its root. Player's selection shares LOW at level 1000; keep all preview
-  levels below it. Target/Focus/Pet selections use MEDIUM. Hide only when the readable native
-  and selection layers leave no space between their contents.
-  Unlock the preview's fixed strata/level flags before setting its layers on every refresh,
-  then lock them again; this client ignores layer writes while those flags are enabled.
+  Render one owned composition in MEDIUM above the client's LOW unit artwork and native
+  selections: VIP art/bars/text, then `SelectionVisual` and its hover surface. Use the client's
+  existing selection nine-slice artwork through `NineSliceCodeTemplate`/`NineSliceUtil`, with
+  fixed definitions matching `EditModeSystemSelectionLayout`; never inherit native Edit Mode
+  mixins. Mirror the native selection's bounds, visibility, selected/hover state and label with
+  reads only. Every owned frame has mouse input disabled: native selection, dragging, snapping
+  and settings still receive input underneath. Do not infer this stack from native strata or
+  frame levels (Player's selection is LOW, others MEDIUM). Set owned layers once before locking
+  their fixed flags. Refresh selection feedback every draw, while VIP/scale refresh stays at 0.1s.
+  Hide the composition when its native selection is hidden, including its Frames checkbox.
   Never register them as movers, enable mouse input, parent
   them to native frames, or write native regions/scripts/state. Fixed geometry and existing
   layout artwork support both skins; explicit preview adapters render names, portraits,

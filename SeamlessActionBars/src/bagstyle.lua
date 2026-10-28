@@ -148,6 +148,17 @@ local function prepare(button)
     end
 end
 
+local function hideDividers()
+    if not active then
+        return
+    end
+    for _, pool in ipairs({ BagsBar.HorizontalDividersPool, BagsBar.VerticalDividersPool }) do
+        for divider in pool:EnumerateActive() do
+            divider:Hide()
+        end
+    end
+end
+
 local function layout()
     if not active or changing or not BagsBar or not MainMenuBarBagManager then
         return
@@ -210,11 +221,7 @@ local function layout()
     if bar.BorderArt then
         bar.BorderArt:SetAlpha(0)
     end
-    for _, pool in ipairs({ bar.HorizontalDividersPool, bar.VerticalDividersPool }) do
-        for divider in pool:EnumerateActive() do
-            divider:Hide()
-        end
-    end
+    hideDividers()
     local horizontal = bar:IsHorizontal()
     local reverse = horizontal and bar:IsDirectionLeft() or not horizontal and bar:IsDirectionUp()
     local point = horizontal and (reverse and "RIGHT" or "LEFT") or (reverse and "BOTTOM" or "TOP")
@@ -316,6 +323,8 @@ function module:Refresh()
     if BagsBar and MainMenuBarBagManager and not installed then
         installed = true
         hooksecurefunc(BagsBar, "Layout", layout)
+        -- Saved native Layout callbacks bypass our Layout hook but still call this method.
+        hooksecurefunc(BagsBar, "UpdateDividers", hideDividers)
         -- OnLoad registered the original Layout function with EventRegistry.
         -- Hooking the table method cannot intercept that saved function. Run
         -- after the manager finishes dispatching the complete expand change.

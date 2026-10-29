@@ -18,6 +18,7 @@
 ---@field StyleOptions fun(entry: SeamlessUnitframes.UnitFrame): SeamlessCore.EditModeSystemOption[]
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
+---@field nameBackground SeamlessUnitframes.NameBackground
 ---@field nameDisplay SeamlessUnitframes.NameDisplay
 ---@field classIcon SeamlessUnitframes.ClassIcon
 ---@field portraitDragon SeamlessUnitframes.PortraitDragon

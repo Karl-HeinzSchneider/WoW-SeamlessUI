@@ -594,6 +594,30 @@ modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")
 print("PASS: PvP icons")
 
+-- Target/focus name backgrounds are independent and restore after profile changes or disable.
+local targetBackground, focusBackground = Icon(), Icon()
+TargetFrame.TargetFrameContent = { TargetFrameContentMain = { ReputationColor = targetBackground } }
+FocusFrame.TargetFrameContent = { TargetFrameContentMain = { ReputationColor = focusBackground } }
+loadfile("SeamlessUnitframes/src/name/namebackground.lua")("SeamlessUnitframes", app)
+modules.NameBackground.RegisterEvent = function() end
+enabled = true
+for _, key in ipairs({ "target", "focus" }) do
+    assert(app.optionPages[key].defaults.profile.unitFrames[key].hideNameBackground == false)
+    local option = find(tabs[key], key .. "_hideNameBackground")
+    assert(option.type == "toggle")
+    option.set(nil, true)
+    assert(option.get() == true)
+end
+modules.NameBackground:OnEnable()
+assert(targetBackground.alpha == 0 and focusBackground.alpha == 0)
+app.db.profile.unitFrames.target = { hideNameBackground = false }
+modules.NameBackground:OnProfileRefresh()
+assert(targetBackground.alpha == 1 and focusBackground.alpha == 0)
+enabled = false
+modules.NameBackground:OnDisable()
+assert(focusBackground.alpha == 1)
+print("PASS: name backgrounds")
+
 -- The Pet declaration delegates to the shared account-visibility service.
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
 local choice = false

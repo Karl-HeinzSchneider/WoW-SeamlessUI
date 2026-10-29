@@ -184,6 +184,11 @@ for _, addon in ipairs({
             return {}
         end,
     }
+    app.combinedBags = {
+        GetPositionBinding = function()
+            return {}
+        end,
+    }
     app.blizzardEditMode = {
         GetOptionsFrames = function()
             return {}, {}
@@ -275,7 +280,9 @@ for _, app in pairs(apps) do
         end
     end
 end
-assert(footerCount == 34, "all 34 frame pages explicitly declare both actions")
+assert(footerCount == 35, "all 35 frame pages explicitly declare their actions")
+local bagsFooter = apps.SeamlessUI.optionPages.combinedBags.config.buttonSection
+assert(bagsFooter.options[1].name == "revert" and bagsFooter.options[2].name == "Reset to default position")
 -- Every native frame resolves back to its actual per-frame page, with no default fallback.
 local nativePages = {
     SeamlessUI = { minimap = "MinimapCluster" },
@@ -471,6 +478,7 @@ for _, id in ipairs({
     "SeamlessUnitframes.targettarget",
     "SeamlessUnitframes.focustarget",
     "SeamlessUI.fpsDisplay",
+    "SeamlessUI.combinedBags",
 }) do
     assert(customVisibilityIDs[id] == 1, "Custom frame must declare its header checkbox: " .. id)
 end

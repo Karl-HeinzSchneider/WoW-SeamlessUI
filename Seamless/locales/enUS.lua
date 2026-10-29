@@ -74,6 +74,7 @@ L["Boss frames"] = true
 L["Buffs"] = true
 L["Cast bar"] = true
 L["Chat frame"] = true
+L["Combined bags"] = true
 L["Debuffs"] = true
 L["Durability indicator"] = true
 L["Encounter bar"] = true

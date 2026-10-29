@@ -77,6 +77,7 @@ end
 -- L["Buffs"] = "Buffs"
 -- L["Cast bar"] = "Cast bar"
 -- L["Chat frame"] = "Chat frame"
+-- L["Combined bags"] = "Combined bags"
 -- L["Debuffs"] = "Debuffs"
 -- L["Durability indicator"] = "Durability indicator"
 -- L["Encounter bar"] = "Encounter bar"

@@ -27,7 +27,8 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   the profile scale for the endcaps and disabled for the leave vehicle button. The endcap tabs
   also have Hide endcap, bound to the native Hidden setting, and independent Texture selectors
   (Default leaves native art unchanged, Alliance uses gryphons, Horde uses wyverns). Texture
-  overrides reuse the native atlases and restore the original atlas on Default or disable. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
+  overrides reuse the native atlases and restore the original atlas on Default or disable.
+  Each selected endcap’s Edit Mode Style section derives its Texture dropdown from that same page declaration. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
 - `src/micromenu.lua`: the Micro menu tab uses `MicroMenuContainer` for native position,
   scale, orientation and order, saved in the active Edit Mode layout through Core's position
   service. Scale binds the native Size setting. The Style section shares orientation, order and

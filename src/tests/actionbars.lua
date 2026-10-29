@@ -198,6 +198,7 @@ Enum = {
     EditModeMainActionBarEndCapSystemIndices = { EndCapLeft = 1, EndCapRight = 2 },
     EditModeMainActionBarEndCapSetting = { Hidden = 0 },
 }
+local styleSections = {}
 local hidden, canEdit, refreshed, registered = { [left] = 0, [right] = 0 }, true, 0, {}
 local service = {
     ReadSetting = function(_, frame, setting)
@@ -222,6 +223,9 @@ app.core = {
     end,
     RefreshOptions = function()
         refreshed = refreshed + 1
+    end,
+    RegisterEditModeSystemOptions = function(_, id, spec)
+        styleSections[id] = spec
     end,
     RegisterEditModeSystemScale = function(_, id, spec)
         registered[id] = spec
@@ -275,7 +279,25 @@ assert(app.db.profile.endCaps.left.scale == 1.4 and left.scale == 1.2, "disabled
 app.ApplyEndCapScales(true)
 assert(left.scale == 1 and right.scale == 1, "disable restores the game's scale")
 enabled = true
+app.optionPages = {
+    endCapLeft = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[1]) } } },
+    endCapRight = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[2]) } } },
+}
 app.RegisterEndCapScales()
+local leftStyle = styleSections["SeamlessActionBars:endCap:left:style"]
+local rightStyle = styleSections["SeamlessActionBars:endCap:right:style"]
+assert(leftStyle.system == 26 and leftStyle.systemIndex == 1 and rightStyle.systemIndex == 2)
+local row = leftStyle.options[1]
+assert(row.type == "select" and row.default == "default" and #row.values == 3)
+assert(row.values[1].value == "default" and row.values[2].value == "ally" and row.values[3].value == "horde")
+row.set("ally")
+assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
+assert(rightStyle.options[1].get() == "default", "Edit Mode controls each side independently")
+row.set("default")
+assert(left.Texture.atlas == "native-1")
+enabled = false
+assert(not leftStyle.enabled() and not rightStyle.enabled())
+enabled = true
 local spec = registered["SeamlessActionBars:endCap:left"]
 assert(spec and spec.system == 26 and spec.systemIndex == 1 and spec.enabled())
 assert(registered["SeamlessActionBars:endCap:right"].systemIndex == 2)

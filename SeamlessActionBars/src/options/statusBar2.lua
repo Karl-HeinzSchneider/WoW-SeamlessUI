@@ -22,6 +22,9 @@ app.optionPages.statusBar2 = {
         hidden = function()
             return getFrame() == nil
         end,
-        args = { position = app.core:GetNativePositionOptions(getFrame, scale) },
+        args = {
+            xpBarTooltip = app.XPBarTooltipOptions(),
+            position = app.core:GetNativePositionOptions(getFrame, scale),
+        },
     },
 }

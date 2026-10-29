@@ -80,6 +80,7 @@ function app.addon:Refresh()
         app.PaintIcon(button)
         app.UpdateHotkey(button)
     end
+    app.xpBarTooltip:OnProfileRefresh()
     app.ApplyEndCapScales()
     app.RefreshMicroMenu()
     app.RefreshBarVisibility()

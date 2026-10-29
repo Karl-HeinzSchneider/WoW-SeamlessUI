@@ -19,6 +19,8 @@ src\bags.lua
 src\bagstyle.lua
 src\icons.lua
 src\hotkeys.lua
+src\xpbartooltip.lua
+src\options\xpbartooltip.lua
 
 src\options\general.lua
 src\options\bar1.lua

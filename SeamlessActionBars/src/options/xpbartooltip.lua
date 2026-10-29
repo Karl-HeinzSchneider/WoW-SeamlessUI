@@ -1,5 +1,5 @@
----@type string, SeamlessUI
-local appName, app = ...
+---@type string, SeamlessActionBars
+local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 local xpBarTooltipOption
@@ -12,10 +12,20 @@ do
         type = "group",
         feature = true,
         name = L["XP bar tooltip"],
-        desc = L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Configure the rested XP cap and accumulation rate below."],
+        desc = L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Detect Well Rested automatically or configure the rested XP cap and accumulation rate below."],
         order = 20,
         args = {
+            automaticRestedXP = {
+                type = "toggle",
+                order = 15,
+                width = "full",
+                name = L["Detect Well Rested automatically"],
+                desc = L["Uses your purchased Well Rested ranks for the rested XP cap and rate. The manual values are used if Legacy data is unavailable."],
+            },
             restedXPCap = {
+                disabled = function()
+                    return not settings().enabled or settings().automaticRestedXP
+                end,
                 type = "range",
                 order = 20,
                 name = L["Rested XP cap (%)"],
@@ -25,6 +35,9 @@ do
                 step = 1,
             },
             restedXPRate = {
+                disabled = function()
+                    return not settings().enabled or settings().automaticRestedXP
+                end,
                 type = "range",
                 order = 30,
                 name = L["Rested XP per 8 hours (%)"],
@@ -48,27 +61,6 @@ do
         end,
     }
 end
----@type SeamlessCore.SettingsPage
-app.optionPages.general = {
-    tooltip = function(path)
-        return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
-    end,
-    defaults = {
-        profile = {
-            xpBarTooltip = {
-                enabled = true,
-                completedQuests = true,
-                restedXPCap = 150,
-                restedXPRate = 5,
-            },
-        },
-    },
-    config = {
-        type = "group",
-        name = L["General"],
-        order = 0,
-        args = {
-            xpBarTooltip = xpBarTooltipOption,
-        },
-    },
-}
+app.XPBarTooltipOptions = function()
+    return xpBarTooltipOption
+end

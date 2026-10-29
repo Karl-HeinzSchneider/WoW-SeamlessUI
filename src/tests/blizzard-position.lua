@@ -733,6 +733,19 @@ assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown)
 scaleRow.Slider:SetValue(1.5)
 assert(size == 180, "preset layouts are read-only")
 preset = false
+-- Both status-tracking containers expose Size as width only; Scale must not write it.
+Enum.EditModeStatusTrackingBarSetting = { Size = SIZE }
+selectedSpec.system = "StatusTrackingBar"
+for _, index in ipairs({ 1, 2 }) do
+    selectedSpec.index = index
+    view:Refresh(player)
+    assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown)
+    assert(scaleRow.Slider.value == 1, "status bars display actual scale instead of width")
+    assert(position:GetScaleSetting(player) == nil)
+    assert(not position:ApplyScale(player, 1.25))
+    assert(size == 180, "status bar width remains unchanged")
+end
+selectedSpec.index = nil
 player.settingDisplayInfoMap, player.HasSetting, player.GetSettingValue = nil, nil, nil
 EditModeManagerFrame.OnSystemSettingChange = nil
 selectedSpec.system = nil

@@ -91,6 +91,10 @@ function position:GetScaleSetting(system)
     if selected ~= system or not spec or not spec.system then
         return nil
     end
+    -- Status-tracking Size changes only width, not the frame's scale.
+    if spec.system == "StatusTrackingBar" then
+        return nil
+    end
     local settings = Enum["EditMode" .. spec.system .. "Setting"]
     return settings and settings[scaleSettings[spec.system] or "Size"]
 end

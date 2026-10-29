@@ -72,6 +72,8 @@ Run `lua src/tests/blizzard-editmode.lua`.
   so it stays in the native draft. Frames without one use a binding a feature registered with
   `core:RegisterEditModeSystemScale` (the action bar endcaps), snapped to its step; without
   either (or while Edit Mode hides the setting) the row shows the frame's scale greyed out.
+  Status-tracking bars are excluded from the native `Size` mapping because it changes only
+  width; their Scale row shows the actual frame scale greyed out.
 - Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`/
   `ReanchorFrame`, mirrors the anchor into the live draft and calls the frame's
   `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate

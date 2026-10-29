@@ -145,7 +145,7 @@ end
 -- LibEditMode: the active layout, Edit Mode state, registered stand-ins and callbacks.
 local layout, editing = nil, false
 local callbacks, registeredFrames = {}, {}
-local lib = {}
+local lib = { SettingType = { Header = "header", Dropdown = "dropdown" } }
 function lib:GetActiveLayoutName()
     return layout
 end
@@ -229,6 +229,21 @@ local function load(file)
     assert(loadfile("SeamlessUnitframes/src/" .. file))("SeamlessUnitframes", app)
 end
 load("core/unitframes.lua")
+app.StyleOptions = function(entry)
+    return {
+        {
+            type = "select",
+            name = "Name display",
+            default = function()
+                return "full"
+            end,
+            get = function()
+                return "full"
+            end,
+            set = function() end,
+        },
+    }
+end
 local previewCalls = {}
 for _, name in ipairs({ "legacyLayout", "healthColor", "nameDisplay", "classIcon" }) do
     app[name] = {
@@ -333,8 +348,10 @@ print("PASS: focus ToT follows Larger Frame")
 local targetMover = registeredFrames["Target of Target"]
 local focusMover = registeredFrames["Target of Focus"]
 assert(targetMover and focusMover and targetMover.settings[1].spec, "registered with LibEditMode and Position rows")
-assert(targetMover.settings[2] == app.optionPages.targettarget.config.buttonSection)
-assert(focusMover.settings[2] == app.optionPages.focustarget.config.buttonSection)
+assert(targetMover.settings[2].kind == "header" and targetMover.settings[2].name == "Style")
+assert(targetMover.settings[3].kind == "dropdown" and targetMover.settings[3].default == "full")
+assert(targetMover.settings[4] == app.optionPages.targettarget.config.buttonSection)
+assert(focusMover.settings[4] == app.optionPages.focustarget.config.buttonSection)
 local frames = editModeGroups["SeamlessUnitframes.ToT"]
 assert(frames.section == "frames" and #frames.options == 2 and frames.options[1].get() == true)
 assert(not targetMover.frame.shown)

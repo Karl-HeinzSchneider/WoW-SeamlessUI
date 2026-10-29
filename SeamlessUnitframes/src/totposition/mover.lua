@@ -1,5 +1,6 @@
 ---@type string, SeamlessUnitframes
 local appName, app = ...
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- Edit Mode stand-ins for the target of target and target of focus frames. The real frames are
 -- secure buttons that hide without a unit and must not be dragged (StartMoving saves them in the
@@ -137,7 +138,7 @@ local function Create(key)
         OnMoved(key, point, x, y)
     end, RESET, entry.name)
     local position = app.totPosition
-    lib:AddFrameSettings(frame, {
+    local settings = {
         app.core:GetEditModePositionSetting({
             get = function(field)
                 return position:Get(key)[field]
@@ -152,8 +153,35 @@ local function Create(key)
                 return not position.active
             end,
         }),
-        app.optionPages[key].config.buttonSection,
-    })
+    }
+    settings[#settings + 1] = { kind = lib.SettingType.Header, name = L["Style"], key = "unitframe-style" }
+    local kinds = { toggle = "Checkbox", select = "Dropdown", range = "Slider" }
+    for _, row in ipairs(app.StyleOptions(entry)) do
+        local default = row.default
+        if type(default) == "function" then
+            default = default()
+        end
+        settings[#settings + 1] = {
+            kind = lib.SettingType[kinds[row.type]],
+            name = row.name,
+            desc = row.desc,
+            default = default,
+            values = row.values,
+            minValue = row.min,
+            maxValue = row.max,
+            valueStep = row.step,
+            formatter = row.format or tostring,
+            get = row.get,
+            set = function(_, value)
+                row.set(value)
+                lib:RefreshFrameSettings(frame)
+            end,
+            disabled = row.disabled,
+            hidden = row.hidden,
+        }
+    end
+    settings[#settings + 1] = app.optionPages[key].config.buttonSection
+    lib:AddFrameSettings(frame, settings)
     mover.movers[key] = frame
     mover.shown[key] = true
 end

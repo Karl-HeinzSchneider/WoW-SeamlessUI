@@ -42,7 +42,7 @@ end
 ---@return Frame? frame, Frame? parent
 function module:Frames(key)
     local entry = app.unitFrames:Get(key)
-    return _G[entry.frameName], _G[app.unitFrames:Get(entry.linkedTo).frameName]
+    return _G[entry.frameName], _G[app.unitFrames:Get(entry.parentKey).frameName]
 end
 
 function module:IsMovable(key)

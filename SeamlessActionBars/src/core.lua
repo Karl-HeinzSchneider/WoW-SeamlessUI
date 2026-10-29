@@ -82,5 +82,6 @@ function app.addon:Refresh()
     end
     app.ApplyEndCapScales()
     app.RefreshMicroMenu()
+    app.RefreshBarVisibility()
     app.RefreshBagStyle()
 end

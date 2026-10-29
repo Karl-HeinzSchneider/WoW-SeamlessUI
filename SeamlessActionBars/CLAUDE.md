@@ -41,6 +41,13 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   Show free bag slots binds Blizzard's `displayFreeBagSlots` CVar directly and works with either
   skin; the native backpack handles the count and its visibility. It is shared with Edit Mode's
   Style section, and the config page refreshes on external CVar changes.
+- `src/barvisibility.lua`: profile `microMenu.hidden` and `bags.hidden` (both default false)
+  hide `MicroMenuContainer` and `BagsBar` with ordinary Hide calls. Their Style sections share
+  these toggles with the selected frame's Edit Mode settings. Temporarily shows opted-in frames
+  during Edit Mode and restores their original shown state on opt-out, profile changes or disable.
+  Frames with hiding off are untouched unless restoring our own change. Visibility writes wait
+  until combat ends; no visibility hooks, method replacements or reparenting are installed.
+  Run `lua src/tests/bar-visibility.lua` for opt-in ownership, preview, profiles and deferred restore.
 - `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
   selected-frame Edit Mode section. Profile `bags.spacing` (default 0, 0–20 pixels) controls the
   gaps for this style; editing is disabled with the style off or during combat. The profile's

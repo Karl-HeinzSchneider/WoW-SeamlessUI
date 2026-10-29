@@ -93,6 +93,9 @@ local function Button(name, action, text)
 end
 
 local app = {}
+app.BarHiddenOption = function(_, name, order)
+    return { type = "toggle", name = name, order = order, default = false }
+end
 local function load(file)
     assert(loadfile(root .. file))("SeamlessActionBars", app)
 end
@@ -328,7 +331,7 @@ function app.core:RegisterEditModeSystemOptions(_, value)
 end
 function app.core:RefreshEditModeSystemOptions() end
 microModule:OnInitialize()
-assert(menuSpec.name == L["Style"] and menuSpec.system == 20 and #menuSpec.options == 3)
+assert(menuSpec.name == L["Style"] and menuSpec.system == 20 and #menuSpec.options == 4)
 local group = app.MicroMenuOptions()
 assert(group.name == L["Style"])
 local menu = group.args
@@ -386,7 +389,7 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 5)
+assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 6)
 local showFreeSlots = false
 GetCVarBool = function(name)
     assert(name == "displayFreeBagSlots")

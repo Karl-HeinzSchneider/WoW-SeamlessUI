@@ -12,7 +12,7 @@ function module:OnInitialize()
     -- Adapt the settings panel's declarations so both surfaces share every accessor.
     local args = app.MicroMenuOptions().args
     local rows = {}
-    for _, key in ipairs({ "orientation", "order", "hideArtwork" }) do
+    for _, key in ipairs({ "orientation", "order", "hideArtwork", "hidden" }) do
         local option = args[key]
         if option then
             local row = {
@@ -92,6 +92,7 @@ end
 function app.MicroMenuOptions()
     local service = app.core:GetFramePositionService()
     local args = {}
+    args.hidden = app.BarHiddenOption("microMenu", L["Hide micro menu"], 50)
     local settings = Enum.EditModeMicroMenuSetting or {}
     local function nativeOption(key, name, values, sorting, order)
         local setting = settings[key]

@@ -36,6 +36,7 @@ app.optionPages.focus = {
                     nameDisplay = "full",
                     classIcon = false,
                     hidePvPIcon = false,
+                    hideNameBackground = false,
                     levelDisplay = "default",
                 },
             },
@@ -78,6 +79,20 @@ app.optionPages.focus = {
                         set = function(_, value)
                             app.db.profile.unitFrames[key].nameDisplay = value
                             app.nameDisplay:Refresh()
+                            changed()
+                        end,
+                    },
+                    focus_hideNameBackground = {
+                        order = 15,
+                        type = "toggle",
+                        name = L["Hide name background"],
+                        desc = L["Hides the reaction-colored background behind the name on every skin."],
+                        get = function()
+                            return app.db.profile.unitFrames[key].hideNameBackground
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].hideNameBackground = value
+                            app.nameBackground:Refresh()
                             changed()
                         end,
                     },

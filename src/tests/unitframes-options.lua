@@ -594,6 +594,53 @@ modules.PvPIcon:OnDisable()
 assert(partyIcon.alpha == 1, "disabled shows the icons again")
 print("PASS: PvP icons")
 
+-- Target/focus name backgrounds are independent and restore after profile changes or disable.
+local targetBackground, focusBackground = Icon(), Icon()
+local backgroundHookCount = 0
+hooksecurefunc = function(object, method, callback)
+    backgroundHookCount = backgroundHookCount + 1
+    local original = object[method]
+    object[method] = function(...)
+        original(...)
+        callback(...)
+    end
+end
+for _, background in ipairs({ targetBackground, focusBackground }) do
+    background.SetVertexColor = function(self, r, g, b, alpha)
+        self.alpha = alpha
+    end
+end
+TargetFrame.TargetFrameContent = { TargetFrameContentMain = { ReputationColor = targetBackground } }
+FocusFrame.TargetFrameContent = { TargetFrameContentMain = { ReputationColor = focusBackground } }
+loadfile("SeamlessUnitframes/src/name/namebackground.lua")("SeamlessUnitframes", app)
+modules.NameBackground.RegisterEvent = function() end
+enabled = true
+for _, key in ipairs({ "target", "focus" }) do
+    assert(app.optionPages[key].defaults.profile.unitFrames[key].hideNameBackground == false)
+    local option = find(tabs[key], key .. "_hideNameBackground")
+    assert(option.type == "toggle")
+    option.set(nil, true)
+    assert(option.get() == true)
+end
+modules.NameBackground:OnEnable()
+assert(targetBackground.alpha == 0 and focusBackground.alpha == 0)
+targetBackground:SetAlpha(1)
+focusBackground:SetVertexColor(1, 0, 0, 1)
+assert(targetBackground.alpha == 0 and focusBackground.alpha == 0, "retarget/reaction updates keep backgrounds hidden")
+modules.NameBackground:Refresh()
+assert(backgroundHookCount == 4, "refresh does not duplicate texture hooks")
+app.db.profile.unitFrames.target = { hideNameBackground = false }
+modules.NameBackground:OnProfileRefresh()
+assert(targetBackground.alpha == 1 and focusBackground.alpha == 0)
+targetBackground:SetAlpha(0.5)
+assert(targetBackground.alpha == 0.5, "visible backgrounds retain native opacity changes")
+enabled = false
+modules.NameBackground:OnDisable()
+assert(focusBackground.alpha == 1)
+focusBackground:SetVertexColor(0, 1, 0, 0.5)
+assert(focusBackground.alpha == 0.5, "disabled module leaves native updates alone")
+print("PASS: name backgrounds")
+
 -- The Pet declaration delegates to the shared account-visibility service.
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
 local choice = false

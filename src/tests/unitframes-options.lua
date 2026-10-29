@@ -254,7 +254,7 @@ app.db.char = originalChar
 playerName.set(nil, "full")
 assert(customName.hidden())
 
--- Edit Mode: a Style section for each unit frame system, with linked frames in their owner's.
+-- Edit Mode: each frame owns its Style options.
 Enum = {
     EditModeSystem = { UnitFrame = 0 },
     EditModeUnitFrameSystemIndices = { Player = 1, Target = 2, Focus = 3, Party = 4, Pet = 7 },
@@ -277,20 +277,21 @@ assert(playerSpec.systemIndex == 1 and playerSpec.enabled())
 assert(not systemOptions["SeamlessUnitframes.targettarget"], "no section without a system")
 local targetSpec, targetRows = rows("target")
 assert(targetSpec.systemIndex == 2)
-assert(targetRows["targettarget.healthBarColor"].name == "Target of Target health bar color")
-assert(not targetRows["targettarget.healthBarColor"].hidden())
-assert(targetRows["targettarget.nameDisplay"].name == "Target of Target name display")
+assert(not targetRows["targettarget.healthBarColor"], "ToT style is not linked to Target")
 assert(targetRows["target.nameDisplay"].name == "Name display")
-assert(targetRows["targettarget.classIcon"].name == "Target of Target class icon")
-assert(targetRows["target.hidePvPIcon"] and not targetRows["targettarget.hidePvPIcon"])
 assert(targetRows.threatPercentage and targetRows["questIcon.x"])
 local _, focusRows = rows("focus")
-assert(focusRows["focustarget.healthBarColor"].hidden(), "missing linked frame hides its row")
-assert(focusRows["focustarget.nameDisplay"].hidden())
+assert(not focusRows["focustarget.healthBarColor"], "focus ToT style is not linked to Focus")
+local childRows = {}
+for _, row in ipairs(app.StyleOptions(app.unitFrames:Get("targettarget"))) do
+    childRows[row.key] = row
+end
+assert(childRows["targettarget.healthBarColor"].name == "Health bar color")
+assert(childRows["targettarget.classIcon"].name == "Class icon")
 local _, petRows = rows("pet")
 assert(rows("party") and petRows["pet.healthBarColor"].values[1].value == "default")
 
-targetRows["targettarget.healthBarColor"].set("default")
+childRows["targettarget.healthBarColor"].set("default")
 assert(app.db.profile.unitFrames.targettarget.healthBarColor == "default")
 assert(find(tabs.targettarget, "targettarget_healthBarColor").get() == "default", "same profile as the tab")
 playerRows["player.healthBarColor"].set("class")
@@ -298,7 +299,7 @@ assert(playerColor.get() == "class")
 assert(targetRows["questIcon.scale"].format(2.3) == "2.3")
 enabled = false
 assert(not playerSpec.enabled(), "the section leaves while the addon is disabled")
-targetRows["targettarget.nameDisplay"].set("last")
+childRows["targettarget.nameDisplay"].set("last")
 assert(find(tabs.targettarget, "targettarget_nameDisplay").get() == "last")
 print("PASS: unit frame Style sections in Edit Mode")
 

@@ -17,7 +17,7 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 
 Native Player, Pet, Target and Focus position controls use Core's `GetNativePositionOptions` and
 `GetNativeSettingScale`, reading the active layout without a SeamlessUI dependency. ToT frames
-use `app.totPosition:GetOptions`. Linked frames' Style rows appear with their parent.
+use `app.totPosition:GetOptions`. ToT stand-ins show their own Style sections; optional `linkedTo` support remains for future frames.
 
 New per-frame settings need a default and control in that frame's `src/options/<frame>.lua`.
 Edit Mode derives its Style rows from the same declaration. Global settings belong to General.

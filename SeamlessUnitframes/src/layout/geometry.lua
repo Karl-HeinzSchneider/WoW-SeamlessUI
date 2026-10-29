@@ -70,7 +70,7 @@ local powerAtlases = {
     PAIN = "_DemonHunter-DemonicPainBar",
     EBON_MIGHT = "Unit_Evoker_EbonMight_Fill",
 }
-local function Power(bar, family, unit, alternate, previewPowerType)
+local function Power(bar, family, unit, alternate, previewPowerType, mirror)
     if not module:Readable(unit) or type(unit) ~= "string" then
         module:Warn("power artwork", "inaccessible unit token")
         return
@@ -100,7 +100,7 @@ local function Power(bar, family, unit, alternate, previewPowerType)
     end
     local suffix = alternate and powerNames[token] and (element == "Mana" or element == "Energy") and "-ClassResource"
         or ""
-    module:Bar(bar, P .. family .. suffix .. "-Bar-" .. element)
+    module:Bar(bar, P .. family .. suffix .. "-Bar-" .. element, nil, mirror)
 end
 
 local PREDICTION_KEYS = { "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }
@@ -116,6 +116,59 @@ local function PredictionFills(bar, atlas)
             module:Art(segment.Fill, atlas)
         end
     end
+end
+
+local roundedPlayers = {}
+
+-- Reflection of Beta Target's fixed geometry across the 232-wide native root.
+-- Keep the target atlas sizes: stretching its border into the player's old
+-- rectangle also stretches the portrait ring and misaligns the bars.
+local function RoundedPlayer(frame)
+    local main = frame.PlayerFrameContent.PlayerFrameContentMain
+    local art = frame.PlayerFrameContainer
+    local container = main.HealthBarsContainer
+    local health, mana = container.HealthBar, main.ManaBarArea.ManaBar
+    if
+        not module:CheckPaths(frame, "Rounded player portrait", {
+            "PlayerFrameContainer.PlayerPortrait",
+            "PlayerFrameContent.PlayerFrameContentMain.HealthBarsContainer.LeftText",
+            "PlayerFrameContent.PlayerFrameContentMain.ManaBarArea.ManaBar.LeftText",
+            "PlayerFrameContent.PlayerFrameContentMain.ManaBarArea.ManaBar.ManaBarText",
+        })
+    then
+        return
+    end
+    roundedPlayers[frame] = true
+    module:Art(art.FrameTexture, P .. "Target-PortraitOn", true, true)
+    Point(art.FrameTexture, "CENTER", art, "CENTER", 0, 0)
+    Point(art.PlayerPortrait, "TOPLEFT", art, "TOPLEFT", 26, -19, 58, 58)
+    module:Art(art.PlayerPortraitMask, "CircleMask")
+    Point(art.PlayerPortraitMask, "TOPLEFT", art.PlayerPortrait, "TOPLEFT", 1, -1, 57, 57)
+
+    module:Bar(health, P .. "Target-PortraitOn-Bar-Health", true, true)
+    PredictionFills(health, P .. "Player-PortraitOn-Bar-Health-Status")
+    module:Bar(container.PlayerFrameTempMaxHealthLoss, P .. "Target-PortraitOn-Bar-TempHPLoss")
+    module:Art(container.HealthBarMask, P .. "Target-PortraitOn-Bar-Health-Mask", true, true)
+    Point(container, "BOTTOMLEFT", art, "RIGHT", -149, -10, 126, 20)
+    Point(health, "TOPLEFT", container, "TOPLEFT", 0, 0, 126, 20)
+    Point(container.HealthBarMask, "TOPRIGHT", container, "TOPRIGHT", 1, 6)
+
+    Power(mana, "Target-PortraitOn", frame.unit, nil, nil, true)
+    Point(mana, "TOPLEFT", art, "RIGHT", -157, -11, 134, 10)
+    module:Art(mana.ManaBarMask, P .. "Target-PortraitOn-Bar-Mana-Mask", true, true)
+    Point(mana.ManaBarMask, "TOPRIGHT", mana, "TOPRIGHT", 61, 3)
+    Point(container.LeftText, "LEFT", container, "LEFT", 5, 0)
+    Point(mana.LeftText, "LEFT", mana, "LEFT", 13, 0)
+    Point(mana.ManaBarText, "CENTER", mana, "CENTER", 4, 0)
+    Point(PlayerName, "TOPRIGHT", main, "TOPLEFT", 208, -26, 117, nil, "LEFT")
+
+    module:Art(art.FrameFlash, P .. "Target-PortraitOn-InCombat", true, true)
+    Point(art.FrameFlash, "CENTER", art, "CENTER", 0, 2)
+    -- Keep the native resting/combat alpha animation, with the round target outline.
+    module:Art(main.StatusTexture, P .. "Target-PortraitOn-InCombat", true, true)
+    Point(main.StatusTexture, "CENTER", art, "CENTER", 0, 2)
+    PvP(main.PvpBackgroundIcon, main, "TOPLEFT", 23, true)
+    Point(PlayerPVPTimerText, "RIGHT", backgrounds[main.PvpBackgroundIcon], "LEFT", 2, 0)
 end
 
 local function Player(frame, old)
@@ -141,6 +194,23 @@ local function Player(frame, old)
     if not module:Readable(frame.unit) then
         module:Warn("Player", "inaccessible art state")
         return
+    end
+    if old and module:IsRoundedPlayer(frame) then
+        RoundedPlayer(frame)
+        return
+    end
+    if roundedPlayers[frame] then
+        -- Restore only the additional regions owned by RoundedPlayer. Other
+        -- player geometry and artwork are reapplied below from fixed definitions.
+        Point(art.FrameTexture, "CENTER", art, "CENTER", 0, 0)
+        Point(art.PlayerPortrait, "TOPLEFT", art, "TOPLEFT", 24, -19, 60, 60)
+        Point(art.PlayerPortraitMask, "TOPLEFT", art, "TOPLEFT", 24, -19, 60, 60)
+        module:Edit(container.HealthBarMask, { width = 128 })
+        Point(mana.ManaBarMask, "TOPLEFT", mana, "TOPLEFT", -2, 2, nil, 16)
+        Point(container.LeftText, "LEFT", container, "LEFT", 2, 0)
+        Point(mana.LeftText, "LEFT", mana, "LEFT", 2, 0)
+        Point(mana.ManaBarText, "CENTER", mana, "CENTER", 0, 0)
+        roundedPlayers[frame] = nil
     end
     local vehicle = Equal(frame.unit, "vehicle")
     local alternate = type(PlayerFrame_GetAlternatePowerBar) == "function" and Flag(PlayerFrame_GetAlternatePowerBar())
@@ -659,7 +729,7 @@ end
 
 -- The Edit Mode stand-ins use the same fixed ToT geometry and artwork.
 function module:ApplyToTPreview(frame, powerType)
-    Small(frame, false, app.db.profile.layout == "legacy", powerType)
+    Small(frame, false, (app.db.profile.layout == "legacy" or app.db.profile.layout == "legacyRounded"), powerType)
 end
 
 local function Party(frame, old)

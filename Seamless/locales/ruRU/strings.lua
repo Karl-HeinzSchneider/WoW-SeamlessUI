@@ -839,6 +839,7 @@ end
 -- SeamlessUnitframes
 -- L["\n\nA pet takes its owner's class color."] = "\n\nA pet takes its owner's class color."
 -- L["Beta"] = "Beta"
+-- L["Beta (rounded)"] = "Beta (rounded)"
 -- L["Beta unit frames: %s; skipping this operation"] = "Beta unit frames: %s; skipping this operation"
 -- L["Boss"] = "Boss"
 -- L["Class icon"] = "Class icon"
@@ -847,7 +848,7 @@ end
 -- L["Combine"] = "Combine"
 -- L["Commands: /seamlessunitframes [options], /seamlessunitframes loglevel <level>, /seamlessunitframes reset"] = "Commands: /seamlessunitframes [options], /seamlessunitframes loglevel <level>, /seamlessunitframes reset"
 -- L["Custom name"] = "Custom name"
--- L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."] = "Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."
+-- L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. Beta (rounded) uses the same layout with a round player portrait border. This setting applies to all unit frames. Changes made during combat apply when combat ends."] = "Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. Beta (rounded) uses the same layout with a round player portrait border. This setting applies to all unit frames. Changes made during combat apply when combat ends."
 -- L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] = "Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."
 -- L["Elite"] = "Elite"
 -- L["First name only"] = "First name only"

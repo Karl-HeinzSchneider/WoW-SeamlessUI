@@ -195,9 +195,10 @@ app.legacyLayout = {
 for key, tab in pairs(tabs) do
     local option = tab.args.style.args.layout
     assert(option and option.type == "select", key .. " has the shared layout")
-    option.set(nil, "legacy")
+    assert(option.values.legacyRounded == "Beta (rounded)")
+    option.set(nil, "legacyRounded")
     for _, other in pairs(tabs) do
-        assert(other.args.style.args.layout.get() == "legacy", "all selectors share the layout")
+        assert(other.args.style.args.layout.get() == "legacyRounded", "all selectors share the layout")
     end
     assert(app.optionPages[key].tooltip({ key, "style", "layout" }) == "current")
     local rows = app.StyleOptions(app.unitFrames:Get(key))

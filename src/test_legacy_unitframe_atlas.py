@@ -28,6 +28,28 @@ class LegacyAtlasTests(unittest.TestCase):
                     self.assertLessEqual(row[key], 1)
         self.assertEqual(set(GENERATOR.ASSETS.glob("*.blp")), expected)
 
+    def test_mirrored_masks_preserve_every_reflected_pixel(self):
+        for filename in GENERATOR.MIRRORED_MASKS:
+            source = (GENERATOR.ASSETS / filename).read_bytes()
+            output = (GENERATOR.ASSETS / "masks" / filename).read_bytes()
+            width, height, offset = struct.unpack_from("<III", source, 12)
+            self.assertEqual(source[:offset], output[:offset])
+            self.assertEqual(len(source), len(output))
+            for y in range(height):
+                for x in range(width):
+                    src = offset + (y * width + width - 1 - x) * 4
+                    dst = offset + (y * width + x) * 4
+                    self.assertEqual(source[src:src + 4], output[dst:dst + 4])
+            self.assertEqual(GENERATOR.mirror_mask(output), source)
+
+    def test_reflected_fills_match_source_pixels(self):
+        originals = GENERATOR.ASSETS / "bars"
+        reflected = originals / "mirrored"
+        for path in reflected.glob("*.blp"):
+            self.assertEqual(path.read_bytes(), GENERATOR.mirror_mask((originals / path.name).read_bytes()))
+        self.assertTrue((reflected / "target-portraiton-bar-health-status.blp").exists())
+        self.assertTrue((reflected / "target-portraiton-bar-mana.blp").exists())
+
     def test_generation_is_reproducible(self):
         original = GENERATOR.OUTPUT.read_bytes()
         try:

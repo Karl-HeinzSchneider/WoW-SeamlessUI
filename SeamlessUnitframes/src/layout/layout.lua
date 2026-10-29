@@ -21,6 +21,7 @@ local visualBars = {}
 local lossColored = false
 local enabled, applied, writing, initialized = false, false, false, false
 local legacyMode = false
+local roundedMode = false
 local openingFrames, openingSeen = {}, {}
 
 function module:Readable(value)
@@ -197,7 +198,15 @@ local function WatchBar(bar, texture)
     return true
 end
 
-local function Paint(texture, atlas, useSize, bar)
+-- Static copies of the target mask pixels reflected by the atlas generator.
+-- Keep mask UVs increasing: reflected UVs can clip the entire live fill.
+local reflectedMasks = {
+    ["ui-hud-unitframe-target-portraiton-bar-health-mask"] = "uiunitframetargethealthmask.blp",
+    ["ui-hud-unitframe-target-portraiton-bar-mana-mask"] = "uiunitframetargetmanamask.blp",
+}
+
+local function Paint(texture, atlas, useSize, bar, mirror)
+    mirror = legacyMode and mirror or false
     if not layout:Readable(atlas) or type(atlas) ~= "string" then
         layout:Warn("fixed artwork", "invalid atlas definition")
         return false
@@ -214,11 +223,17 @@ local function Paint(texture, atlas, useSize, bar)
         texture:SetAlpha(0)
     end
     local last = painted[texture]
-    if last and last.atlas == atlas and last.legacy == legacyMode and last.useSize == useSize then
+    if
+        last
+        and last.atlas == atlas
+        and last.legacy == legacyMode
+        and last.mirror == mirror
+        and last.useSize == useSize
+    then
         return true
     end
     local data = legacyMode and app.legacyAtlases[atlas:lower()] or nil
-    artwork[texture] = { atlas = atlas, useSize = useSize, bar = bar }
+    artwork[texture] = { atlas = atlas, useSize = useSize, bar = bar, mirror = mirror }
     local previous = writing
     writing = true
     if bar then
@@ -233,22 +248,28 @@ local function Paint(texture, atlas, useSize, bar)
         end
         -- The native bar setter accepts atlas names as well as file paths.
         -- Standalone files let the engine own fill UVs at every health/power value.
-        local success = bar:SetStatusBarTexture(data and data[8] or atlas)
+        local success = bar:SetStatusBarTexture(data and (mirror and data[9] or data[8]) or atlas)
         if not layout:Readable(success) or success == false then
             writing = previous
             layout:Warn(atlas, "client rejected status-bar artwork")
             return false
         end
     elseif data then
-        texture:SetTexture(data[1])
-        texture:SetTexCoord(data[4], data[5], data[6], data[7])
+        local mask = mirror and reflectedMasks[atlas:lower()]
+        if mask then
+            texture:SetTexture("Interface/AddOns/SeamlessUnitframes/assets/legacy/masks/" .. mask)
+            texture:SetTexCoord(0, 1, 0, 1)
+        else
+            texture:SetTexture(data[1])
+            texture:SetTexCoord(mirror and data[5] or data[4], mirror and data[4] or data[5], data[6], data[7])
+        end
         if useSize then
             layout:Edit(texture, { width = data[2], height = data[3] })
         end
     else
         texture:SetAtlas(atlas, useSize or false, nil, true)
     end
-    painted[texture] = { atlas = atlas, legacy = legacyMode, useSize = useSize }
+    painted[texture] = { atlas = atlas, legacy = legacyMode, mirror = mirror, useSize = useSize }
     writing = previous
     return true
 end
@@ -305,8 +326,8 @@ function module:ShowVisualBars(legacy)
     end
 end
 
-function module:Art(texture, atlas, useSize)
-    if not Paint(texture, atlas, useSize) then
+function module:Art(texture, atlas, useSize, mirror)
+    if not Paint(texture, atlas, useSize, nil, mirror) then
         return false
     end
     if not watchedArt[texture] then
@@ -320,7 +341,7 @@ function module:Art(texture, atlas, useSize)
             if legacyMode and definition then
                 -- Rebind old artwork before the native call returns, including
                 -- in combat. Do not resize/reanchor protected regions in combat.
-                Paint(texture, definition.atlas, not InCombatLockdown() and definition.useSize)
+                Paint(texture, definition.atlas, not InCombatLockdown() and definition.useSize, nil, definition.mirror)
             end
         end)
     end
@@ -329,7 +350,7 @@ end
 
 -- Only explicitly listed bars are bound. No children, regions, or runtime atlas
 -- names are enumerated, stored, compared, lowercased, or used as table keys.
-function module:Bar(bar, atlas, health)
+function module:Bar(bar, atlas, health, mirror)
     if not self:CheckRegion(bar, "named bar", { "GetStatusBarTexture", "SetStatusBarTexture" }) then
         return
     end
@@ -343,8 +364,25 @@ function module:Bar(bar, atlas, health)
         -- only for the color refresh below to replace it with white again.
         atlas = previous.atlas
     end
-    bindings[texture] = { atlas = atlas, bar = bar }
-    Paint(texture, atlas, false, bar)
+    bindings[texture] = { atlas = atlas, bar = bar, mirror = mirror }
+    Paint(texture, atlas, false, bar, mirror)
+end
+
+-- The rounded player uses the full target geometry only in ordinary player art.
+-- Vehicle, alternate-power and health-only presentations retain their Beta layout.
+function module:IsRoundedPlayer(frame)
+    if not roundedMode then
+        return false
+    end
+    local unit = frame.unit
+    if not self:Readable(unit) or unit ~= "player" then
+        return false
+    end
+    local alternate = type(PlayerFrame_GetAlternatePowerBar) == "function" and PlayerFrame_GetAlternatePowerBar()
+    return self:Readable(alternate)
+        and not alternate
+        and self:Readable(UNIT_FRAME_SHOW_HEALTH_ONLY)
+        and not UNIT_FRAME_SHOW_HEALTH_ONLY
 end
 
 -- Resolve only addon-owned names from known frame families, never GetAtlas().
@@ -352,7 +390,7 @@ function module:HealthAtlas(bar, key)
     if not self:CheckRegion(bar, "health color bar", { "GetStatusBarTexture" }) then
         return nil
     end
-    local family = key == "player" and "Player"
+    local family = key == "player" and (self:IsRoundedPlayer(PlayerFrame) and "Target" or "Player")
         or ((key == "pet" or key == "targettarget" or key == "focustarget") and "TargetofTarget" or "Target")
     if key == "party" then
         local frame = bar.unitFrame
@@ -366,7 +404,7 @@ function module:HealthAtlas(bar, key)
         family = frame.state == "vehicle" and "Party-PortraitOn-Vehicle"
             or (frame.frameType == "CharacterFrameOn" and "CharacterFrameOnParty-PortraitOn" or "Party-PortraitOn")
     else
-        if legacyMode and family == "Target" then
+        if legacyMode and family == "Target" and key ~= "player" then
             local unit = bar.unit
             if self:Readable(unit) and type(unit) == "string" then
                 local classification = UnitClassification(unit)
@@ -389,7 +427,7 @@ function module:HealthAtlas(bar, key)
     if not WatchBar(bar, texture) then
         return nil
     end
-    bindings[texture] = { atlas = atlas, bar = bar }
+    bindings[texture] = { atlas = atlas, bar = bar, mirror = key == "player" and self:IsRoundedPlayer(PlayerFrame) }
     return atlas, texture
 end
 
@@ -406,7 +444,7 @@ function module:SetHealthAtlas(texture, atlas)
     if not binding then
         return false
     end
-    if Paint(texture, atlas, false, binding.bar) then
+    if Paint(texture, atlas, false, binding.bar, binding.mirror) then
         binding.atlas = atlas
         return true
     end
@@ -432,7 +470,13 @@ function module:PlayerLoss(color)
         return
     end
     local colored = legacyMode and color
-    self:Bar(bar, "UI-HUD-UnitFrame-Player-PortraitOn-Bar-Health" .. (colored and "-Status" or ""))
+    local family = self:IsRoundedPlayer(PlayerFrame) and "Target" or "Player"
+    self:Bar(
+        bar,
+        "UI-HUD-UnitFrame-" .. family .. "-PortraitOn-Bar-Health" .. (colored and "-Status" or ""),
+        nil,
+        self:IsRoundedPlayer(PlayerFrame)
+    )
     if colored then
         bar:SetStatusBarColor(color:GetRGB())
     else
@@ -535,12 +579,14 @@ function module:Refresh(restore, frame, selectedRoots)
         end
         return
     end
-    local legacy = not restore and app.db.profile.layout == "legacy"
+    local selected = app.db.profile.layout
+    local legacy = not restore and (selected == "legacy" or selected == "legacyRounded")
     if not legacy and not applied then
         return
     end
     Initialize()
     legacyMode = legacy
+    roundedMode = legacy and selected == "legacyRounded"
     local scoped = frame ~= nil or selectedRoots ~= nil
     local roots = selectedRoots or (frame and { frame } or app.unitFrames:All())
     if not scoped then

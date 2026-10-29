@@ -154,6 +154,9 @@ for _, addon in ipairs({
     app.EndCapScale = function()
         return {}
     end
+    app.EndCapTextureOption = function()
+        return { type = "select", name = "Texture", values = {} }
+    end
     app.EndCapHiddenOption = function()
         return { type = "toggle", name = "Hide" }
     end

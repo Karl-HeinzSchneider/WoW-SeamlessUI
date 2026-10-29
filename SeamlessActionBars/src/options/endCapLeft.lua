@@ -9,7 +9,7 @@ end
 local scale = app.EndCapScale(entry)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.endCapLeft = {
-    defaults = { profile = { endCaps = { left = { scale = 1 } } } },
+    defaults = { profile = { endCaps = { left = { scale = 1, texture = "default" } } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({
@@ -22,6 +22,10 @@ app.optionPages.endCapLeft = {
         hidden = function()
             return getFrame() == nil
         end,
-        args = { hidden = app.EndCapHiddenOption(entry), position = app.core:GetNativePositionOptions(getFrame, scale) },
+        args = {
+            hidden = app.EndCapHiddenOption(entry),
+            texture = app.EndCapTextureOption(entry),
+            position = app.core:GetNativePositionOptions(getFrame, scale),
+        },
     },
 }

@@ -182,6 +182,13 @@ local function EndCap(index)
     function cap:SetScale(value)
         self.scale, self.scaleCalls = value, self.scaleCalls + 1
     end
+    cap.Texture = { atlas = "native-" .. index, calls = 0 }
+    function cap.Texture:GetAtlas()
+        return self.atlas
+    end
+    function cap.Texture:SetAtlas(atlas)
+        self.atlas, self.calls = atlas, self.calls + 1
+    end
     return cap
 end
 local left, right = EndCap(1), EndCap(2)
@@ -230,6 +237,27 @@ app.db.profile.endCaps = { left = { scale = 1.5 }, right = { scale = 1 } }
 load("endcaps.lua")
 app.ApplyEndCapScales()
 assert(left.scale == 1.5 and right.scale == 1 and right.scaleCalls == 0, "profile scale applied, unchanged left alone")
+assert(left.Texture.calls == 0 and right.Texture.calls == 0, "default leaves native art untouched")
+local texture = app.EndCapTextureOption(app.endCaps[1])
+texture.set(nil, "ally")
+assert(left.Texture.atlas == "ui-hud-actionbar-gryphon-left" and right.Texture.calls == 0)
+texture.set(nil, "horde")
+assert(left.Texture.atlas == "ui-hud-actionbar-wyvern-left")
+local rightTexture = app.EndCapTextureOption(app.endCaps[2])
+rightTexture.set(nil, "horde")
+assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
+texture.set(nil, "default")
+assert(left.Texture.atlas == "native-1", "Default restores original atlas")
+app.ApplyEndCapScales(true)
+assert(right.Texture.atlas == "native-2", "disable restores original atlas")
+app.ApplyEndCapScales()
+assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right", "enable reapplies profile")
+app.db.profile.endCaps = { left = { scale = 1.5, texture = "horde" }, right = { scale = 1, texture = "default" } }
+app.ApplyEndCapScales()
+assert(
+    left.Texture.atlas == "ui-hud-actionbar-wyvern-left" and right.Texture.atlas == "native-2",
+    "profile refresh switches artwork"
+)
 local leftEntry = app.endCaps[1]
 local scale = app.EndCapScale(leftEntry)
 assert(scale.get() == 1.5 and scale.default() == 1 and scale.min == 0.5 and scale.max == 2)

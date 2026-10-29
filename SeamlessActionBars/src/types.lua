@@ -15,6 +15,7 @@
 ---@field EndCapFrame fun(entry: SeamlessActionBars.EndCap): table?
 ---@field ApplyEndCapScales fun(restore?: boolean)
 ---@field EndCapScale fun(entry: SeamlessActionBars.EndCap): SeamlessCore.PositionScale
+---@field EndCapTextureOption fun(entry: SeamlessActionBars.EndCap): table
 ---@field EndCapHiddenOption fun(entry: SeamlessActionBars.EndCap): table
 ---@field RegisterEndCapScales fun()
 ---@field MicroMenuOptions fun(): table

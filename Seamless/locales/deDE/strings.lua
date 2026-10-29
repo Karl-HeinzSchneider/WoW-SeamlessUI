@@ -784,7 +784,7 @@ end
 -- L["AnchorFrame would create an anchor cycle."] = "AnchorFrame would create an anchor cycle."
 -- L["AnchorFrame"] = "AnchorFrame"
 -- L["AnchorParent"] = "AnchorParent"
--- L["Blizzard Edit Mode Extensions"] = "Blizzard Edit Mode Extensions"
+-- L["Blizzard Editmode"] = "Blizzard Editmode"
 -- L["Choose a valid anchor point."] = "Choose a valid anchor point."
 -- L["Commands: /seamlessui [options], /seamlessui loglevel <level>, /seamlessui reset"] = "Commands: /seamlessui [options], /seamlessui loglevel <level>, /seamlessui reset"
 -- L["Completed quests XP:"] = "Completed quests XP:"

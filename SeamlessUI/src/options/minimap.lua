@@ -46,7 +46,7 @@ app.optionPages.minimap = {
     config = {
         type = "group",
         name = L["Minimap"],
-        order = 30,
+        order = 40,
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),

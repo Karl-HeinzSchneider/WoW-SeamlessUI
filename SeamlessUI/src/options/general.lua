@@ -2,25 +2,6 @@
 local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
-local editModeKeyboardOption
-do
-    local module = app.editModeKeyboard
-    editModeKeyboardOption = {
-        type = "toggle",
-        order = 30,
-        width = "full",
-        name = L["Pass unused Edit Mode keys through"],
-        desc = L["Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."],
-        disabled = InCombatLockdown,
-        get = function()
-            return app.db.profile.editModeKeyboard
-        end,
-        set = function(_, value)
-            app.db.profile.editModeKeyboard = value
-            module:OnProfileRefresh()
-        end,
-    }
-end
 local xpBarTooltipOption
 do
     local module = app.xpBarTooltip
@@ -74,7 +55,6 @@ app.optionPages.general = {
     end,
     defaults = {
         profile = {
-            editModeKeyboard = true,
             xpBarTooltip = {
                 enabled = true,
                 completedQuests = true,
@@ -88,7 +68,6 @@ app.optionPages.general = {
         name = L["General"],
         order = 0,
         args = {
-            editModeKeyboard = editModeKeyboardOption,
             xpBarTooltip = xpBarTooltipOption,
         },
     },

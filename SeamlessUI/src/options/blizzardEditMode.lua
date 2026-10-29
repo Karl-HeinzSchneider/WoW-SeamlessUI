@@ -2,6 +2,26 @@
 local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
+local editModeKeyboardOption
+do
+    local module = app.editModeKeyboard
+    editModeKeyboardOption = {
+        type = "toggle",
+        order = 5,
+        width = "full",
+        name = L["Pass unused Edit Mode keys through"],
+        desc = L["Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."],
+        disabled = InCombatLockdown,
+        get = function()
+            return app.db.profile.editModeKeyboard
+        end,
+        set = function(_, value)
+            app.db.profile.editModeKeyboard = value
+            module:OnProfileRefresh()
+        end,
+    }
+end
+
 local module = app.blizzardEditMode
 local frames, categories = module:GetOptionsFrames()
 local function settings()
@@ -36,6 +56,7 @@ local function globalToggle(order, key, name, desc)
     }
 end
 local args = {
+    editModeKeyboard = editModeKeyboardOption,
     enabled = globalToggle(
         1,
         "enabled",
@@ -108,6 +129,9 @@ end
 ---@type SeamlessCore.SettingsPage
 app.optionPages.blizzardEditMode = {
     tooltip = function(path)
+        if path[2] == "editModeKeyboard" then
+            return app.dbDefaults.profile.editModeKeyboard
+        end
         local defaults = app.dbDefaults.profile.blizzardEditMode
         if defaults[path[2]] ~= nil then
             return defaults[path[2]]
@@ -116,6 +140,7 @@ app.optionPages.blizzardEditMode = {
     end,
     defaults = {
         profile = {
+            editModeKeyboard = true,
             blizzardEditMode = {
                 enabled = true,
                 -- Global switches for every frame's extension; combined with the internal per-frame
@@ -132,8 +157,8 @@ app.optionPages.blizzardEditMode = {
     },
     config = {
         type = "group",
-        name = L["Blizzard Edit Mode Extensions"],
-        order = 30,
+        name = L["Blizzard Editmode"],
+        order = 10,
         args = args,
     },
 }

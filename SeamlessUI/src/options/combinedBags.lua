@@ -7,7 +7,7 @@ app.optionPages.combinedBags = {
     config = {
         type = "group",
         name = L["Combined bags"],
-        order = 25,
+        order = 20,
         editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessUI.combinedBags", function()
             return app.combinedBags:EditModeVisibility()
         end, function(value)

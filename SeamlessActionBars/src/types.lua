@@ -38,3 +38,4 @@
 ---@class SeamlessActionBars
 ---@field xpBarTooltip SeamlessActionBars.XPBarTooltip
 ---@field XPBarTooltipOptions fun(): table
+---@field RegisterXPTooltipEditMode fun()

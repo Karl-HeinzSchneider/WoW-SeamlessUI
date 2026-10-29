@@ -319,6 +319,30 @@ for _, pages in pairs(nativePages) do
     end
 end
 local bars = apps.SeamlessActionBars
+local xpSection
+local registerSystemOptions = core.RegisterEditModeSystemOptions
+core.RegisterEditModeSystemOptions = function(_, _, spec)
+    xpSection = spec
+end
+Enum.EditModeSystem = Enum.EditModeSystem or {}
+Enum.EditModeSystem.StatusTrackingBar = Enum.EditModeSystem.StatusTrackingBar or 999
+bars.RegisterXPTooltipEditMode()
+core.RegisterEditModeSystemOptions = registerSystemOptions
+assert(xpSection.system == Enum.EditModeSystem.StatusTrackingBar and xpSection.systemIndex == nil)
+assert(#xpSection.options == 5, "Both status bars expose all shared XP tooltip controls")
+local xpRows = {}
+for _, row in ipairs(xpSection.options) do
+    xpRows[row.key] = row
+    assert(row.default() == bars.dbDefaults.profile.xpBarTooltip[row.key])
+end
+xpRows.automaticRestedXP.set(false)
+assert(bars.db.profile.xpBarTooltip.automaticRestedXP == false)
+assert(not xpRows.restedXPCap.disabled())
+xpRows.restedXPCap.set(180)
+assert(bars.db.profile.xpBarTooltip.restedXPCap == 180)
+xpRows.restedXPCap.set(150)
+xpRows.automaticRestedXP.set(true)
+assert(xpRows.restedXPCap.disabled())
 for _, page in ipairs({ "statusBar1", "statusBar2" }) do
     for key, expected in pairs({
         enabled = true,

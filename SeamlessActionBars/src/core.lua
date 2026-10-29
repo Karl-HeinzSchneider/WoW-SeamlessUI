@@ -42,6 +42,7 @@ function app.addon:OnInitialize()
 end
 
 function app.addon:OnEnable()
+    app.RegisterXPTooltipEditMode()
     for _, button in ipairs(app.Buttons()) do
         watched[button] = true
         self:SecureHook(button, "UpdateUsable", app.PaintIcon)

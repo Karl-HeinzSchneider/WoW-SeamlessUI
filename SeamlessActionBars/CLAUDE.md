@@ -71,7 +71,8 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   Run `lua src/tests/bag-style.lua` for inactivity, all seven buttons, directions and restoration.
 
 - `src/xpbartooltip.lua`: XP/rested tooltip hooks and Core quest totals. The two XP / reputation
-  pages share `xpBarTooltip` settings. Imports former UI/Core choices once, including when UI is
+  pages and both bars' selected-frame Edit Mode windows share `xpBarTooltip` settings. Edit Mode
+  rows derive from the same prepared options declaration. Imports former UI/Core choices once, including when UI is
   disabled. Automatic rested values use Adventure-tree Well Rested (1225478) purchased ranks,
   4% per rank on the base 150% cap and 5% per eight hours; manual values are the fallback.
   Run `lua src/tests/xp-bar-tooltip.lua`. Check actual rested cap and Legacy changes in game.

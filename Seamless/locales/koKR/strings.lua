@@ -188,6 +188,7 @@ end
 -- L["Action Bars"] = "Action Bars"
 -- L["Alt (short)"] = "A"
 -- L["Backspace (short)"] = "BS"
+-- L["Bag button scale"] = "Bag button scale"
 -- L["Bag button spacing"] = "Bag button spacing"
 -- L["Bag direction"] = "Bag direction"
 -- L["Caps Lock (short)"] = "Cap"

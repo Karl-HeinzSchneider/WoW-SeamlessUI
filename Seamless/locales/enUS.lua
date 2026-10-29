@@ -185,6 +185,7 @@ L["View code, report issues & contribute."] = true
 L["Action Bars"] = true
 L["Alt (short)"] = "A"
 L["Backspace (short)"] = "BS"
+L["Bag button scale"] = true
 L["Bag button spacing"] = true
 L["Bag direction"] = true
 L["Caps Lock (short)"] = "Cap"

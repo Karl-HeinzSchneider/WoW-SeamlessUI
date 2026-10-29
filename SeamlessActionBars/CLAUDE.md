@@ -50,7 +50,8 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   Run `lua src/tests/bar-visibility.lua` for opt-in ownership, preview, profiles and deferred restore.
 - `src/bagstyle.lua`: opt-in `bags.retailStyle` (default false) on the Bags Style page and its
   selected-frame Edit Mode section. Profile `bags.spacing` (default 0, 0–20 pixels) controls the
-  gaps for this style; editing is disabled with the style off or during combat. The profile's
+  gaps for this style; `bags.buttonScale` (default 1, 50�200%) scales every button while
+  preserving the larger backpack and independent spacing. Both controls are disabled with the style off or during combat. The profile's
   `bags.expanded` (default true) remembers manual collapse/expand across reloads and
   profile changes, synchronizing the native expand CVar. Cursor-driven auto-expansion is not saved.
   Reuses the client's `bag-*` atlases (BagSlots2x art) and

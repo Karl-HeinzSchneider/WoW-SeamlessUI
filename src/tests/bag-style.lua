@@ -343,6 +343,15 @@ for _, horizontal in ipairs({ true, false }) do
             assert(x == (horizontal and offset or 0) and y == (horizontal and 0 or -offset))
             assert((horizontal and BagsBar:GetWidth() or BagsBar:GetHeight()) == 238 + 6 * spacing)
         end
+        for _, scale in ipairs({ 0.5, 1.5, 2 }) do
+            app.db.profile.bags.buttonScale = scale
+            app.RefreshBagStyle()
+            assert(MainMenuBarBackpackButton:GetWidth() == 48 * scale)
+            assert(KeyRingButton:GetWidth() == 30 * scale)
+            assert((horizontal and BagsBar:GetWidth() or BagsBar:GetHeight()) == 228 * scale + 10 + 6 * 20)
+            assert((horizontal and BagsBar:GetHeight() or BagsBar:GetWidth()) == 48 * scale)
+        end
+        app.db.profile.bags.buttonScale = 1
         app.db.profile.bags.spacing = 4
         app.RefreshBagStyle()
         assert((horizontal and BagsBar:GetHeight() or BagsBar:GetWidth()) == 48)

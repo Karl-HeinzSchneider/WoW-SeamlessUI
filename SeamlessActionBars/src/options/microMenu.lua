@@ -9,7 +9,7 @@ local setting = Enum.EditModeMicroMenuSetting and Enum.EditModeMicroMenuSetting.
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.microMenu = {
-    defaults = { profile = { microMenu = { hideArtwork = false } } },
+    defaults = { profile = { microMenu = { hideArtwork = false, hidden = false } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

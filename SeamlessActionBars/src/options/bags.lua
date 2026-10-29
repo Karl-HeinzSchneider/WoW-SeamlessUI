@@ -37,6 +37,7 @@ local function nativeOption(key, name, order)
 end
 
 local args = {}
+args.hidden = app.BarHiddenOption("bags", L["Hide bag bar"], 60)
 args.freeSlots = {
     type = "toggle",
     name = L["Show free bag slots"],
@@ -107,7 +108,7 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = { profile = { bags = { retailStyle = false, spacing = 0, expanded = true } } },
+    defaults = { profile = { bags = { retailStyle = false, spacing = 0, expanded = true, hidden = false } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

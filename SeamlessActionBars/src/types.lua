@@ -19,6 +19,8 @@
 ---@field RegisterEndCapScales fun()
 ---@field MicroMenuOptions fun(): table
 ---@field RefreshMicroMenu fun()
+---@field RefreshBarVisibility fun()
+---@field BarHiddenOption fun(key: string, name: string, order: number): table
 ---@field RefreshBagStyle fun()
 
 ---@class SeamlessActionBars.EndCap

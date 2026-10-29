@@ -13,6 +13,7 @@
 src\db.lua
 src\core.lua
 src\endcaps.lua
+src\barvisibility.lua
 src\micromenu.lua
 src\bags.lua
 src\bagstyle.lua

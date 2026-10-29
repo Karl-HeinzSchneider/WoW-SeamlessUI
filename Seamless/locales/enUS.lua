@@ -152,8 +152,7 @@ L["Edit Mode visibility: queued setting=%s value=%s"] = true
 L["Edit Mode visibility: read setting=%s source=%s value=%s"] = true
 L["Edit Mode visibility: refresh stage=%s success=%s error=%s"] = true
 L["Edit Mode visibility: result setting=%s success=%s error=%s"] = true
-L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] =
-    true
+L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = true
 L["format error: "] = true
 L["GitHub"] = true
 L["How much Seamless writes to chat. Also /seamless loglevel <level>."] = true
@@ -166,21 +165,18 @@ L["Minimap button clicked (%s)"] = true
 L["Minimap button registered"] = true
 L["Minimap button"] = true
 L["No Edit Mode visibility binding for setting %s."] = true
-L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] =
-    true
+L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] = true
 L["Open the Seamless settings from the minimap."] = true
 L["Quick anchor to frame"] = true
 L["Right-click: config"] = true
-L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."] =
-    true
+L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."] = true
 L["Seamless"] = true
 L["SeamlessUI"] = true
 L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = true
 L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = true
 L["The Seamless layout could not be read."] = true
 L["Tweaks"] = true
-L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] =
-    true
+L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] = true
 L["Type /rl in chat to reload the user interface, just like /reload."] = true
 L["Unknown log level: %s"] = true
 L["Use Seamless layout"] = true
@@ -230,19 +226,15 @@ L["Mouse Wheel Up (short)"] = "WU"
 L["Not enough mana color"] = true
 L["Not enough mana"] = true
 L["Num Pad %s (short)"] = "N%s"
-L["Open the game's Action Bars settings to show or hide action bars 2 to 8. A hidden bar is not shown in Edit Mode either."] =
-    true
+L["Open the game's Action Bars settings to show or hide action bars 2 to 8. A hidden bar is not shown in Edit Mode either."] = true
 L["Orientation"] = true
 L["Out of range color"] = true
 L["Out of range"] = true
 L["Page Down (short)"] = "PD"
 L["Page Up (short)"] = "PU"
-L["Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent."] =
-    true
-L["Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly."] =
-    true
-L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Detect Well Rested automatically or configure the rested XP cap and accumulation rate below."] =
-    true
+L["Percentage of one level accumulated per eight hours in an inn or city. Default: 5%. Adjust for perks or other bonuses; the estimate assumes no rested XP is spent."] = true
+L["Percentage of one level's XP. Default: 150%. Adjust for perks that increase your cap; the client does not expose the cap directly."] = true
+L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Detect Well Rested automatically or configure the rested XP cap and accumulation rate below."] = true
 L["Rested XP cap (%)"] = true
 L["Rested XP per 8 hours (%)"] = true
 L["Rested:"] = true
@@ -261,10 +253,8 @@ L["Tab (short)"] = "Tab"
 L["Time to max rested:"] = true
 L["Up Arrow (short)"] = "Up"
 L["Up"] = true
-L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."] =
-    true
-L["Uses your purchased Well Rested ranks for the rested XP cap and rate. The manual values are used if Legacy data is unavailable."] =
-    true
+L["Use round bag buttons and a larger backpack, including the keyring and reagent bag. Disabled until you enable it."] = true
+L["Uses your purchased Well Rested ranks for the rested XP cap and rate. The manual values are used if Legacy data is unavailable."] = true
 L["Vertical"] = true
 L["XP bar tooltip"] = true
 L["XP left:"] = true
@@ -281,12 +271,10 @@ L["Cast bars"] = true
 L["Cast time format"] = true
 L["Cast time"] = true
 L["Castbar"] = true
-L["Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."] =
-    true
+L["Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."] = true
 L["Channel ticks"] = true
 L["Decimals"] = true
-L["Each cast bar has its own tab. The player cast bar's options are also under Style in SeamlessUI's extended Edit Mode window."] =
-    true
+L["Each cast bar has its own tab. The player cast bar's options are also under Style in SeamlessUI's extended Edit Mode window."] = true
 L["Elapsed / total (1.2 / 2.5)"] = true
 L["Hold time"] = true
 L["How long a cast bar stays before it fades out."] = true
@@ -309,11 +297,9 @@ L["-- Restored from your last session (%s) --"] = true
 L["[2. Trade - City]"] = true
 L["[2. Trade]"] = true
 L["[Trade]"] = true
-L["\nCharacters using profile '%s' share this chat setup. Use separate profiles to keep their chat independent.\n"] =
-    true
+L["\nCharacters using profile '%s' share this chat setup. Use separate profiles to keep their chat independent.\n"] = true
 L["A button in the main chat window's button column, above the chat menu button, that opens the chat log."] = true
-L["A button in the top right corner of each chat window, shown while the mouse is over the chat. It opens a window with the last messages, selected, ready for Ctrl+C."] =
-    true
+L["A button in the top right corner of each chat window, shown while the mouse is over the chat. It opens a window with the last messages, selected, ready for Ctrl+C."] = true
 L["A date() pattern: %H hour (00-23), %I hour (01-12), %M minute, %S second, %p AM/PM, %d day, %m month."] = true
 L["Accent color"] = true
 L["All messages"] = true
@@ -342,17 +328,14 @@ L["Chat"] = true
 L["Class colored names"] = true
 L["Click a timestamp to copy its message"] = true
 L["Clickable URLs"] = true
-L["Color and opacity of every chat window's background. Opacity 0 hides it; the game shows it at least at 25% while the mouse is over the chat."] =
-    true
+L["Color and opacity of every chat window's background. Opacity 0 hides it; the game shows it at least at 25% while the mouse is over the chat."] = true
 L["Color the timestamp instead of showing it in the message's color."] = true
 L["Color"] = true
-L["Commands: /seamlesschat [options], /seamlesschat log, /seamlesschat search <text>, /seamlesschat save, /seamlesschat apply, /seamlesschat loglevel <level>, /seamlesschat reset"] =
-    true
+L["Commands: /seamlesschat [options], /seamlesschat log, /seamlesschat search <text>, /seamlesschat save, /seamlesschat apply, /seamlesschat loglevel <level>, /seamlesschat reset"] = true
 L["Communities"] = true
 L["Copy button in the chat windows"] = true
 L["Copy chat log"] = true
-L["Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C."] =
-    true
+L["Copy chat messages: one by clicking its timestamp (it lands in the chat input), or many at once with the copy button in the top right corner of a chat window. The text is selected, ready for Ctrl+C."] = true
 L["Copy chat"] = true
 L["Couldn't paint the background of %s: %s"] = true
 L["Couldn't place the chat window: %s"] = true
@@ -373,10 +356,8 @@ L["Guild"] = true
 L["How General, Trade and the other numbered channels are shown."] = true
 L["How long a message stays before it fades out. The game uses 120."] = true
 L["How many messages each chat window keeps. Lowering it drops the oldest ones."] = true
-L["How many of the last messages of each chat window are saved. At login, a window takes back as many as fit into Messages per chat window."] =
-    true
-L["How many of the last messages the copy window shows, at most as many as the chat window keeps (Chat history)."] =
-    true
+L["How many of the last messages of each chat window are saved. At login, a window takes back as many as fit into Messages per chat window."] = true
+L["How many of the last messages the copy window shows, at most as many as the chat window keeps (Chat history)."] = true
 L["How many seconds the fade itself takes. The game uses 3."] = true
 L["How many sent messages and commands the Up and Down keys bring back."] = true
 L["Instance leader"] = true
@@ -384,8 +365,7 @@ L["Instance"] = true
 L["Join the saved custom channels. Leaving stops other characters from joining but does not make them leave."] = true
 L["Keep the chat across logins and reloads"] = true
 L["Keep them between sessions"] = true
-L["Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session."] =
-    true
+L["Keeps more messages in every chat window, and keeps them across logins and reloads (per character), so scrolling back and the copy window reach into your last session."] = true
 L["Link color"] = true
 L["Log"] = true
 L["Loot & rewards"] = true
@@ -414,8 +394,7 @@ L["Placed the chat window"] = true
 L["Preview:  %s [Thrall]: Lok'tar!\n"] = true
 L["Raid leader"] = true
 L["Raid"] = true
-L["Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character."] =
-    true
+L["Records every chat message of this character into a database you can search (/seamlesschat search <text>). Kept across sessions, per character."] = true
 L["Remembered messages"] = true
 L["Replace this character's chat setup with the profile's saved setup."] = true
 L["Restored %d messages from the last session"] = true
@@ -428,24 +407,21 @@ L["Saved the chat setup"] = true
 L["Saved this character's chat setup; your other characters will get it."] = true
 L["Saved this character's chat; your other characters get it at their next login."] = true
 L["Saves each chat window's input history per character. Temporary windows keep it for this session only."] = true
-L["Saves each chat window's messages when you log out or reload and puts them back at the next login of the same character, above a divider line."] =
-    true
+L["Saves each chat window's messages when you log out or reload and puts them back at the next login of the same character, above a divider line."] = true
 L["Saving the chat at the last logout failed: %s"] = true
 L["Say, yell & emotes"] = true
 L["Search and filter the logged messages. Same as /seamlesschat log."] = true
 L["Seconds visible"] = true
 L["Share message and channel colors and class-colored names."] = true
 L["Share tabs, names, order, font size, background, message types and channels."] = true
-L["Share the main chat window's Edit Mode position and size. Characters using a preset layout keep their own position because presets cannot be changed."] =
-    true
+L["Share the main chat window's Edit Mode position and size. Characters using a preset layout keep their own position because presets cannot be changed."] = true
 L["Short channel names"] = true
 L["Short names"] = true
 L["Shorten guild, party, raid and instance"] = true
-L['Shortens the channel names in front of chat messages: "[2. Trade - City]" to "[2]", "[Guild]" to "[G]".'] = true
+L["Shortens the channel names in front of chat messages: \"[2. Trade - City]\" to \"[2]\", \"[Guild]\" to \"[G]\"."] = true
 L["Show this button in the bar."] = true
 L["Shows every player name in the chat in its class color, in all chat types and channels."] = true
-L["Shows how many messages came in on a chat tab while another tab was selected, as a badge on its corner. Selecting the tab clears it."] =
-    true
+L["Shows how many messages came in on a chat tab while another tab was selected, as a badge on its corner. Selecting the tab clears it."] = true
 L["Shows the time in front of every chat message. Replaces the game's own chat timestamps while enabled."] = true
 L["Social"] = true
 L["Stopped syncing channel %s"] = true
@@ -455,19 +431,16 @@ L["That line is no longer in a chat window, so it can't be copied."] = true
 L["The background of the unread count."] = true
 L["The buttons left of the main chat window in one bar and one style. Hidden buttons leave no gap."] = true
 L["The chat hasn't loaded yet, try again in a moment."] = true
-L["The chat window stays where it is: this character uses one of the game's preset Edit Mode layouts, which can't be changed. Choose or create your own layout in Edit Mode to have it placed like on your other characters."] =
-    true
+L["The chat window stays where it is: this character uses one of the game's preset Edit Mode layouts, which can't be changed. Choose or create your own layout in Edit Mode to have it placed like on your other characters."] = true
 L["The edge of a button under the mouse."] = true
 L["The log is empty.\n"] = true
 L["The oldest messages are dropped past this many. A big log makes the login a little slower."] = true
-L["The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect."] =
-    true
+L["The same background color and opacity for every chat window and tab, black by default. While on, the Background setting in a tab's menu has no visible effect."] = true
 L["Timestamps"] = true
 L["Unread counts"] = true
 L["Voice: deafen"] = true
 L["Voice: mute"] = true
-L["Web addresses in the chat become links. Clicking one puts it into the chat input, selected, ready for Ctrl+C."] =
-    true
+L["Web addresses in the chat become links. Clicking one puts it into the chat input, selected, ready for Ctrl+C."] = true
 L["Whether chat messages fade out after a while, how long they stay, and how long the fade takes."] = true
 L["Whisper from"] = true
 L["Whisper to"] = true
@@ -504,8 +477,7 @@ L["Combat %s"] = true
 L["Combat data is temporarily unavailable."] = true
 L["Compact"] = true
 L["Complete"] = true
-L["Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. The oldest saved segment is deleted before adding a segment above your limit. Pinned segments also count toward the limit. The hard upper limit is 1,000 segments.\nSelect fights from a window's session menu.\n"] =
-    true
+L["Completed public fights are saved per character through reload/relog. Hidden windows still collect. Reloading during restricted combat may leave incomplete data. The oldest saved segment is deleted before adding a segment above your limit. Pinned segments also count toward the limit. The hard upper limit is 1,000 segments.\nSelect fights from a window's session menu.\n"] = true
 L["Confirm deletion (including pinned segments)"] = true
 L["Confirm deletion"] = true
 L["Contributors (% of enemy)"] = true
@@ -521,8 +493,7 @@ L["Deactivation hides the window and preserves its settings and attachments."] =
 L["Death recap is temporarily unavailable."] = true
 L["Deaths"] = true
 L["Default damage meter"] = true
-L["Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Resizing sets width/height overrides.\n"] =
-    true
+L["Defaults are shown on the left. Enable Override to edit a window value. Turn it off to follow future default changes. Resizing sets width/height overrides.\n"] = true
 L["Delete all saved fights, including pinned fights? Blizzard tracking is not reset."] = true
 L["Delete all saved segments older than the selected fight, including pinned segments?"] = true
 L["Delete segments older than selected"] = true
@@ -535,8 +506,7 @@ L["Details were not captured for this source."] = true
 L["Dispels"] = true
 L["DPS"] = true
 L["Drag the bottom-right handle to resize. Turning this off hides it in Edit Mode too."] = true
-L["Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Sessions, Current and Overall come from Blizzard's damage meter; addon session saving is temporarily disabled. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n"] =
-    true
+L["Each window has its own statistic and session. Drag its header to move, drag the bottom-right corner to resize, and scroll over the bars for more players. Sessions, Current and Overall come from Blizzard's damage meter; addon session saving is temporarily disabled. The gear menu activates, hides or deactivates windows; collapse keeps the header visible.\n"] = true
 L["Edit selected skin"] = true
 L["Editmode"] = true
 L["Enable corner resizing"] = true
@@ -640,8 +610,7 @@ L["Unlock Position"] = true
 L["Unpin selected fight"] = true
 L["Use class colors"] = true
 L["Use this window"] = true
-L["Use up to %d permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets."] =
-    true
+L["Use up to %d permanent windows. Activate or deactivate each window without changing its settings or attachments. Inactive windows remain available as anchor targets."] = true
 L["Visible bars"] = true
 L["Width"] = true
 L["Window %d (migrated)"] = true
@@ -659,8 +628,7 @@ L["Darkmode"] = true
 L["Enable darkmode"] = true
 L["Reputation bar border"] = true
 L["Tint for the frame borders of every group switched on below."] = true
-L["Tint unit frame and minimap borders, action bar slot borders and gryphons, and XP and reputation bar borders. Each group can be switched independently. Icons, portraits, text and bar fills keep their colors."] =
-    true
+L["Tint unit frame and minimap borders, action bar slot borders and gryphons, and XP and reputation bar borders. Each group can be switched independently. Icons, portraits, text and bar fills keep their colors."] = true
 L["XP bar border"] = true
 
 -- SeamlessTooltip
@@ -688,11 +656,11 @@ L["Adds a player's state behind the name, e.g. <AFK> or <Dead>."] = true
 L["Adds details about an item to its tooltip."] = true
 L["Adds the item level to weapons and armor."] = true
 L["Adds the item's ID, and its icon's ID, to item tooltips."] = true
-L['Adds the player\'s guild rank behind the guild ("<Guild> Officer").'] = true
-L['Adds the price of one item behind a stack\'s price ("1s 20c (6c each)").'] = true
-L['Adds the rank\'s number behind the guild, 0 being the guild master ("<Guild> Officer (2)").'] = true
+L["Adds the player's guild rank behind the guild (\"<Guild> Officer\")."] = true
+L["Adds the price of one item behind a stack's price (\"1s 20c (6c each)\")."] = true
+L["Adds the rank's number behind the guild, 0 being the guild master (\"<Guild> Officer (2)\")."] = true
 L["Adds the spell's ID, and its icon's ID, to spell tooltips and to buffs and debuffs."] = true
-L['Adds what the unit is targeting as "T: Name" to its tooltip.'] = true
+L["Adds what the unit is targeting as \"T: Name\" to its tooltip."] = true
 L["Adds who cast a buff or debuff to its tooltip. Players are shown in their class color."] = true
 L["Also hides the tooltips of the player, target, party and raid frames; off hides only units in the world."] = true
 L["Alt"] = true
@@ -713,19 +681,15 @@ L["Caster names on buffs and debuffs"] = true
 L["Changes the text of NPC tooltips."] = true
 L["Changes the text of player tooltips."] = true
 L["Class in class color"] = true
-L["Colors the border of item tooltips in the item's quality color. Works with the game's border and with \"Border and background\"."] =
-    true
-L['Colors the border of unit tooltips by the unit. Works with the game\'s border and with "Border and background".'] =
-    true
-L["Colors the race like the game colors hostile and friendly units: players of the other faction you can attack are red."] =
-    true
+L["Colors the border of item tooltips in the item's quality color. Works with the game's border and with \"Border and background\"."] = true
+L["Colors the border of unit tooltips by the unit. Works with the game's border and with \"Border and background\"."] = true
+L["Colors the race like the game colors hostile and friendly units: players of the other faction you can attack are red."] = true
 L["Commands: /seamlesstooltip [options], /seamlesstooltip loglevel <level>, /seamlesstooltip reset"] = true
 L["Count yourself"] = true
 L["Creature family"] = true
 L["Ctrl"] = true
 L["Distance from the edge"] = true
-L["Draws the tooltips with a border and background of your choice. More textures come with addons that register them with LibSharedMedia (e.g. SharedMedia)."] =
-    true
+L["Draws the tooltips with a border and background of your choice. More textures come with addons that register them with LibSharedMedia (e.g. SharedMedia)."] = true
 L["Faction line"] = true
 L["Family"] = true
 L["For players flagged for PvP."] = true
@@ -738,12 +702,11 @@ L["Health bar"] = true
 L["Health text"] = true
 L["Hide if it is your own faction"] = true
 L["Hide in combat"] = true
-L['Hide the "PvP" line'] = true
+L["Hide the \"PvP\" line"] = true
 L["Hide the class"] = true
 L["Hide titles"] = true
 L["Hide"] = true
-L["Hides unit tooltips in combat, so they don't cover what you are fighting. Hold the modifier key to see them anyway."] =
-    true
+L["Hides unit tooltips in combat, so they don't cover what you are fighting. Hold the modifier key to see them anyway."] = true
 L["Hostile red, neutral yellow, friendly green."] = true
 L["How far the background stays inside the tooltip's edge."] = true
 L["How far the bar stays inside the tooltip's edge; about the border's width."] = true
@@ -759,8 +722,8 @@ L["Item level"] = true
 L["Item Level"] = true
 L["Items of a lower quality keep the normal border."] = true
 L["Items"] = true
-L['Leaves player titles ("Private", "the Explorer") out of the name.'] = true
-L['Leaves the class out; with the short level line, out of that line ("3 Dwarf").'] = true
+L["Leaves player titles (\"Private\", \"the Explorer\") out of the name."] = true
+L["Leaves the class out; with the short level line, out of that line (\"3 Dwarf\")."] = true
 L["Left of the cursor"] = true
 L["Lists the members of your group or raid that target the unit."] = true
 L["Lists who targets the unit, in class color; off shows only how many."] = true
@@ -779,27 +742,23 @@ L["Price per item"] = true
 L["Quality border"] = true
 L["Race in reaction color"] = true
 L["Raid target icon"] = true
-L["Restyles the health bar of unit tooltips and can show it inside the tooltip, with a health text like on unit frames."] =
-    true
+L["Restyles the health bar of unit tooltips and can show it inside the tooltip, with a health text like on unit frames."] = true
 L["Right of the cursor"] = true
 L["Sell Price"] = true
 L["Shift"] = true
 L["Short level line"] = true
 L["Show while holding"] = true
 L["Show"] = true
-L['Shows "Level 10 (Elite)" and the creature type line ("Beast") as "10 Beast (Elite)", the level in its difficulty color.'] =
-    true
-L['Shows "Level 3 Dwarf (Player)" and the class line as "3 Dwarf Priest", the level in its difficulty color (red is much higher than you, grey much lower).'] =
-    true
-L['Shows "T: >>YOU<<" when the unit targets you.'] = true
+L["Shows \"Level 10 (Elite)\" and the creature type line (\"Beast\") as \"10 Beast (Elite)\", the level in its difficulty color."] = true
+L["Shows \"Level 3 Dwarf (Player)\" and the class line as \"3 Dwarf Priest\", the level in its difficulty color (red is much higher than you, grey much lower)."] = true
+L["Shows \"T: >>YOU<<\" when the unit targets you."] = true
 L["Shows the bar at the bottom of the tooltip, inside its border, instead of below it."] = true
 L["Shows the guild in brackets, in the player's hostile/friendly color; your own guild in pink."] = true
 L["Shows the item level in the color of the item's quality (green, blue, purple, ...)."] = true
 L["Shows the name of a mob another player has tapped (no loot or experience for you) in grey."] = true
 L["Shows the tooltip of an action bar, pet bar or stance bar button next to that button."] = true
 L["Shows the unit's raid target marker (skull, cross, ...) in front of its name."] = true
-L['Shows tooltips at the mouse cursor instead of the screen corner. Unit frame tooltips stay in the corner; action button tooltips follow "Anchor to action buttons" while that is on.'] =
-    true
+L["Shows tooltips at the mouse cursor instead of the screen corner. Unit frame tooltips stay in the corner; action button tooltips follow \"Anchor to action buttons\" while that is on."] = true
 L["Shows what an item sells for at a vendor; for a stack, also what one of it sells for."] = true
 L["Source:"] = true
 L["Spell ID"] = true
@@ -814,13 +773,11 @@ L["Tapped mobs in grey"] = true
 L["Tapped mobs"] = true
 L["Targeted by"] = true
 L["Texture"] = true
-L['The "Alliance" / "Horde" line.'] = true
+L["The \"Alliance\" / \"Horde\" line."] = true
 L["The file ID of the item's icon."] = true
 L["The file ID of the spell's icon."] = true
-L["The game's own caster line, also on target and focus buffs. Where the Aura caster feature shows its line, it replaces the game's."] =
-    true
-L["The game's own spell ID line, also on target and focus buffs. Where the Spell IDs feature shows its line, it replaces the game's."] =
-    true
+L["The game's own caster line, also on target and focus buffs. Where the Aura caster feature shows its line, it replaces the game's."] = true
+L["The game's own spell ID line, also on target and focus buffs. Where the Spell IDs feature shows its line, it replaces the game's."] = true
 L["The line the game adds for players flagged for PvP."] = true
 L["Tooltip"] = true
 L["Unit frames too"] = true
@@ -834,8 +791,7 @@ L["Vendor price"] = true
 L["%s - Extend Edit Mode"] = true
 L["Add more options"] = true
 L["Add position"] = true
-L["Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."] =
-    true
+L["Adds a SeamlessUI window below the selected Blizzard frame's Edit Mode settings. Turn off to disable all extensions."] = true
 L["Adds Scale, Anchor, AnchorParent, AnchorFrame, X and Y controls to every frame's Edit Mode extension."] = true
 L["Anchor"] = true
 L["AnchorFrame must name an existing frame, such as UIParent."] = true
@@ -856,21 +812,18 @@ L["Hide minimap day/night indicator"] = true
 L["Hide tracking button"] = true
 L["Hide zone text button"] = true
 L["Keep position in combat"] = true
-L["Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."] =
-    true
+L["Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."] = true
 L["MS:"] = true
 L["Move settings next to the Edit Mode window"] = true
 L["Pass unused Edit Mode keys through"] = true
-L["Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."] =
-    true
+L["Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."] = true
 L["Position editing is unavailable. Select an enabled frame in a custom layout."] = true
 L["Reserved for future frame options. This setting has no effect yet."] = true
 L["Round FPS"] = true
 L["SeamlessUI - %s"] = true
 L["Show FPS on startup"] = true
 L["Show latency"] = true
-L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."] =
-    true
+L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."] = true
 L["The previous secondary anchor is unavailable or would create a cycle."] = true
 L["This frame has no anchor in the active layout."] = true
 L["This frame has no default position."] = true
@@ -892,18 +845,14 @@ L["Class"] = true
 L["Class, reaction for NPCs"] = true
 L["Combine"] = true
 L["Commands: /seamlessunitframes [options], /seamlessunitframes loglevel <level>, /seamlessunitframes reset"] = true
-L["Controls health and power text using Blizzard's client-wide setting. Changing this on any frame changes it for all supported frames."] =
-    true
+L["Controls health and power text using Blizzard's client-wide setting. Changing this on any frame changes it for all supported frames."] = true
 L["Custom name"] = true
-L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. Beta (rounded) uses the same layout with a round player portrait border. This setting applies to all unit frames. Changes made during combat apply when combat ends."] =
-    true
-L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] =
-    true
+L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. Beta (rounded) uses the same layout with a round player portrait border. This setting applies to all unit frames. Changes made during combat apply when combat ends."] = true
+L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] = true
 L["Elite"] = true
 L["First name only"] = true
 L["Full name"] = true
-L["Full name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one.\nCombine: first name and surname without a space.\nOverride: use this character's custom name."] =
-    true
+L["Full name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one.\nCombine: first name and surname without a space.\nOverride: use this character's custom name."] = true
 L["Health bar color"] = true
 L["Health bar colors refreshed"] = true
 L["Hidden"] = true
@@ -922,17 +871,12 @@ L["PvP"] = true
 L["Quest icon"] = true
 L["Rare"] = true
 L["Reaction"] = true
-L["Sets the size of the level number and its circle background. Smaller uses 70% of the default size. Hidden also hides the high-level skull. Changes made during combat apply when combat ends."] =
-    true
-L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."] =
-    true
-L["Shown on your player frame when Override is selected. Saved separately for each character. Leave empty to show the normal name."] =
-    true
+L["Sets the size of the level number and its circle background. Smaller uses 70% of the default size. Hidden also hides the high-level skull. Changes made during combat apply when combat ends."] = true
+L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."] = true
+L["Shown on your player frame when Override is selected. Saved separately for each character. Leave empty to show the normal name."] = true
 L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."] = true
-L["Shows a slay icon on the target frame for unfinished kill objectives, or a loot icon for other unfinished quest objectives the target's tooltip reports."] =
-    true
-L["Shows the game's threat percentage badge above the target frame. This client-wide game setting also affects other frames that support it."] =
-    true
+L["Shows a slay icon on the target frame for unfinished kill objectives, or a loot icon for other unfinished quest objectives the target's tooltip reports."] = true
+L["Shows the game's threat percentage badge above the target frame. This client-wide game setting also affects other frames that support it."] = true
 L["Smaller"] = true
 L["Status Text"] = true
 L["Surname only"] = true

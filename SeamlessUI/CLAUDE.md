@@ -105,7 +105,7 @@ Run `lua src/tests/fps-display.lua`.
 ## Adding improvements
 
 `features/combinedbags.lua` registers an addon-owned selection outline for the native combined
-bags window in Edit Mode. The Frames checkbox controls only that outline; inventory visibility,
+bags window in Edit Mode. The Frames checkbox defaults off and controls only that outline; inventory visibility,
 parenting, scale and item logic remain native. Positions live in profile `combinedBags.layouts`,
 with layout copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors`
 reapplies only saved positions, converting offsets for the native bag scale; other bags keep

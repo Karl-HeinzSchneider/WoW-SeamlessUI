@@ -9,7 +9,7 @@ app.combinedBags = module
 local lib = app.core:GetEditModeLibrary()
 local anchor
 local hooked = false
-local showAnchor = true
+local showAnchor = false
 -- Updated from Blizzard's actual layout before applying our override.
 local defaults = { point = "BOTTOMRIGHT", x = -10, y = 100 }
 

@@ -9,6 +9,7 @@ local module = {
     RegisterEvent = function() end,
 }
 local lib = {
+    SettingType = { Checkbox = 1 },
     GetActiveLayoutName = function()
         return layout
     end,
@@ -30,6 +31,9 @@ local function frame(scale)
         width = 400,
         height = 500,
         shown = true,
+        IsProtected = function(self)
+            return self.protected or false
+        end,
         GetWidth = function(self)
             return self.width
         end,
@@ -136,6 +140,16 @@ local app = {
     },
 }
 assert(loadfile("SeamlessUI/src/features/combinedbags.lua"))("SeamlessUI", app)
+local support = dofile("src/tests/settings-support.lua")
+app.core.GetCustomEditModeVisibility = support.customVisibility
+app.core.GetEditModeButtonSection = support.buttonSection
+app.core.GetEditModePositionButton = support.positionButton
+app.core.GetPositionOptions = function()
+    return {}
+end
+app.core.RefreshOptions = function() end
+assert(loadfile("SeamlessUI/src/options/combinedBags.lua"))("SeamlessUI", app)
+assert(app.optionPages.combinedBags.defaults.profile.combinedBags.positionInCombat == false)
 module:OnEnable()
 assert(bags.point[4] == -10, "unsaved layouts retain Blizzard's position")
 assert(not anchor.shown and bags.shown, "normal bag visibility stays native")
@@ -154,6 +168,24 @@ assert(anchor.width == 320 and anchor.height == 400, "selection fits the scaled 
 combat = true
 nativeLayout()
 assert(bags.point[4] == -10, "post-hook makes no position writes in combat")
+local combatOption = app.optionPages.combinedBags.config.args.positionInCombat
+local outlinePoint = anchor.point
+combatOption.set(nil, true)
+assert(combatOption.get() and bags.point[4] == 250, "option applies the saved position during combat")
+nativeLayout()
+assert(bags.point[4] == 250 and bags.point[5] == -100, "opening in combat retains scaled saved offsets")
+assert(anchor.point == outlinePoint, "combat positioning never updates the Edit Mode outline")
+bags.protected = true
+nativeLayout()
+assert(bags.point[4] == -10, "protected bag frames are never repositioned in combat")
+bags.protected = false
+UIParent.protected = true
+nativeLayout()
+assert(bags.point[4] == 250, "a protected UIParent does not prevent positioning an unprotected bag")
+UIParent.protected = false
+combatOption.set(nil, false)
+nativeLayout()
+assert(bags.point[4] == -10, "turning the option off restores the existing combat behavior")
 combat = false
 module:OnProfileRefresh()
 assert(bags.point[4] == 250, "position reapplies after combat")

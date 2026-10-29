@@ -799,6 +799,7 @@ end
 -- L["Hide minimap day/night indicator"] = "Hide minimap day/night indicator"
 -- L["Hide tracking button"] = "Hide tracking button"
 -- L["Hide zone text button"] = "Hide zone text button"
+-- L["Keep position in combat"] = "Keep position in combat"
 -- L["Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."] = "Let normal key bindings work while a Blizzard frame is selected in Edit Mode. Arrow adjustments, Shift, Escape and screenshots keep their normal behavior."
 -- L["MS:"] = "MS:"
 -- L["Move settings next to the Edit Mode window"] = "Move settings next to the Edit Mode window"

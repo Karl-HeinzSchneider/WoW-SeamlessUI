@@ -3,7 +3,7 @@ local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 app.optionPages.combinedBags = {
-    defaults = { profile = { combinedBags = { layouts = {} } } },
+    defaults = { profile = { combinedBags = { layouts = {}, positionInCombat = false } } },
     config = {
         type = "group",
         name = L["Combined bags"],
@@ -26,6 +26,20 @@ app.optionPages.combinedBags = {
             },
         }),
         args = {
+            positionInCombat = {
+                type = "toggle",
+                order = 1,
+                name = L["Keep position in combat"],
+                default = false,
+                get = function()
+                    return app.db.profile.combinedBags.positionInCombat
+                end,
+                set = function(_, value)
+                    app.db.profile.combinedBags.positionInCombat = value
+                    app.combinedBags:Refresh()
+                    app.core:RefreshOptions("SeamlessUI")
+                end,
+            },
             position = app.core:GetPositionOptions(app.combinedBags:GetPositionBinding()),
         },
     },

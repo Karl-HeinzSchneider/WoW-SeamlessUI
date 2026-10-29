@@ -110,7 +110,10 @@ parenting, scale and item logic remain native. Positions live in profile `combin
 with layout copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors`
 reapplies only saved positions, converting offsets for the native bag scale; other bags keep
 their native anchors. Reset removes the override and restores Blizzard placement. Combat defers
-position writes, including restoration when disabled. Run `lua src/tests/combined-bags.lua`.
+position writes, including restoration when disabled. The per-frame "Keep position in combat"
+option (`positionInCombat`, default off) reapplies saved bag positions in combat only when
+the bag is unprotected; it never updates the Edit Mode outline in combat.
+Run `lua src/tests/combined-bags.lua`.
 
 `features/minimap.lua` owns minimap visibility. `options/minimap.lua` declares the page and
 Style controls; Edit Mode derives its Style rows from that declaration. New visibility settings

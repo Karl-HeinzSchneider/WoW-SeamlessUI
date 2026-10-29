@@ -24,7 +24,7 @@
 
 ---@class SeamlessUI.DBDefaults : AceDB.Schema
 ---@class SeamlessUI.DB.Profile
----@field combinedBags { layouts: table<string, table> }
+---@field combinedBags { layouts: table<string, table>, positionInCombat: boolean }
 ---@field minimap SeamlessUI.MinimapSettings
 ---@field hideMinimapDayNight boolean
 ---@class SeamlessUI.MinimapSettings

@@ -41,25 +41,41 @@ local function RelativeFrame(name)
     return UIParent
 end
 
+local function ApplyPosition(position, relative)
+    local frame = ContainerFrameCombinedBags
+    if InCombatLockdown() then
+        if not app.db.profile.combinedBags.positionInCombat or frame:IsProtected() then
+            return
+        end
+    end
+    local scale = UIParent:GetEffectiveScale() / frame:GetEffectiveScale()
+    frame:ClearAllPoints()
+    frame:SetPoint(position.point, relative, position.relativePoint, position.x * scale, position.y * scale)
+end
+
 function module:Refresh()
-    if not anchor or not self:IsEnabled() or InCombatLockdown() then
+    if not anchor or not self:IsEnabled() then
+        return
+    end
+    local position = CurrentPosition()
+    local relative = RelativeFrame(position.relativeTo)
+    if InCombatLockdown() then
+        if SavedPosition() then
+            ApplyPosition(position, relative)
+        end
         return
     end
     local frame = ContainerFrameCombinedBags
     local ratio = frame:GetEffectiveScale() / anchor:GetEffectiveScale()
     local width, height = frame:GetWidth(), frame:GetHeight()
     anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
-    local position = CurrentPosition()
-    local relative = RelativeFrame(position.relativeTo)
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, relative, position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
     if SavedPosition() then
         -- Keep the native parent, scale, visibility and item buttons. Offsets are in
         -- UIParent units, so convert them to the bag's effective scale.
-        local scale = UIParent:GetEffectiveScale() / frame:GetEffectiveScale()
-        frame:ClearAllPoints()
-        frame:SetPoint(position.point, relative, position.relativePoint, position.x * scale, position.y * scale)
+        ApplyPosition(position, relative)
     end
 end
 
@@ -120,12 +136,23 @@ function module:TryInitialize()
         end
     end, defaults, L["Combined bags"])
     lib:AddFrameSettings(anchor, {
+        {
+            name = app.optionPages.combinedBags.config.args.positionInCombat.name,
+            kind = lib.SettingType.Checkbox,
+            default = false,
+            get = app.optionPages.combinedBags.config.args.positionInCombat.get,
+            set = app.optionPages.combinedBags.config.args.positionInCombat.set,
+        },
         app.core:GetEditModePositionSetting(self:GetPositionBinding()),
         app.optionPages.combinedBags.config.buttonSection,
     })
     if not hooked then
         hooksecurefunc("UpdateContainerFrameAnchors", function()
-            if not module:IsEnabled() or InCombatLockdown() then
+            if not module:IsEnabled() then
+                return
+            end
+            if InCombatLockdown() then
+                module:Refresh()
                 return
             end
             local frame = ContainerFrameCombinedBags

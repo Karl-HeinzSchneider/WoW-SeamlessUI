@@ -521,6 +521,11 @@ assert(health.point[2].point[1] == "BOTTOMLEFT" and health.point[2].point[4] == 
 assert(mana.point[1] == "TOPLEFT" and mana.point[2] == playerArt and mana.point[4] == -157)
 assert(health.fill.file:find("target%-portraiton%-bar%-health"), "rounded player uses target health art")
 assert(mana.LeftText.point[4] == 13, "power text clears the mirrored portrait")
+for _, mask in ipairs({ health.point[2].HealthBarMask, mana.ManaBarMask }) do
+    assert(mask.file:find("assets/legacy/masks/", 1, true), "rounded bars use reflected mask files")
+    assert(mask.coords[1] == 0 and mask.coords[2] == 1, "mask UVs must not be reflected at runtime")
+end
+
 local roundedWrites = artworkWrites
 layout:Refresh()
 assert(artworkWrites == roundedWrites, "stable rounded refresh must retain its artwork bindings")

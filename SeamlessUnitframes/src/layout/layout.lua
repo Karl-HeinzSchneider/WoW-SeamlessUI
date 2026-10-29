@@ -198,6 +198,13 @@ local function WatchBar(bar, texture)
     return true
 end
 
+-- Static copies of the target mask pixels reflected by the atlas generator.
+-- Keep mask UVs increasing: reflected UVs can clip the entire live fill.
+local reflectedMasks = {
+    ["ui-hud-unitframe-target-portraiton-bar-health-mask"] = "uiunitframetargethealthmask.blp",
+    ["ui-hud-unitframe-target-portraiton-bar-mana-mask"] = "uiunitframetargetmanamask.blp",
+}
+
 local function Paint(texture, atlas, useSize, bar, mirror)
     mirror = legacyMode and mirror or false
     if not layout:Readable(atlas) or type(atlas) ~= "string" then
@@ -248,8 +255,14 @@ local function Paint(texture, atlas, useSize, bar, mirror)
             return false
         end
     elseif data then
-        texture:SetTexture(data[1])
-        texture:SetTexCoord(mirror and data[5] or data[4], mirror and data[4] or data[5], data[6], data[7])
+        local mask = mirror and reflectedMasks[atlas:lower()]
+        if mask then
+            texture:SetTexture("Interface/AddOns/SeamlessUnitframes/assets/legacy/masks/" .. mask)
+            texture:SetTexCoord(0, 1, 0, 1)
+        else
+            texture:SetTexture(data[1])
+            texture:SetTexCoord(mirror and data[5] or data[4], mirror and data[4] or data[5], data[6], data[7])
+        end
         if useSize then
             layout:Edit(texture, { width = data[2], height = data[3] })
         end

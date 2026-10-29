@@ -28,6 +28,20 @@ class LegacyAtlasTests(unittest.TestCase):
                     self.assertLessEqual(row[key], 1)
         self.assertEqual(set(GENERATOR.ASSETS.glob("*.blp")), expected)
 
+    def test_mirrored_masks_preserve_every_reflected_pixel(self):
+        for filename in GENERATOR.MIRRORED_MASKS:
+            source = (GENERATOR.ASSETS / filename).read_bytes()
+            output = (GENERATOR.ASSETS / "masks" / filename).read_bytes()
+            width, height, offset = struct.unpack_from("<III", source, 12)
+            self.assertEqual(source[:offset], output[:offset])
+            self.assertEqual(len(source), len(output))
+            for y in range(height):
+                for x in range(width):
+                    src = offset + (y * width + width - 1 - x) * 4
+                    dst = offset + (y * width + x) * 4
+                    self.assertEqual(source[src:src + 4], output[dst:dst + 4])
+            self.assertEqual(GENERATOR.mirror_mask(output), source)
+
     def test_generation_is_reproducible(self):
         original = GENERATOR.OUTPUT.read_bytes()
         try:

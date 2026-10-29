@@ -31,6 +31,12 @@ the original region's BGRA pixels; no new artwork is drawn. The owning status ba
 receives the standalone file through `SetStatusBarTexture` and owns its fill UVs.
 This prevents native value updates from sampling unrelated atlas-sheet artwork
 and requires no Lua arithmetic on health/power values, including secret values.
+Beta (rounded) also uses two offline reflections of the target health and mana
+masks in `assets/legacy/masks/`. The generator reverses each existing BGRA pixel
+row without resampling or drawing. This keeps the exact target clipping shapes
+while using normal mask UVs in game; reflecting mask UVs at runtime can hide the
+entire fill.
+
 It selects the exported shared atlas sheets, not the unverified alternate atlas-set
 variants also present in the DB2 reference. The export does not contain the
 `c60` unit/party sheets. PvP faction icons therefore retain their client atlas;

@@ -11,6 +11,10 @@ local _, app = ...
 local questIcons = {}
 app.questIcons = questIcons
 
+local function accessible(value)
+    return not canaccessvalue or canaccessvalue(value)
+end
+
 ---@alias SeamlessUnitframes.QuestIconKey "slay"|"loot"
 
 ---@class SeamlessUnitframes.QuestIconDef
@@ -70,9 +74,16 @@ function questIcons:ForUnit(unit)
 
     local types
     for _, line in ipairs(data.lines) do
-        if line.type == Enum.TooltipDataLineType.QuestObjective and not line.completed then
+        -- Restricted tooltip fields cannot be used for branching or text matching.
+        -- Skip objectives whose completion is unknown rather than guessing they are needed.
+        if
+            accessible(line.type)
+            and line.type == Enum.TooltipDataLineType.QuestObjective
+            and accessible(line.completed)
+            and not line.completed
+        then
             types = types or collectObjectiveTypes()
-            local objectiveType = line.leftText and types[normalize(line.leftText)]
+            local objectiveType = accessible(line.leftText) and line.leftText and types[normalize(line.leftText)]
             -- Unknown objective text (no quest log match) falls back to the loot icon.
             return objectiveType == "monster" and "slay" or "loot"
         end

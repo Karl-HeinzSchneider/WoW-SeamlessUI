@@ -80,9 +80,14 @@ loggedIn = true
 module:OnProfileRefresh()
 assert(next(module.hooks) == nil and next(module.events) == nil)
 EditModeSystemSettingsDialog = nil
+app.blizzardEditMode = {
+    GetOptionsFrames = function()
+        return {}, {}
+    end,
+}
 app.optionPages = {}
-assert(loadfile("SeamlessUI/src/options/general.lua"))("SeamlessUI", app)
-local option = app.optionPages.general.config.args.editModeKeyboard
+assert(loadfile("SeamlessUI/src/options/blizzardEditMode.lua"))("SeamlessUI", app)
+local option = app.optionPages.blizzardEditMode.config.args.editModeKeyboard
 option.set(nil, true) -- Native addon may load later.
 assert(module:IsEnabled() and module.events.ADDON_LOADED and next(module.hooks) == nil)
 EditModeSystemSettingsDialog = {
@@ -122,7 +127,7 @@ option.set(nil, true)
 assert(module:IsEnabled() and module.hooks.OnKeyDown and module.hooks.OnKeyUp)
 print("UI Edit Mode keyboard option OK")
 
--- The shared declaration exposes the same General toggle to both options panels.
+-- The shared declaration exposes the same Blizzard Editmode toggle to both options panels.
 local registered
 app.core = {
     RegisterOptions = function(_, _, spec)
@@ -144,7 +149,7 @@ app.addon.NewModule = function(_, _, implementation)
 end
 assert(loadfile("SeamlessUI/src/options/register.lua"))("SeamlessUI", app)
 app.options:OnInitialize()
-assert(registered.pages.general.config.args.editModeKeyboard.get() == true)
-registered.pages.general.config.args.editModeKeyboard.set(nil, false)
+assert(registered.pages.blizzardEditMode.config.args.editModeKeyboard.get() == true)
+registered.pages.blizzardEditMode.config.args.editModeKeyboard.set(nil, false)
 assert(app.db.profile.editModeKeyboard == false)
-print("UI General keyboard option registration OK")
+print("UI Blizzard Editmode keyboard option registration OK")

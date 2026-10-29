@@ -124,7 +124,7 @@ anchor gap. Native scale, header placement and rotation updates reapply that com
 Restoring the header restores the native layout sizing and current header placement; disabling
 the addon restores frames it hid. Run `lua src/tests/minimap-day-night.lua`.
 
-`editmodekeyboard.lua` owns the General option "Pass unused Edit Mode keys through"
+`editmodekeyboard.lua` owns the Blizzard Editmode option "Pass unused Edit Mode keys through"
 (`editModeKeyboard`, default on), independently of the Edit Mode extensions toggle. Native
 key handlers stay intact; arrows, Escape and Print Screen are consumed, other keys propagate.
 A disabled profile installs no hooks or events and never touches the native dialog. Enabling

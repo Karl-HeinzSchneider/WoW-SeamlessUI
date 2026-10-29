@@ -29,8 +29,8 @@ function app.UnitFrameLayoutOption()
         order = 1,
         default = "current",
         name = L["Unit frame layout"],
-        desc = L["Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."],
-        values = { current = L["Current (70425)"], legacy = L["Legacy (before 70425)"] },
+        desc = L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."],
+        values = { current = L["Default"], legacy = L["Beta"] },
         sorting = { "current", "legacy" },
         get = function()
             return app.db.profile.layout

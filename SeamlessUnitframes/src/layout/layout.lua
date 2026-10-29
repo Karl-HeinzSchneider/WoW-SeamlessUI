@@ -31,7 +31,7 @@ function module:Warn(context, reason)
     local message = context .. ": " .. reason
     if not warnings[message] then
         warnings[message] = true
-        app.logger:warn(L["Legacy unit frames: %s; skipping this operation"], message)
+        app.logger:warn(L["Beta unit frames: %s; skipping this operation"], message)
     end
 end
 

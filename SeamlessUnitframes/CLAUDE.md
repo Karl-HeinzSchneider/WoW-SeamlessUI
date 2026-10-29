@@ -61,7 +61,7 @@ Run `lua src/tests/unitframes-totposition.lua`.
 - `atlas.lua`: generated coordinates of the old artwork; regenerate with
   `python src/generate-legacy-unitframe-atlas.py`. The BLP sheets are in `assets/legacy/`; see
   `docs/unit-frame-layout.md` for provenance and limits.
-- `layout.lua`: `app.legacyLayout`; inert until Legacy is selected.
+- `layout.lua`: `app.legacyLayout`; inert until Beta is selected.
 - `geometry.lua`: fixed 70374/70425 definitions for player, target/focus/boss, pet/ToT, party and
   combo points.
 
@@ -80,7 +80,7 @@ Rules:
 - Restore static atlases with `resetTexCoords = true`, reapplying fixed definitions, not observed
   state. Keep native root positions and scale; don't change draw/frame levels to hide health loss
   flashes.
-- In Legacy the animated health loss bar uses the live bar's white fill and tint (Current restores
+- In Beta the animated health loss bar uses the live bar's white fill and tint (Default restores
   its red); party health loss uses the Player atlas; unknown power types use the native mana fill.
 - Apply repairs synchronously, never on the next frame. Cache only our own last writes and
   invalidate them on native setters.

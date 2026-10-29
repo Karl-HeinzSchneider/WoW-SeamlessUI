@@ -68,6 +68,7 @@ app.optionPages.target = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    statusText = app.UnitFrameStatusTextOption(),
                     target_nameDisplay = {
                         order = 10,
                         type = "select",

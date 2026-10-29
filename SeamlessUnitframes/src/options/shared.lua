@@ -43,3 +43,27 @@ function app.UnitFrameLayoutOption()
         end,
     }
 end
+
+---The client-wide status text proxy, matching Blizzard's Interface dropdown.
+---@return table
+function app.UnitFrameStatusTextOption()
+    return {
+        type = "select",
+        order = 32,
+        name = L["Status Text"],
+        desc = L["Controls health and power text using Blizzard's client-wide setting. Changing this on any frame changes it for all supported frames."],
+        blizzard = true,
+        default = "NONE",
+        values = { NUMERIC = L["Numeric Value"], PERCENT = L["Percentage"], BOTH = L["Both"], NONE = L["None"] },
+        sorting = { "NUMERIC", "PERCENT", "BOTH", "NONE" },
+        get = function()
+            return GetCVar("statusTextDisplay")
+        end,
+        set = function(_, value)
+            SetCVar("statusTextDisplay", value)
+            SetCVar("statusText", value == "NONE" and "0" or "1")
+            app.core:RefreshOptions(appName)
+            app.core:RefreshEditModeSystemOptions()
+        end,
+    }
+end

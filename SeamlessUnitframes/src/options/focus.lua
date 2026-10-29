@@ -64,6 +64,7 @@ app.optionPages.focus = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    statusText = app.UnitFrameStatusTextOption(),
                     focus_nameDisplay = {
                         order = 10,
                         type = "select",

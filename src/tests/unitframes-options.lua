@@ -15,7 +15,10 @@ dofile("Seamless/lib/LibStub/LibStub.lua")
 dofile("Seamless/lib/AceLocale-3.0/AceLocale-3.0.lua")
 dofile("Seamless/locales/enUS.lua")
 
-local cvars = { threatShowNumeric = "0" }
+local cvars = { threatShowNumeric = "0", statusTextDisplay = "NONE", statusText = "0" }
+GetCVar = function(name)
+    return cvars[name]
+end
 GetCVarBool = function(name)
     return cvars[name] == "1"
 end
@@ -222,6 +225,21 @@ for _, key in ipairs({ "player", "target", "focus" }) do
 end
 assert(levelRefreshes == 3)
 assert(not find(tabs.pet, "pet_levelDisplay") and not find(tabs.party, "party_levelDisplay"))
+-- Every page wraps the same native setting, including both CVars and live external changes.
+for _, key in ipairs({ "player", "pet", "target", "focus", "targettarget", "focustarget", "party" }) do
+    local option = find(tabs[key], "statusText")
+    assert(option.type == "select" and option.blizzard and option.default == "NONE")
+    assert(table.concat(option.sorting, ",") == "NUMERIC,PERCENT,BOTH,NONE")
+    for _, value in ipairs(option.sorting) do
+        option.set(nil, value)
+        assert(cvars.statusTextDisplay == value and cvars.statusText == (value == "NONE" and "0" or "1"))
+        assert(find(tabs.player, "statusText").get() == value)
+        assert(find(tabs.target, "statusText").get() == value)
+    end
+    cvars.statusTextDisplay = "PERCENT"
+    assert(option.get() == "PERCENT", "read external CVar changes live")
+    assert(app.db.profile.unitFrames[key].statusText == nil, "no profile copy of the CVar")
+end
 -- Keep the pre-existing refresh-count assertions below independent of these controls.
 counts.optionRefreshes, counts.systemRefreshes = 0, 0
 assert(tabs.player.args.style.args.player_classIcon.type == "toggle")

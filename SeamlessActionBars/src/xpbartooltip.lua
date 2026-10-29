@@ -1,4 +1,4 @@
----@type string, SeamlessUI
+---@type string, SeamlessActionBars
 local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
@@ -7,13 +7,37 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 -- detailed layout: rest state, XP, XP left, rested XP and time to the rested cap, then the
 -- completed quests in the log and their XP.
 -- NewModule only uses a passed table as a prototype, so methods go on the module it returns.
----@class SeamlessUI.XPBarTooltip : AceModule, AceEvent-3.0, AceHook-3.0
-local module = app.addon:NewModule("XPBarTooltip", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessUI.XPBarTooltip]]
+---@class SeamlessActionBars.XPBarTooltip : AceModule, AceEvent-3.0, AceHook-3.0
+local module = app.addon:NewModule("XPBarTooltip", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessActionBars.XPBarTooltip]]
 app.xpBarTooltip = module
 module:SetEnabledState(false)
 
 local function settings()
     return app.db.profile.xpBarTooltip
+end
+
+-- Read the Adventure tree directly; opening Blizzard's Legacy window is unnecessary.
+-- Purchased ranks exclude the preview ranks added while editing the tree.
+function module:GetRestedValues()
+    local options = settings()
+    if options.automaticRestedXP ~= false and C_Traits and Constants and Constants.LegacyConsts then
+        local treeID = Constants.LegacyConsts.LEGACY_TREE_ADVENTURE_ID
+        local configID = treeID and C_Traits.GetConfigIDByTreeID(treeID)
+        if configID and configID > 0 then
+            for _, nodeID in ipairs(C_Traits.GetTreeNodes(treeID) or {}) do
+                local node = C_Traits.GetNodeInfo(configID, nodeID)
+                for _, entryID in ipairs(node and node.entryIDs or {}) do
+                    local entry = C_Traits.GetEntryInfo(configID, entryID)
+                    local definition = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
+                    if definition and definition.spellID == 1225478 then
+                        local multiplier = 1 + math.min(5, math.max(0, node.ranksPurchased or 0)) * 0.04
+                        return 150 * multiplier, 5 * multiplier
+                    end
+                end
+            end
+        end
+    end
+    return options.restedXPCap, options.restedXPRate
 end
 
 local function durationText(seconds)
@@ -52,9 +76,8 @@ local function addXPLines(tooltip)
     end
     local currXP = UnitXP("player")
 
-    -- The client does not expose the rested cap or rate; this feature owns the assumptions.
-    local tooltipSettings = settings()
-    local restedMax = maxXP * tooltipSettings.restedXPCap / 100
+    local cap, rate = module:GetRestedValues()
+    local restedMax = maxXP * cap / 100
     local rested = math.max(0, GetXPExhaustion() or 0)
 
     addSpacer(tooltip)
@@ -70,9 +93,9 @@ local function addXPLines(tooltip)
     )
     addValue(tooltip, L["XP left:"], amountText(math.max(0, maxXP - currXP), maxXP))
     addValue(tooltip, L["Rested:"], amountText(rested, restedMax))
-    if rested < restedMax and tooltipSettings.restedXPRate > 0 then
+    if rested < restedMax and rate > 0 then
         local levels = (restedMax - rested) / maxXP * 100
-        addValue(tooltip, L["Time to max rested:"], durationText(levels / tooltipSettings.restedXPRate * 8 * 60 * 60))
+        addValue(tooltip, L["Time to max rested:"], durationText(levels / rate * 8 * 60 * 60))
     end
 end
 
@@ -140,16 +163,30 @@ function module:OnProfileRefresh()
     end
 end
 
--- Import the former Core tooltip settings into same-named UI profiles without
--- overwriting existing UI choices, then remove the obsolete Core values.
+-- Import saved choices without depending on SeamlessUI being loaded.
 function module:OnInitialize()
+    local namespaces = app.core.db.sv and app.core.db.sv.namespaces or {}
+    local source = namespaces.SeamlessUI or SeamlessUIDB or {}
+    for name, profile in pairs(source.profiles or {}) do
+        if profile.xpBarTooltip then
+            local target = app.db.profiles[name] or {}
+            app.db.profiles[name] = target
+            target.xpBarTooltip = target.xpBarTooltip or {}
+            for key, value in pairs(profile.xpBarTooltip) do
+                if rawget(target.xpBarTooltip, key) == nil then
+                    target.xpBarTooltip[key] = value
+                end
+            end
+            profile.xpBarTooltip = nil
+        end
+    end
     for name, profile in pairs(app.core.db.profiles or {}) do
         local tweaks = profile.tweaks
         if tweaks then
             local target = app.db.profiles[name] or {}
             app.db.profiles[name] = target
             target.xpBarTooltip = target.xpBarTooltip or {}
-            if tweaks.questXPTooltip == false and target.xpBarTooltip.completedQuests == nil then
+            if tweaks.questXPTooltip == false and rawget(target.xpBarTooltip, "completedQuests") == nil then
                 target.xpBarTooltip.completedQuests = false
             end
             for _, key in ipairs({ "restedXPCap", "restedXPRate" }) do
@@ -163,5 +200,3 @@ function module:OnInitialize()
         end
     end
 end
-
----@return table

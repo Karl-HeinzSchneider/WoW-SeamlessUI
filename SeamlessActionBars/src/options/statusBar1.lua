@@ -9,7 +9,20 @@ local setting = Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTra
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar1 = {
-    defaults = {},
+    tooltip = function(path)
+        return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
+    end,
+    defaults = {
+        profile = {
+            xpBarTooltip = {
+                enabled = true,
+                completedQuests = true,
+                automaticRestedXP = true,
+                restedXPCap = 150,
+                restedXPRate = 5,
+            },
+        },
+    },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({
@@ -22,6 +35,9 @@ app.optionPages.statusBar1 = {
         hidden = function()
             return getFrame() == nil
         end,
-        args = { position = app.core:GetNativePositionOptions(getFrame, scale) },
+        args = {
+            xpBarTooltip = app.XPBarTooltipOptions(),
+            position = app.core:GetNativePositionOptions(getFrame, scale),
+        },
     },
 }

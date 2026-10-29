@@ -42,6 +42,7 @@ function app.addon:OnInitialize()
 end
 
 function app.addon:OnEnable()
+    app.RegisterXPTooltipEditMode()
     for _, button in ipairs(app.Buttons()) do
         watched[button] = true
         self:SecureHook(button, "UpdateUsable", app.PaintIcon)
@@ -80,6 +81,7 @@ function app.addon:Refresh()
         app.PaintIcon(button)
         app.UpdateHotkey(button)
     end
+    app.xpBarTooltip:OnProfileRefresh()
     app.ApplyEndCapScales()
     app.RefreshMicroMenu()
     app.RefreshBarVisibility()

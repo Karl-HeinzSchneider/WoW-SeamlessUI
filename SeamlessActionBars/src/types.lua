@@ -34,3 +34,8 @@
 
 ---@class SeamlessActionBars
 ---@field optionFrameGetters (fun(): table?)[]
+
+---@class SeamlessActionBars
+---@field xpBarTooltip SeamlessActionBars.XPBarTooltip
+---@field XPBarTooltipOptions fun(): table
+---@field RegisterXPTooltipEditMode fun()

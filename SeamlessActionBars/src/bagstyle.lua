@@ -76,7 +76,14 @@ local function skin(button)
         texture:SetAtlas(index <= 2 and border or highlight)
         texture:SetRotation(0)
     end
-    button:SetSize(backpack and 48 or 30, backpack and 48 or 30)
+    local size = backpack and 48 or (app.db.profile.bags.smallButtonSize or 30)
+    local scale = size / 30
+    button:SetSize(size, size)
+    if masks[button] then
+        masks[button]:ClearAllPoints()
+        masks[button]:SetPoint("TOPLEFT", button, "TOPLEFT", 2 * scale, -2 * scale)
+        masks[button]:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -4 * scale, 4 * scale)
+    end
     if backpack then
         button.icon:SetAlpha(0)
     else

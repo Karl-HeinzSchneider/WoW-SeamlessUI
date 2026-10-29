@@ -52,6 +52,25 @@ args.freeSlots = {
         SetCVar("displayFreeBagSlots", value)
     end,
 }
+args.smallButtonSize = {
+    type = "range",
+    name = L["Small bag button size"],
+    order = 35,
+    min = 15,
+    max = 48,
+    step = 1,
+    default = 30,
+    disabled = function()
+        return not app.db.profile.bags.retailStyle or InCombatLockdown()
+    end,
+    get = function()
+        return app.db.profile.bags.smallButtonSize
+    end,
+    set = function(_, value)
+        app.db.profile.bags.smallButtonSize = value
+        app.RefreshBagStyle()
+    end,
+}
 args.spacing = {
     type = "range",
     name = L["Bag button spacing"],
@@ -108,7 +127,9 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
-    defaults = { profile = { bags = { retailStyle = false, spacing = 0, expanded = true, hidden = false } } },
+    defaults = {
+        profile = { bags = { retailStyle = false, smallButtonSize = 30, spacing = 0, expanded = true, hidden = false } },
+    },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

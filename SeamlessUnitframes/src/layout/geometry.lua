@@ -659,7 +659,7 @@ end
 
 -- The Edit Mode stand-ins use the same fixed ToT geometry and artwork.
 function module:ApplyToTPreview(frame, powerType)
-    Small(frame, false, app.db.profile.layout == "legacy", powerType)
+    Small(frame, false, (app.db.profile.layout == "legacy" or app.db.profile.layout == "legacyRounded"), powerType)
 end
 
 local function Party(frame, old)

@@ -503,7 +503,16 @@ assert(health.height == 19 and health.point[5] == 0)
 assert(health.fill.layer == nil, "layout must leave native draw layers alone")
 assert(HasOld(PlayerFrame.PlayerFrameContainer.FrameTexture))
 assert(#warnings == 0, "unexpected missing fixture components")
+Mode("legacyRounded")
+local border = PlayerFrame.PlayerFrameContainer.FrameTexture
+local targetArt = app.legacyAtlases["ui-hud-unitframe-target-portraiton"]
+assert(border.coords[1] == targetArt[5] and border.coords[2] == targetArt[4], "rounded border mirrors target art")
+assert(health.height == 19 and PlayerName.width == 96, "rounded skin shares Beta geometry")
+Mode("legacy")
+assert(border.coords[1] == app.legacyAtlases["ui-hud-unitframe-player-portraiton"][4], "Beta border restored")
+Mode("legacyRounded")
 Mode("current")
+assert(border.coords == nil, "rounded UVs must restore to Default")
 Mode("legacy")
 local oldHooks = hookCount
 for i = 1, 4 do
@@ -822,7 +831,7 @@ assert(health.height == 20)
 UNIT_FRAME_SHOW_HEALTH_ONLY = nil
 local count = geometryWrites
 combat = true
-app.db.profile.layout = "legacy"
+app.db.profile.layout = "legacyRounded"
 layout:Refresh()
 Drain()
 assert(geometryWrites == count, "layout change was not deferred")

@@ -834,6 +834,7 @@ L["Y"] = true
 -- SeamlessUnitframes
 L["\n\nA pet takes its owner's class color."] = true
 L["Beta"] = true
+L["Beta (rounded)"] = true
 L["Beta unit frames: %s; skipping this operation"] = true
 L["Boss"] = true
 L["Class icon"] = true
@@ -842,7 +843,7 @@ L["Class, reaction for NPCs"] = true
 L["Combine"] = true
 L["Commands: /seamlessunitframes [options], /seamlessunitframes loglevel <level>, /seamlessunitframes reset"] = true
 L["Custom name"] = true
-L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."] = true
+L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. Beta (rounded) uses the same layout with a round player portrait border. This setting applies to all unit frames. Changes made during combat apply when combat ends."] = true
 L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] = true
 L["Elite"] = true
 L["First name only"] = true

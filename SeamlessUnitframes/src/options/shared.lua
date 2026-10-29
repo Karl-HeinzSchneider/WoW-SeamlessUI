@@ -29,9 +29,9 @@ function app.UnitFrameLayoutOption()
         order = 1,
         default = "current",
         name = L["Unit frame layout"],
-        desc = L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."],
-        values = { current = L["Default"], legacy = L["Beta"] },
-        sorting = { "current", "legacy" },
+        desc = L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. Beta (rounded) uses the same layout with a round player portrait border. This setting applies to all unit frames. Changes made during combat apply when combat ends."],
+        values = { current = L["Default"], legacy = L["Beta"], legacyRounded = L["Beta (rounded)"] },
+        sorting = { "current", "legacy", "legacyRounded" },
         get = function()
             return app.db.profile.layout
         end,

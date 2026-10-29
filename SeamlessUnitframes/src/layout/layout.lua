@@ -21,6 +21,7 @@ local visualBars = {}
 local lossColored = false
 local enabled, applied, writing, initialized = false, false, false, false
 local legacyMode = false
+local roundedMode = false
 local openingFrames, openingSeen = {}, {}
 
 function module:Readable(value)
@@ -214,10 +215,20 @@ local function Paint(texture, atlas, useSize, bar)
         texture:SetAlpha(0)
     end
     local last = painted[texture]
-    if last and last.atlas == atlas and last.legacy == legacyMode and last.useSize == useSize then
+    if
+        last
+        and last.atlas == atlas
+        and last.legacy == legacyMode
+        and last.rounded == roundedMode
+        and last.useSize == useSize
+    then
         return true
     end
     local data = legacyMode and app.legacyAtlases[atlas:lower()] or nil
+    -- Mirror the target border into the existing player rectangle. All bars,
+    -- masks and anchors keep the shared Beta geometry.
+    local rounded = roundedMode and atlas == "UI-HUD-UnitFrame-Player-PortraitOn"
+    local crop = rounded and app.legacyAtlases["ui-hud-unitframe-target-portraiton"] or data
     artwork[texture] = { atlas = atlas, useSize = useSize, bar = bar }
     local previous = writing
     writing = true
@@ -240,15 +251,15 @@ local function Paint(texture, atlas, useSize, bar)
             return false
         end
     elseif data then
-        texture:SetTexture(data[1])
-        texture:SetTexCoord(data[4], data[5], data[6], data[7])
+        texture:SetTexture(crop[1])
+        texture:SetTexCoord(rounded and crop[5] or crop[4], rounded and crop[4] or crop[5], crop[6], crop[7])
         if useSize then
             layout:Edit(texture, { width = data[2], height = data[3] })
         end
     else
         texture:SetAtlas(atlas, useSize or false, nil, true)
     end
-    painted[texture] = { atlas = atlas, legacy = legacyMode, useSize = useSize }
+    painted[texture] = { atlas = atlas, legacy = legacyMode, rounded = roundedMode, useSize = useSize }
     writing = previous
     return true
 end
@@ -535,12 +546,14 @@ function module:Refresh(restore, frame, selectedRoots)
         end
         return
     end
-    local legacy = not restore and app.db.profile.layout == "legacy"
+    local selected = app.db.profile.layout
+    local legacy = not restore and (selected == "legacy" or selected == "legacyRounded")
     if not legacy and not applied then
         return
     end
     Initialize()
     legacyMode = legacy
+    roundedMode = legacy and selected == "legacyRounded"
     local scoped = frame ~= nil or selectedRoots ~= nil
     local roots = selectedRoots or (frame and { frame } or app.unitFrames:All())
     if not scoped then

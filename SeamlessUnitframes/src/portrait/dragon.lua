@@ -22,7 +22,7 @@ local legacy = {
 }
 
 function module:Refresh()
-    local old = app.db.profile.layout == "legacy"
+    local old = (app.db.profile.layout == "legacy" or app.db.profile.layout == "legacyRounded")
     local definition = (old and legacy or current)[app.db.profile.unitFrames.player.portraitDragon]
     if not app.addon:IsEnabled() or not self:IsEnabled() or not definition then
         if texture then

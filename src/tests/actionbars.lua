@@ -182,6 +182,13 @@ local function EndCap(index)
     function cap:SetScale(value)
         self.scale, self.scaleCalls = value, self.scaleCalls + 1
     end
+    cap.Texture = { atlas = "native-" .. index, calls = 0 }
+    function cap.Texture:GetAtlas()
+        return self.atlas
+    end
+    function cap.Texture:SetAtlas(atlas)
+        self.atlas, self.calls = atlas, self.calls + 1
+    end
     return cap
 end
 local left, right = EndCap(1), EndCap(2)
@@ -191,6 +198,7 @@ Enum = {
     EditModeMainActionBarEndCapSystemIndices = { EndCapLeft = 1, EndCapRight = 2 },
     EditModeMainActionBarEndCapSetting = { Hidden = 0 },
 }
+local styleSections = {}
 local hidden, canEdit, refreshed, registered = { [left] = 0, [right] = 0 }, true, 0, {}
 local service = {
     ReadSetting = function(_, frame, setting)
@@ -216,6 +224,9 @@ app.core = {
     RefreshOptions = function()
         refreshed = refreshed + 1
     end,
+    RegisterEditModeSystemOptions = function(_, id, spec)
+        styleSections[id] = spec
+    end,
     RegisterEditModeSystemScale = function(_, id, spec)
         registered[id] = spec
     end,
@@ -230,6 +241,27 @@ app.db.profile.endCaps = { left = { scale = 1.5 }, right = { scale = 1 } }
 load("endcaps.lua")
 app.ApplyEndCapScales()
 assert(left.scale == 1.5 and right.scale == 1 and right.scaleCalls == 0, "profile scale applied, unchanged left alone")
+assert(left.Texture.calls == 0 and right.Texture.calls == 0, "default leaves native art untouched")
+local texture = app.EndCapTextureOption(app.endCaps[1])
+texture.set(nil, "ally")
+assert(left.Texture.atlas == "ui-hud-actionbar-gryphon-left" and right.Texture.calls == 0)
+texture.set(nil, "horde")
+assert(left.Texture.atlas == "ui-hud-actionbar-wyvern-left")
+local rightTexture = app.EndCapTextureOption(app.endCaps[2])
+rightTexture.set(nil, "horde")
+assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
+texture.set(nil, "default")
+assert(left.Texture.atlas == "native-1", "Default restores original atlas")
+app.ApplyEndCapScales(true)
+assert(right.Texture.atlas == "native-2", "disable restores original atlas")
+app.ApplyEndCapScales()
+assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right", "enable reapplies profile")
+app.db.profile.endCaps = { left = { scale = 1.5, texture = "horde" }, right = { scale = 1, texture = "default" } }
+app.ApplyEndCapScales()
+assert(
+    left.Texture.atlas == "ui-hud-actionbar-wyvern-left" and right.Texture.atlas == "native-2",
+    "profile refresh switches artwork"
+)
 local leftEntry = app.endCaps[1]
 local scale = app.EndCapScale(leftEntry)
 assert(scale.get() == 1.5 and scale.default() == 1 and scale.min == 0.5 and scale.max == 2)
@@ -247,7 +279,25 @@ assert(app.db.profile.endCaps.left.scale == 1.4 and left.scale == 1.2, "disabled
 app.ApplyEndCapScales(true)
 assert(left.scale == 1 and right.scale == 1, "disable restores the game's scale")
 enabled = true
+app.optionPages = {
+    endCapLeft = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[1]) } } },
+    endCapRight = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[2]) } } },
+}
 app.RegisterEndCapScales()
+local leftStyle = styleSections["SeamlessActionBars:endCap:left:style"]
+local rightStyle = styleSections["SeamlessActionBars:endCap:right:style"]
+assert(leftStyle.system == 26 and leftStyle.systemIndex == 1 and rightStyle.systemIndex == 2)
+local row = leftStyle.options[1]
+assert(row.type == "select" and row.default == "default" and #row.values == 3)
+assert(row.values[1].value == "default" and row.values[2].value == "ally" and row.values[3].value == "horde")
+row.set("ally")
+assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
+assert(rightStyle.options[1].get() == "default", "Edit Mode controls each side independently")
+row.set("default")
+assert(left.Texture.atlas == "native-1")
+enabled = false
+assert(not leftStyle.enabled() and not rightStyle.enabled())
+enabled = true
 local spec = registered["SeamlessActionBars:endCap:left"]
 assert(spec and spec.system == 26 and spec.systemIndex == 1 and spec.enabled())
 assert(registered["SeamlessActionBars:endCap:right"].systemIndex == 2)

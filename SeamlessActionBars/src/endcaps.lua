@@ -25,6 +25,49 @@ local function settings(entry)
     return app.db.profile.endCaps[entry.key]
 end
 
+-- Capture only textures we override, so Default leaves the client's artwork untouched.
+local originalAtlases = {}
+local function applyTexture(entry, restore)
+    local frame = app.EndCapFrame(entry)
+    local texture = frame and frame.Texture
+    if not texture then
+        return
+    end
+    local choice = not restore and settings(entry).texture or "default"
+    local creature = choice == "ally" and "gryphon" or choice == "horde" and "wyvern"
+    if creature then
+        if not originalAtlases[texture] then
+            originalAtlases[texture] = texture:GetAtlas()
+        end
+        texture:SetAtlas("ui-hud-actionbar-" .. creature .. "-" .. entry.key)
+    elseif originalAtlases[texture] then
+        texture:SetAtlas(originalAtlases[texture])
+        originalAtlases[texture] = nil
+    end
+end
+
+---@param entry SeamlessActionBars.EndCap
+---@return table
+function app.EndCapTextureOption(entry)
+    return {
+        type = "select",
+        name = L["Texture"],
+        order = 6,
+        default = "default",
+        values = { default = L["Default"], ally = L["Alliance (Gryphon)"], horde = L["Horde (Wyvern)"] },
+        sorting = { "default", "ally", "horde" },
+        get = function()
+            return settings(entry).texture
+        end,
+        set = function(_, value)
+            settings(entry).texture = value
+            if app.addon:IsEnabled() then
+                applyTexture(entry)
+            end
+        end,
+    }
+end
+
 -- Outside combat only: the frame is unprotected, but its scale feeds Edit Mode's layout code.
 -- PLAYER_REGEN_ENABLED applies what was skipped.
 local function applyScale(entry, scale)
@@ -39,6 +82,7 @@ end
 function app.ApplyEndCapScales(restore)
     for _, entry in ipairs(app.endCaps) do
         applyScale(entry, restore and 1 or settings(entry).scale)
+        applyTexture(entry, restore)
     end
 end
 
@@ -124,6 +168,36 @@ function app.RegisterEndCapScales()
                 return app.addon:IsEnabled()
             end,
             scale = app.EndCapScale(entry),
+        })
+        -- Reuse the page declaration, including its choices and profile accessors.
+        local pageKey = entry.key == "left" and "endCapLeft" or "endCapRight"
+        local option = app.optionPages[pageKey].config.args.texture
+        local values = {}
+        for _, value in ipairs(option.sorting) do
+            values[#values + 1] = { text = option.values[value], value = value }
+        end
+        app.core:RegisterEditModeSystemOptions(appName .. ":endCap:" .. entry.key .. ":style", {
+            system = system,
+            systemIndex = indices[entry.index],
+            name = L["Style"],
+            key = appName .. ":endCap:" .. entry.key .. ":style",
+            enabled = function()
+                return app.addon:IsEnabled()
+            end,
+            options = {
+                {
+                    key = "texture",
+                    type = option.type,
+                    name = option.name,
+                    default = option.default,
+                    values = values,
+                    get = option.get,
+                    set = function(value)
+                        option.set(nil, value)
+                        app.core:RefreshOptions(appName)
+                    end,
+                },
+            },
         })
     end
 end

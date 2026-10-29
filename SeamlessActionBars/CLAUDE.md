@@ -3,7 +3,7 @@
 Optional addon requiring Seamless that changes how the game's own action buttons look, without
 replacing them: icon colors for actions out of range or lacking mana, and short keybind labels.
 The `SeamlessActionBars` namespace holds settings in shared suite profiles: `range` and `mana` (`enabled`, `color`) and
-`keybinds` (`enabled`), all on by default, and `endCaps.left`/`endCaps.right` (`scale`, default 1).
+`keybinds` (`enabled`), all on by default, and `endCaps.left`/`endCaps.right` (`scale`, default 1; `texture`, default `"default"`).
 
 ## Ownership
 
@@ -25,7 +25,10 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   then one tab per native Edit Mode frame (action bars 1-8, both XP / reputation bars, pet action bar, leave vehicle button, left and right endcap) holding
   Core's native Position and scale group. Scale is Icon Size for action bars, Size for status bars,
   the profile scale for the endcaps and disabled for the leave vehicle button. The endcap tabs
-  also have Hide endcap, bound to the native Hidden setting. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
+  also have Hide endcap, bound to the native Hidden setting, and independent Texture selectors
+  (Default leaves native art unchanged, Alliance uses gryphons, Horde uses wyverns). Texture
+  overrides reuse the native atlases and restore the original atlas on Default or disable.
+  Each selected endcap’s Edit Mode Style section derives its Texture dropdown from that same page declaration. Bars 4 and 5 are `MultiBarRight` and `MultiBarLeft`.
 - `src/micromenu.lua`: the Micro menu tab uses `MicroMenuContainer` for native position,
   scale, orientation and order, saved in the active Edit Mode layout through Core's position
   service. Scale binds the native Size setting. The Style section shares orientation, order and

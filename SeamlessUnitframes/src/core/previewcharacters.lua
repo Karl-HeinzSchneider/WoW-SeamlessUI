@@ -1,16 +1,19 @@
 ---@type string, SeamlessUnitframes
 local _, app = ...
 
--- Only addon-owned ToT stand-ins consume VIP records. Never hook or refresh native units here.
+-- Native previews change cosmetics only; unit identity and protected frame state stay native.
+local nativeFrames = { player = "PlayerFrame", target = "TargetFrame", focus = "FocusFrame" }
 ---@class SeamlessUnitframes.PreviewCharacters : AceModule
 local module = {}
 app.previewCharacters = app.addon:NewModule("PreviewCharacters", module)
 
 function module:Get(frame, key)
-    if key ~= "targettarget" and key ~= "focustarget" then
-        return nil
-    end
-    if frame ~= app.totMover.movers[key] or frame == nil then
+    local native = nativeFrames[key]
+    if native then
+        if frame == nil or frame ~= _G[native] then
+            return nil
+        end
+    elseif (key ~= "targettarget" and key ~= "focustarget") or frame == nil or frame ~= app.totMover.movers[key] then
         return nil
     end
     if not self:IsEnabled() or not app.addon:IsEnabled() then
@@ -21,9 +24,20 @@ end
 
 function module:Refresh()
     app.totMover:Refresh()
+    -- Only our visual modules run here, never the native full unit-frame updater.
+    app.nameDisplay:Refresh()
+    app.classIcon:Refresh()
+    app.healthColor:Refresh()
 end
 
 function module:OnInitialize()
+    local lib = app.core:GetEditModeLibrary()
+    lib:RegisterCallback("enter", function()
+        self:Refresh()
+    end)
+    lib:RegisterCallback("exit", function()
+        self:Refresh()
+    end)
     local events = CreateFrame("Frame")
     events:RegisterEvent("PLAYER_REGEN_DISABLED")
     events:RegisterEvent("PLAYER_REGEN_ENABLED")

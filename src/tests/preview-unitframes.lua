@@ -1,4 +1,4 @@
--- Custom preview isolation: lua src/tests/preview-unitframes.lua
+-- Cosmetic preview frame boundaries: lua src/tests/preview-unitframes.lua
 local enabled, editing, combat = true, true, false
 local event
 local refreshes, requests = 0, 0
@@ -15,6 +15,18 @@ function app.addon:NewModule(_, prototype)
         end,
     }, { __index = prototype })
 end
+local callbacks = {}
+function app.core:GetEditModeLibrary()
+    return {
+        RegisterCallback = function(_, name, callback)
+            callbacks[name] = callback
+        end,
+    }
+end
+for _, name in ipairs({ "nameDisplay", "classIcon", "healthColor" }) do
+    app[name] = { Refresh = function() end }
+end
+PlayerFrame, TargetFrame, FocusFrame, PetFrame = {}, {}, {}, {}
 function app.core:GetPreviewCharacter(id)
     requests = requests + 1
     if not editing or combat then
@@ -34,7 +46,7 @@ CreateFrame = function()
     }
 end
 local function Forbidden()
-    error("VIP code must not hook, enumerate or refresh native frames")
+    error("VIP controller must not hook or call native frame updaters")
 end
 hooksecurefunc, UnitFrame_Update, UnitFramePortrait_Update, securecall = Forbidden, Forbidden, Forbidden, Forbidden
 app.unitFrames = { All = Forbidden, KeyOf = Forbidden }
@@ -44,15 +56,25 @@ module:OnInitialize()
 module:OnEnable()
 assert(refreshes == 1)
 assert(module:Get(native, "player") == nil)
+assert(module:Get(native, "pet") == nil)
 assert(module:Get(native, "targettarget") == nil, "native ToT cannot impersonate the owned stand-in")
 assert(module:Get(native, "focustarget") == nil)
 assert(module:Get(nil, "targettarget") == nil)
-assert(requests == 0, "native frames never even request catalogue data")
+assert(requests == 0, "unrecognized frames never request catalogue data")
+for key, frame in pairs({ player = PlayerFrame, target = TargetFrame, focus = FocusFrame, pet = PetFrame }) do
+    assert(module:Get(frame, key).name == "unitframes:" .. key)
+    assert(module:Get(frame, "party") == nil)
+end
+editing = false
+callbacks.exit()
+assert(module:Get(PlayerFrame, "player") == nil)
+editing = true
+callbacks.enter()
 assert(module:Get(target, "targettarget").name == "unitframes:targettarget")
 assert(module:Get(focus, "focustarget").name == "unitframes:focustarget")
 combat = true
 event()
-assert(refreshes == 2 and module:Get(target, "targettarget") == nil)
+assert(refreshes == 4 and module:Get(target, "targettarget") == nil)
 combat = false
 editing = false
 assert(module:Get(target, "targettarget") == nil)
@@ -64,4 +86,4 @@ module.enabled = true
 enabled = false
 module:Refresh()
 assert(module:Get(target, "targettarget") == nil)
-print("Custom preview isolation tests passed")
+print("Cosmetic preview boundary tests passed")

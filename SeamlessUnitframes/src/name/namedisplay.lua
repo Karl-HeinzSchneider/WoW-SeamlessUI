@@ -19,6 +19,7 @@ app.nameDisplay = addon:NewModule("NameDisplay", module) --[[@as SeamlessUnitfra
 -- The game's own text of each name we changed, keyed by frame, to put back for "full".
 ---@type table<Frame, string>
 local native = {}
+local previewed = {}
 
 -- False for nil and for a secret value (the client hides a unit's identity in some situations).
 local function Readable(value)
@@ -57,6 +58,21 @@ local function Apply(frame, key)
     end
     ---@type SeamlessUnitframes.NameDisplayMode
     local mode = app.db.profile.unitFrames[key].nameDisplay
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
+        local surname = character.surname ~= "" and character.surname or nil
+        local full = character.name .. (surname and separator .. surname or "")
+        fontString:SetText(mode == "first" and character.name or mode == "last" and (surname or character.name) or full)
+        previewed[frame] = true
+        return
+    end
+    if previewed[frame] then
+        previewed[frame] = nil
+        native[frame] = nil
+        -- Read the current unit, never the name that happened to be visible on entry.
+        fontString:SetText(GetUnitName(unit))
+    end
     local text
     if mode ~= "full" and addon:IsEnabled() then
         if key == "player" and mode == "override" then
@@ -97,6 +113,7 @@ local function Update(frame)
     if key then
         -- The game just set its own text; that is the one to put back.
         native[frame] = nil
+        previewed[frame] = nil
         Apply(frame, key)
     end
 end
@@ -107,17 +124,6 @@ function module:OnInitialize()
 end
 
 function module:ApplyPreview(frame, key)
-    local fontString = frame.name
-    local mode = app.db.profile.unitFrames[key].nameDisplay
-    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
-    if character then
-        local separator = Constants.CharacterNameSeparatorConsts.CHARACTERNAME_SURNAME_SEPARATOR
-        local surname = character.surname ~= "" and character.surname or nil
-        local full = character.name .. (surname and separator .. surname or "")
-        fontString:SetText(mode == "first" and character.name or mode == "last" and (surname or character.name) or full)
-        return
-    end
-    native[frame] = nil
     Apply(frame, key)
 end
 

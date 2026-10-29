@@ -107,16 +107,16 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 
 ## Conventions
 
-- `src/core/previewcharacters.lua` consumes Core's VIP catalogue only for the addon-owned
-  Target of Target and Target of Focus Edit Mode stand-ins. Getters require both an allowed key
-  and the exact frame in `totMover.movers`; native frames cannot consume VIP data. No native
-  frame enumeration, native update hooks or native refresh/restoration calls belong in this
-  controller. Native name, portrait and health-color paths never consult the catalogue; only
-  their explicit `ApplyPreview` methods do. The stand-ins render names, portraits, health/power
-  and configured health colors. Combat/disable refresh only those custom frames with live
-  fallback data. Core retains metadata for future custom-frame consumers.
-  Run `lua src/tests/preview-unitframes.lua`, `lua src/tests/unitframes-options.lua` and
-  `lua src/tests/unitframes-totposition.lua`. The isolation test rejects native hooks and calls.
+- `src/core/previewcharacters.lua` allows VIP records only for the exact native Player,
+  Pet, Target and Focus frames and the addon-owned ToT stand-ins. Native consumers change names,
+  portrait textures/atlases and configured health colors through the existing visual modules
+  and their secure post-hooks. Never change native unit identifiers, secure attributes, scripts,
+  visibility or health/power values, and never call the full native unit-frame updater for preview
+  refresh/restoration. Keep preview bookkeeping in addon-owned tables. On exit, combat or disable,
+  restore current unit cosmetics and configured options; absent pet/target/focus units receive normal
+  native updates when selected again. Stand-ins also render VIP health/power values.
+  Run `lua src/tests/preview-unitframes.lua`, `lua src/tests/preview-unitframes-cosmetics.lua`,
+  `lua src/tests/unitframes-options.lua` and `lua src/tests/unitframes-totposition.lua`.
 
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.

@@ -15,6 +15,7 @@ app.classIcon = addon:NewModule("ClassIcon", module) --[[@as SeamlessUnitframes.
 -- The frames whose portrait shows a class icon we set.
 ---@type table<Frame, boolean>
 local replaced = {}
+local previewed = {}
 
 -- False for nil and for a secret value (the client hides a unit's identity in some situations).
 local function Readable(value)
@@ -42,6 +43,30 @@ local function Apply(frame, key)
     if not (Readable(portrait) and portrait and Readable(unit) and unit) then
         return
     end
+    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
+    if character then
+        if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
+            portrait:SetTexture(character.displayTexture)
+            portrait:SetTexCoord(0, 1, 0, 1)
+        elseif character.class then
+            portrait:SetAtlas(GetClassAtlas(character.class))
+        end
+        previewed[frame] = true
+        return
+    end
+    if previewed[frame] then
+        previewed[frame] = nil
+        replaced[frame] = nil
+        portrait:SetTexCoord(0, 1, 0, 1)
+        local nativeAtlas = UnitFrame_ShouldReplacePortrait
+            and UnitFrame_ShouldReplacePortrait(frame)
+            and ClassAtlas(unit)
+        if nativeAtlas then
+            portrait:SetAtlas(nativeAtlas)
+        else
+            SetPortraitTexture(portrait, unit, frame.disablePortraitMask)
+        end
+    end
     local atlas = addon:IsEnabled() and app.db.profile.unitFrames[key].classIcon and ClassAtlas(unit)
     if atlas then
         portrait:SetAtlas(atlas)
@@ -61,6 +86,7 @@ local function Update(frame)
     if key then
         -- The game just set its own portrait.
         replaced[frame] = nil
+        previewed[frame] = nil
         Apply(frame, key)
     end
 end
@@ -71,17 +97,6 @@ function module:OnInitialize()
 end
 
 function module:ApplyPreview(frame, key)
-    local portrait = frame.portrait
-    local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
-    if character then
-        if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
-            portrait:SetTexture(character.displayTexture)
-            portrait:SetTexCoord(0, 1, 0, 1)
-        elseif character.class then
-            portrait:SetAtlas(GetClassAtlas(character.class))
-        end
-        return
-    end
     Apply(frame, key)
 end
 

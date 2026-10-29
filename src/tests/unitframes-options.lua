@@ -437,7 +437,7 @@ assert(preview.name:GetText() == "Anna Weber", "full preview name survives a set
 
 -- Class icon: the class atlas on player characters' portraits, the portrait back when off.
 local function Portrait()
-    local portrait = {}
+    local portrait = { SetTexCoord = function() end }
     portrait.SetAtlas = function(self, atlas)
         self.atlas = atlas
     end
@@ -520,7 +520,7 @@ modules.ClassIcon:ApplyPreview(preview, "targettarget")
 assert(preview.portrait.atlas == "live-fallback", "missing portrait/class retains the existing fallback")
 app.previewCharacters = {
     Get = function()
-        error("Native styling must never request VIP data")
+        return nil -- Outside Edit Mode, the controller leaves native cosmetics alone.
     end,
 }
 nameDisplay:Refresh()

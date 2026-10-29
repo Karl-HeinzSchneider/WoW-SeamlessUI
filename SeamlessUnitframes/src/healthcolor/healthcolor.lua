@@ -130,6 +130,7 @@ local function Apply(bar, key, character)
     if not atlas then
         return
     end
+    character = character or (app.previewCharacters and app.previewCharacters:Get(bar.unitFrame, key))
     local color = BarColor(bar, key, character)
     if color and app.legacyLayout:HasHealthStatus(atlas) then
         -- Reassert on native updates even if our own logical name is unchanged:

@@ -9,6 +9,9 @@ local setting = Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTra
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar2 = {
+    tooltip = function(path)
+        return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
+    end,
     defaults = {},
     config = {
         editModeFrame = getFrame,

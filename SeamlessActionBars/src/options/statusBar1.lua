@@ -9,6 +9,9 @@ local setting = Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTra
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar1 = {
+    tooltip = function(path)
+        return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
+    end,
     defaults = {
         profile = {
             xpBarTooltip = {

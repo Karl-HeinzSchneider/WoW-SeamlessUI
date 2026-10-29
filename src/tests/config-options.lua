@@ -319,6 +319,18 @@ for _, pages in pairs(nativePages) do
     end
 end
 local bars = apps.SeamlessActionBars
+for _, page in ipairs({ "statusBar1", "statusBar2" }) do
+    for key, expected in pairs({
+        enabled = true,
+        completedQuests = true,
+        automaticRestedXP = true,
+        restedXPCap = 150,
+        restedXPRate = 5,
+    }) do
+        local value = coreApp.config.optionInfo.SeamlessActionBars({ page, "xpBarTooltip", key })
+        assert(value == expected, page .. ": XP tooltip default for " .. key)
+    end
+end
 bars.EndCapFrame = function(entry)
     return entry.key == "left" and TestLeftEndcap or TestRightEndcap
 end

@@ -389,7 +389,7 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 6)
+assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 7)
 local showFreeSlots = false
 GetCVarBool = function(name)
     assert(name == "displayFreeBagSlots")
@@ -400,7 +400,7 @@ SetCVar = function(name, value)
     showFreeSlots = value
 end
 assert(not bagStyle.freeSlots.get() and not bagStyle.freeSlots.blizzard and not bagStyle.freeSlots.editMode)
-bagSpec.options[5].set(true)
+bagSpec.options[6].set(true)
 assert(bagStyle.freeSlots.get(), "the native CVar is shared by config and Edit Mode")
 app.db.profile.bags = { retailStyle = false, spacing = 4 }
 app.RefreshBagStyle = function() end
@@ -410,8 +410,12 @@ end
 assert(bagStyle.spacing.disabled() and bagStyle.spacing.default == 0)
 app.db.profile.bags.retailStyle = true
 assert(not bagStyle.spacing.disabled())
-bagSpec.options[4].set(8)
-assert(bagStyle.spacing.get() == 8 and bagSpec.options[4].get() == 8)
+assert(not bagStyle.smallButtonSize.disabled() and bagStyle.smallButtonSize.default == 30)
+bagSpec.options[4].set(20)
+assert(bagStyle.smallButtonSize.get() == 20 and bagSpec.options[4].get() == 20)
+
+bagSpec.options[5].set(8)
+assert(bagStyle.spacing.get() == 8 and bagSpec.options[5].get() == 8)
 assert(bagSpec.options[2].values()[1].text == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])

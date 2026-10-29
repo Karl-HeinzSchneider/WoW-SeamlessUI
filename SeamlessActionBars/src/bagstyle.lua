@@ -76,8 +76,8 @@ local function skin(button)
         texture:SetAtlas(index <= 2 and border or highlight)
         texture:SetRotation(0)
     end
-    local scale = app.db.profile.bags.buttonScale or 1
-    local size = (backpack and 48 or 30) * scale
+    local size = backpack and 48 or (app.db.profile.bags.smallButtonSize or 30)
+    local scale = size / 30
     button:SetSize(size, size)
     if masks[button] then
         masks[button]:ClearAllPoints()
@@ -258,8 +258,7 @@ local function layout()
     -- Keep the expanded footprint even while individual bags are hidden. Changing
     -- its length moves the backpack edge when the native bar is center-anchored.
     fullLength = fullLength + (BagBarExpandToggle and 10 or 0)
-    local thickness = 48 * (app.db.profile.bags.buttonScale or 1)
-    bar:SetSize(horizontal and fullLength or thickness, horizontal and thickness or fullLength)
+    bar:SetSize(horizontal and fullLength or 48, horizontal and 48 or fullLength)
     changing = false
 end
 

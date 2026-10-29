@@ -70,7 +70,7 @@ local powerAtlases = {
     PAIN = "_DemonHunter-DemonicPainBar",
     EBON_MIGHT = "Unit_Evoker_EbonMight_Fill",
 }
-local function Power(bar, family, unit, alternate, previewPowerType)
+local function Power(bar, family, unit, alternate, previewPowerType, mirror)
     if not module:Readable(unit) or type(unit) ~= "string" then
         module:Warn("power artwork", "inaccessible unit token")
         return
@@ -100,7 +100,7 @@ local function Power(bar, family, unit, alternate, previewPowerType)
     end
     local suffix = alternate and powerNames[token] and (element == "Mana" or element == "Energy") and "-ClassResource"
         or ""
-    module:Bar(bar, P .. family .. suffix .. "-Bar-" .. element)
+    module:Bar(bar, P .. family .. suffix .. "-Bar-" .. element, nil, mirror)
 end
 
 local PREDICTION_KEYS = { "MyHealPredictionBar", "OtherHealPredictionBar", "HealAbsorbBar", "TotalAbsorbBar" }
@@ -145,7 +145,7 @@ local function RoundedPlayer(frame)
     module:Art(art.PlayerPortraitMask, "CircleMask")
     Point(art.PlayerPortraitMask, "TOPLEFT", art.PlayerPortrait, "TOPLEFT", 1, -1, 57, 57)
 
-    module:Bar(health, P .. "Target-PortraitOn-Bar-Health", true)
+    module:Bar(health, P .. "Target-PortraitOn-Bar-Health", true, true)
     PredictionFills(health, P .. "Player-PortraitOn-Bar-Health-Status")
     module:Bar(container.PlayerFrameTempMaxHealthLoss, P .. "Target-PortraitOn-Bar-TempHPLoss")
     module:Art(container.HealthBarMask, P .. "Target-PortraitOn-Bar-Health-Mask", true, true)
@@ -153,7 +153,7 @@ local function RoundedPlayer(frame)
     Point(health, "TOPLEFT", container, "TOPLEFT", 0, 0, 126, 20)
     Point(container.HealthBarMask, "TOPRIGHT", container, "TOPRIGHT", 1, 6)
 
-    Power(mana, "Target-PortraitOn", frame.unit)
+    Power(mana, "Target-PortraitOn", frame.unit, nil, nil, true)
     Point(mana, "TOPLEFT", art, "RIGHT", -157, -11, 134, 10)
     module:Art(mana.ManaBarMask, P .. "Target-PortraitOn-Bar-Mana-Mask", true, true)
     Point(mana.ManaBarMask, "TOPRIGHT", mana, "TOPRIGHT", 61, 3)

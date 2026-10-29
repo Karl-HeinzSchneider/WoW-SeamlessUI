@@ -521,6 +521,16 @@ assert(health.point[2].point[1] == "BOTTOMLEFT" and health.point[2].point[4] == 
 assert(mana.point[1] == "TOPLEFT" and mana.point[2] == playerArt and mana.point[4] == -157)
 assert(health.fill.file:find("target%-portraiton%-bar%-health"), "rounded player uses target health art")
 assert(mana.LeftText.point[4] == 13, "power text clears the mirrored portrait")
+assert(health.fill.file:find("bars/mirrored/", 1, true), "rounded health fill is reflected")
+assert(mana.fill.file:find("bars/mirrored/", 1, true), "rounded power fill is reflected")
+app.db.profile.unitFrames.player.healthBarColor = "class"
+app.healthColor:RefreshFrame(PlayerFrame)
+assert(
+    health.fill.file:find("bars/mirrored/target-portraiton-bar-health-status.blp", 1, true),
+    "class tint keeps reflected fill"
+)
+app.db.profile.unitFrames.player.healthBarColor = "default"
+app.healthColor:RefreshFrame(PlayerFrame)
 for _, mask in ipairs({ health.point[2].HealthBarMask, mana.ManaBarMask }) do
     assert(mask.file:find("assets/legacy/masks/", 1, true), "rounded bars use reflected mask files")
     assert(mask.coords[1] == 0 and mask.coords[2] == 1, "mask UVs must not be reflected at runtime")

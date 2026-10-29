@@ -25,13 +25,16 @@ The approved art source is the user's complete local pre-update export at
 `D:/Spiele/World of Warcraft/_classic_beta_/BlizzardInterfaceArt`.
 Ten original BLP sheets are copied without conversion into the addon. The atlas
 generator validates their BLP dimensions against the 70374 lookup before copying.
-Status-bar fills are extracted from those sheets into 43 standalone uncompressed
+Status-bar fills are extracted from those sheets into 44 standalone uncompressed
 BLP files. Their canvases use power-of-two dimensions with nearest resampling of
 the original region's BGRA pixels; no new artwork is drawn. The owning status bar
 receives the standalone file through `SetStatusBarTexture` and owns its fill UVs.
 This prevents native value updates from sampling unrelated atlas-sheet artwork
 and requires no Lua arithmetic on health/power values, including secret values.
-Beta (rounded) also uses two offline reflections of the target health and mana
+Beta (rounded) uses offline reflections of the target status-bar fills in
+`assets/legacy/bars/mirrored/`, including the tintable health fill. Status bars
+keep their native fill direction and own their UVs; only the source pixels are
+reflected. It also uses two offline reflections of the target health and mana
 masks in `assets/legacy/masks/`. The generator reverses each existing BGRA pixel
 row without resampling or drawing. This keeps the exact target clipping shapes
 while using normal mask UVs in game; reflecting mask UVs at runtime can hide the

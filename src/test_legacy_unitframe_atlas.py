@@ -42,6 +42,14 @@ class LegacyAtlasTests(unittest.TestCase):
                     self.assertEqual(source[src:src + 4], output[dst:dst + 4])
             self.assertEqual(GENERATOR.mirror_mask(output), source)
 
+    def test_reflected_fills_match_source_pixels(self):
+        originals = GENERATOR.ASSETS / "bars"
+        reflected = originals / "mirrored"
+        for path in reflected.glob("*.blp"):
+            self.assertEqual(path.read_bytes(), GENERATOR.mirror_mask((originals / path.name).read_bytes()))
+        self.assertTrue((reflected / "target-portraiton-bar-health-status.blp").exists())
+        self.assertTrue((reflected / "target-portraiton-bar-mana.blp").exists())
+
     def test_generation_is_reproducible(self):
         original = GENERATOR.OUTPUT.read_bytes()
         try:

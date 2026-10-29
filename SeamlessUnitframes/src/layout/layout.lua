@@ -248,7 +248,7 @@ local function Paint(texture, atlas, useSize, bar, mirror)
         end
         -- The native bar setter accepts atlas names as well as file paths.
         -- Standalone files let the engine own fill UVs at every health/power value.
-        local success = bar:SetStatusBarTexture(data and data[8] or atlas)
+        local success = bar:SetStatusBarTexture(data and (mirror and data[9] or data[8]) or atlas)
         if not layout:Readable(success) or success == false then
             writing = previous
             layout:Warn(atlas, "client rejected status-bar artwork")
@@ -350,7 +350,7 @@ end
 
 -- Only explicitly listed bars are bound. No children, regions, or runtime atlas
 -- names are enumerated, stored, compared, lowercased, or used as table keys.
-function module:Bar(bar, atlas, health)
+function module:Bar(bar, atlas, health, mirror)
     if not self:CheckRegion(bar, "named bar", { "GetStatusBarTexture", "SetStatusBarTexture" }) then
         return
     end
@@ -364,8 +364,8 @@ function module:Bar(bar, atlas, health)
         -- only for the color refresh below to replace it with white again.
         atlas = previous.atlas
     end
-    bindings[texture] = { atlas = atlas, bar = bar }
-    Paint(texture, atlas, false, bar)
+    bindings[texture] = { atlas = atlas, bar = bar, mirror = mirror }
+    Paint(texture, atlas, false, bar, mirror)
 end
 
 -- The rounded player uses the full target geometry only in ordinary player art.
@@ -427,7 +427,7 @@ function module:HealthAtlas(bar, key)
     if not WatchBar(bar, texture) then
         return nil
     end
-    bindings[texture] = { atlas = atlas, bar = bar }
+    bindings[texture] = { atlas = atlas, bar = bar, mirror = key == "player" and self:IsRoundedPlayer(PlayerFrame) }
     return atlas, texture
 end
 
@@ -444,7 +444,7 @@ function module:SetHealthAtlas(texture, atlas)
     if not binding then
         return false
     end
-    if Paint(texture, atlas, false, binding.bar) then
+    if Paint(texture, atlas, false, binding.bar, binding.mirror) then
         binding.atlas = atlas
         return true
     end
@@ -471,7 +471,12 @@ function module:PlayerLoss(color)
     end
     local colored = legacyMode and color
     local family = self:IsRoundedPlayer(PlayerFrame) and "Target" or "Player"
-    self:Bar(bar, "UI-HUD-UnitFrame-" .. family .. "-PortraitOn-Bar-Health" .. (colored and "-Status" or ""))
+    self:Bar(
+        bar,
+        "UI-HUD-UnitFrame-" .. family .. "-PortraitOn-Bar-Health" .. (colored and "-Status" or ""),
+        nil,
+        self:IsRoundedPlayer(PlayerFrame)
+    )
     if colored then
         bar:SetStatusBarColor(color:GetRGB())
     else

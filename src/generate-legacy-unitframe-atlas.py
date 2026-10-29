@@ -102,7 +102,7 @@ def entries():
         if not shared:
             continue
         before, after = preferred(shared), preferred(new[name])
-        if signature(before) != signature(after):
+        if signature(before) != signature(after) or name.lower() == "ui-hud-unitframe-target-portraiton-bar-health-status":
             result[name.lower()] = before
     return result
 
@@ -147,6 +147,11 @@ def generate(art_dir=None):
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(extract_bar(row))
             lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/{bar}",')
+            if name.startswith("ui-hud-unitframe-target-portraiton-bar-"):
+                reflected = ASSETS / "bars/mirrored" / destination.name
+                reflected.parent.mkdir(parents=True, exist_ok=True)
+                reflected.write_bytes(mirror_mask(destination.read_bytes()))
+                lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/mirrored/{destination.name}",')
         lines.append("    },")
     lines.append("}\n")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

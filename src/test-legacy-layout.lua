@@ -343,6 +343,9 @@ Path(PlayerFrame, mainPath .. "HealthBarsContainer.PlayerFrameTempMaxHealthLoss"
 local loss = Path(PlayerFrame, mainPath .. "HealthBarsContainer.PlayerFrameHealthBarAnimatedLoss", true)
 local mana = Path(PlayerFrame, mainPath .. "ManaBarArea.ManaBar", true)
 Path(PlayerFrame, mainPath .. "ManaBarArea.ManaBar.ManaBarMask")
+Path(PlayerFrame, mainPath .. "ManaBarArea.ManaBar.LeftText")
+Path(PlayerFrame, mainPath .. "ManaBarArea.ManaBar.ManaBarText")
+Path(PlayerFrame, mainPath .. "HealthBarsContainer.LeftText")
 for _, key in ipairs({ "StatusTexture", "PvpBackgroundIcon" }) do
     Path(PlayerFrame, mainPath .. key)
 end
@@ -353,6 +356,7 @@ for _, key in ipairs({
     "AlternatePowerFrameTexture",
     "FrameFlash",
     "PlayerPortraitMask",
+    "PlayerPortrait",
 }) do
     Path(PlayerFrame, "PlayerFrameContainer." .. key)
 end
@@ -507,12 +511,55 @@ Mode("legacyRounded")
 local border = PlayerFrame.PlayerFrameContainer.FrameTexture
 local targetArt = app.legacyAtlases["ui-hud-unitframe-target-portraiton"]
 assert(border.coords[1] == targetArt[5] and border.coords[2] == targetArt[4], "rounded border mirrors target art")
-assert(health.height == 19 and PlayerName.width == 96, "rounded skin shares Beta geometry")
+assert(border.width == targetArt[2] and border.height == targetArt[3], "target border keeps its original size")
+assert(health.height == 20 and health.width == 126 and mana.width == 134, "rounded player matches target bar sizes")
+local playerArt = PlayerFrame.PlayerFrameContainer
+assert(playerArt.PlayerPortrait.width == 58 and playerArt.PlayerPortrait.height == 58)
+assert(playerArt.PlayerPortraitMask.atlas == "CircleMask" and playerArt.PlayerPortraitMask.width == 57)
+assert(playerArt.FrameFlash.coords[1] > playerArt.FrameFlash.coords[2], "combat border is mirrored")
+assert(health.point[2].point[1] == "BOTTOMLEFT" and health.point[2].point[4] == -149)
+assert(mana.point[1] == "TOPLEFT" and mana.point[2] == playerArt and mana.point[4] == -157)
+assert(health.fill.file:find("target%-portraiton%-bar%-health"), "rounded player uses target health art")
+assert(mana.LeftText.point[4] == 13, "power text clears the mirrored portrait")
+local roundedWrites = artworkWrites
+layout:Refresh()
+assert(artworkWrites == roundedWrites, "stable rounded refresh must retain its artwork bindings")
+playerArt.FrameTexture:SetAtlas("UI-HUD-UnitFrame-Player-PortraitOn", true)
+assert(
+    border.coords[1] == targetArt[5] and border.coords[2] == targetArt[4],
+    "native art updates retain the reflection"
+)
+combat = true
+app.db.profile.layout = "legacy"
+layout:Refresh()
+assert(layout:IsRoundedPlayer(PlayerFrame), "combat keeps the applied rounded family until geometry can change")
+combat = false
+
 Mode("legacy")
 assert(border.coords[1] == app.legacyAtlases["ui-hud-unitframe-player-portraiton"][4], "Beta border restored")
+assert(playerArt.PlayerPortraitMask.width == 60 and playerArt.PlayerPortrait.width == 60, "Beta portrait restored")
+assert(playerArt.PlayerPortraitMask.file:find("playerportraitmask"), "Beta portrait mask restored")
+assert(health.width == 124 and mana.width == 124, "Beta bar geometry restored")
 Mode("legacyRounded")
 Mode("current")
 assert(border.coords == nil, "rounded UVs must restore to Default")
+assert(playerArt.PlayerPortraitMask.atlas == "UI-HUD-UnitFrame-Player-Portrait-Mask", "Default mask restored")
+Mode("legacyRounded")
+PlayerFrame.unit = "vehicle"
+layout:Refresh()
+assert(playerArt.PlayerPortrait.width == 60 and health.width == 124, "vehicle restores native player regions")
+PlayerFrame.unit = "player"
+alternate = Object()
+layout:Refresh()
+assert(mana.width == 124 and mana.LeftText.point[4] == 2, "alternate power retains Beta geometry")
+alternate = nil
+layout:Refresh()
+assert(playerArt.PlayerPortrait.width == 58 and mana.width == 134, "normal art restores the rounded player")
+UNIT_FRAME_SHOW_HEALTH_ONLY = true
+layout:Refresh()
+assert(health.height == 32 and playerArt.PlayerPortrait.width == 60, "health-only art retains Beta geometry")
+UNIT_FRAME_SHOW_HEALTH_ONLY = nil
+
 Mode("legacy")
 local oldHooks = hookCount
 for i = 1, 4 do

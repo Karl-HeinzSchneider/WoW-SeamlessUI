@@ -26,7 +26,7 @@ end
 for _, name in ipairs({ "nameDisplay", "classIcon", "healthColor" }) do
     app[name] = { Refresh = function() end }
 end
-PlayerFrame, TargetFrame, FocusFrame = {}, {}, {}
+PlayerFrame, TargetFrame, FocusFrame, PetFrame = {}, {}, {}, {}
 function app.core:GetPreviewCharacter(id)
     requests = requests + 1
     if not editing or combat then
@@ -56,13 +56,14 @@ module:OnInitialize()
 module:OnEnable()
 assert(refreshes == 1)
 assert(module:Get(native, "player") == nil)
+assert(module:Get(native, "pet") == nil)
 assert(module:Get(native, "targettarget") == nil, "native ToT cannot impersonate the owned stand-in")
 assert(module:Get(native, "focustarget") == nil)
 assert(module:Get(nil, "targettarget") == nil)
 assert(requests == 0, "unrecognized frames never request catalogue data")
-for key, frame in pairs({ player = PlayerFrame, target = TargetFrame, focus = FocusFrame }) do
+for key, frame in pairs({ player = PlayerFrame, target = TargetFrame, focus = FocusFrame, pet = PetFrame }) do
     assert(module:Get(frame, key).name == "unitframes:" .. key)
-    assert(module:Get(frame, "pet") == nil)
+    assert(module:Get(frame, "party") == nil)
 end
 editing = false
 callbacks.exit()

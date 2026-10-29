@@ -2,7 +2,7 @@
 local _, app = ...
 
 -- Native previews change cosmetics only; unit identity and protected frame state stay native.
-local nativeFrames = { player = "PlayerFrame", target = "TargetFrame", focus = "FocusFrame" }
+local nativeFrames = { player = "PlayerFrame", pet = "PetFrame", target = "TargetFrame", focus = "FocusFrame" }
 ---@class SeamlessUnitframes.PreviewCharacters : AceModule
 local module = {}
 app.previewCharacters = app.addon:NewModule("PreviewCharacters", module)

@@ -2,7 +2,7 @@
 local editing, combat, enabled = true, false, true
 local hooks, callbacks = {}, {}
 local character = { name = "VIP", surname = "Preview", class = "MAGE", reaction = 5, displayTexture = "portrait" }
-local units = { player = "Live player", target = "Live target", focus = "Live focus" }
+local units = { player = "Live player", target = "Live target", focus = "Live focus", pet = "Live pet" }
 local function color(r, g, b)
     return {
         GetRGB = function()
@@ -104,7 +104,7 @@ function app.legacyLayout:CheckRegion(region)
 end
 function app.legacyLayout:PlayerLoss() end
 local frames = {}
-for _, key in ipairs({ "player", "target", "focus" }) do
+for _, key in ipairs({ "player", "target", "focus", "pet" }) do
     local frame = {
         unit = key,
         name = {
@@ -143,7 +143,7 @@ for _, key in ipairs({ "player", "target", "focus" }) do
     frames[#frames + 1] = frame
     app.db.profile.unitFrames[key] = { nameDisplay = "full", classIcon = false, healthBarColor = "class" }
 end
-PlayerFrame, TargetFrame, FocusFrame = (unpack or table.unpack)(frames)
+PlayerFrame, TargetFrame, FocusFrame, PetFrame = (unpack or table.unpack)(frames)
 app.unitFrames = {
     All = function()
         return frames
@@ -179,14 +179,27 @@ assert(TargetFrame.portrait.texture == "portrait")
 TargetFrame.healthbar.rgb = { 0, 1, 0 }
 hooks.UnitFrameHealthBar_Update(TargetFrame.healthbar)
 assert(TargetFrame.healthbar.rgb[1] == 0.2)
-units.target, units.focus = "Different target", nil
+units.target, units.focus, units.pet = "Different target", nil, "Different pet"
 editing = false
 callbacks.exit()
 assert(PlayerFrame.name.text == "Live player")
 assert(TargetFrame.name.text == "Different target")
+assert(PetFrame.name.text == "Different pet")
+assert(PetFrame.portrait.texture == "live:pet")
+assert(PetFrame.healthbar.rgb[1] == 1)
 assert(FocusFrame.name.text == nil)
 assert(TargetFrame.portrait.texture == "live:target")
 assert(TargetFrame.healthbar.rgb[1] == 1)
+-- Dismissing the pet during Edit Mode restores an absent unit cleanly.
+editing = true
+callbacks.enter()
+units.pet = nil
+editing = false
+callbacks.exit()
+assert(PetFrame.name.text == nil)
+PetFrame.name:SetText("Summoned pet")
+hooks.UnitFrame_Update(PetFrame)
+assert(PetFrame.name.text == "Summoned pet")
 -- Subsequent native updates use live data again.
 FocusFrame.name:SetText("New focus")
 hooks.UnitFrame_Update(FocusFrame)

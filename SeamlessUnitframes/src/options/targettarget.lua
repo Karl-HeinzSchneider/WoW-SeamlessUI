@@ -15,6 +15,9 @@ local healthBarColorDesc =
 app.optionPages.targettarget = {
     tooltip = function(path)
         local name, defaults = path[#path], app.dbDefaults.profile
+        if name == "layout" then
+            return defaults.layout
+        end
         if name == "threatPercentage" then
             return app.core:GetCVarOptionInfo("threatShowNumeric")
         end
@@ -61,6 +64,7 @@ app.optionPages.targettarget = {
                 order = 20,
                 name = L["Style"],
                 args = {
+                    layout = app.UnitFrameLayoutOption(),
                     targettarget_nameDisplay = {
                         order = 10,
                         type = "select",

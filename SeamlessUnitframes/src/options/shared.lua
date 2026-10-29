@@ -20,3 +20,26 @@ function app.UnitFramePositionOptions(entry)
         app.core:GetNativeSettingScale(getFrame, Enum.EditModeUnitFrameSetting.FrameSize)
     )
 end
+
+---The shared layout setting, exposed on every affected frame.
+---@return table
+function app.UnitFrameLayoutOption()
+    return {
+        type = "select",
+        order = 1,
+        default = "current",
+        name = L["Unit frame layout"],
+        desc = L["Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."],
+        values = { current = L["Current (70425)"], legacy = L["Legacy (before 70425)"] },
+        sorting = { "current", "legacy" },
+        get = function()
+            return app.db.profile.layout
+        end,
+        set = function(_, value)
+            app.db.profile.layout = value
+            app.legacyLayout:Refresh()
+            app.core:RefreshOptions(appName)
+            app.core:RefreshEditModeSystemOptions()
+        end,
+    }
+end

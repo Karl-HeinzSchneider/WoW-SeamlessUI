@@ -44,6 +44,9 @@ local function rowsFor(key)
                     return option:Read("disabled")
                 end,
                 default = function()
+                    if id == "layout" then
+                        return app.dbDefaults.profile.layout
+                    end
                     if id == "threatPercentage" then
                         return app.core:GetCVarOptionInfo("threatShowNumeric")
                     end

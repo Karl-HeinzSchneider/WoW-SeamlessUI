@@ -15,6 +15,9 @@ local healthBarColorDesc =
 app.optionPages.player = {
     tooltip = function(path)
         local name, defaults = path[#path], app.dbDefaults.profile
+        if name == "layout" then
+            return defaults.layout
+        end
         if name == "player_nameOverride" then
             return app.dbDefaults.char.nameOverride, true
         end
@@ -31,6 +34,7 @@ app.optionPages.player = {
     defaults = {
         char = { nameOverride = "" },
         profile = {
+            layout = "current",
             unitFrames = {
                 player = {
                     healthBarColor = "class",
@@ -65,6 +69,7 @@ app.optionPages.player = {
                 order = 20,
                 name = L["Style"],
                 args = {
+                    layout = app.UnitFrameLayoutOption(),
                     player_portraitDragon = {
                         order = 25,
                         type = "select",

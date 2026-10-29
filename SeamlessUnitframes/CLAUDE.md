@@ -20,7 +20,8 @@ Native Player, Pet, Target and Focus position controls use Core's `GetNativePosi
 use `app.totPosition:GetOptions`. ToT stand-ins show their own Style sections; optional `linkedTo` support remains for future frames.
 
 New per-frame settings need a default and control in that frame's `src/options/<frame>.lua`.
-Edit Mode derives its Style rows from the same declaration. Global settings belong to General.
+Edit Mode derives its Style rows from the same declaration. The shared layout selector appears first in every frame's Style section and changes
+`profile.layout` for all frames; there is no General page.
 Run `lua src/tests/unitframes-options.lua`.
 
 ## `src/totposition/`: movable ToT frames

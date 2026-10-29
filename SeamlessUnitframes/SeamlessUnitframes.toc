@@ -36,7 +36,6 @@ src\core\previewcharacters.lua
 SeamlessUnitframes.lua
 
 src\options\shared.lua
-src\options\general.lua
 src\options\player.lua
 src\options\pet.lua
 src\options\target.lua

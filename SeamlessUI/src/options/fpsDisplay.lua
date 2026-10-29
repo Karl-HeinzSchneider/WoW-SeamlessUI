@@ -19,7 +19,7 @@ app.optionPages.fpsDisplay = {
         }),
         type = "group",
         name = L["FPS display"],
-        order = 20,
+        order = 30,
         args = {
             startup = {
                 type = "toggle",

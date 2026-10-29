@@ -158,7 +158,7 @@ app.optionPages.blizzardEditMode = {
     config = {
         type = "group",
         name = L["Blizzard Editmode"],
-        order = 30,
+        order = 10,
         args = args,
     },
 }

@@ -57,6 +57,7 @@ app.optionPages.party = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    statusText = app.UnitFrameStatusTextOption(),
                     party_nameDisplay = {
                         order = 10,
                         type = "select",

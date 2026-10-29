@@ -44,6 +44,10 @@ local function rowsFor(key)
                     return option:Read("disabled")
                 end,
                 default = function()
+                    local declared = option:Read("default")
+                    if declared ~= nil then
+                        return declared
+                    end
                     if id == "layout" then
                         return app.dbDefaults.profile.layout
                     end

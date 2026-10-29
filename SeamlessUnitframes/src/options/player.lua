@@ -70,6 +70,7 @@ app.optionPages.player = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    statusText = app.UnitFrameStatusTextOption(),
                     player_portraitDragon = {
                         order = 25,
                         type = "select",

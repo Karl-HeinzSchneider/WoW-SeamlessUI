@@ -15,6 +15,9 @@ local healthBarColorDesc =
 app.optionPages.party = {
     tooltip = function(path)
         local name, defaults = path[#path], app.dbDefaults.profile
+        if name == "layout" then
+            return defaults.layout
+        end
         if name == "threatPercentage" then
             return app.core:GetCVarOptionInfo("threatShowNumeric")
         end
@@ -47,71 +50,80 @@ app.optionPages.party = {
             return not app.unitFrames:Exists(entry)
         end,
         args = {
-            party_nameDisplay = {
-                order = 10,
-                type = "select",
-                name = L["Name display"],
-                desc = L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."],
-                values = { full = L["Full name"], first = L["First name only"], last = L["Surname only"] },
-                sorting = { "full", "first", "last" },
-                get = function()
-                    return app.db.profile.unitFrames[key].nameDisplay
-                end,
-                set = function(_, value)
-                    app.db.profile.unitFrames[key].nameDisplay = value
-                    app.nameDisplay:Refresh()
-                    changed()
-                end,
-            },
-            party_classIcon = {
+            style = {
+                type = "group",
+                inline = true,
                 order = 20,
-                type = "toggle",
-                name = L["Class icon"],
-                desc = L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."],
-                get = function()
-                    return app.db.profile.unitFrames[key].classIcon
-                end,
-                set = function(_, value)
-                    app.db.profile.unitFrames[key].classIcon = value
-                    app.classIcon:Refresh()
-                    changed()
-                end,
-            },
-            party_healthBarColor = {
-                order = 30,
-                type = "select",
-                name = L["Health bar color"],
-                desc = key == "pet" and healthBarColorDesc .. L["\n\nA pet takes its owner's class color."]
-                    or healthBarColorDesc,
-                values = {
-                    default = L["Default"],
-                    class = L["Class"],
-                    reaction = L["Reaction"],
-                    classReaction = L["Class, reaction for NPCs"],
+                name = L["Style"],
+                args = {
+                    layout = app.UnitFrameLayoutOption(),
+                    party_nameDisplay = {
+                        order = 10,
+                        type = "select",
+                        name = L["Name display"],
+                        desc = L["Shortens the names of player characters. NPCs keep their name.\nFull name: the game's name, first name and surname.\nFirst name only: without the surname.\nSurname only: the surname, or the first name of a character without one."],
+                        values = { full = L["Full name"], first = L["First name only"], last = L["Surname only"] },
+                        sorting = { "full", "first", "last" },
+                        get = function()
+                            return app.db.profile.unitFrames[key].nameDisplay
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].nameDisplay = value
+                            app.nameDisplay:Refresh()
+                            changed()
+                        end,
+                    },
+                    party_classIcon = {
+                        order = 20,
+                        type = "toggle",
+                        name = L["Class icon"],
+                        desc = L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."],
+                        get = function()
+                            return app.db.profile.unitFrames[key].classIcon
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].classIcon = value
+                            app.classIcon:Refresh()
+                            changed()
+                        end,
+                    },
+                    party_healthBarColor = {
+                        order = 30,
+                        type = "select",
+                        name = L["Health bar color"],
+                        desc = key == "pet" and healthBarColorDesc .. L["\n\nA pet takes its owner's class color."]
+                            or healthBarColorDesc,
+                        values = {
+                            default = L["Default"],
+                            class = L["Class"],
+                            reaction = L["Reaction"],
+                            classReaction = L["Class, reaction for NPCs"],
+                        },
+                        sorting = { "default", "class", "reaction", "classReaction" },
+                        get = function()
+                            return app.db.profile.unitFrames[key].healthBarColor
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].healthBarColor = value
+                            app.healthColor:Refresh()
+                            changed()
+                        end,
+                    },
+                    party_hidePvPIcon = {
+                        order = 40,
+                        type = "toggle",
+                        name = L["Hide PvP icon"],
+                        desc = L["Hides the faction or free-for-all PvP icon on the frame."],
+                        get = function()
+                            return app.db.profile.unitFrames[key].hidePvPIcon
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].hidePvPIcon = value
+                            app.pvpIcon:Refresh()
+                            changed()
+                        end,
+                    },
                 },
-                sorting = { "default", "class", "reaction", "classReaction" },
-                get = function()
-                    return app.db.profile.unitFrames[key].healthBarColor
-                end,
-                set = function(_, value)
-                    app.db.profile.unitFrames[key].healthBarColor = value
-                    app.healthColor:Refresh()
-                    changed()
-                end,
-            },
-            party_hidePvPIcon = {
-                order = 40,
-                type = "toggle",
-                name = L["Hide PvP icon"],
-                desc = L["Hides the faction or free-for-all PvP icon on the frame."],
-                get = function()
-                    return app.db.profile.unitFrames[key].hidePvPIcon
-                end,
-                set = function(_, value)
-                    app.db.profile.unitFrames[key].hidePvPIcon = value
-                    app.pvpIcon:Refresh()
-                    changed()
-                end,
             },
         },
     },

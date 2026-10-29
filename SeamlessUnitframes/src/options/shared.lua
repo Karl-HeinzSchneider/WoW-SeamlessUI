@@ -20,3 +20,26 @@ function app.UnitFramePositionOptions(entry)
         app.core:GetNativeSettingScale(getFrame, Enum.EditModeUnitFrameSetting.FrameSize)
     )
 end
+
+---The shared layout setting, exposed on every affected frame.
+---@return table
+function app.UnitFrameLayoutOption()
+    return {
+        type = "select",
+        order = 1,
+        default = "current",
+        name = L["Unit frame layout"],
+        desc = L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."],
+        values = { current = L["Default"], legacy = L["Beta"] },
+        sorting = { "current", "legacy" },
+        get = function()
+            return app.db.profile.layout
+        end,
+        set = function(_, value)
+            app.db.profile.layout = value
+            app.legacyLayout:Refresh()
+            app.core:RefreshOptions(appName)
+            app.core:RefreshEditModeSystemOptions()
+        end,
+    }
+end

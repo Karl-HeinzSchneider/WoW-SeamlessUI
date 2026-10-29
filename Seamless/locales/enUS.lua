@@ -831,15 +831,16 @@ L["Y"] = true
 
 -- SeamlessUnitframes
 L["\n\nA pet takes its owner's class color."] = true
+L["Beta"] = true
+L["Beta unit frames: %s; skipping this operation"] = true
 L["Boss"] = true
 L["Class icon"] = true
 L["Class"] = true
 L["Class, reaction for NPCs"] = true
 L["Combine"] = true
 L["Commands: /seamlessunitframes [options], /seamlessunitframes loglevel <level>, /seamlessunitframes reset"] = true
-L["Current (70425)"] = true
-L["Current leaves the game's layout unchanged. Legacy restores the exported pre-70425 artwork and layout. Changes made during combat apply when combat ends."] = true
 L["Custom name"] = true
+L["Default uses the game's standard unit frame artwork and layout. Beta uses the artwork and layout from before update 70425. This setting applies to all unit frames. Changes made during combat apply when combat ends."] = true
 L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."] = true
 L["Elite"] = true
 L["First name only"] = true
@@ -850,8 +851,6 @@ L["Health bar colors refreshed"] = true
 L["Hidden"] = true
 L["Hide PvP icon"] = true
 L["Hides the faction or free-for-all PvP icon on the frame."] = true
-L["Legacy (before 70425)"] = true
-L["Legacy unit frames: %s; skipping this operation"] = true
 L["Level display"] = true
 L["Name display"] = true
 L["Name"] = true

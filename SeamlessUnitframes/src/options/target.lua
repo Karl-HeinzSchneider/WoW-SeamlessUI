@@ -18,6 +18,9 @@ end
 app.optionPages.target = {
     tooltip = function(path)
         local name, defaults = path[#path], app.dbDefaults.profile
+        if name == "layout" then
+            return defaults.layout
+        end
         if name == "threatPercentage" then
             return app.core:GetCVarOptionInfo("threatShowNumeric")
         end
@@ -64,6 +67,7 @@ app.optionPages.target = {
                 order = 20,
                 name = L["Style"],
                 args = {
+                    layout = app.UnitFrameLayoutOption(),
                     target_nameDisplay = {
                         order = 10,
                         type = "select",

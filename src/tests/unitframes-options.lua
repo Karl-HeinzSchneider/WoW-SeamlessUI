@@ -151,14 +151,14 @@ dofile("src/tests/settings-support.lua").pages("SeamlessUnitframes", app)
 dofile("src/tests/settings-support.lua").defaults("SeamlessUnitframes", app)
 load("editmode.lua")
 
--- Options: layout stays in General, every unit frame has a tab of its own.
+-- Options: every unit frame exposes the shared layout in its Style section.
 modules.Options.RegisterEvent = function() end
 modules.Options:OnInitialize()
-local general, tabs = registeredOptions.pages.general.config.args, {}
+local tabs = {}
 for key, page in pairs(registeredOptions.pages) do
     tabs[key] = page.config
 end
-assert(general.layout and not general.healthBarColors, "only the layout is global")
+assert(not registeredOptions.pages.general, "no General page")
 for _, key in ipairs({ "player", "pet", "target", "targettarget", "focus", "focustarget", "party" }) do
     assert(tabs[key], "tab for " .. key)
 end
@@ -186,6 +186,26 @@ assert(tabs.targettarget.args.position and tabs.targettarget.args.style, "the To
 assert(tabs.focustarget.args.position and find(tabs.targettarget, "targettarget_healthBarColor"))
 assert(#positioned == 4 and positioned[1] == PlayerFrame and positioned[2] == PetFrame)
 assert(positioned[3] == TargetFrame and positioned[4] == FocusFrame, "each group resolves its own frame")
+local layoutRefreshes = 0
+app.legacyLayout = {
+    Refresh = function()
+        layoutRefreshes = layoutRefreshes + 1
+    end,
+}
+for key, tab in pairs(tabs) do
+    local option = tab.args.style.args.layout
+    assert(option and option.type == "select", key .. " has the shared layout")
+    option.set(nil, "legacy")
+    for _, other in pairs(tabs) do
+        assert(other.args.style.args.layout.get() == "legacy", "all selectors share the layout")
+    end
+    assert(app.optionPages[key].tooltip({ key, "style", "layout" }) == "current")
+    local rows = app.StyleOptions(app.unitFrames:Get(key))
+    assert(rows[1].key == "layout" and rows[1].default() == "current")
+    rows[1].set("current")
+    assert(option.get() == "current", "Edit Mode updates the same setting")
+end
+assert(layoutRefreshes == 14 and counts.optionRefreshes == 14 and counts.systemRefreshes == 14)
 local levelRefreshes = 0
 app.levelDisplay = {
     Refresh = function()
@@ -235,7 +255,7 @@ find(tabs.target, "questIcon_enabled").set(nil, true)
 assert(counts.questRefresh == 1 and not scale.disabled())
 scale.set(nil, 0.30000000000000004 + 2)
 assert(app.db.profile.targetQuestIcon.scale == 2.3 and counts.questLayout == 1)
-print("PASS: one options tab per unit frame, layout in General")
+print("PASS: one options tab per unit frame, shared layout in Style")
 
 -- Player-only choices and a character-scoped input below the name dropdown.
 local playerName = find(tabs.player, "player_nameDisplay")

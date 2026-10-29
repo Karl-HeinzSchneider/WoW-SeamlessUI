@@ -38,6 +38,7 @@
 ---@field global SeamlessUnitframes.DB.Global
 
 ---@class SeamlessUnitframes
+---@field UnitFrameLayoutOption fun(): table
 ---@field UnitFramePositionOptions fun(entry: SeamlessUnitframes.UnitFrame): table?
 
 ---@class SeamlessUnitframes.DBDefaults : AceDB.Schema

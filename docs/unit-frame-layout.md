@@ -1,11 +1,11 @@
 # Unit-frame layout switch
 
 Settings → AddOns → Seamless → Unit Frames → General → **Unit frame layout**.
-**Current (70425)** is the default. This layout module installs no frame hooks and
-changes no frames until Legacy has been selected. Existing health-color settings
+**Default** is the default. This layout module installs no frame hooks and
+changes no frames until Beta has been selected. Existing health-color settings
 remain independent.
 
-**Legacy (before 70425)** uses the old exported artwork and pre-update geometry.
+**Beta** uses the old exported artwork and pre-update geometry.
 Switching back applies explicit 70425 sizes, anchors, justification, layering and
 atlas definitions. It never restores snapshots of live rendering state.
 The selection belongs to the Unit Frames appearance profile and follows profile
@@ -82,15 +82,15 @@ anchor to `(-1, 9)` on every target/focus update (`Camelot/TargetFrame.lua:73-80
 The native health bar and container explicitly inherit secure templates; a post-hook
 cannot restore their legacy geometry during combat.
 
-Legacy therefore draws target/focus health and temporary max-health loss through
+Beta therefore draws target/focus health and temporary max-health loss through
 ordinary, unprotected visual bars created before combat. Native bar setters forward
 values, ranges, colors, alpha and visibility directly to those bars, including secret
 values without comparison or arithmetic. Existing native text regions retain their
-SetText logic and attach to the visual bar; Current restores their native ownership
-and anchors. Native source fills are transparent only in Legacy. The protected mana
+SetText logic and attach to the visual bar; Default restores their native ownership
+and anchors. Native source fills are transparent only in Beta. The protected mana
 bar anchors directly to native artwork, never to a visual bar (which would propagate
 protection). Native prediction segments and absorb glows are never reparented or given another
-status bar (storing our bar in them tainted their secret arithmetic); Legacy only makes them
+status bar (storing our bar in them tainted their secret arithmetic); Beta only makes them
 transparent. The visual bar draws its own heal, absorb and heal-absorb bars from
 `UnitGetDetailedHealPrediction` with a heal prediction calculator set to the native clamps; each
 bar is anchored to the previous fill and only receives forwarded values. They use the player's old
@@ -104,17 +104,17 @@ art with old coordinates. A private cache of the addon's last writes is invalida
 by native atlas/bar setters. Ordinary health-value updates reapply tints without
 replacing unchanged fill textures. No native atlas names or hook arguments are read.
 
-Switching to Current retires each known artwork override, resets static atlas UVs,
+Switching to Default retires each known artwork override, resets static atlas UVs,
 and applies the fixed current definitions. Root positions, scales, gameplay state
 and visibility remain client-owned. Other addons' custom geometry is not captured
 or replayed. Draw and frame levels remain native. When a legacy player health
 bar has a class/reaction tint, its animated-loss bar uses the same white fill and
 tint. This prevents the initial loss-overlay frame from flashing red over live
-health while preserving native loss timing/alpha. Default coloring and Current
+health while preserving native loss timing/alpha. Default coloring and Default
 restore its native red tint.
 
 The offline Lua fixture makes all rendering/discovery getters and `HookScript`
-throw. It exercises initial Current inactivity, repeated switching, fixed current
+throw. It exercises initial Default inactivity, repeated switching, fixed current
 restoration, class/reaction color modes, minus targets, party/vehicle/resource
 styles, missing components, secret inputs and combat deferral. It also asserts
 synchronous target-art repair, no texture writes on ordinary health updates,
@@ -125,7 +125,7 @@ prove live-client visual correctness or taint safety.
 
 ## In-game validation still required
 
-- Login/reload with Current and with Legacy saved; repeatedly toggle both ways.
+- Login/reload with Default and with Beta saved; repeatedly toggle both ways.
 - Enter combat, change profiles or layout, target different classifications, and
   leave combat. Confirm the final selection applies without blocked actions.
 - Target/focus normal, elite, rare, boss and minus units, including no target.

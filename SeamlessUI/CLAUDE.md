@@ -104,6 +104,17 @@ Run `lua src/tests/fps-display.lua`.
 
 ## Adding improvements
 
+`features/combinedbags.lua` registers an addon-owned selection outline for the native combined
+bags window in Edit Mode. The Frames checkbox defaults off and controls only that outline; inventory visibility,
+parenting, scale and item logic remain native. Positions live in profile `combinedBags.layouts`,
+with layout copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors`
+reapplies only saved positions, converting offsets for the native bag scale; other bags keep
+their native anchors. Reset removes the override and restores Blizzard placement. Combat defers
+position writes, including restoration when disabled. The per-frame "Keep position in combat"
+option (`positionInCombat`, default off) reapplies saved bag positions in combat only when
+the bag is unprotected; it never updates the Edit Mode outline in combat.
+Run `lua src/tests/combined-bags.lua`.
+
 `features/minimap.lua` owns minimap visibility. `options/minimap.lua` declares the page and
 Style controls; Edit Mode derives its Style rows from that declaration. New visibility settings
 live in profile `minimap`; the existing `hideMinimapDayNight` key stays at its original path.

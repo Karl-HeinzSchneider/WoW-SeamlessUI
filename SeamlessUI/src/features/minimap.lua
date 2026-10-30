@@ -136,11 +136,11 @@ function module:ApplyShape(cluster, square)
             self.squareBorder = MinimapBackdrop:CreateTexture(nil, "OVERLAY", nil, 3)
             self.squareBorder:SetTexture("Interface\\AddOns\\SeamlessUI\\media\\minimap_square_arrow")
         end
-        -- The supplied 512px art has its opening at x=61..451, y=67..444.
+        -- The supplied 512px art has its opening at x=52.5..458.5, y=64.5..458.5.
         -- Fit that opening, rather than the full canvas, to the live map dimensions.
-        local xScale, yScale = map:GetWidth() / 390, map:GetHeight() / 377
+        local xScale, yScale = map:GetWidth() / 406, map:GetHeight() / 394
         self.squareBorder:ClearAllPoints()
-        self.squareBorder:SetPoint("CENTER", map, "CENTER", 0, -0.5 * yScale)
+        self.squareBorder:SetPoint("CENTER", map, "CENTER", 0.5 * xScale, 5.5 * yScale)
         self.squareBorder:SetSize(512 * xScale, 512 * yScale)
         self.squareBorder:Show()
         map:SetMaskTexture("Interface\\Buttons\\WHITE8X8")

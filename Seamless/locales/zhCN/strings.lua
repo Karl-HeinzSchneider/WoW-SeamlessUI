@@ -155,6 +155,7 @@ end
 -- L["Edit Mode visibility: read setting=%s source=%s value=%s"] = "Edit Mode visibility: read setting=%s source=%s value=%s"
 -- L["Edit Mode visibility: refresh stage=%s success=%s error=%s"] = "Edit Mode visibility: refresh stage=%s success=%s error=%s"
 -- L["Edit Mode visibility: result setting=%s success=%s error=%s"] = "Edit Mode visibility: result setting=%s success=%s error=%s"
+-- L["Embed"] = "Embed"
 -- L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = "Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"
 -- L["format error: "] = "format error: "
 -- L["GitHub"] = "GitHub"

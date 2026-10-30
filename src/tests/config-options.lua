@@ -1,3 +1,4 @@
+local withEmbed = ... ~= "without-embed"
 -- The complete page contract, without AceConfigRegistry/AceConfigDialog or a game client.
 unpack = unpack or table.unpack
 local L = setmetatable({}, {
@@ -37,8 +38,11 @@ for _, file in ipairs({
     "config/model.lua",
     "config/position.lua",
     "core/options.lua",
+    "embed/embed.lua",
 }) do
-    assert(loadfile("Seamless/src/" .. file))("Seamless", coreApp)
+    if withEmbed or file ~= "embed/embed.lua" then
+        assert(loadfile("Seamless/src/" .. file))("Seamless", coreApp)
+    end
 end
 support.pages("Seamless", coreApp)
 coreApp.dbDefaults = coreApp.addon:GetOptionsDefaults(coreApp.optionPages, coreApp.dbDefaults)
@@ -46,6 +50,13 @@ coreApp.options:OnInitialize()
 assert(coreApp.dbDefaults.profile.tweaks.reloadShortcut)
 assert(coreApp.config.categories["Seamless:tweaks"].parent == "Seamless")
 assert(coreApp.config.categories["Seamless:profiles"])
+if withEmbed then
+    assert(coreApp.config.categories["Seamless:embed"].parent == "Seamless")
+    assert(next(coreApp.optionPages.embed.config.args) == nil)
+else
+    assert(coreApp.config.categories["Seamless:embed"] == nil)
+    assert(coreApp.embed == nil)
+end
 local core = coreApp.addon
 core.GetEditModeButtonSection = support.buttonSection
 core.GetEditModePositionButton = support.positionButton

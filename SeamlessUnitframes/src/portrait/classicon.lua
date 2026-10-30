@@ -45,11 +45,15 @@ local function Apply(frame, key)
     end
     local character = app.previewCharacters and app.previewCharacters:Get(frame, key)
     if character then
-        if character.displayTexture and not app.db.profile.unitFrames[key].classIcon then
+        if character.class and app.db.profile.unitFrames[key].classIcon then
+            portrait:SetAtlas(GetClassAtlas(character.class))
+        elseif character.displayTexture then
             portrait:SetTexture(character.displayTexture)
             portrait:SetTexCoord(0, 1, 0, 1)
         elseif character.class then
-            portrait:SetAtlas(GetClassAtlas(character.class))
+            -- Some VIPs have no portrait asset; still respect the class-icon toggle.
+            portrait:SetTexCoord(0, 1, 0, 1)
+            SetPortraitTexture(portrait, "player", frame.disablePortraitMask)
         end
         previewed[frame] = true
         return

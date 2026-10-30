@@ -176,6 +176,22 @@ assert(TargetFrame.name.text == "VIP Preview")
 TargetFrame.portrait.texture = "Native portrait"
 hooks.UnitFramePortrait_Update(TargetFrame)
 assert(TargetFrame.portrait.texture == "portrait")
+-- VIPs without artwork must respect the toggle, including native portrait updates.
+character.displayTexture = nil
+app.classIcon:Refresh()
+assert(TargetFrame.portrait.texture == "live:player")
+app.db.profile.unitFrames.target.classIcon = true
+app.classIcon:Refresh()
+assert(TargetFrame.portrait.texture == "MAGE")
+app.db.profile.unitFrames.target.classIcon = false
+app.classIcon:Refresh()
+assert(TargetFrame.portrait.texture == "live:player")
+TargetFrame.portrait.texture = "Native portrait"
+hooks.UnitFramePortrait_Update(TargetFrame)
+assert(TargetFrame.portrait.texture == "live:player")
+character.displayTexture = "portrait"
+app.classIcon:Refresh()
+assert(TargetFrame.portrait.texture == "portrait")
 TargetFrame.healthbar.rgb = { 0, 1, 0 }
 hooks.UnitFrameHealthBar_Update(TargetFrame.healthbar)
 assert(TargetFrame.healthbar.rgb[1] == 0.2)

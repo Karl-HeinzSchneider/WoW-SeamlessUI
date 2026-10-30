@@ -1,3 +1,4 @@
+unpack = unpack or table.unpack
 -- Run from the repository root: lua src/tests/minimap-day-night.lua
 local module = { hooks = {}, functionHooks = {} }
 function module:IsEnabled()
@@ -244,41 +245,47 @@ local border = newFrame()
 function border:SetTexture(texture)
     self.texture = texture
 end
-function border:ClearAllPoints() end
+function border:ClearAllPoints()
+    self.point = nil
+end
+function border:GetNumPoints()
+    return self.point and 1 or 0
+end
+function border:GetPoint()
+    return unpack(self.point)
+end
 function border:SetPoint(...)
     self.point = { ... }
 end
 function border:SetSize(width, height)
     self.width, self.height = width, height
 end
-MinimapBackdrop = {
-    CreateTexture = function()
-        return border
-    end,
-}
-MinimapCompassTexture, MinimapCompassTextureUnderlay = newFrame(), newFrame()
+border.point = { "CENTER", map, "CENTER", 0, 0 }
+MinimapCompassTexture, MinimapCompassTextureUnderlay = border, newFrame()
 function cluster:UpdateMinimapConfig()
     map:SetMaskTexture("native-mask")
+    MinimapCompassTexture:SetTexture("native-border")
     MinimapCompassTexture:Show()
     MinimapCompassTextureUnderlay:Show()
 end
 module:OnEnable()
 rows.square.set(true)
 assert(map.mask == "Interface\\Buttons\\WHITE8X8" and border:IsShown())
-assert(not MinimapCompassTexture:IsShown() and not MinimapCompassTextureUnderlay:IsShown())
+assert(MinimapCompassTexture:IsShown() and not MinimapCompassTextureUnderlay:IsShown())
+assert(module.squareBorder == MinimapCompassTexture, "border uses engine-rotated compass layer")
 assert(math.abs(border.width * 406 / 512 - 198) < 0.001, "opening fits map width")
 assert(math.abs(border.height * 394 / 512 - 198) < 0.001, "opening fits map height")
 assert(math.abs(border.point[4] - 0.5 * 198 / 406) < 0.001, "opening center aligns horizontally")
 assert(math.abs(border.point[5] - 5.5 * 198 / 394) < 0.001, "opening center aligns vertically")
 cluster:UpdateMinimapConfig()
 assert(map.mask == "Interface\\Buttons\\WHITE8X8", "native rotation cannot reset square mask")
-assert(not MinimapCompassTexture:IsShown(), "native rotation cannot restore round border")
+assert(border.texture:find("minimap_square_arrow", 1, true), "native updates retain custom compass art")
 app.db.profile = { minimap = {} }
 module:OnProfileRefresh()
-assert(map.mask == "native-mask" and not border:IsShown(), "profile restores native shape")
+assert(map.mask == "native-mask" and border.texture == "native-border", "profile restores native shape")
 rows.square.set(true)
 module:OnDisable()
-assert(map.mask == "native-mask" and MinimapCompassTexture:IsShown() and not border:IsShown())
+assert(map.mask == "native-mask" and border.texture == "native-border" and border.point[5] == 0)
 print("Minimap square mask, border alignment, rotation and restoration OK")
 
 -- Button addons query the public shape API; it must follow the current profile.

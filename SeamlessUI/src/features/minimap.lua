@@ -138,9 +138,16 @@ function module:ApplyShape(cluster, square)
     end
     if square then
         if not self.squareBorder then
-            self.squareBorder = MinimapBackdrop:CreateTexture(nil, "OVERLAY", nil, 3)
-            self.squareBorder:SetTexture("Interface\\AddOns\\SeamlessUI\\media\\minimap_square_arrow")
+            -- The engine rotates this named texture together with the minimap mask.
+            self.squareBorder = MinimapCompassTexture
         end
+        if not self.squareApplied then
+            self.compassPoints = {}
+            for index = 1, self.squareBorder:GetNumPoints() do
+                self.compassPoints[index] = { self.squareBorder:GetPoint(index) }
+            end
+        end
+        self.squareBorder:SetTexture("Interface\\AddOns\\SeamlessUI\\media\\minimap_square_arrow")
         -- The supplied 512px art has its opening at x=52.5..458.5, y=64.5..458.5.
         -- Fit that opening, rather than the full canvas, to the live map dimensions.
         local xScale, yScale = map:GetWidth() / 406, map:GetHeight() / 394
@@ -150,12 +157,14 @@ function module:ApplyShape(cluster, square)
         self.squareBorder:Show()
         map:SetMaskTexture("Interface\\Buttons\\WHITE8X8")
         self.squareApplied = true
-        self:SetHidden(MinimapCompassTexture, true)
         self:SetHidden(MinimapCompassTextureUnderlay, true)
     elseif self.squareApplied then
         self.squareApplied = nil
-        self.squareBorder:Hide()
-        self:SetHidden(MinimapCompassTexture, false)
+        self.squareBorder:ClearAllPoints()
+        for _, point in ipairs(self.compassPoints) do
+            self.squareBorder:SetPoint(unpack(point))
+        end
+        self.compassPoints = nil
         self:SetHidden(MinimapCompassTextureUnderlay, false)
         -- Let the client restore the correct mask and art for the current rotation mode.
         cluster:UpdateMinimapConfig()

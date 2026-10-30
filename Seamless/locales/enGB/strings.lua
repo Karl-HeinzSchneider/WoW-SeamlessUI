@@ -828,6 +828,7 @@ end
 -- L["Show FPS on startup"] = "Show FPS on startup"
 -- L["Show latency"] = "Show latency"
 -- L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."] = "Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."
+-- L["Square minimap"] = "Square minimap"
 -- L["The previous secondary anchor is unavailable or would create a cycle."] = "The previous secondary anchor is unavailable or would create a cycle."
 -- L["This frame has no anchor in the active layout."] = "This frame has no anchor in the active layout."
 -- L["This frame has no default position."] = "This frame has no default position."

@@ -825,6 +825,7 @@ L["SeamlessUI - %s"] = true
 L["Show FPS on startup"] = true
 L["Show latency"] = true
 L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."] = true
+L["Square minimap"] = true
 L["The previous secondary anchor is unavailable or would create a cycle."] = true
 L["This frame has no anchor in the active layout."] = true
 L["This frame has no default position."] = true

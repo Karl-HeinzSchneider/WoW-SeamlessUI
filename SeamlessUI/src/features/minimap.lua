@@ -110,6 +110,7 @@ function module:Apply()
         end
     end
     local settings = app.db.profile.minimap
+    self:ApplyShape(cluster, settings.square)
     local header = settings.hideHeader
     self:SetHidden(cluster.DielFrame, app.db.profile.hideMinimapDayNight)
     self:SetHidden(AddonCompartmentFrame, header or settings.hideAddonCompartment)
@@ -125,6 +126,37 @@ function module:Apply()
     self.applying = nil
 end
 
+function module:ApplyShape(cluster, square)
+    local map = cluster.MinimapContainer and cluster.MinimapContainer.Minimap
+    if not map then
+        return
+    end
+    if square then
+        if not self.squareBorder then
+            self.squareBorder = MinimapBackdrop:CreateTexture(nil, "OVERLAY", nil, 3)
+            self.squareBorder:SetTexture("Interface\\AddOns\\SeamlessUI\\media\\minimap_square_arrow")
+        end
+        -- The supplied 512px art has its opening at x=68..444, y=76..440.
+        -- Fit that opening, rather than the full canvas, to the live map dimensions.
+        local xScale, yScale = map:GetWidth() / 376, map:GetHeight() / 364
+        self.squareBorder:ClearAllPoints()
+        self.squareBorder:SetPoint("CENTER", map, "CENTER", 0, 2 * yScale)
+        self.squareBorder:SetSize(512 * xScale, 512 * yScale)
+        self.squareBorder:Show()
+        map:SetMaskTexture("Interface\\Buttons\\WHITE8X8")
+        self.squareApplied = true
+        self:SetHidden(MinimapCompassTexture, true)
+        self:SetHidden(MinimapCompassTextureUnderlay, true)
+    elseif self.squareApplied then
+        self.squareApplied = nil
+        self.squareBorder:Hide()
+        self:SetHidden(MinimapCompassTexture, false)
+        self:SetHidden(MinimapCompassTextureUnderlay, false)
+        -- Let the client restore the correct mask and art for the current rotation mode.
+        cluster:UpdateMinimapConfig()
+    end
+end
+
 function module:OnEnable()
     app.core:RefreshEditModeSystemOptions()
     self:RegisterEvent("ADDON_LOADED", "Apply")
@@ -133,13 +165,18 @@ end
 
 function module:OnDisable()
     app.core:RefreshEditModeSystemOptions()
-    self:UnhookAll()
+    self.applying = true
     self:UnregisterAllEvents()
+    if MinimapCluster then
+        self:ApplyShape(MinimapCluster, false)
+    end
     for frame in pairs(self.hiddenFrames or {}) do
         frame:Show()
     end
     self.hiddenFrames = nil
     self:RestoreHeaderLayout()
+    self:UnhookAll()
+    self.applying = nil
 end
 
 function module:OnProfileRefresh()

@@ -34,6 +34,7 @@ app.optionPages.minimap = {
         profile = {
             hideMinimapDayNight = false,
             minimap = {
+                square = false,
                 hideAddonCompartment = false,
                 hideTracking = false,
                 hideCalendar = false,
@@ -74,6 +75,7 @@ app.optionPages.minimap = {
                     hideClock = visibilityOption("hideClock", L["Hide clock"], 45),
                     hideZoneText = visibilityOption("hideZoneText", L["Hide zone text button"], 50),
                     hideHeader = visibilityOption("hideHeader", L["Hide complete minimap header"], 60),
+                    square = visibilityOption("square", L["Square minimap"], 70),
                 },
             },
             position = app.core:GetNativePositionOptions(getFrame, scale),

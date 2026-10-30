@@ -182,7 +182,7 @@ local rows = {}
 for _, option in ipairs(registration.options) do
     rows[option.key] = option
 end
-assert(#registration.options == 7, "all Style settings reach Edit Mode")
+assert(#registration.options == 8, "all Style settings reach Edit Mode")
 -- Exhaust every combination of individual switches, independently of the header switch.
 for combination = 0, 31 do
     for index, control in ipairs(controls) do
@@ -228,3 +228,53 @@ rows.hideHeader.set(true)
 module:OnDisable()
 assert(cluster.fixedHeight == nil and cluster.ZoneTextButton:IsShown(), "disable restores layout and visibility")
 print("Minimap visibility combinations, Edit Mode rows, header bounds, scale and restoration OK")
+
+local map = { width = 198, height = 198 }
+container.Minimap = map
+function map:GetWidth()
+    return self.width
+end
+function map:GetHeight()
+    return self.height
+end
+function map:SetMaskTexture(mask)
+    self.mask = mask
+end
+local border = newFrame()
+function border:SetTexture(texture)
+    self.texture = texture
+end
+function border:ClearAllPoints() end
+function border:SetPoint(...)
+    self.point = { ... }
+end
+function border:SetSize(width, height)
+    self.width, self.height = width, height
+end
+MinimapBackdrop = {
+    CreateTexture = function()
+        return border
+    end,
+}
+MinimapCompassTexture, MinimapCompassTextureUnderlay = newFrame(), newFrame()
+function cluster:UpdateMinimapConfig()
+    map:SetMaskTexture("native-mask")
+    MinimapCompassTexture:Show()
+    MinimapCompassTextureUnderlay:Show()
+end
+module:OnEnable()
+rows.square.set(true)
+assert(map.mask == "Interface\\Buttons\\WHITE8X8" and border:IsShown())
+assert(not MinimapCompassTexture:IsShown() and not MinimapCompassTextureUnderlay:IsShown())
+assert(math.abs(border.width * 376 / 512 - 198) < 0.001, "opening fits map width")
+assert(math.abs(border.height * 364 / 512 - 198) < 0.001, "opening fits map height")
+cluster:UpdateMinimapConfig()
+assert(map.mask == "Interface\\Buttons\\WHITE8X8", "native rotation cannot reset square mask")
+assert(not MinimapCompassTexture:IsShown(), "native rotation cannot restore round border")
+app.db.profile = { minimap = {} }
+module:OnProfileRefresh()
+assert(map.mask == "native-mask" and not border:IsShown(), "profile restores native shape")
+rows.square.set(true)
+module:OnDisable()
+assert(map.mask == "native-mask" and MinimapCompassTexture:IsShown() and not border:IsShown())
+print("Minimap square mask, border alignment, rotation and restoration OK")

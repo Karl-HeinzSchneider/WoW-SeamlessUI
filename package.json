@@ -18,7 +18,8 @@
     "dev:link": "tsx src/link-addons.ts",
     "package:addons": "tsx src/package-addons.ts",
     "package:local": "tsx src/package-local.ts",
-    "locales:sync": "tsx src/sync-locales.ts"
+    "locales:sync": "tsx src/sync-locales.ts",
+    "embed:group-loot": "tsx src/sync-group-loot.ts"
   },
   "devDependencies": {
     "@johnnymorganz/stylua-bin": "2.6.0",

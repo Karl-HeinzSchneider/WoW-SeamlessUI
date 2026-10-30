@@ -3,3 +3,4 @@ Seamless/lib/
 
 # Translator files use one entry per line for comparison and synchronization.
 Seamless/locales/
+Seamless/src/embed/BetterGroupLoot/vendor/

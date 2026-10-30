@@ -7,8 +7,8 @@ The page intentionally lives in embed.lua instead of src/options/ so it disappea
 with this single loader entry. `src/types.lua` only declares the app.embed annotation.
 
 `embed.lua` owns the empty Embed page, opt-in booleans in the current suite profile
-(`profile.embed[id]`), and a small AceModule registry. No addons are registered yet.
-Do not add placeholders or example checkboxes to the shipped page.
+(`profile.embed[id]`), and a small AceModule registry. BetterGroupLoot is the first
+registered addon; do not add placeholders or example checkboxes to the shipped page.
 
 To add an addon later:
 
@@ -27,5 +27,5 @@ runtime started by this adapter. Resolve profile settings at use time. The regis
 starts/stops on checkbox changes, suite profile changes and Core module lifecycle.
 
 Run `lua src/tests/embed.lua` and `lua src/tests/config-options.lua`. In game, check
-that Embed is an empty page under Seamless and that removing its TOC entry removes
-that page without breaking other settings.
+that Embed lists Group loot under Seamless and that removing its TOC entry removes
+all embedded pages and runtime code without breaking other settings.

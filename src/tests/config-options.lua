@@ -52,6 +52,7 @@ assert(coreApp.config.categories["Seamless:tweaks"].parent == "Seamless")
 assert(coreApp.config.categories["Seamless:profiles"])
 if withEmbed then
     assert(coreApp.config.categories["Seamless:embed"].parent == "Seamless")
+    -- Generic registry only; embed-group-loot.lua exercises the complete XML graph.
     assert(next(coreApp.optionPages.embed.config.args) == nil)
 else
     assert(coreApp.config.categories["Seamless:embed"] == nil)

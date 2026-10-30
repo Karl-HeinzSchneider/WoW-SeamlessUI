@@ -1,0 +1,6 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+    <Script file="bootstrap.lua" />
+    <Include file="vendor\embedded.xml" />
+    <Script file="adapter.lua" />
+    <Script file="options.lua" />
+</Ui>

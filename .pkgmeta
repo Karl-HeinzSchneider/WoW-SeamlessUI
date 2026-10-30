@@ -40,3 +40,4 @@ ignore:
   - SeamlessDarkmode/src/types.lua
   - SeamlessActionBars/src/types.lua
   - SeamlessCastbar/src/types.lua
+  - Seamless/src/embed/BetterGroupLoot/vendor/src/types.lua

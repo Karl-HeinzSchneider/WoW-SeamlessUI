@@ -5,3 +5,4 @@ docs/atlas/AtlasInfo.*.json
 description.md
 # Written by VS Code and extensions (ketho.wow-api updates Lua.* on startup); keep their formatting.
 .vscode/settings.json
+Seamless/src/embed/BetterGroupLoot/vendor/

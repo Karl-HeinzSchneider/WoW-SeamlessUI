@@ -5,6 +5,11 @@ local _, app = ...
 local module = app.addon:NewModule("Minimap", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessUI.Minimap]]
 app.minimap = module
 
+-- Public compatibility API used by minimap button addons to choose their anchor geometry.
+local function getMinimapShape()
+    return app.db.profile.minimap.square and "SQUARE" or "ROUND"
+end
+
 function module:OnInitialize()
     if not Enum.EditModeSystem or not Enum.EditModeSystem.Minimap then
         return
@@ -158,12 +163,18 @@ function module:ApplyShape(cluster, square)
 end
 
 function module:OnEnable()
+    self.previousGetMinimapShape = GetMinimapShape
+    GetMinimapShape = getMinimapShape
     app.core:RefreshEditModeSystemOptions()
     self:RegisterEvent("ADDON_LOADED", "Apply")
     self:Apply()
 end
 
 function module:OnDisable()
+    if GetMinimapShape == getMinimapShape then
+        GetMinimapShape = self.previousGetMinimapShape
+    end
+    self.previousGetMinimapShape = nil
     app.core:RefreshEditModeSystemOptions()
     self.applying = true
     self:UnregisterAllEvents()

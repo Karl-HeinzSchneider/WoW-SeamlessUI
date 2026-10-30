@@ -280,3 +280,26 @@ rows.square.set(true)
 module:OnDisable()
 assert(map.mask == "native-mask" and MinimapCompassTexture:IsShown() and not border:IsShown())
 print("Minimap square mask, border alignment, rotation and restoration OK")
+
+-- Button addons query the public shape API; it must follow the current profile.
+local previousShape = function()
+    return "CUSTOM"
+end
+GetMinimapShape = previousShape
+module:OnEnable()
+assert(GetMinimapShape() == "SQUARE")
+rows.square.set(false)
+assert(GetMinimapShape() == "ROUND")
+app.db.profile = { minimap = { square = true } }
+assert(GetMinimapShape() == "SQUARE", "shape resolves current profile without caching")
+module:OnDisable()
+assert(GetMinimapShape == previousShape, "disable restores previous shape provider")
+GetMinimapShape = nil
+module:OnEnable()
+module:OnDisable()
+assert(GetMinimapShape == nil, "disable restores an absent provider")
+module:OnEnable()
+GetMinimapShape = previousShape
+module:OnDisable()
+assert(GetMinimapShape == previousShape, "disable preserves another addon's replacement")
+print("Minimap public shape API, profile changes and provider restoration OK")

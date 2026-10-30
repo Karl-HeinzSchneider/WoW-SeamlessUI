@@ -112,10 +112,26 @@ the bag is unprotected; it never updates the Edit Mode outline in combat.
 Run `lua src/tests/combined-bags.lua`.
 
 `features/minimap.lua` owns minimap visibility. `options/minimap.lua` declares the page and
-Style controls; Edit Mode derives its Style rows from that declaration. New visibility settings
-live in profile `minimap`; the existing `hideMinimapDayNight` key stays at its original path.
+Style controls; Edit Mode derives its Style rows from that declaration.
+Style starts with Square minimap, then the native Edit Mode Rotate Minimap setting. Read it
+through `GetFramePositionService():ReadSetting` and write through `ApplySetting`, so Blizzard's
+checkbox, layout draft and Save/Revert stay synchronized. Outside Edit Mode it saves to the active
+custom layout. Its default comes from `GetDefaultSetting`; preset/combat guards stay native.
+New visibility settings live in profile `minimap`; the existing `hideMinimapDayNight` key stays at its original path.
 Individual switches combine independently. `hideHeader` overrides the header buttons and status
-indicators, fits the cluster's fixed bounds to the scaled map container, and removes its header
+indicators. `square` (default off) uses the supplied `media/minimap_square_arrow.blp` border,
+fitting its off-center opening to the map and replacing the mask with a square. Button addons
+read the public `GetMinimapShape()` compatibility API (`SQUARE`
+or `ROUND` from the current profile); disabling restores the previous provider if still owned.
+The border uses the native compass texture so the engine rotates it with the square mask.
+Its UVs center the artwork's opening on the map's rotation pivot. Never change the minimap's
+dimensions or scale to accommodate this style: button addons use its native geometry.
+With Rotate Minimap enabled, use the native round style and report `ROUND` to button addons;
+retain the square preference and reapply it when rotation stops. A rotating square has unresolved
+client rendering gaps and must not be enabled. Disabling restores native UVs, anchors, art and mask.
+Refresh all registered LibDBIcon buttons through its public `Refresh` API whenever the effective
+shape changes, including profile changes, rotation transitions and restoring a previous provider.
+`hideHeader` fits the cluster's fixed bounds to the scaled map container and removes its header
 anchor gap. Native scale, header placement and rotation updates reapply that compact layout.
 Restoring the header restores the native layout sizing and current header placement; disabling
 the addon restores frames it hid. Run `lua src/tests/minimap-day-night.lua`.

@@ -1,5 +1,5 @@
 ---@type string, SeamlessUI
-local _, app = ...
+local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 local function getFrame()
@@ -7,6 +7,8 @@ local function getFrame()
 end
 local setting = Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.Size
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
+local rotation = Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.RotateMinimap
+local nativeSettings = app.core:GetFramePositionService()
 
 local function visibilityOption(key, name, order)
     local function settings()
@@ -17,6 +19,7 @@ local function visibilityOption(key, name, order)
         order = order,
         width = "full",
         name = name,
+        desc = key == "square" and L["Uses the round minimap while Rotate Minimap is enabled."] or nil,
         default = false,
         get = function()
             return settings()[key]
@@ -30,10 +33,19 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.minimap = {
+    tooltip = function(path)
+        if path[#path] == "rotateMinimap" then
+            local value = rotation and nativeSettings:GetDefaultSetting(getFrame(), rotation)
+            if value ~= nil then
+                return value == 1
+            end
+        end
+    end,
     defaults = {
         profile = {
             hideMinimapDayNight = false,
             minimap = {
+                square = false,
                 hideAddonCompartment = false,
                 hideTracking = false,
                 hideCalendar = false,
@@ -59,6 +71,32 @@ app.optionPages.minimap = {
                 name = L["Style"],
                 order = 20,
                 args = {
+                    square = visibilityOption("square", L["Square minimap"], 1),
+                    rotateMinimap = {
+                        type = "toggle",
+                        order = 2,
+                        width = "full",
+                        name = L["Rotate minimap"],
+                        blizzard = true,
+                        editMode = true,
+                        disabled = function()
+                            return not rotation or not nativeSettings:CanEdit(getFrame())
+                        end,
+                        get = function()
+                            return rotation and nativeSettings:ReadSetting(getFrame(), rotation) == 1 or false
+                        end,
+                        set = function(_, value)
+                            if not rotation then
+                                return
+                            end
+                            local ok, err = nativeSettings:ApplySetting(getFrame(), rotation, value and 1 or 0)
+                            if not ok and err then
+                                app.logger:warn("%s", err)
+                            end
+                            app.core:RefreshOptions(appName)
+                            app.core:RefreshEditModeSystemOptions()
+                        end,
+                    },
                     hideMinimapDayNight = visibilityOption(
                         "hideMinimapDayNight",
                         L["Hide minimap day/night indicator"],

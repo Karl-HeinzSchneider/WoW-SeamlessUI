@@ -830,6 +830,7 @@ L["The previous secondary anchor is unavailable or would create a cycle."] = tru
 L["This frame has no anchor in the active layout."] = true
 L["This frame has no default position."] = true
 L["UI"] = true
+L["Uses the round minimap while Rotate Minimap is enabled."] = true
 L["White latency text"] = true
 L["X and Y must be finite numbers."] = true
 L["X"] = true

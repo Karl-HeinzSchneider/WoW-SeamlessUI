@@ -833,6 +833,7 @@ end
 -- L["This frame has no anchor in the active layout."] = "This frame has no anchor in the active layout."
 -- L["This frame has no default position."] = "This frame has no default position."
 -- L["UI"] = "UI"
+-- L["Uses the round minimap while Rotate Minimap is enabled."] = "Uses the round minimap while Rotate Minimap is enabled."
 -- L["White latency text"] = "White latency text"
 -- L["X and Y must be finite numbers."] = "X and Y must be finite numbers."
 -- L["X"] = "X"

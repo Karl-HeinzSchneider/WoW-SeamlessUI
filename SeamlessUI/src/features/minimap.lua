@@ -6,8 +6,12 @@ local module = app.addon:NewModule("Minimap", "AceEvent-3.0", "AceHook-3.0") --[
 app.minimap = module
 
 -- Public compatibility API used by minimap button addons to choose their anchor geometry.
+local function useSquareMinimap()
+    return app.db.profile.minimap.square and not CVarCallbackRegistry:GetCVarValueBool("rotateMinimap")
+end
+
 local function getMinimapShape()
-    return app.db.profile.minimap.square and "SQUARE" or "ROUND"
+    return useSquareMinimap() and "SQUARE" or "ROUND"
 end
 
 function module:OnInitialize()
@@ -115,7 +119,7 @@ function module:Apply()
         end
     end
     local settings = app.db.profile.minimap
-    self:ApplyShape(cluster, settings.square)
+    self:ApplyShape(cluster, useSquareMinimap())
     local header = settings.hideHeader
     self:SetHidden(cluster.DielFrame, app.db.profile.hideMinimapDayNight)
     self:SetHidden(AddonCompartmentFrame, header or settings.hideAddonCompartment)

@@ -17,6 +17,7 @@ local function visibilityOption(key, name, order)
         order = order,
         width = "full",
         name = name,
+        desc = key == "square" and L["Uses the round minimap while Rotate Minimap is enabled."] or nil,
         default = false,
         get = function()
             return settings()[key]

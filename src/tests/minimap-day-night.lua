@@ -1,4 +1,11 @@
 unpack = unpack or table.unpack
+local rotateMinimap = false
+CVarCallbackRegistry = {
+    GetCVarValueBool = function(_, key)
+        assert(key == "rotateMinimap")
+        return rotateMinimap
+    end,
+}
 -- Run from the repository root: lua src/tests/minimap-day-night.lua
 local module = { hooks = {}, functionHooks = {} }
 function module:IsEnabled()
@@ -323,6 +330,17 @@ rows.square.set(false)
 assert(GetMinimapShape() == "ROUND")
 app.db.profile = { minimap = { square = true } }
 assert(GetMinimapShape() == "SQUARE", "shape resolves current profile without caching")
+module:OnProfileRefresh()
+rotateMinimap = true
+cluster:UpdateMinimapConfig()
+assert(GetMinimapShape() == "ROUND", "button geometry matches rotation fallback")
+assert(map.mask == "native-mask" and border.texture == "native-border", "rotation uses native rendering")
+assert(app.db.profile.minimap.square, "rotation preserves square preference")
+assert(map.width == 198 and map.height == 198, "rotation fallback preserves native dimensions")
+rotateMinimap = false
+cluster:UpdateMinimapConfig()
+assert(GetMinimapShape() == "SQUARE", "square geometry returns when rotation stops")
+assert(map.mask == "Interface\\Buttons\\WHITE8X8", "square mask returns when rotation stops")
 module:OnDisable()
 assert(GetMinimapShape == previousShape, "disable restores previous shape provider")
 GetMinimapShape = nil

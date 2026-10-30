@@ -522,7 +522,7 @@ assert(mana.point[1] == "TOPLEFT" and mana.point[2] == playerArt and mana.point[
 assert(health.fill.file:find("target%-portraiton%-bar%-health"), "rounded player uses target health art")
 assert(mana.LeftText.point[4] == 13, "power text clears the mirrored portrait")
 assert(health.fill.file:find("bars/mirrored/", 1, true), "rounded health fill is reflected")
-assert(mana.fill.file:find("bars/mirrored/", 1, true), "rounded power fill is reflected")
+assert(mana.fill.file:find("bars/mirrored-fixed/", 1, true), "rounded power fill keeps the default gradient")
 app.db.profile.unitFrames.player.healthBarColor = "class"
 app.healthColor:RefreshFrame(PlayerFrame)
 assert(

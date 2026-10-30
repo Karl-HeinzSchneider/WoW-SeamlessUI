@@ -78,6 +78,31 @@ def mirror_mask(source):
     return bytes(output)
 
 
+FIXED_POWER_TYPES = ("energy", "focus", "mana", "rage", "runicpower")
+
+
+def mirror_power_gradient(source):
+    """Reflect the silhouette, retaining the source color direction within each row.
+
+    Translate each row's original RGB span onto its reflected alpha span. This
+    keeps transparent edge pixels out of the fill and preserves its vertical shading.
+    """
+    output = bytearray(mirror_mask(source))
+    width, height, offset = struct.unpack_from("<III", source, 12)
+    for y in range(height):
+        row = offset + y * width * 4
+        visible = [x for x in range(width) if source[row + x * 4 + 3]]
+        if not visible:
+            continue
+        left, right = visible[0], visible[-1]
+        reflected_left = width - 1 - right
+        for x in range(left, right + 1):
+            src = row + x * 4
+            dst = row + (reflected_left + x - left) * 4
+            output[dst:dst + 3] = source[src:src + 3]
+    return bytes(output)
+
+
 def preferred(variants):
     return min(variants, key=lambda row: (-row["atlas"]["UiTextureAtlasSetID"], row["atlas"]["UiCanvasID"]))
 
@@ -151,7 +176,13 @@ def generate(art_dir=None):
                 reflected = ASSETS / "bars/mirrored" / destination.name
                 reflected.parent.mkdir(parents=True, exist_ok=True)
                 reflected.write_bytes(mirror_mask(destination.read_bytes()))
-                lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/mirrored/{destination.name}",')
+                folder = "mirrored"
+                if name.rsplit("-", 1)[-1] in FIXED_POWER_TYPES:
+                    fixed = ASSETS / "bars/mirrored-fixed" / destination.name
+                    fixed.parent.mkdir(parents=True, exist_ok=True)
+                    fixed.write_bytes(mirror_power_gradient(destination.read_bytes()))
+                    folder = "mirrored-fixed"
+                lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/{folder}/{destination.name}",')
         lines.append("    },")
     lines.append("}\n")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

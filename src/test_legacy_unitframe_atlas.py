@@ -50,6 +50,24 @@ class LegacyAtlasTests(unittest.TestCase):
         self.assertTrue((reflected / "target-portraiton-bar-health-status.blp").exists())
         self.assertTrue((reflected / "target-portraiton-bar-mana.blp").exists())
 
+    def test_fixed_power_fills_preserve_gradient_and_reflected_alpha(self):
+        bars = GENERATOR.ASSETS / "bars"
+        fixed = bars / "mirrored-fixed"
+        self.assertEqual(len(list(fixed.glob("*.blp"))), 5)
+        for power in GENERATOR.FIXED_POWER_TYPES:
+            filename = f"target-portraiton-bar-{power}.blp"
+            source = (bars / filename).read_bytes()
+            output = (fixed / filename).read_bytes()
+            reflected = (bars / "mirrored" / filename).read_bytes()
+            width, height, offset = struct.unpack_from("<III", source, 12)
+            self.assertEqual(output[:offset], source[:offset])
+            self.assertEqual(output[offset + 3::4], reflected[offset + 3::4])
+            for y in range(height):
+                row = offset + y * width * 4
+                original_colors = [source[i:i + 3] for i in range(row, row + width * 4, 4) if source[i + 3]]
+                fixed_colors = [output[i:i + 3] for i in range(row, row + width * 4, 4) if output[i + 3]]
+                self.assertEqual(fixed_colors, original_colors, (power, y))
+
     def test_generation_is_reproducible(self):
         original = GENERATOR.OUTPUT.read_bytes()
         try:

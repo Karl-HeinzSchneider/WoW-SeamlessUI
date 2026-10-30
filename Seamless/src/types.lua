@@ -77,6 +77,7 @@
 ---@field db SeamlessCore.DB
 ---@field options SeamlessCore.Options
 ---@field minimapButton SeamlessCore.MinimapButton
+---@field embed SeamlessCore.Embed
 ---@field tweaks SeamlessCore.Tweaks
 ---@field defaultLayout SeamlessCore.DefaultLayout
 ---@field defaultLayoutString string Edit Mode export string of the Seamless layout.

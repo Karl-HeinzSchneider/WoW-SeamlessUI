@@ -47,3 +47,5 @@ src\core\minimapbutton.lua
 src\options\general.lua
 src\options\tweaks.lua
 src\options\profiles.lua
+
+src\embed\embed.xml

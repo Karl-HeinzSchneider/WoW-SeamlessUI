@@ -10,6 +10,8 @@ Required entry point of the suite; works with no feature addon enabled.
   `frameposition.lua` owns native position validation and persistence; `editmode.lua`,
   `editmodelib.lua`, `editmoderows.lua`, `editmodeposition.lua`, `systemoptions.lua` and
   `anchorpicker.lua` own shared Edit Mode services.
+- `src/embed/`: optional embedded-addon registry and Embed page, isolated behind one XML
+  entry in the TOC. Read its `CLAUDE.md` before adding embedded addons.
 - `src/config/`: custom options renderer and reusable Position groups; read its `CLAUDE.md`.
 - `locales/`: the suite's shared AceLocale catalogue.
 

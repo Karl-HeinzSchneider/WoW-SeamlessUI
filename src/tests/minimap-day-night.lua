@@ -54,7 +54,20 @@ local app = {
 }
 assert(loadfile("SeamlessUI/src/features/minimap.lua"))("SeamlessUI", app)
 -- Load the real page and verify Edit Mode uses its Style control and callbacks.
-function LibStub()
+local buttonRefreshes = {}
+local icons = {
+    GetButtonList = function()
+        return { "Seamless", "OtherAddon" }
+    end,
+    Refresh = function(_, name)
+        buttonRefreshes[#buttonRefreshes + 1] =
+            { name = name, shape = GetMinimapShape and GetMinimapShape() or "ROUND" }
+    end,
+}
+function LibStub(name)
+    if name == "LibDBIcon-1.0" then
+        return icons
+    end
     return {
         GetLocale = function()
             return setmetatable({}, {
@@ -332,13 +345,20 @@ app.db.profile = { minimap = { square = true } }
 assert(GetMinimapShape() == "SQUARE", "shape resolves current profile without caching")
 module:OnProfileRefresh()
 rotateMinimap = true
+local refreshCount = #buttonRefreshes
 cluster:UpdateMinimapConfig()
+assert(#buttonRefreshes == refreshCount + 2, "rotation repositions every registered button")
+assert(buttonRefreshes[#buttonRefreshes].shape == "ROUND", "buttons refresh after shape provider changes")
+module:Apply()
+assert(#buttonRefreshes == refreshCount + 2, "unchanged shape avoids repeated button refreshes")
 assert(GetMinimapShape() == "ROUND", "button geometry matches rotation fallback")
 assert(map.mask == "native-mask" and border.texture == "native-border", "rotation uses native rendering")
 assert(app.db.profile.minimap.square, "rotation preserves square preference")
 assert(map.width == 198 and map.height == 198, "rotation fallback preserves native dimensions")
 rotateMinimap = false
 cluster:UpdateMinimapConfig()
+assert(#buttonRefreshes == refreshCount + 4, "turning rotation off repositions every button")
+assert(buttonRefreshes[#buttonRefreshes].shape == "SQUARE")
 assert(GetMinimapShape() == "SQUARE", "square geometry returns when rotation stops")
 assert(map.mask == "Interface\\Buttons\\WHITE8X8", "square mask returns when rotation stops")
 module:OnDisable()

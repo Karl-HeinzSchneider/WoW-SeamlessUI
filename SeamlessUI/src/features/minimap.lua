@@ -14,6 +14,20 @@ local function getMinimapShape()
     return useSquareMinimap() and "SQUARE" or "ROUND"
 end
 
+function module:RefreshButtons()
+    local shape = GetMinimapShape and GetMinimapShape() or "ROUND"
+    if self.buttonShape == shape then
+        return
+    end
+    self.buttonShape = shape
+    local icons = LibStub("LibDBIcon-1.0", true)
+    if icons then
+        for _, name in ipairs(icons:GetButtonList()) do
+            icons:Refresh(name)
+        end
+    end
+end
+
 function module:OnInitialize()
     if not Enum.EditModeSystem or not Enum.EditModeSystem.Minimap then
         return
@@ -120,6 +134,7 @@ function module:Apply()
     end
     local settings = app.db.profile.minimap
     self:ApplyShape(cluster, useSquareMinimap())
+    self:RefreshButtons()
     local header = settings.hideHeader
     self:SetHidden(cluster.DielFrame, app.db.profile.hideMinimapDayNight)
     self:SetHidden(AddonCompartmentFrame, header or settings.hideAddonCompartment)
@@ -206,6 +221,8 @@ function module:OnDisable()
     self:RestoreHeaderLayout()
     self:UnhookAll()
     self.applying = nil
+    self:RefreshButtons()
+    self.buttonShape = nil
 end
 
 function module:OnProfileRefresh()

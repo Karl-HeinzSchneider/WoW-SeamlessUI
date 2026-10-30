@@ -124,8 +124,10 @@ Its UVs center the artwork's opening on the map's rotation pivot. Never change t
 dimensions or scale to accommodate this style: button addons use its native geometry.
 With Rotate Minimap enabled, use the native round style and report `ROUND` to button addons;
 retain the square preference and reapply it when rotation stops. A rotating square has unresolved
-client rendering gaps and must not be enabled. Disabling restores native UVs, anchors, art and mask. `hideHeader`
-fits the cluster's fixed bounds to the scaled map container and removes its header
+client rendering gaps and must not be enabled. Disabling restores native UVs, anchors, art and mask.
+Refresh all registered LibDBIcon buttons through its public `Refresh` API whenever the effective
+shape changes, including profile changes, rotation transitions and restoring a previous provider.
+`hideHeader` fits the cluster's fixed bounds to the scaled map container and removes its header
 anchor gap. Native scale, header placement and rotation updates reapply that compact layout.
 Restoring the header restores the native layout sizing and current header placement; disabling
 the addon restores frames it hid. Run `lua src/tests/minimap-day-night.lua`.

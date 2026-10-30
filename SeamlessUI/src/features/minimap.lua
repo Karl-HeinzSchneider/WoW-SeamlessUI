@@ -41,6 +41,8 @@ function module:OnInitialize()
             name = option.name,
             default = option.default,
             blizzard = option.blizzard,
+            editMode = option.editMode,
+            disabled = option.disabled,
             order = option.order,
             get = option.get,
             set = function(value)

@@ -7,6 +7,8 @@ local function getFrame()
 end
 local setting = Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.Size
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
+local rotation = Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.RotateMinimap
+local nativeSettings = app.core:GetFramePositionService()
 
 local function visibilityOption(key, name, order)
     local function settings()
@@ -33,7 +35,10 @@ end
 app.optionPages.minimap = {
     tooltip = function(path)
         if path[#path] == "rotateMinimap" then
-            return app.core:GetCVarOptionInfo("rotateMinimap")
+            local value = rotation and nativeSettings:GetDefaultSetting(getFrame(), rotation)
+            if value ~= nil then
+                return value == 1
+            end
         end
     end,
     defaults = {
@@ -73,11 +78,21 @@ app.optionPages.minimap = {
                         width = "full",
                         name = L["Rotate minimap"],
                         blizzard = true,
+                        editMode = true,
+                        disabled = function()
+                            return not rotation or not nativeSettings:CanEdit(getFrame())
+                        end,
                         get = function()
-                            return GetCVarBool("rotateMinimap")
+                            return rotation and nativeSettings:ReadSetting(getFrame(), rotation) == 1 or false
                         end,
                         set = function(_, value)
-                            SetCVar("rotateMinimap", value and "1" or "0")
+                            if not rotation then
+                                return
+                            end
+                            local ok, err = nativeSettings:ApplySetting(getFrame(), rotation, value and 1 or 0)
+                            if not ok and err then
+                                app.logger:warn("%s", err)
+                            end
                             app.core:RefreshOptions(appName)
                             app.core:RefreshEditModeSystemOptions()
                         end,

@@ -87,7 +87,7 @@ function LibStub(name)
         end,
     }
 end
-Enum = { EditModeSystem = { Minimap = 42 } }
+Enum = { EditModeSystem = { Minimap = 42 }, EditModeMinimapSetting = { RotateMinimap = 2 } }
 app.optionPages = {}
 app.core.GetEditModeButtonSection = function()
     return {}
@@ -104,6 +104,28 @@ end
 app.core.GetCVarOptionInfo = function(_, name)
     assert(name == "rotateMinimap")
     return false, true, true
+end
+local nativeRotation = 0
+local editable = true
+app.core.GetFramePositionService = function()
+    return {
+        ReadSetting = function(_, frame, setting)
+            assert(frame == MinimapCluster and setting == 2)
+            return nativeRotation
+        end,
+        ApplySetting = function(_, frame, setting, value)
+            assert(frame == MinimapCluster and setting == 2)
+            nativeRotation = value
+            SetCVar("rotateMinimap", tostring(value))
+            return true
+        end,
+        CanEdit = function()
+            return editable
+        end,
+        GetDefaultSetting = function()
+            return 0
+        end,
+    }
 end
 app.addon.IsEnabled = function()
     return true
@@ -209,7 +231,7 @@ end
 function cluster:UpdateMinimapConfig()
     container.width, container.height = 240, 240
 end
-Enum.EditModeMinimapSetting = { HeaderUnderneath = 1 }
+Enum.EditModeMinimapSetting.HeaderUnderneath = 1
 local controls = {
     { "hideAddonCompartment", AddonCompartmentFrame },
     { "hideTracking", cluster.Tracking },
@@ -364,7 +386,10 @@ assert(GetMinimapShape() == "SQUARE", "shape resolves current profile without ca
 module:OnProfileRefresh()
 local refreshCount = #buttonRefreshes
 rows.rotateMinimap.set(true)
-assert(rows.rotateMinimap.get(), "rotation wrapper reads the native CVar")
+assert(rows.rotateMinimap.get() and nativeRotation == 1, "rotation writes the native layout setting")
+editable = false
+assert(rows.rotateMinimap.disabled(), "rotation respects native layout editability")
+editable = true
 assert(app.db.profile.minimap.rotateMinimap == nil, "rotation is not stored in the addon profile")
 assert(#buttonRefreshes == refreshCount + 2, "rotation repositions every registered button")
 assert(buttonRefreshes[#buttonRefreshes].shape == "ROUND", "buttons refresh after shape provider changes")

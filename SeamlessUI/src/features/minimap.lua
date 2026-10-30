@@ -142,7 +142,6 @@ function module:ApplyShape(cluster, square)
             self.squareBorder = MinimapCompassTexture
         end
         if not self.squareApplied then
-            self.mapWidth, self.mapHeight = map:GetWidth(), map:GetHeight()
             self.compassTexCoords = { self.squareBorder:GetTexCoord() }
             self.compassPoints = {}
             for index = 1, self.squareBorder:GetNumPoints() do
@@ -152,23 +151,18 @@ function module:ApplyShape(cluster, square)
         self.squareBorder:SetTexture("Interface\\AddOns\\SeamlessUI\\media\\minimap_square_arrow")
         -- The supplied 512px art has its opening at x=52.5..458.5, y=64.5..458.5.
         -- Fit that opening, rather than the full canvas, to the live map dimensions.
-        local xScale, yScale = self.mapWidth / 406, self.mapHeight / 394
+        local xScale, yScale = map:GetWidth() / 406, map:GetHeight() / 394
         -- Center the opening in UV space, so the engine rotates about the map center.
         self.squareBorder:SetTexCoord(-0.5 / 512, 511.5 / 512, 5.5 / 512, 517.5 / 512)
         self.squareBorder:ClearAllPoints()
         self.squareBorder:SetPoint("CENTER", map, "CENTER", 0, 0)
         self.squareBorder:SetSize(512 * xScale, 512 * yScale)
         self.squareBorder:Show()
-        -- A 352px square inside a 512px mask leaves room for its full diagonal.
-        -- Enlarge the render bounds equally; the visible square keeps its original size.
-        map:SetSize(self.mapWidth * 512 / 352, self.mapHeight * 512 / 352)
-        map:SetMaskTexture("Interface\\AddOns\\SeamlessUI\\media\\minimap_square_mask")
+        map:SetMaskTexture("Interface\\Buttons\\WHITE8X8")
         self.squareApplied = true
         self:SetHidden(MinimapCompassTextureUnderlay, true)
     elseif self.squareApplied then
         self.squareApplied = nil
-        map:SetSize(self.mapWidth, self.mapHeight)
-        self.mapWidth, self.mapHeight = nil, nil
         self.squareBorder:SetTexCoord(unpack(self.compassTexCoords))
         self.compassTexCoords = nil
         self.squareBorder:ClearAllPoints()

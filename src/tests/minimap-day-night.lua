@@ -232,7 +232,16 @@ print("Minimap visibility combinations, Edit Mode rows, header bounds, scale and
 
 local map = { width = 198, height = 198 }
 function map:SetSize(width, height)
-    self.width, self.height = width, height
+    error("Square styling must never resize the minimap")
+end
+function map:SetWidth()
+    error("Square styling must never resize the minimap")
+end
+function map:SetHeight()
+    error("Square styling must never resize the minimap")
+end
+function map:SetScale()
+    error("Square styling must never rescale the minimap")
 end
 container.Minimap = map
 function map:GetWidth()
@@ -280,22 +289,18 @@ function cluster:UpdateMinimapConfig()
 end
 module:OnEnable()
 rows.square.set(true)
-assert(map.mask == "Interface\\AddOns\\SeamlessUI\\media\\minimap_square_mask" and border:IsShown())
+assert(map.mask == "Interface\\Buttons\\WHITE8X8" and border:IsShown())
 assert(MinimapCompassTexture:IsShown() and not MinimapCompassTextureUnderlay:IsShown())
 assert(module.squareBorder == MinimapCompassTexture, "border uses engine-rotated compass layer")
 assert(math.abs(border.width * 406 / 512 - 198) < 0.001, "opening fits map width")
 assert(math.abs(border.height * 394 / 512 - 198) < 0.001, "opening fits map height")
 assert(border.point[4] == 0 and border.point[5] == 0, "compass pivots at map center")
-assert(math.abs(map.width * 352 / 512 - 198) < 0.001, "visible square retains original size")
-assert(map.width >= 198 * math.sqrt(2), "render bounds contain diagonal corners")
+assert(map.width == 198 and map.height == 198, "square style preserves native dimensions")
 assert(math.abs((border.texCoords[1] + border.texCoords[2]) / 2 - 255.5 / 512) < 0.001)
 assert(math.abs((border.texCoords[3] + border.texCoords[4]) / 2 - 261.5 / 512) < 0.001)
 cluster:UpdateMinimapConfig()
-assert(
-    map.mask == "Interface\\AddOns\\SeamlessUI\\media\\minimap_square_mask",
-    "native rotation cannot reset square mask"
-)
-assert(math.abs(map.width * 352 / 512 - 198) < 0.001, "native refresh does not compound expansion")
+assert(map.mask == "Interface\\Buttons\\WHITE8X8", "native rotation cannot reset square mask")
+assert(map.width == 198 and map.height == 198, "native refresh preserves dimensions")
 assert(border.texture:find("minimap_square_arrow", 1, true), "native updates retain custom compass art")
 app.db.profile = { minimap = {} }
 module:OnProfileRefresh()

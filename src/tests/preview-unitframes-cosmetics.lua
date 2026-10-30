@@ -48,6 +48,9 @@ end
 SetPortraitTexture = function(portrait, unit)
     portrait.texture = "live:" .. unit
 end
+SetPortraitTextureFromCreatureDisplayID = function(portrait, displayID)
+    portrait.texture = "display:" .. displayID
+end
 hooksecurefunc = function(owner, name, callback)
     if type(owner) == "string" then
         hooks[owner] = name
@@ -180,18 +183,22 @@ assert(TargetFrame.portrait.texture == "portrait")
 character.displayTexture = nil
 app.classIcon:Refresh()
 assert(TargetFrame.portrait.texture == "live:player")
+character.displayID = 176
+app.classIcon:Refresh()
+assert(TargetFrame.portrait.texture == "display:176")
 app.db.profile.unitFrames.target.classIcon = true
 app.classIcon:Refresh()
 assert(TargetFrame.portrait.texture == "MAGE")
 app.db.profile.unitFrames.target.classIcon = false
 app.classIcon:Refresh()
-assert(TargetFrame.portrait.texture == "live:player")
+assert(TargetFrame.portrait.texture == "display:176")
 TargetFrame.portrait.texture = "Native portrait"
 hooks.UnitFramePortrait_Update(TargetFrame)
-assert(TargetFrame.portrait.texture == "live:player")
+assert(TargetFrame.portrait.texture == "display:176")
 character.displayTexture = "portrait"
 app.classIcon:Refresh()
 assert(TargetFrame.portrait.texture == "portrait")
+character.displayID = nil
 TargetFrame.healthbar.rgb = { 0, 1, 0 }
 hooks.UnitFrameHealthBar_Update(TargetFrame.healthbar)
 assert(TargetFrame.healthbar.rgb[1] == 0.2)

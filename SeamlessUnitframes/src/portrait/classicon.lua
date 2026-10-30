@@ -50,6 +50,9 @@ local function Apply(frame, key)
         elseif character.displayTexture then
             portrait:SetTexture(character.displayTexture)
             portrait:SetTexCoord(0, 1, 0, 1)
+        elseif character.displayID then
+            portrait:SetTexCoord(0, 1, 0, 1)
+            SetPortraitTextureFromCreatureDisplayID(portrait, character.displayID)
         elseif character.class then
             -- Some VIPs have no portrait asset; still respect the class-icon toggle.
             portrait:SetTexCoord(0, 1, 0, 1)

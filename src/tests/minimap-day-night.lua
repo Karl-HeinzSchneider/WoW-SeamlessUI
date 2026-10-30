@@ -231,6 +231,9 @@ assert(cluster.fixedHeight == nil and cluster.ZoneTextButton:IsShown(), "disable
 print("Minimap visibility combinations, Edit Mode rows, header bounds, scale and restoration OK")
 
 local map = { width = 198, height = 198 }
+function map:SetSize(width, height)
+    self.width, self.height = width, height
+end
 container.Minimap = map
 function map:GetWidth()
     return self.width
@@ -242,6 +245,13 @@ function map:SetMaskTexture(mask)
     self.mask = mask
 end
 local border = newFrame()
+border.texCoords = { 0, 1, 0, 1 }
+function border:GetTexCoord()
+    return unpack(self.texCoords)
+end
+function border:SetTexCoord(...)
+    self.texCoords = { ... }
+end
 function border:SetTexture(texture)
     self.texture = texture
 end
@@ -270,15 +280,22 @@ function cluster:UpdateMinimapConfig()
 end
 module:OnEnable()
 rows.square.set(true)
-assert(map.mask == "Interface\\Buttons\\WHITE8X8" and border:IsShown())
+assert(map.mask == "Interface\\AddOns\\SeamlessUI\\media\\minimap_square_mask" and border:IsShown())
 assert(MinimapCompassTexture:IsShown() and not MinimapCompassTextureUnderlay:IsShown())
 assert(module.squareBorder == MinimapCompassTexture, "border uses engine-rotated compass layer")
 assert(math.abs(border.width * 406 / 512 - 198) < 0.001, "opening fits map width")
 assert(math.abs(border.height * 394 / 512 - 198) < 0.001, "opening fits map height")
-assert(math.abs(border.point[4] - 0.5 * 198 / 406) < 0.001, "opening center aligns horizontally")
-assert(math.abs(border.point[5] - 5.5 * 198 / 394) < 0.001, "opening center aligns vertically")
+assert(border.point[4] == 0 and border.point[5] == 0, "compass pivots at map center")
+assert(math.abs(map.width * 352 / 512 - 198) < 0.001, "visible square retains original size")
+assert(map.width >= 198 * math.sqrt(2), "render bounds contain diagonal corners")
+assert(math.abs((border.texCoords[1] + border.texCoords[2]) / 2 - 255.5 / 512) < 0.001)
+assert(math.abs((border.texCoords[3] + border.texCoords[4]) / 2 - 261.5 / 512) < 0.001)
 cluster:UpdateMinimapConfig()
-assert(map.mask == "Interface\\Buttons\\WHITE8X8", "native rotation cannot reset square mask")
+assert(
+    map.mask == "Interface\\AddOns\\SeamlessUI\\media\\minimap_square_mask",
+    "native rotation cannot reset square mask"
+)
+assert(math.abs(map.width * 352 / 512 - 198) < 0.001, "native refresh does not compound expansion")
 assert(border.texture:find("minimap_square_arrow", 1, true), "native updates retain custom compass art")
 app.db.profile = { minimap = {} }
 module:OnProfileRefresh()
@@ -286,6 +303,8 @@ assert(map.mask == "native-mask" and border.texture == "native-border", "profile
 rows.square.set(true)
 module:OnDisable()
 assert(map.mask == "native-mask" and border.texture == "native-border" and border.point[5] == 0)
+assert(map.width == 198 and map.height == 198, "disable restores native dimensions")
+assert(border.texCoords[1] == 0 and border.texCoords[2] == 1, "disable restores native UVs")
 print("Minimap square mask, border alignment, rotation and restoration OK")
 
 -- Button addons query the public shape API; it must follow the current profile.

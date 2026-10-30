@@ -119,7 +119,11 @@ indicators. `square` (default off) uses the supplied `media/minimap_square_arrow
 fitting its off-center opening to the map and replacing the mask with a square. Button addons
 read the public `GetMinimapShape()` compatibility API (`SQUARE`
 or `ROUND` from the current profile); disabling restores the previous provider if still owned.
-The border uses the native compass texture so the engine rotates it with the square mask; native art and mask return on profile change or disable. `hideHeader`
+The border uses the native compass texture so the engine rotates it with the square mask.
+Its UVs center the artwork's opening on the map's rotation pivot. `media/minimap_square_mask.tga`
+is a 512px transparent canvas with an opaque 352px centered square (80..431 on both axes).
+The render frame expands by 512/352, leaving diagonal clearance while retaining the visible
+square's original size. Disabling restores native dimensions, UVs, anchors, art and mask. `hideHeader`
 fits the cluster's fixed bounds to the scaled map container and removes its header
 anchor gap. Native scale, header placement and rotation updates reapply that compact layout.
 Restoring the header restores the native layout sizing and current header placement; disabling

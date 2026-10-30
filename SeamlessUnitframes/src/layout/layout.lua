@@ -310,7 +310,9 @@ function module:MirrorBar(source, visual, health, unit)
     if health then
         visual:SetMinMaxValues(0, UnitHealthMax(unit))
         visual:SetValue(UnitHealth(unit))
-        visual:SetStatusBarColor(0, 1, 0)
+        -- Target-family fills carry their own green/yellow gradient. A green
+        -- tint would remove its red component until a later color reset.
+        visual:SetStatusBarColor(1, 1, 1)
     else
         visual:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
         visual:SetMinMaxValues(0, 1)

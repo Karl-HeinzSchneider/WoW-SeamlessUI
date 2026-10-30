@@ -501,6 +501,14 @@ local function HasOld(fill)
     return fill.file and fill.file:find("assets/legacy/", 1, true)
 end
 Mode("legacy")
+-- The baked green/yellow health texture needs a neutral tint on first use,
+-- before class/reaction coloring has ever run for either frame.
+for _, frame in ipairs({ TargetFrame, FocusFrame }) do
+    local container = frame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+    local visual = container.LeftText.point[2]
+    local color = visual.HealthBar.color
+    assert(color[1] == 1 and color[2] == 1 and color[3] == 1, "default visual health must preserve texture colors")
+end
 assert(HasOld(health.fill) and HasOld(mana.fill))
 assert(PlayerName.width == 96 and PlayerName.justify == "LEFT")
 assert(health.height == 19 and health.point[5] == 0)

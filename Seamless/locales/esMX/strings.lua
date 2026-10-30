@@ -823,6 +823,7 @@ end
 -- L["Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."] = "Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."
 -- L["Position editing is unavailable. Select an enabled frame in a custom layout."] = "Position editing is unavailable. Select an enabled frame in a custom layout."
 -- L["Reserved for future frame options. This setting has no effect yet."] = "Reserved for future frame options. This setting has no effect yet."
+-- L["Rotate minimap"] = "Rotate minimap"
 -- L["Round FPS"] = "Round FPS"
 -- L["SeamlessUI - %s"] = "SeamlessUI - %s"
 -- L["Show FPS on startup"] = "Show FPS on startup"

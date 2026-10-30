@@ -1,5 +1,14 @@
 unpack = unpack or table.unpack
 local rotateMinimap = false
+function GetCVarBool(key)
+    assert(key == "rotateMinimap")
+    return rotateMinimap
+end
+function SetCVar(key, value)
+    assert(key == "rotateMinimap" and (value == "1" or value == "0"))
+    rotateMinimap = value == "1"
+    MinimapCluster:UpdateMinimapConfig()
+end
 CVarCallbackRegistry = {
     GetCVarValueBool = function(_, key)
         assert(key == "rotateMinimap")
@@ -89,6 +98,13 @@ end
 app.core.GetNativePositionOptions = function()
     return {}
 end
+app.core.RefreshOptions = function(_, name)
+    assert(name == "SeamlessUI")
+end
+app.core.GetCVarOptionInfo = function(_, name)
+    assert(name == "rotateMinimap")
+    return false, true, true
+end
 app.addon.IsEnabled = function()
     return true
 end
@@ -100,7 +116,9 @@ assert(loadfile("SeamlessUI/src/options/minimap.lua"))("SeamlessUI", app)
 module:OnInitialize()
 assert(registration.system == Enum.EditModeSystem.Minimap and registration.name == "Style")
 assert(registration.enabled())
-local row = registration.options[1]
+assert(registration.options[1].key == "square" and registration.options[2].key == "rotateMinimap")
+assert(registration.options[2].blizzard, "rotation wrapper carries Blizzard metadata into Edit Mode")
+local row = registration.options[3]
 assert(row.get == app.optionPages.minimap.config.args.style.args.hideMinimapDayNight.get)
 assert(row.default == false and row.type == "toggle")
 module:OnEnable() -- Also safe before Blizzard_Minimap loads.
@@ -203,7 +221,7 @@ local rows = {}
 for _, option in ipairs(registration.options) do
     rows[option.key] = option
 end
-assert(#registration.options == 8, "all Style settings reach Edit Mode")
+assert(#registration.options == 9, "all Style settings reach Edit Mode")
 -- Exhaust every combination of individual switches, independently of the header switch.
 for combination = 0, 31 do
     for index, control in ipairs(controls) do
@@ -344,9 +362,10 @@ assert(GetMinimapShape() == "ROUND")
 app.db.profile = { minimap = { square = true } }
 assert(GetMinimapShape() == "SQUARE", "shape resolves current profile without caching")
 module:OnProfileRefresh()
-rotateMinimap = true
 local refreshCount = #buttonRefreshes
-cluster:UpdateMinimapConfig()
+rows.rotateMinimap.set(true)
+assert(rows.rotateMinimap.get(), "rotation wrapper reads the native CVar")
+assert(app.db.profile.minimap.rotateMinimap == nil, "rotation is not stored in the addon profile")
 assert(#buttonRefreshes == refreshCount + 2, "rotation repositions every registered button")
 assert(buttonRefreshes[#buttonRefreshes].shape == "ROUND", "buttons refresh after shape provider changes")
 module:Apply()
@@ -355,8 +374,8 @@ assert(GetMinimapShape() == "ROUND", "button geometry matches rotation fallback"
 assert(map.mask == "native-mask" and border.texture == "native-border", "rotation uses native rendering")
 assert(app.db.profile.minimap.square, "rotation preserves square preference")
 assert(map.width == 198 and map.height == 198, "rotation fallback preserves native dimensions")
-rotateMinimap = false
-cluster:UpdateMinimapConfig()
+rows.rotateMinimap.set(false)
+assert(not rows.rotateMinimap.get())
 assert(#buttonRefreshes == refreshCount + 4, "turning rotation off repositions every button")
 assert(buttonRefreshes[#buttonRefreshes].shape == "SQUARE")
 assert(GetMinimapShape() == "SQUARE", "square geometry returns when rotation stops")

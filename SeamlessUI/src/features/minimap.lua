@@ -40,6 +40,7 @@ function module:OnInitialize()
             type = option.type,
             name = option.name,
             default = option.default,
+            blizzard = option.blizzard,
             order = option.order,
             get = option.get,
             set = function(value)

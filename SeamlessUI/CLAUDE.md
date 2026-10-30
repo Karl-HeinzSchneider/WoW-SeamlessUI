@@ -112,8 +112,10 @@ the bag is unprotected; it never updates the Edit Mode outline in combat.
 Run `lua src/tests/combined-bags.lua`.
 
 `features/minimap.lua` owns minimap visibility. `options/minimap.lua` declares the page and
-Style controls; Edit Mode derives its Style rows from that declaration. New visibility settings
-live in profile `minimap`; the existing `hideMinimapDayNight` key stays at its original path.
+Style controls; Edit Mode derives its Style rows from that declaration.
+Style starts with Square minimap, then the Blizzard `rotateMinimap` CVar wrapper; rotation is
+client-owned and never saved in the addon profile. Its default tooltip uses `GetCVarOptionInfo`.
+New visibility settings live in profile `minimap`; the existing `hideMinimapDayNight` key stays at its original path.
 Individual switches combine independently. `hideHeader` overrides the header buttons and status
 indicators. `square` (default off) uses the supplied `media/minimap_square_arrow.blp` border,
 fitting its off-center opening to the map and replacing the mask with a square. Button addons

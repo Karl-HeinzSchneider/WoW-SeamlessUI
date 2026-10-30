@@ -820,6 +820,7 @@ L["Pass unused Edit Mode keys through"] = true
 L["Places a frame's Edit Mode settings to the right of the Edit Mode window each time you select a frame. You can still drag them anywhere."] = true
 L["Position editing is unavailable. Select an enabled frame in a custom layout."] = true
 L["Reserved for future frame options. This setting has no effect yet."] = true
+L["Rotate minimap"] = true
 L["Round FPS"] = true
 L["SeamlessUI - %s"] = true
 L["Show FPS on startup"] = true

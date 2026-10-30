@@ -1,5 +1,5 @@
 ---@type string, SeamlessUI
-local _, app = ...
+local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 local function getFrame()
@@ -31,6 +31,11 @@ end
 
 ---@type SeamlessCore.SettingsPage
 app.optionPages.minimap = {
+    tooltip = function(path)
+        if path[#path] == "rotateMinimap" then
+            return app.core:GetCVarOptionInfo("rotateMinimap")
+        end
+    end,
     defaults = {
         profile = {
             hideMinimapDayNight = false,
@@ -61,6 +66,22 @@ app.optionPages.minimap = {
                 name = L["Style"],
                 order = 20,
                 args = {
+                    square = visibilityOption("square", L["Square minimap"], 1),
+                    rotateMinimap = {
+                        type = "toggle",
+                        order = 2,
+                        width = "full",
+                        name = L["Rotate minimap"],
+                        blizzard = true,
+                        get = function()
+                            return GetCVarBool("rotateMinimap")
+                        end,
+                        set = function(_, value)
+                            SetCVar("rotateMinimap", value and "1" or "0")
+                            app.core:RefreshOptions(appName)
+                            app.core:RefreshEditModeSystemOptions()
+                        end,
+                    },
                     hideMinimapDayNight = visibilityOption(
                         "hideMinimapDayNight",
                         L["Hide minimap day/night indicator"],
@@ -76,7 +97,6 @@ app.optionPages.minimap = {
                     hideClock = visibilityOption("hideClock", L["Hide clock"], 45),
                     hideZoneText = visibilityOption("hideZoneText", L["Hide zone text button"], 50),
                     hideHeader = visibilityOption("hideHeader", L["Hide complete minimap header"], 60),
-                    square = visibilityOption("square", L["Square minimap"], 70),
                 },
             },
             position = app.core:GetNativePositionOptions(getFrame, scale),

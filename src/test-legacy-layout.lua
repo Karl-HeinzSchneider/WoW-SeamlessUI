@@ -501,6 +501,14 @@ local function HasOld(fill)
     return fill.file and fill.file:find("assets/legacy/", 1, true)
 end
 Mode("legacy")
+-- The baked green/yellow health texture needs a neutral tint on first use,
+-- before class/reaction coloring has ever run for either frame.
+for _, frame in ipairs({ TargetFrame, FocusFrame }) do
+    local container = frame.TargetFrameContent.TargetFrameContentMain.HealthBarsContainer
+    local visual = container.LeftText.point[2]
+    local color = visual.HealthBar.color
+    assert(color[1] == 1 and color[2] == 1 and color[3] == 1, "default visual health must preserve texture colors")
+end
 assert(HasOld(health.fill) and HasOld(mana.fill))
 assert(PlayerName.width == 96 and PlayerName.justify == "LEFT")
 assert(health.height == 19 and health.point[5] == 0)
@@ -521,12 +529,12 @@ assert(health.point[2].point[1] == "BOTTOMLEFT" and health.point[2].point[4] == 
 assert(mana.point[1] == "TOPLEFT" and mana.point[2] == playerArt and mana.point[4] == -157)
 assert(health.fill.file:find("target%-portraiton%-bar%-health"), "rounded player uses target health art")
 assert(mana.LeftText.point[4] == 13, "power text clears the mirrored portrait")
-assert(health.fill.file:find("bars/mirrored/", 1, true), "rounded health fill is reflected")
+assert(health.fill.file:find("bars/mirrored-fixed/", 1, true), "rounded health fill keeps the default gradient")
 assert(mana.fill.file:find("bars/mirrored-fixed/", 1, true), "rounded power fill keeps the default gradient")
 app.db.profile.unitFrames.player.healthBarColor = "class"
 app.healthColor:RefreshFrame(PlayerFrame)
 assert(
-    health.fill.file:find("bars/mirrored/target-portraiton-bar-health-status.blp", 1, true),
+    health.fill.file:find("bars/mirrored-fixed/target-portraiton-bar-health-status.blp", 1, true),
     "class tint keeps reflected fill"
 )
 app.db.profile.unitFrames.player.healthBarColor = "default"

@@ -890,3 +890,18 @@ L["Target of Target name display"] = true
 L["Threat percentage"] = true
 L["Unit frame layout"] = true
 L["Unit Frames"] = true
+
+-- Embed: BetterGroupLoot
+L["Gap between two rolls."] = true
+L["Group loot"] = true
+L["Group loot rolls are already shown by %s."] = true
+L["Group loot rolls are not supported on this client."] = true
+L["List undecided players"] = true
+L["New rolls appear above the first one. Off: below it."] = true
+L["No roll data yet."] = true
+L["Nobody yet."] = true
+L["off spec"] = true
+L["Spacing"] = true
+L["Stack upwards"] = true
+L["The roll buttons' tooltips also list who hasn't chosen yet."] = true
+L["Undecided"] = true

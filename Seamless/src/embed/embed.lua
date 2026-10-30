@@ -5,6 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@class SeamlessCore.EmbedSpec
 ---@field name string Localized checkbox label.
 ---@field order? number
+---@field default? boolean Whether the checkbox starts on (false when omitted).
 ---@field enable fun() Start the embedded runtime using the current profile.
 ---@field disable fun() Stop its runtime without affecting standalone owners.
 ---@field refresh? fun() Reapply the current profile to an already running runtime.
@@ -35,12 +36,12 @@ function module:Register(id, spec)
         "Embed requires a name, enable and disable callbacks"
     )
     entries[id] = spec
-    defaults.profile.embed[id] = false
+    defaults.profile.embed[id] = spec.default == true
     controls[id] = {
         type = "toggle",
         name = spec.name,
         order = spec.order,
-        default = false,
+        default = spec.default == true,
         get = function()
             return app.db.profile.embed[id]
         end,

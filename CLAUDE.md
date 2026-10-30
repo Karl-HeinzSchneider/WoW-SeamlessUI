@@ -127,7 +127,9 @@ content (names, chat, API errors), user-entered names and library-owned UI stay 
 technical IDs, slash-command tokens, registry keys, patterns and empty strings are not translated.
 
 Add complete English phrases and format strings to `Seamless/locales/enUS.lua` first, in the
-right section (shared phrases and frame names, then one section per addon), sorted within it.
+right section (shared phrases and frame names, then one section per addon, then one
+`-- Embed: <Library>` section per embedded library, holding all strings its adapter passes in),
+sorted within it.
 Reuse common keys, keep placeholders, never build sentences from fragments, and use a distinct
 key when the same English needs a different meaning. Never localize SavedVariables keys or API
 IDs. Then run `npm run locales:sync`: it keeps existing translations in

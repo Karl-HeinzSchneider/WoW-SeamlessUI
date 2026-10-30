@@ -893,3 +893,18 @@ end
 -- L["Threat percentage"] = "Threat percentage"
 -- L["Unit frame layout"] = "Unit frame layout"
 -- L["Unit Frames"] = "Unit Frames"
+
+-- Embed: BetterGroupLoot
+-- L["Gap between two rolls."] = "Gap between two rolls."
+-- L["Group loot"] = "Group loot"
+-- L["Group loot rolls are already shown by %s."] = "Group loot rolls are already shown by %s."
+-- L["Group loot rolls are not supported on this client."] = "Group loot rolls are not supported on this client."
+-- L["List undecided players"] = "List undecided players"
+-- L["New rolls appear above the first one. Off: below it."] = "New rolls appear above the first one. Off: below it."
+-- L["No roll data yet."] = "No roll data yet."
+-- L["Nobody yet."] = "Nobody yet."
+-- L["off spec"] = "off spec"
+-- L["Spacing"] = "Spacing"
+-- L["Stack upwards"] = "Stack upwards"
+-- L["The roll buttons' tooltips also list who hasn't chosen yet."] = "The roll buttons' tooltips also list who hasn't chosen yet."
+-- L["Undecided"] = "Undecided"

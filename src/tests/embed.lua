@@ -45,8 +45,15 @@ assert(not pcall(function()
 end))
 app.embed:OnProfileRefresh()
 assert(enabled == 0 and disabled == 0)
+app.embed:Register("onByDefault", {
+    name = "Default on",
+    default = true,
+    enable = function() end,
+    disable = function() end,
+})
+assert(page.config.args.onByDefault.default == true)
 local defaults = app.addon:GetOptionsDefaults(app.optionPages)
-assert(defaults.profile.embed.test == false)
+assert(defaults.profile.embed.test == false and defaults.profile.embed.onByDefault == true)
 app.db = { profile = { embed = { test = false } } }
 assert(not pcall(function()
     app.embed:Register("late", spec)

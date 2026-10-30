@@ -1,3 +1,6 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
     <Script file="embed.lua" />
+    <!-- Vendored, unmodified; loading it creates nothing until grouploot.lua starts it. -->
+    <Include file="..\..\lib\BetterGroupLoot-1.0\BetterGroupLoot-1.0.xml" />
+    <Script file="grouploot.lua" />
 </Ui>

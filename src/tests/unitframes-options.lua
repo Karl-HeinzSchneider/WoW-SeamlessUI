@@ -518,6 +518,7 @@ assert(preview.name:GetText() == "VIP-Supporter")
 app.db.profile.unitFrames.targettarget.nameDisplay = "last"
 nameDisplay:ApplyPreview(preview, "targettarget")
 assert(preview.name:GetText() == "Supporter")
+app.db.profile.unitFrames.targettarget.classIcon = true
 modules.ClassIcon:ApplyPreview(preview, "targettarget")
 assert(preview.portrait.atlas == "classicon-paladin")
 character.displayTexture = "existing-portrait"

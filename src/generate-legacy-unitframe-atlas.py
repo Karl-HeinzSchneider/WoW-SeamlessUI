@@ -78,10 +78,7 @@ def mirror_mask(source):
     return bytes(output)
 
 
-FIXED_POWER_TYPES = ("energy", "focus", "mana", "rage", "runicpower")
-
-
-def mirror_power_gradient(source):
+def mirror_bar_gradient(source):
     """Reflect the silhouette, retaining the source color direction within each row.
 
     Translate each row's original RGB span onto its reflected alpha span. This
@@ -176,13 +173,10 @@ def generate(art_dir=None):
                 reflected = ASSETS / "bars/mirrored" / destination.name
                 reflected.parent.mkdir(parents=True, exist_ok=True)
                 reflected.write_bytes(mirror_mask(destination.read_bytes()))
-                folder = "mirrored"
-                if name.rsplit("-", 1)[-1] in FIXED_POWER_TYPES:
-                    fixed = ASSETS / "bars/mirrored-fixed" / destination.name
-                    fixed.parent.mkdir(parents=True, exist_ok=True)
-                    fixed.write_bytes(mirror_power_gradient(destination.read_bytes()))
-                    folder = "mirrored-fixed"
-                lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/{folder}/{destination.name}",')
+                fixed = ASSETS / "bars/mirrored-fixed" / destination.name
+                fixed.parent.mkdir(parents=True, exist_ok=True)
+                fixed.write_bytes(mirror_bar_gradient(destination.read_bytes()))
+                lines.append(f'        "Interface/AddOns/SeamlessUnitframes/assets/legacy/bars/mirrored-fixed/{destination.name}",')
         lines.append("    },")
     lines.append("}\n")
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

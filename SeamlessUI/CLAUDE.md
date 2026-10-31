@@ -59,15 +59,10 @@ Run `lua src/tests/blizzard-editmode.lua`.
   of the extension registry (`GetAnchorTargets`), by real `GetName()`; invalid, self and cyclic
   targets are disabled.
 - `position:GetSection(system)` binds Core's `CreateEditModePositionSection` to the selected
-  system (one section per selection); Core draws the rows. X/Y and Scale have an editable value
+  system (one section per selection); Core draws the rows. X/Y have an editable value
   (click to type, Enter commits, Escape discards).
-- Scale lives under a separate Size header and is disabled for now, like the settings panel. It displays the same value
-  in the panel's units (1 = 100 %), bound to the system's native percentage setting (`FrameSize`
-  for unit frames, `IconSize` for action bars and auras, `BarSize` for the cast bar, `Scale` for
-  swing timers, otherwise `Size`) with its range and step, written through Core's `ApplySetting`
-  so it stays in the native draft. Frames without one use a binding a feature registered with
-  `core:RegisterEditModeSystemScale` (the action bar endcaps), snapped to its step; without
-  either (or while Edit Mode hides the setting) the row shows the frame's scale greyed out.
+- A separate Size header holds Core's dead Scale placeholder (always disabled at 100%). Native
+  size settings stay in Blizzard's own dialog; never reroute them into it.
 - Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`/
   `ReanchorFrame`, mirrors the anchor into the live draft and calls the frame's
   `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate

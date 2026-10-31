@@ -6,8 +6,8 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 ## Ownership
 
 - `src/core/`: lifecycle, database defaults, unit-frame registry, options and Edit Mode sections.
-  `unitframes.lua` maps keys to native systems or linked frames; `src/options/` is the single source for page defaults and per-frame settings; `style.lua`
-  adapts those declarations for Edit Mode (`StyleOptions`).
+  `unitframes.lua` maps keys to native systems or linked frames; `src/options/` is the single source for page defaults and per-frame settings; Edit Mode shows
+  those pages through Core (`editmode.lua` registers them, `GetEditModePageSettings` for stand-ins).
 - `src/healthcolor/`, `src/name/`, `src/portrait/`, `src/pvpicon/`, `src/questicon/`: visual
   features reading `profile.unitFrames[key]`. Preserve secret-value guards and restore only
   regions the feature changed. Pets use the player's class color; native class-icon CVars win
@@ -15,12 +15,13 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 - `src/totposition/`: ToT positions and addon-owned Edit Mode stand-ins.
 - `src/layout/`: optional legacy geometry and artwork.
 
-Native Player, Pet, Target and Focus position controls use Core's `GetNativePositionOptions` and
-`GetNativeSettingScale`, reading the active layout without a SeamlessUI dependency. ToT frames
-use `app.totPosition:GetOptions`. ToT stand-ins show their own Style sections; optional `linkedTo` support remains for future frames.
+Native Player, Pet, Target and Focus position controls use Core's `GetNativePositionOptions`,
+reading the active layout without a SeamlessUI dependency (Scale is Core's dead placeholder; Frame
+Size stays in Blizzard's dialog). ToT frames use `app.totPosition:GetOptions`; their stand-ins show
+their own pages.
 
 New per-frame settings need a default and control in that frame's `src/options/<frame>.lua`.
-Edit Mode derives its Style rows from the same declaration. The shared layout selector appears first in every frame's Style section and changes
+Edit Mode shows the same declaration. The shared layout selector appears first in every frame's Style section and changes
 `profile.layout` for all frames; there is no General page.
 Run `lua src/tests/unitframes-options.lua`.
 
@@ -37,7 +38,7 @@ BOTTOMRIGHT (12, 10; the small focus frame 20, 8 from `FocusFrameMixin:SetSmallS
   back. `Apply` only runs out of combat (queued to `PLAYER_REGEN_ENABLED`); a post-hook on
   `FocusFrame.SetSmallSize` re-applies a moved focus ToT. Anchor frames are validated with Core's
   position service and fall back to the unit frame. `GetOptions(key)` is the options tab's
-  Position group (Scale disabled: the ToT takes its unit frame's Frame Size).
+  Position group (Scale is the dead placeholder: the ToT takes its unit frame's Frame Size).
 - `mover.lua`, `app.totMover`: an addon-owned UIParent stand-in per frame with the ToT art, size
   and effective scale, registered with LibEditMode and shown only in Edit Mode (a Frames checkbox
   each, on for the session), with Core's Position section. A drag releases the anchor frame: the

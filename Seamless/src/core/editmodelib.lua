@@ -334,24 +334,20 @@ lib:RegisterCallback("enter", ClearSnapshots)
 lib:RegisterCallback("exit", ClearSnapshots)
 lib:RegisterCallback("layout", ClearSnapshots)
 
-local function TrackSettings(frame, sections, attached)
+local POSITION_ROWS =
+    { point = true, relativePoint = true, relativeTo = true, offsetX = true, offsetY = true, scale = true }
+
+local function TrackSettings(frame, sections)
     local snapshots = settingSnapshots[frame] or {}
     settingSnapshots[frame] = snapshots
     for _, section in ipairs(sections) do
         for _, row in ipairs(section.options or {}) do
-            -- Position has its own validated, ordered restore path. Custom scale
-            -- is a setting; native scale belongs to Blizzard's saved system state.
+            -- Position has its own validated, ordered restore path; the Size section's disabled
+            -- Scale placeholder has no value. Page rows merged into Size are settings.
             local position = (section.id == "position" or section.id == "position:size")
-                and (
-                    row.key == "point"
-                    or row.key == "relativePoint"
-                    or row.key == "relativeTo"
-                    or row.key == "offsetX"
-                    or row.key == "offsetY"
-                    or row.key == "scale"
-                )
-            local scale = row.key == "scale" and (not attached or addon:GetEditModeSystemScale(frame))
-            if row.get and row.set and (not position or scale) then
+                and not row.setting
+                and POSITION_ROWS[row.key]
+            if row.get and row.set and not position then
                 local key = section.id .. ":" .. row.key
                 local snapshot = snapshots[key]
                 if not snapshot then
@@ -385,7 +381,7 @@ local function PositionSection(data, frame)
     if cached and cached.frame == frame then
         return cached.section
     end
-    local spec, scale = data.position, data.position.scale or {}
+    local spec = data.position
     local function canEdit()
         return not (spec.disabled and spec.disabled()) and not InCombatLockdown() and lib:IsInEditMode()
     end
@@ -429,9 +425,6 @@ local function PositionSection(data, frame)
         local values = type(spec.anchorFrames) == "function" and spec.anchorFrames() or spec.anchorFrames
         return values or {}
     end
-    local function scaleBound()
-        return scale.get ~= nil and scale.set ~= nil and not (scale.disabled and scale.disabled())
-    end
     local snapshot = read()
     local section = addon:CreateEditModePositionSection("position", {
         frame = frame,
@@ -442,26 +435,6 @@ local function PositionSection(data, frame)
         canEdit = canEdit,
         read = read,
         apply = apply,
-        -- Without a scale binding the row shows 1 greyed out.
-        readScale = function()
-            local bound = scaleBound()
-            return bound and scale.get() or 1,
-                scale.min or 0.5,
-                scale.max or 2,
-                scale.step or 0.01,
-                bound and scale or nil
-        end,
-        applyScale = function(value)
-            if not canEdit() or not scaleBound() then
-                return false
-            end
-            value = tonumber(value)
-            if not Finite(value) or value < (scale.min or 0.5) or value > (scale.max or 2) then
-                return false, L["Invalid value"]
-            end
-            scale.set(value)
-            return true
-        end,
         anchorFrames = anchorFrames,
         anchorFrameText = function(value)
             for _, entry in ipairs(anchorFrames()) do
@@ -480,13 +453,6 @@ local function PositionSection(data, frame)
         end,
         -- Where Reset Position puts the frame: the library's default, on the frame's parent.
         default = function(key)
-            if key == "scale" then
-                local value = scale.default
-                if type(value) == "function" then
-                    value = value()
-                end
-                return value
-            end
             local position, parent = DefaultPosition(frame), frame:GetParent()
             local defaults = {
                 point = position.point,
@@ -710,7 +676,7 @@ local function CreateSettingsWindow()
         list:SetWidth(width)
         buttons:SetWidth(width)
         local sections = attached and attached.sections() or ListSections(frame)
-        TrackSettings(attached and attached.key or frame, sections, attached)
+        TrackSettings(attached and attached.key or frame, sections)
         local changed = attached and attached.changed or Redraw
         local listHeight = addon:LayoutEditModeSections(list, sections, 0, false, changed)
         list:SetHeight(math.max(1, listHeight))
@@ -928,8 +894,7 @@ end
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and
 ---y; `spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
----Scale uses `spec.scale`, the settings panel's binding, and is greyed out without one. Declare
----Revert separately with GetEditModeButtonSection. `options` are LibEditMode settings
+---Its Size section shows a disabled Scale placeholder. Declare Revert separately with GetEditModeButtonSection. `options` are LibEditMode settings
 ---shown at the top of the section.
 ---@param spec SeamlessCore.EditModePosition
 ---@param options? table[]

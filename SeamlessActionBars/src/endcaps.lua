@@ -4,9 +4,7 @@ local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- The main action bar's two gryphons are Blizzard Edit Mode systems: their position and Hidden
--- setting live in the Edit Mode layout, but they have no size setting. Their scale is stored in
--- the profile and applied with the frame's own SetScale, which Edit Mode overrides to keep the
--- anchor offsets in place, so dragging and the native layout keep working.
+-- setting live in the Edit Mode layout. They have no size setting, so their Scale stays disabled.
 ---@type SeamlessActionBars.EndCap[]
 app.endCaps = {
     { key = "left", index = "EndCapLeft", parentKey = "LeftEndCap", name = L["Left endcap"] },
@@ -68,46 +66,12 @@ function app.EndCapTextureOption(entry)
     }
 end
 
--- Outside combat only: the frame is unprotected, but its scale feeds Edit Mode's layout code.
--- PLAYER_REGEN_ENABLED applies what was skipped.
-local function applyScale(entry, scale)
-    local frame = app.EndCapFrame(entry)
-    if frame and not InCombatLockdown() and math.abs(frame:GetScale() - scale) > 1e-4 then
-        frame:SetScale(scale)
-    end
-end
-
----Apply the profile's scales, or restore the game's scale when `restore` is set.
+---Apply the profile's textures, or restore the game's when `restore` is set.
 ---@param restore? boolean
-function app.ApplyEndCapScales(restore)
+function app.ApplyEndCaps(restore)
     for _, entry in ipairs(app.endCaps) do
-        applyScale(entry, restore and 1 or settings(entry).scale)
         applyTexture(entry, restore)
     end
-end
-
----Scale binding shared by the settings panel and SeamlessUI's Edit Mode Position section.
----@param entry SeamlessActionBars.EndCap
----@return SeamlessCore.PositionScale
-function app.EndCapScale(entry)
-    return {
-        min = 0.5,
-        max = 2,
-        step = 0.01,
-        get = function()
-            return settings(entry).scale
-        end,
-        set = function(value)
-            settings(entry).scale = value
-            if app.addon:IsEnabled() then
-                applyScale(entry, value)
-            end
-            app.core:RefreshOptions(appName)
-        end,
-        default = function()
-            return app.dbDefaults.profile.endCaps[entry.key].scale
-        end,
-    }
 end
 
 ---Hide toggle bound to the endcap's native Hidden setting, saved in the Edit Mode layout.
@@ -155,22 +119,14 @@ function app.EndCapHiddenOption(entry)
     }
 end
 
--- SeamlessUI's Edit Mode extension shows the same scale in its Position section.
-function app.RegisterEndCapScales()
+-- Each endcap's page below its Blizzard settings (SeamlessUI's Edit Mode extension).
+function app.RegisterEndCapEditMode()
     local system = Enum.EditModeSystem and Enum.EditModeSystem.MainActionBarEndCap
     local indices = Enum.EditModeMainActionBarEndCapSystemIndices
     if not system or not indices then
         return
     end
     for _, entry in ipairs(app.endCaps) do
-        app.core:RegisterEditModeSystemScale(appName .. ":endCap:" .. entry.key, {
-            system = system,
-            systemIndex = indices[entry.index],
-            enabled = function()
-                return app.addon:IsEnabled()
-            end,
-            scale = app.EndCapScale(entry),
-        })
         local pageKey = entry.key == "left" and "endCapLeft" or "endCapRight"
         app.core:RegisterEditModeSystemOptions(appName .. ":endCap:" .. entry.key .. ":style", {
             system = system,

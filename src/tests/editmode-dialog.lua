@@ -914,50 +914,8 @@ do
     lock.on = true
     Row(list, "Reset To Default").option.click()
     assert(lock.on == false and stored.point == "TOPLEFT", "Reset To Default keeps the position")
-    -- A bound Scale writes through the feature's scale binding.
-    local scaled = 1.5
-    local scaledFrame = object("Frame", UIParent)
-    scaledFrame.GetPoint = frame.GetPoint
-    lib.frameSettings[scaledFrame], lib.frameButtons[scaledFrame] =
-        {
-            app.addon:GetEditModePositionSetting({
-                get = function(key)
-                    return stored[key]
-                end,
-                set = function() end,
-                anchorFrames = {},
-                scale = {
-                    min = 0.75,
-                    max = 1.5,
-                    step = 0.05,
-                    get = function()
-                        return scaled
-                    end,
-                    set = function(value)
-                        scaled = value
-                    end,
-                },
-            }),
-        }, {}
-    local scaledSelection = { parent = scaledFrame, system = selection.system, isSelected = true }
-    lib.frameSelections[scaledFrame] = scaledSelection
-    dialog:Update(scaledSelection)
-    local bound = Row(list, "Scale").option
-    assert(bound.disabled() and bound.get() == 1.5 and bound.min() == 0.75 and bound.max() == 1.5)
-    bound.set("1.1")
-    assert(scaled == 1.5)
-    bound.set(3)
-    assert(scaled == 1.5, "Size is disabled")
-    scaled = 1.1 -- External changes still participate in Revert.
-    local scaleRevert = app.addon:GetEditModePositionButton("revert")
-    assert(not scaleRevert.disabled(), "scale changes enable Revert")
-    dialog:Update(positionSelection)
-    dialog:Update(scaledSelection)
-    assert(not scaleRevert.disabled(), "changing selections preserves the baseline")
-    scaleRevert.click(scaledFrame)
-    assert(scaled == 1.5 and scaleRevert.disabled(), "Revert restores custom scale")
     app.SetEditModeSectionCollapsed("settings:position", true)
-    lib.frameSelections[positioned], lib.frameSelections[scaledFrame] = nil, nil
+    lib.frameSelections[positioned] = nil
     dialog:Update(selection)
 end
 print("PASS: namespaced LibEditMode collapsible headers, scrolling settings dialog and widget refresh")

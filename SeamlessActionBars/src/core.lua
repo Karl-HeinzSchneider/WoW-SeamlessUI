@@ -38,7 +38,7 @@ function app.addon:OnInitialize()
     self:RegisterChatCommand("seamlessactionbars", function()
         app.core:OpenOptions(appName)
     end)
-    app.RegisterEndCapScales()
+    app.RegisterEndCapEditMode()
 end
 
 function app.addon:OnEnable()
@@ -54,8 +54,6 @@ function app.addon:OnEnable()
             app.PaintIcon(button)
         end
     end)
-    -- Endcap scales skipped in combat.
-    self:RegisterEvent("PLAYER_REGEN_ENABLED", "Refresh")
     self:Refresh()
     app.core:RefreshEditModeSystemOptions()
 end
@@ -64,7 +62,7 @@ function app.addon:OnDisable()
     self:UnhookAll()
     self:UnregisterAllEvents()
     app.RefreshBagStyle()
-    app.ApplyEndCapScales(true)
+    app.ApplyEndCaps(true)
     app.core:RefreshEditModeSystemOptions()
     for button in pairs(watched) do
         app.RestoreIcon(button)
@@ -82,7 +80,7 @@ function app.addon:Refresh()
         app.UpdateHotkey(button)
     end
     app.xpBarTooltip:OnProfileRefresh()
-    app.ApplyEndCapScales()
+    app.ApplyEndCaps()
     app.RefreshMicroMenu()
     app.RefreshBarVisibility()
     app.RefreshBagStyle()

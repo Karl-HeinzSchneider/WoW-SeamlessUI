@@ -13,11 +13,10 @@
 ---@field RestoreHotkey fun(button: CheckButton)
 ---@field endCaps SeamlessActionBars.EndCap[]
 ---@field EndCapFrame fun(entry: SeamlessActionBars.EndCap): table?
----@field ApplyEndCapScales fun(restore?: boolean)
----@field EndCapScale fun(entry: SeamlessActionBars.EndCap): SeamlessCore.PositionScale
+---@field ApplyEndCaps fun(restore?: boolean)
 ---@field EndCapTextureOption fun(entry: SeamlessActionBars.EndCap): table
 ---@field EndCapHiddenOption fun(entry: SeamlessActionBars.EndCap): table
----@field RegisterEndCapScales fun()
+---@field RegisterEndCapEditMode fun()
 ---@field MicroMenuOptions fun(): table
 ---@field RefreshMicroMenu fun()
 ---@field RefreshBarVisibility fun()

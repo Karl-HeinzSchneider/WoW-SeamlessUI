@@ -368,7 +368,8 @@ Enum.EditModeSystem.StatusTrackingBar = Enum.EditModeSystem.StatusTrackingBar or
 bars.RegisterXPTooltipEditMode()
 core.RegisterEditModeSystemOptions = registerSystemOptions
 assert(xpSection.system == Enum.EditModeSystem.StatusTrackingBar and xpSection.systemIndex == nil)
-local xpSections = core:GetEditModePageSections(xpSection.page.addon, xpSection.page.key, { path = xpSection.page.path })
+local xpSections =
+    core:GetEditModePageSections(xpSection.page.addon, xpSection.page.key, { path = xpSection.page.path })
 assert(#xpSections == 1 and #xpSections[1].options == 5, "Both status bars expose all shared XP tooltip controls")
 local xpRows = {}
 for _, row in ipairs(xpSections[1].options) do

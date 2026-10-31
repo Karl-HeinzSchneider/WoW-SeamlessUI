@@ -9,7 +9,6 @@ local service = app.core:GetFramePositionService()
 local settings = Enum.EditModeBagsSetting or {}
 local orientation = Enum.BagsOrientation or {}
 local direction = Enum.BagsDirection or {}
-local scale = settings.Size and app.core:GetNativeSettingScale(getFrame, settings.Size)
 
 local function nativeOption(key, name, order)
     local setting = settings[key]
@@ -125,7 +124,7 @@ if direction.Left and direction.Right and direction.Up and direction.Down then
     end
 end
 
-local position, size = app.core:GetNativePositionOptions(getFrame, scale)
+local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
     defaults = {

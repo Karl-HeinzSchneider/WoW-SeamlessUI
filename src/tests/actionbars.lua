@@ -241,20 +241,17 @@ app.core = {
     RegisterEditModeSystemOptions = function(_, id, spec)
         styleSections[id] = spec
     end,
-    RegisterEditModeSystemScale = function(_, id, spec)
-        registered[id] = spec
-    end,
 }
 local enabled = true
 function addon:IsEnabled()
     return enabled
 end
 app.addon = addon
-app.dbDefaults = { profile = { endCaps = { left = { scale = 1 }, right = { scale = 1 } } } }
-app.db.profile.endCaps = { left = { scale = 1.5 }, right = { scale = 1 } }
+app.dbDefaults = { profile = { endCaps = { left = {}, right = {} } } }
+app.db.profile.endCaps = { left = {}, right = {} }
 load("endcaps.lua")
-app.ApplyEndCapScales()
-assert(left.scale == 1.5 and right.scale == 1 and right.scaleCalls == 0, "profile scale applied, unchanged left alone")
+app.ApplyEndCaps()
+assert(left.scaleCalls == 0 and right.scaleCalls == 0, "the endcaps' scale is never changed")
 assert(left.Texture.calls == 0 and right.Texture.calls == 0, "default leaves native art untouched")
 local texture = app.EndCapTextureOption(app.endCaps[1])
 texture.set(nil, "ally")
@@ -266,33 +263,16 @@ rightTexture.set(nil, "horde")
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
 texture.set(nil, "default")
 assert(left.Texture.atlas == "native-1", "Default restores original atlas")
-app.ApplyEndCapScales(true)
+app.ApplyEndCaps(true)
 assert(right.Texture.atlas == "native-2", "disable restores original atlas")
-app.ApplyEndCapScales()
+app.ApplyEndCaps()
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right", "enable reapplies profile")
-app.db.profile.endCaps = { left = { scale = 1.5, texture = "horde" }, right = { scale = 1, texture = "default" } }
-app.ApplyEndCapScales()
+app.db.profile.endCaps = { left = { texture = "horde" }, right = { texture = "default" } }
+app.ApplyEndCaps()
 assert(
     left.Texture.atlas == "ui-hud-actionbar-wyvern-left" and right.Texture.atlas == "native-2",
     "profile refresh switches artwork"
 )
-local leftEntry = app.endCaps[1]
-local scale = app.EndCapScale(leftEntry)
-assert(scale.get() == 1.5 and scale.default() == 1 and scale.min == 0.5 and scale.max == 2)
-scale.set(0.8)
-assert(app.db.profile.endCaps.left.scale == 0.8 and left.scale == 0.8 and refreshed == 1)
-combat = true
-scale.set(1.2)
-assert(app.db.profile.endCaps.left.scale == 1.2 and left.scale == 0.8, "no SetScale in combat")
-combat = false
-app.ApplyEndCapScales()
-assert(left.scale == 1.2, "applied after combat")
-enabled = false
-scale.set(1.4)
-assert(app.db.profile.endCaps.left.scale == 1.4 and left.scale == 1.2, "disabled addon only stores")
-app.ApplyEndCapScales(true)
-assert(left.scale == 1 and right.scale == 1, "disable restores the game's scale")
-enabled = true
 app.optionPages = {
     endCapLeft = {
         config = {
@@ -308,7 +288,7 @@ app.optionPages = {
         config = { type = "group", name = "Right", args = { texture = app.EndCapTextureOption(app.endCaps[2]) } },
     },
 }
-app.RegisterEndCapScales()
+app.RegisterEndCapEditMode()
 local leftStyle = styleSections["SeamlessActionBars:endCap:left:style"]
 local rightStyle = styleSections["SeamlessActionBars:endCap:right:style"]
 assert(leftStyle.system == 26 and leftStyle.systemIndex == 1 and rightStyle.systemIndex == 2)
@@ -328,9 +308,6 @@ assert(left.Texture.atlas == "native-1")
 enabled = false
 assert(not leftStyle.enabled() and not rightStyle.enabled())
 enabled = true
-local spec = registered["SeamlessActionBars:endCap:left"]
-assert(spec and spec.system == 26 and spec.systemIndex == 1 and spec.enabled())
-assert(registered["SeamlessActionBars:endCap:right"].systemIndex == 2)
 local toggle = app.EndCapHiddenOption(app.endCaps[2])
 assert(toggle.type == "toggle" and toggle.layoutStored and not toggle.editMode and toggle.name == L["Hide endcap"])
 assert(toggle.get() == false and toggle.default() == false and not toggle.disabled())
@@ -342,8 +319,8 @@ canEdit = false
 assert(toggle.disabled(), "preset layouts are read-only")
 canEdit = true
 MainActionBar = nil
-assert(toggle.disabled() and app.EndCapFrame(leftEntry) == nil, "missing bar is safe")
-app.ApplyEndCapScales()
+assert(toggle.disabled() and app.EndCapFrame(app.endCaps[1]) == nil, "missing bar is safe")
+app.ApplyEndCaps()
 
 -- Micro menu: layout settings use the native service; artwork follows the current profile.
 local microModule = { enabled = true }
@@ -371,25 +348,6 @@ function service:ApplySetting(frame, setting, value)
 end
 function service:GetDefaultSetting(_, setting)
     return setting == 2 and 100 or 0
-end
-function app.core:GetNativeSettingScale(getFrame, setting)
-    return {
-        min = 0.7,
-        max = 2,
-        step = 0.05,
-        get = function()
-            return service:ReadSetting(getFrame(), setting) / 100
-        end,
-        set = function(value)
-            service:ApplySetting(getFrame(), setting, value * 100)
-        end,
-        default = function()
-            return 1
-        end,
-        disabled = function()
-            return not getFrame()
-        end,
-    }
 end
 local function Art(alpha)
     return {
@@ -516,8 +474,8 @@ bagStyle.orientation.set(nil, 1)
 assert(choiceText(bagSpec.options.direction, 0) == L["Up"])
 assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
 bagStyle.direction.set(nil, 1)
-bags.args.position.scale.set(1.25)
-assert(native[0] == 1 and native[1] == 1 and native[2] == 125 and native[3] == 4)
+assert(native[0] == 1 and native[1] == 1 and native[2] == 100 and native[3] == 4)
+assert(bags.args.position.scale == nil, "the native Size setting is not rerouted to a Scale")
 assert(bagStyle.padding == nil, "unsupported slot spacing is not exposed")
 assert(bagStyle.size == nil, "size is only exposed through Position and scale")
 canEdit = false

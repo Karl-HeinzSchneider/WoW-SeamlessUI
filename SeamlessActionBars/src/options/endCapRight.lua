@@ -6,11 +6,10 @@ local entry = app.endCaps[2]
 local function getFrame()
     return app.EndCapFrame(entry)
 end
-local scale = app.EndCapScale(entry)
-local position, size = app.core:GetNativePositionOptions(getFrame, scale)
+local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.endCapRight = {
-    defaults = { profile = { endCaps = { right = { scale = 1, texture = "default" } } } },
+    defaults = { profile = { endCaps = { right = { texture = "default" } } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

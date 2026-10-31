@@ -36,15 +36,33 @@ end
 ---@field canEdit fun(): boolean
 ---@field read fun(): table? point, relativePoint, relativeTo, offsetX and offsetY.
 ---@field apply fun(values: table): boolean, string? Validates and applies a full set of values.
----@field readScale fun(): number, number, number, number, any? Value, min, max, step and the setting behind it (nil: greyed out).
----@field applyScale fun(value: any): boolean, string?
 ---@field anchorFrames fun(): table[] AnchorFrame choices, `{ text, value }`.
 ---@field anchorFrameText fun(value: any): string Dropdown text for a value.
 ---@field anchorFrame? fun(value: any): table? The frame of a choice (default: the global of that name).
 ---@field isValidTarget fun(target: table): boolean Whether the frame may anchor to target.
 ---@field hasChanges fun(): boolean Whether Revert has anything to restore.
 ---@field revert fun(): boolean, string?
----@field default? fun(key: string): any The default of a value key (as in read, or "scale") for the tooltips; nil shows Not applicable.
+---@field default? fun(key: string): any The default of a value key (as in read) for the tooltips; nil shows Not applicable.
+
+---The disabled Scale row of a Size section without a scale of its own: no value behind it.
+---@return table row
+function addon:GetDisabledScaleRow()
+    return {
+        key = "scale",
+        type = "range",
+        name = L["Scale"],
+        get = function()
+            return 1
+        end,
+        set = function() end,
+        min = 0.5,
+        max = 2,
+        step = 0.01,
+        disabled = function()
+            return true
+        end,
+    }
+end
 
 ---A Position section for LayoutEditModeSections, bound to one frame. Build a new one when the
 ---selection changes: it keeps the last refusal message for that frame only.
@@ -235,38 +253,12 @@ function addon:CreateEditModePositionSection(id, binding)
             commit(binding.revert())
         end,
     }
+    -- Scale is not bound to anything yet: a disabled placeholder until a frame sets its own.
     section.sizeSection = {
         id = id .. ":size",
         name = L["Size"],
         key = "settings:size",
-        options = {
-            {
-                key = "scale",
-                type = "range",
-                name = L["Scale"],
-                editable = true,
-                format = formatNumber,
-                default = default("scale"),
-                get = function()
-                    return (binding.readScale())
-                end,
-                min = function()
-                    return select(2, binding.readScale())
-                end,
-                max = function()
-                    return select(3, binding.readScale())
-                end,
-                step = function()
-                    return select(4, binding.readScale())
-                end,
-                set = function() end,
-                disabled = function()
-                    return true
-                end,
-                -- Revert can restore an external change while the slider stays disabled.
-                restore = binding.applyScale,
-            },
-        },
+        options = { addon:GetDisabledScaleRow() },
     }
     return section
 end

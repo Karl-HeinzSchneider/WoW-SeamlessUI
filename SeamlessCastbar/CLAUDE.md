@@ -27,7 +27,8 @@ system, so they are not part of this addon.
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
-- `src/options/`, `src/editmode.lua`: options and shared Style declarations.
+- `src/options/`: the pages, also shown in Edit Mode; `src/editmode.lua` registers the player page
+  for Blizzard's cast bar system.
   The Player tab's Position and Size groups is Core's native group for the cast bar system
   (`GetNativePositionOptions`); position is stored in the Edit Mode layout and unavailable while
   Lock to Player Frame is on. The player's Size controls override that group's Scale placeholder:
@@ -42,14 +43,11 @@ system, so they are not part of this addon.
   Post-hooks on the bar's `AdjustPosition` and its `OnShow` script (the client's placement on
   target change, cast start and aura rows) re-anchor a moved bar. The bars are not protected, so
   this also runs in combat. Reset and disabling only stop re-anchoring; the client's next
-  placement puts the bar back. A scale per layout in `profile.scales[key][layout]` is set on
-  the bar at the same moments (the client never scales these bars; 1 is not stored, and a bar we
-  scaled gets 1 back); changing it rescales stored offsets so the anchor point stays put.
-  `GetOptions(key)` is the tab's Position and Size groups; `ScaleOption(key)` is also the `scale`
-  binding of the previews' Core Size section, whose Scale slider is disabled for now.
+  placement puts the bar back. Old `profile.scales` values are no longer applied.
+  `GetOptions(key)` is the tab's Position and Size groups (Scale is Core's dead placeholder).
 - `src/preview.lua`: target/focus Edit Mode stand-ins using client art: addon-owned UIParent
   children at the bar's position and effective scale, registered with LibEditMode with Core's
-  Position section and the Style rows. A drag releases the anchor frame (stored on UIParent where
+  Position section and their page's rows. A drag releases the anchor frame (stored on UIParent where
   dropped, like Blizzard's Edit Mode); Reset Position reports the registered default (`RESET`). Preview Frames checkboxes are
   session-only.
 
@@ -70,7 +68,7 @@ Edit Mode rows, target/focus previews and positions.
 
 Manual validation: player cast bar locked/unlocked, native Show Cast Time on/off, target/focus
 casts and interruptions, channel pushback, spell ranks, profile changes and Edit Mode previews.
-Moved target/focus bars: drag, Position rows, Scale, Reset Position, layout switch, target with aura
+Moved target/focus bars: drag, Position rows, Reset Position, layout switch, target with aura
 rows and a ToT, casts in combat.
 Check `/console taintLog 1` stays clean.
 

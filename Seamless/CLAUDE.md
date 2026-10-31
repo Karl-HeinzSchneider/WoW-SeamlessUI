@@ -8,8 +8,8 @@ Required entry point of the suite; works with no feature addon enabled.
   LibStub; features use `core:GetEditModeLibrary()`.
 - `src/core/`: lifecycle, defaults, profiles, logger, options, minimap launcher, quests and tweaks.
   `frameposition.lua` owns native position validation and persistence; `editmode.lua`,
-  `editmodelib.lua`, `editmoderows.lua`, `editmodeposition.lua`, `systemoptions.lua` and
-  `anchorpicker.lua` own shared Edit Mode services.
+  `editmodelib.lua`, `editmoderows.lua`, `editmodepages.lua`, `editmodeposition.lua`,
+  `systemoptions.lua` and `anchorpicker.lua` own shared Edit Mode services.
 - `src/embed/`: optional embedded-addon registry and Embed page, isolated behind one XML
   entry in the TOC. Read its `CLAUDE.md` before adding embedded addons.
 - `src/config/`: custom options renderer and reusable Position groups; read its `CLAUDE.md`.
@@ -93,8 +93,9 @@ position, scale and window inheritance, rather than factories for entire pages.
 
 `tooltip(path)` returns a declared default and an optional per-character boolean. A control's
 own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
-bindings. Castbar and Unitframes derive their Edit Mode Style rows from these same page trees;
-do not declare those settings a second time.
+bindings. Edit Mode settings windows are drawn from these same page trees (Core's
+`editmodepages.lua`), with the same tooltips, validation and disabled states; page options show
+in Edit Mode unless marked `editModeHidden = true`. Do not declare those settings a second time.
 
 `OpenOptions(addonName, page)` opens a page; `RefreshOptions(addonName)` schedules its existing
 controls to refresh after the current callback. The window and controls live in `src/config/`;
@@ -192,7 +193,7 @@ so it returns this window. The vendored file stays untouched.
   Blizzard frames get: Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
   `spec.anchorFrames`, resolved by optional `spec.anchorFrame(value)` or the global name;
   UIParent excluded). Revert is declared in the footer, below. Only changed fields reach
-  `spec.set`. A separate Size section displays Scale from `spec.scale`, disabled for now. `options` are LibEditMode settings shown at the top of the section (Reset To Default
+  `spec.set`. A separate Size section shows a dead, disabled Scale placeholder. `options` are LibEditMode settings shown at the top of the section (Reset To Default
   resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - Every frame's `src/options/<frame>.lua` explicitly sets
@@ -207,7 +208,7 @@ so it returns this window. The vendored file stays untouched.
   `buttonBinding` (canEdit, hasChanges, revert, isDefault, reset), so both native and suite frames
   draw their declared footer outside the scroll. The helper returns a `lib.SettingType.ButtonSection`
   with the declared Button settings in order; it never chooses or appends actions. Revert
-  restores the frame's custom setting values (including scale) and its position snapshot at first
+  restores the frame's custom setting values and its position snapshot at first
   selection in the Edit Mode session. Baselines survive selection changes and clear on a new
   session, layout or profile. Dirty state compares current values, including external changes;
   returning to the baseline disables Revert. Native bindings also compare and restore the whole
@@ -287,7 +288,29 @@ Headers and rows are created once per parent and reused by section `id` and row 
 pass leaves out is hidden, so a click or drag in progress survives a redraw. `changed` runs after
 every click; redraw there. `core:RefreshEditModeSections(parent)` refreshes the last pass's rows in
 place for polling and returns true when the layout itself must run again. Add new row types here,
-never a second renderer.
+never a second renderer. `input` and `color` rows exist for page controls. A row with a `setting`
+(a config `Option`) takes its name, tooltip, validation, snapping and errors from that option.
+
+## Settings pages in Edit Mode (`editmodepages.lua`)
+
+A frame's settings are declared once, on its page in `src/options/`. Edit Mode reads that page
+through the config window's option model (`config/model.lua`), so names, tooltips, defaults,
+validation, confirmation, disabled and hidden states are shared code; only the look differs.
+Never declare a page's settings a second time for Edit Mode.
+
+- `editModeHidden = true` on a group or control keeps it out of Edit Mode (opt-out). Generated
+  position rows carry it, because the shared Position section draws them; so do controls Blizzard's
+  own dialog already shows.
+- `core:GetEditModePageSettings(addonName, pageKey, path?)`: LibEditMode settings for a suite frame
+  (`AddFrameSettings`): a Header per group, the group marked `editModePosition` as the shared
+  Position section (its extra rows included), every control as a `lib.SettingType.Option` row, and
+  the page's `buttonSection` last.
+- `core:GetEditModePageSections(addonName, pageKey, spec?)`: renderer sections for a window that
+  draws its own Position section (Blizzard systems): groups become sections keyed
+  `"page:<addon>:<path>"`, Position is left out, and the `editModeSize` group's own rows go to a
+  section keyed `"settings:size"`, merged into the Size section.
+- `core:GetEditModeOptionRow(option)` binds one row to an option; `core:GetPageOption` resolves one.
+- Revert restores Option rows with `option:Apply`, Reset To Default calls `option:Reset()`.
 
 ## Position section (`editmodeposition.lua`)
 
@@ -295,7 +318,8 @@ never a second renderer.
 "Quick anchor to frame" and the last refusal message. Revert is an available action on the
 section (`revertButton`), drawn only by an explicit button section. The binding
 (`SeamlessCore.EditModePositionBinding`) reads, validates and applies; the section only builds rows
-and drops changes once `isCurrent()` is false. Its `sizeSection` contains the separate Size header and disabled Scale slider; consumers
+and drops changes once `isCurrent()` is false. Its `sizeSection` contains the separate Size header and the dead Scale
+placeholder (`core:GetDisabledScaleRow()`: always disabled at 100%, writes nothing); consumers
 append it after Position. Build one per selected frame. SeamlessUI uses it for
 Blizzard frames; Seamless frames get it through `GetEditModePositionSetting`.
 
@@ -312,11 +336,10 @@ window, so no feature depends on SeamlessUI. `core:RefreshEditModeSystemOptions(
 `core:GetEditModeSystemOptionsMessage()`; `core:GetEditModeSystemOptions(system)` returns the
 enabled sections in order.
 
-`core:RegisterEditModeSystemScale(id, spec)` gives a system without a native size setting (the
-action bar endcaps) a Scale: `system`, optional `systemIndex`, `enabled` and `scale` (a
-`PositionScale` binding with `get`/`set`, optional `min`/`max`/`step`/`disabled`). The feature
-stores and applies it; `core:GetEditModeSystemScale(system)` returns the enabled binding, which
-SeamlessUI's disabled Size slider displays.
+Instead of `options`, a registration may pass `page = { addon, key, path }`: the section then
+shows that settings page (or a group on it) through `GetEditModePageSections`, so the rows are
+the page's own controls. `core:GetEditModeSystemSections(system)` returns the renderer sections
+for every enabled registration, page sections built once and cached.
 
 ## Shared feature databases
 

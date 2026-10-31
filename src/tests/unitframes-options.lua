@@ -76,7 +76,7 @@ local app = {
     },
     core = {
         GetNativePositionOptions = function(_, getFrame, scale)
-            assert(scale.setting == Enum.EditModeUnitFrameSetting.FrameSize and scale.getFrame == getFrame)
+            assert(scale == nil, "Frame Size is not rerouted to a Scale")
             positioned[#positioned + 1] = getFrame()
             return { type = "group", inline = true, name = "Position", order = 10, args = {}, editModePosition = {} }, {
                 type = "group",
@@ -85,9 +85,6 @@ local app = {
                 args = {},
                 editModeSize = true,
             }
-        end,
-        GetNativeSettingScale = function(_, getFrame, setting)
-            return { getFrame = getFrame, setting = setting }
         end,
         RegisterOptions = function(_, name, spec)
             assert(name == "SeamlessUnitframes")

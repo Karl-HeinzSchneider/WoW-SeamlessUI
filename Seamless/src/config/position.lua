@@ -86,29 +86,24 @@ function app.addon:GetPositionOptions(spec)
         row.max = extent
         row.step = 1
     end
-    local scale = spec.scale or {}
+    -- Scale is a disabled placeholder with nothing behind it. A frame that supports a scale
+    -- replaces this row with its own in the Size group.
     local scaleRow = {
         type = "range",
         name = L["Scale"],
         order = 0,
-        min = scale.min or 0.5,
-        max = scale.max or 2,
-        step = scale.step or 0.01,
-        get = scale.get or function()
+        min = 0.5,
+        max = 2,
+        step = 0.01,
+        get = function()
             return 1
         end,
-        default = scale.default,
-        editModeHidden = true,
-        -- Size controls are placeholders until explicitly enabled per frame.
+        set = function() end,
         disabled = function()
             return true
         end,
+        editModeHidden = true,
     }
-    scaleRow.set = function(_, value)
-        if not scaleRow.disabled() and type(value) == "number" and value >= scaleRow.min and value <= scaleRow.max then
-            scale.set(value)
-        end
-    end
     if spec.reset then
         args.reset = {
             type = "execute",
@@ -138,29 +133,18 @@ end
 
 ---Native Position and Size groups use the active layout and its storage tooltip.
 ---@param getFrame fun(): table?
----@param scale? SeamlessCore.PositionScale Explicit scale binding; omitted means read-only.
 ---@return table position
 ---@return table size
-function app.addon:GetNativePositionOptions(getFrame, scale)
+function app.addon:GetNativePositionOptions(getFrame)
     local service = self:GetFramePositionService()
     local keys = { x = "offsetX", y = "offsetY" }
     local anchorFrames = {}
-    local scaleOptions = {
-        get = function()
-            local frame = getFrame()
-            return frame and frame:GetScale() or 1
-        end,
-    }
-    for key, value in pairs(scale or {}) do
-        scaleOptions[key] = value
-    end
     local function warn(ok, err)
         if not ok and err then
             app.logger:warn("%s", err)
         end
     end
     local group, size = self:GetPositionOptions({
-        scale = scaleOptions,
         default = function(key)
             local values = service:GetDefault(getFrame())
             return values and values[keys[key] or key]
@@ -199,36 +183,4 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
     group.layoutStored = true
     size.layoutStored = true
     return group, size
-end
-
----Scale bound to a native Edit Mode percentage setting, such as the unit frames'
----Frame Size: the same value, range, default and saving as the native slider.
----@param getFrame fun(): table?
----@param setting number The system's setting enum value.
----@return SeamlessCore.PositionScale
-function app.addon:GetNativeSettingScale(getFrame, setting)
-    local service = self:GetFramePositionService()
-    local min, max, step = service:GetSettingRange(getFrame(), setting)
-    return {
-        min = min and min / 100,
-        max = max and max / 100,
-        step = step and step / 100,
-        get = function()
-            local value = service:ReadSetting(getFrame(), setting)
-            return value and value / 100 or 1
-        end,
-        set = function(value)
-            local ok, err = service:ApplySetting(getFrame(), setting, math.floor(value * 100 + 0.5))
-            if not ok and err then
-                app.logger:warn("%s", err)
-            end
-        end,
-        disabled = function()
-            return service:ReadSetting(getFrame(), setting) == nil
-        end,
-        default = function()
-            local value = service:GetDefaultSetting(getFrame(), setting)
-            return value and value / 100
-        end,
-    }
 end

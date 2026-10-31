@@ -5,8 +5,6 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function getFrame()
     return MinimapCluster
 end
-local setting = Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.Size
-local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
 local rotation = Enum.EditModeMinimapSetting and Enum.EditModeMinimapSetting.RotateMinimap
 local nativeSettings = app.core:GetFramePositionService()
 
@@ -31,7 +29,7 @@ local function visibilityOption(key, name, order)
     }
 end
 
-local position, size = app.core:GetNativePositionOptions(getFrame, scale)
+local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.minimap = {
     tooltip = function(path)

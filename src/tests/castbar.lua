@@ -665,7 +665,6 @@ function app.addon:SecureHookScript(object, script, handler)
     hooks[object][script] = handler
 end
 app.db.profile.positions = { target = {}, focus = {} }
-app.db.profile.scales = { target = {}, focus = {} }
 app.db.profiles = { Default = app.db.profile }
 enabled = true
 load("position.lua")
@@ -726,21 +725,13 @@ assert(stored ~= app.db.profile.positions.target.Modern and app.db.profile.posit
 assert(app.position:GetOptions("target").spec.get("y") == -60)
 assert(app.position:GetOptions("player") == nil, "the player bar is the client's Edit Mode system")
 
--- Scale: set on the real bar at every placement, offsets keep the anchor point on screen.
--- The Edit Mode Scale row is Core's, from this binding (its Reset To Default guard is Core's too).
-local scaleRow = positionSpec.scale
-assert(scaleRow.get() == 1 and scaleRow.default == 1)
-scaleRow.set(2)
-assert(TargetFrameSpellBar.ownScale == 2 and app.db.profile.scales.target.Modern == 2)
-assert(app.db.profile.positions.target.Modern.y == -30, "offsets follow the scale")
-TargetFrameSpellBar.ownScale = nil
+-- Scale is a disabled placeholder: nothing binds it and the bars are never scaled.
+assert(positionSpec.scale == nil and app.position.SetScale == nil)
+rawset(TargetFrameSpellBar, "ownScale", nil)
 hooks[TargetFrameSpellBar].OnShow(TargetFrameSpellBar)
-assert(TargetFrameSpellBar.ownScale == 2, "re-applied when the client places the bar")
+assert(rawget(TargetFrameSpellBar, "ownScale") == nil, "the client's scale is left alone")
 app.UpdatePreviews()
-assert(target.ownScale == 3, "the preview shows the unit frame's scale times ours")
-assert(app.position:GetOptions("target").spec.scale.get() == 2, "the options tab's Scale slider")
-app.position:GetOptions("target").spec.scale.set(1)
-assert(TargetFrameSpellBar.ownScale == 1 and app.db.profile.scales.target.Modern == nil, "1 restores the client's")
+assert(target.ownScale == 1.5, "the preview shows the unit frame's scale")
 assert(app.db.profile.positions.target.Modern.y == -60)
 
 -- Reset Position: back to the client's anchor from the next placement on.
@@ -754,7 +745,6 @@ assert(TargetFrameSpellBar.point[2] == "client")
 -- target profile.
 local settings = frameSettings[target]
 assert(settings[1].name == "Position" and settings[2].kind == "seamless-header")
-assert(settings[1].spec.scale.min == 0.5 and settings[1].spec.scale.max == 2, "Scale comes from Core's Position rows")
 local byName, byPath = {}, {}
 for _, setting in ipairs(settings) do
     if setting.kind == "seamless-option" then
@@ -780,12 +770,9 @@ editMode = false
 libCallbacks.exit()
 assert(not focus.shown, "hidden outside Edit Mode")
 
--- Disabled: moved bars are no longer re-anchored and the client's scale returns.
+-- Disabled: moved bars are no longer re-anchored.
 moved[target](target, layout, "TOPLEFT", 1, 2)
-app.position:SetScale("target", 1.5)
-assert(TargetFrameSpellBar.ownScale == 1.5)
 app.position:Disable()
-assert(TargetFrameSpellBar.ownScale == 1)
 TargetFrameSpellBar:AdjustPosition()
 hooks[TargetFrameSpellBar].AdjustPosition(TargetFrameSpellBar)
 assert(TargetFrameSpellBar.point[2] == "client", "disabled leaves the client's placement")

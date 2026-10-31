@@ -93,14 +93,13 @@ local function createPreview(key)
     previews[key] = preview
 end
 
--- The bar's effective scale relative to UIParent: its unit frame's times our scale (the bar's own
--- can be secret).
-local function barScale(key, spec)
+-- The bar's effective scale relative to UIParent: its unit frame's (the bar's own can be secret).
+local function barScale(spec)
     local scale, parentScale = _G[spec.frame]:GetEffectiveScale(), UIParent:GetEffectiveScale()
     if not (app.Known(scale) and app.Known(parentScale)) then
-        return app.position:GetScale(key)
+        return 1
     end
-    return scale * app.position:GetScale(key) / parentScale
+    return scale / parentScale
 end
 
 ---Show the previews in Edit Mode at their bar's position with the current Style options, or hide them.
@@ -110,7 +109,7 @@ function app.UpdatePreviews()
         local visible = app.addon:IsEnabled() and lib:IsInEditMode() and shown[key]
         if visible then
             local settings = app.db.profile[key]
-            preview:SetScale(barScale(key, spec))
+            preview:SetScale(barScale(spec))
             local position = app.position:Get(key)
             preview:ClearAllPoints()
             preview:SetPoint(

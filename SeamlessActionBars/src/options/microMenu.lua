@@ -5,9 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function getFrame()
     return _G["MicroMenuContainer"]
 end
-local setting = Enum.EditModeMicroMenuSetting and Enum.EditModeMicroMenuSetting.Size
-local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
-local position, size = app.core:GetNativePositionOptions(getFrame, scale)
+local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.microMenu = {
     defaults = { profile = { microMenu = { hideArtwork = false, hidden = false } } },

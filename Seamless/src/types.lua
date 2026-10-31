@@ -110,11 +110,10 @@
 ---@field GetEditModePageSections fun(self: SeamlessCore.Addon, addonName: string, pageKey: string, spec: table?): SeamlessCore.EditModeSection[]
 ---@field GetEditModePageSettings fun(self: SeamlessCore.Addon, addonName: string, pageKey: string, path: string[]?): table[] LibEditMode settings built from a page.
 ---@field ShowSettingTooltip fun(self: SeamlessCore.Addon, owner: table, anchor: table, name: string?, desc: string?, details: table?)
+---@field GetDisabledScaleRow fun(self: SeamlessCore.Addon): table The disabled Scale placeholder of a Size section.
 ---@field ShowSettingError fun(self: SeamlessCore.Addon, owner: table, anchor: table, message: string?)
 ---@field RefreshEditModeSystemOptions fun(self: SeamlessCore.Addon)
 ---@field GetEditModeSystemOptionsMessage fun(self: SeamlessCore.Addon): string
----@field RegisterEditModeSystemScale fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemScale)
----@field GetEditModeSystemScale fun(self: SeamlessCore.Addon, system: table): SeamlessCore.PositionScale?
 ---@field CreateEditModeHeader fun(self: SeamlessCore.Addon, parent: table, onClick: fun()): table Collapsible section header shared by every Edit Mode window.
 ---@field IsEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string): boolean
 ---@field SetEditModeSectionCollapsed fun(self: SeamlessCore.Addon, key: string, collapsed: boolean)
@@ -122,8 +121,7 @@
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
 ---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table, table Reusable Position and disabled Size option groups.
----@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table, table Native layout Position and disabled Size groups, with preset defaults and Reset to default position.
----@field GetNativeSettingScale fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, setting: number): SeamlessCore.PositionScale Scale bound to a native Edit Mode percentage setting (Frame Size).
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver): table, table Native layout Position and disabled Size groups, with preset defaults and Reset to default position.
 ---@field GetEditModeFrameButtonSection fun(self: SeamlessCore.Addon, frame: table): SeamlessCore.EditModeButtonSection? Reads a native frame page declaration.
 ---@field GetEditModeButtonSection fun(self: SeamlessCore.Addon, buttons: SeamlessCore.EditModeButton[]): SeamlessCore.EditModeButtonSection Explicit ordered buttons, including custom actions.
 ---@field GetEditModePositionButton fun(self: SeamlessCore.Addon, action: "revert"|"resetPosition"): SeamlessCore.EditModeButton Optional standard position action.
@@ -136,15 +134,6 @@
 
 ---@alias SeamlessCore.FrameResolver fun(): table?
 
----@class SeamlessCore.PositionScale
----@field get? fun(): number Current scale multiplier (1 = 100%).
----@field set? fun(value: number) Explicit opt-in to editable scale.
----@field min? number Defaults to 0.5.
----@field max? number Defaults to 2.
----@field step? number Defaults to 0.01.
----@field disabled? fun(): boolean Additional scale-specific guard.
----@field default? fun(): number? Default multiplier for the tooltip.
-
 ---@class SeamlessCore.EditModePosition
 ---@field default? fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any `GetPositionOptions` only: the default shown in the custom window's tooltip.
 ---@field reset? fun() `GetPositionOptions` only: adds a Reset to default position button.
@@ -152,7 +141,6 @@
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
----@field scale? SeamlessCore.PositionScale Binding for the Size section in settings and Edit Mode; its Scale slider is currently disabled.
 ---@field anchorFrame? fun(value: any): table? The frame of an anchorFrames entry; defaults to the global named by the value.
 ---@field disabled? fun(): boolean
 
@@ -188,6 +176,39 @@
 ---@field click? fun() Button callback.
 ---@field create? fun(parent: table): table Custom row factory; return a child of parent.
 ---@field layout? fun(frame: table, width: number, disabled: boolean): number? Optional custom row sizing/state callback.
+
+---@class SeamlessCore.EditModeSystemOptions
+---@field id string? Set by RegisterEditModeSystemOptions.
+---@field system integer `Enum.EditModeSystem` value.
+---@field systemIndex integer? Only this subsystem, such as one action bar.
+---@field name string Section header.
+---@field key string? Collapse key; defaults to the name.
+---@field order number? Section order; ties use the registration id.
+---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
+---@field options SeamlessCore.EditModeSystemOption[]? Hand-made rows; prefer `page`.
+---@field page { addon: string, key: string, path: string[]? }? A settings page (or a group on it) drawn from its declaration.
+
+---@class SeamlessCore.EditModeSystemOptions
+---@field id string? Set by RegisterEditModeSystemOptions.
+---@field system integer `Enum.EditModeSystem` value.
+---@field systemIndex integer? Only this subsystem, such as one action bar.
+---@field name string Section header.
+---@field key string? Collapse key; defaults to the name.
+---@field order number? Section order; ties use the registration id.
+---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
+---@field options SeamlessCore.EditModeSystemOption[]? Hand-made rows; prefer `page`.
+---@field page { addon: string, key: string, path: string[]? }? A settings page (or a group on it) drawn from its declaration.
+
+---@class SeamlessCore.EditModeSystemOptions
+---@field id string? Set by RegisterEditModeSystemOptions.
+---@field system integer `Enum.EditModeSystem` value.
+---@field systemIndex integer? Only this subsystem, such as one action bar.
+---@field name string Section header.
+---@field key string? Collapse key; defaults to the name.
+---@field order number? Section order; ties use the registration id.
+---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
+---@field options SeamlessCore.EditModeSystemOption[]? Hand-made rows; prefer `page`.
+---@field page { addon: string, key: string, path: string[]? }? A settings page (or a group on it) drawn from its declaration.
 
 ---@class SeamlessCore.EditModeSystemOptions
 ---@field id string? Set by RegisterEditModeSystemOptions.

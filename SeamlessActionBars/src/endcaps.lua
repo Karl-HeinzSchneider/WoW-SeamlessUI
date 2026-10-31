@@ -129,6 +129,8 @@ function app.EndCapHiddenOption(entry)
         layoutStored = true,
         name = L["Hide endcap"],
         desc = L["Hide this gryphon outside Edit Mode. Edit Mode still shows it so you can select it."],
+        -- Blizzard's own settings dialog already shows this layout setting.
+        editModeHidden = true,
         descStyle = "inline",
         default = function()
             local id = setting()
@@ -169,35 +171,15 @@ function app.RegisterEndCapScales()
             end,
             scale = app.EndCapScale(entry),
         })
-        -- Reuse the page declaration, including its choices and profile accessors.
         local pageKey = entry.key == "left" and "endCapLeft" or "endCapRight"
-        local option = app.optionPages[pageKey].config.args.texture
-        local values = {}
-        for _, value in ipairs(option.sorting) do
-            values[#values + 1] = { text = option.values[value], value = value }
-        end
         app.core:RegisterEditModeSystemOptions(appName .. ":endCap:" .. entry.key .. ":style", {
             system = system,
             systemIndex = indices[entry.index],
-            name = L["Style"],
-            key = appName .. ":endCap:" .. entry.key .. ":style",
+            name = app.optionPages[pageKey].config.name,
+            page = { addon = appName, key = pageKey },
             enabled = function()
                 return app.addon:IsEnabled()
             end,
-            options = {
-                {
-                    key = "texture",
-                    type = option.type,
-                    name = option.name,
-                    default = option.default,
-                    values = values,
-                    get = option.get,
-                    set = function(value)
-                        option.set(nil, value)
-                        app.core:RefreshOptions(appName)
-                    end,
-                },
-            },
         })
     end
 end

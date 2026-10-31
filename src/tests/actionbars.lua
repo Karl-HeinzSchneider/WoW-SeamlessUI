@@ -14,6 +14,20 @@ dofile("Seamless/lib/LibStub/LibStub.lua")
 dofile("Seamless/lib/AceLocale-3.0/AceLocale-3.0.lua")
 dofile("Seamless/locales/enUS.lua")
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+local support = dofile("src/tests/settings-support.lua")
+-- The Edit Mode rows Core draws for a page, by order and by their option's key.
+local app
+local function pageRows(pageKey, path)
+    support.editModePages(app.core, "SeamlessActionBars", app)
+    local rows = {}
+    for _, section in ipairs(app.core:GetEditModePageSections("SeamlessActionBars", pageKey, { path = path })) do
+        for _, row in ipairs(section.options) do
+            rows[#rows + 1] = row
+            rows[row.setting.path[#row.setting.path]] = row
+        end
+    end
+    return rows
+end
 local libStub = LibStub
 local addon = {}
 function addon:IsEnabled()
@@ -92,7 +106,7 @@ local function Button(name, action, text)
     }
 end
 
-local app = {}
+app = {}
 app.BarHiddenOption = function(_, name, order)
     return { type = "toggle", name = name, order = order, default = false }
 end
@@ -280,16 +294,32 @@ app.ApplyEndCapScales(true)
 assert(left.scale == 1 and right.scale == 1, "disable restores the game's scale")
 enabled = true
 app.optionPages = {
-    endCapLeft = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[1]) } } },
-    endCapRight = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[2]) } } },
+    endCapLeft = {
+        config = {
+            type = "group",
+            name = "Left",
+            args = {
+                hidden = app.EndCapHiddenOption(app.endCaps[1]),
+                texture = app.EndCapTextureOption(app.endCaps[1]),
+            },
+        },
+    },
+    endCapRight = {
+        config = { type = "group", name = "Right", args = { texture = app.EndCapTextureOption(app.endCaps[2]) } },
+    },
 }
 app.RegisterEndCapScales()
 local leftStyle = styleSections["SeamlessActionBars:endCap:left:style"]
 local rightStyle = styleSections["SeamlessActionBars:endCap:right:style"]
 assert(leftStyle.system == 26 and leftStyle.systemIndex == 1 and rightStyle.systemIndex == 2)
+assert(leftStyle.page.key == "endCapLeft" and rightStyle.page.key == "endCapRight")
+leftStyle.options = pageRows("endCapLeft")
+rightStyle.options = pageRows("endCapRight")
+assert(#leftStyle.options == 1, "Blizzard's dialog keeps the native Hide endcap setting")
 local row = leftStyle.options[1]
-assert(row.type == "select" and row.default == "default" and #row.values == 3)
-assert(row.values[1].value == "default" and row.values[2].value == "ally" and row.values[3].value == "horde")
+assert(row.type == "select" and row.default() == "default" and #row.values() == 3)
+local values = row.values()
+assert(values[1].value == "default" and values[2].value == "ally" and values[3].value == "horde")
 row.set("ally")
 assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
 assert(rightStyle.options[1].get() == "default", "Edit Mode controls each side independently")
@@ -381,8 +411,11 @@ function app.core:RegisterEditModeSystemOptions(_, value)
 end
 function app.core:RefreshEditModeSystemOptions() end
 microModule:OnInitialize()
-assert(menuSpec.name == L["Style"] and menuSpec.system == 20 and #menuSpec.options == 4)
+assert(menuSpec.page.key == "microMenu" and menuSpec.system == 20)
 local group = app.MicroMenuOptions()
+app.optionPages = { microMenu = { config = { type = "group", name = "Micro menu", args = { layout = group } } } }
+menuSpec.options = pageRows("microMenu")
+assert(#menuSpec.options == 4)
 assert(group.name == L["Style"])
 local menu = group.args
 assert(menu.orientation.get() == 0 and menu.order.default() == 0)
@@ -390,14 +423,14 @@ assert(menu.size == nil, "size is only exposed through Position and scale")
 menu.orientation.set(nil, 1)
 menu.order.set(nil, 1)
 assert(native[0] == 1 and native[1] == 1 and native[2] == 100)
-menuSpec.options[1].set(0)
-assert(menu.orientation.get() == 0 and menuSpec.options[1].values[1].value == 0)
-menuSpec.options[2].set(0)
+menuSpec.options.orientation.set(0)
+assert(menu.orientation.get() == 0 and menuSpec.options.orientation.values()[1].value == 0)
+menuSpec.options.order.set(0)
 assert(menu.order.get() == 0)
 canEdit = false
-assert(menu.orientation.disabled() and menu.order.disabled() and menuSpec.options[1].disabled())
+assert(menu.orientation.disabled() and menu.order.disabled() and menuSpec.options.orientation.disabled())
 canEdit = true
-menuSpec.options[3].set(true)
+menuSpec.options.hideArtwork.set(true)
 app.RefreshMicroMenu()
 assert(MicroMenu.BorderArt.alpha == 0 and MicroMenu.BackgroundArt.alpha == 0 and MicroMenu.button.alpha == 1)
 app.db.profile = { microMenu = { hideArtwork = false } }
@@ -423,14 +456,14 @@ function service:ApplySetting(frame, setting, value)
     return true
 end
 function app.core:GetNativePositionOptions(getFrame, scale)
-    return { getFrame = getFrame, scale = scale }
+    return { type = "group", args = {}, editModePosition = {}, getFrame = getFrame, scale = scale }, {
+        type = "group",
+        args = {},
+        editModeSize = true,
+    }
 end
-function app.core:GetEditModePositionButton(key)
-    return { name = key }
-end
-function app.core:GetEditModeButtonSection(buttons)
-    return { options = buttons }
-end
+app.core.GetEditModePositionButton = support.positionButton
+app.core.GetEditModeButtonSection = support.buttonSection
 app.optionPages = {}
 assert(loadfile(root .. "options/bags.lua"))("SeamlessActionBars", app)
 local bags = app.optionPages.bags.config
@@ -439,7 +472,9 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 7)
+assert(bagSpec.page.key == "bags" and bagSpec.system == 21)
+bagSpec.options = pageRows("bags")
+assert(#bagSpec.options == 7)
 local showFreeSlots = false
 GetCVarBool = function(name)
     assert(name == "displayFreeBagSlots")
@@ -450,7 +485,7 @@ SetCVar = function(name, value)
     showFreeSlots = value
 end
 assert(not bagStyle.freeSlots.get() and not bagStyle.freeSlots.blizzard and not bagStyle.freeSlots.editMode)
-bagSpec.options[6].set(true)
+bagSpec.options.freeSlots.set(true)
 assert(bagStyle.freeSlots.get(), "the native CVar is shared by config and Edit Mode")
 app.db.profile.bags = { retailStyle = false, spacing = 4 }
 app.RefreshBagStyle = function() end
@@ -461,16 +496,24 @@ assert(bagStyle.spacing.disabled() and bagStyle.spacing.default == 0)
 app.db.profile.bags.retailStyle = true
 assert(not bagStyle.spacing.disabled())
 assert(not bagStyle.smallButtonSize.disabled() and bagStyle.smallButtonSize.default == 30)
-bagSpec.options[4].set(20)
-assert(bagStyle.smallButtonSize.get() == 20 and bagSpec.options[4].get() == 20)
+bagSpec.options.smallButtonSize.set(20)
+assert(bagStyle.smallButtonSize.get() == 20 and bagSpec.options.smallButtonSize.get() == 20)
 
-bagSpec.options[5].set(8)
-assert(bagStyle.spacing.get() == 8 and bagSpec.options[5].get() == 8)
-assert(bagSpec.options[2].values()[1].text == L["Left"])
+bagSpec.options.spacing.set(8)
+assert(bagStyle.spacing.get() == 8 and bagSpec.options.spacing.get() == 8)
+-- Choices are listed as in the settings window.
+local function choiceText(row, value)
+    for _, entry in ipairs(row.values()) do
+        if entry.value == value then
+            return entry.text
+        end
+    end
+end
+assert(choiceText(bagSpec.options.direction, 0) == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])
 bagStyle.orientation.set(nil, 1)
-assert(bagSpec.options[2].values()[1].text == L["Up"])
+assert(choiceText(bagSpec.options.direction, 0) == L["Up"])
 assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
 bagStyle.direction.set(nil, 1)
 bags.args.position.scale.set(1.25)

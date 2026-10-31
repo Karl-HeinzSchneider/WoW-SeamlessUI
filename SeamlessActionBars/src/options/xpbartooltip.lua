@@ -65,49 +65,21 @@ app.XPBarTooltipOptions = function()
     return xpBarTooltipOption
 end
 
--- Derive Edit Mode rows from the same prepared declaration used by both settings pages.
+-- Edit Mode draws the same declaration as both settings pages.
 local registered = false
 function app.RegisterXPTooltipEditMode()
     if registered or not (Enum.EditModeSystem and Enum.EditModeSystem.StatusTrackingBar) then
         return
     end
-    local page = app.optionPages.statusBar1
-    local root = { type = "group", args = { statusBar1 = page.config } }
-    local group = app.core:GetSettingsOption(root, { "statusBar1", "xpBarTooltip" }, "SeamlessActionBars")
-    local rows = {}
-    for _, option in ipairs(group:Children()) do
-        local key = option.path[#option.path]
-        rows[#rows + 1] = {
-            key = key,
-            type = option:Read("type"),
-            name = option:Read("name"),
-            desc = option:Read("desc"),
-            min = option:Read("min"),
-            max = option:Read("max"),
-            step = option:Read("step"),
-            get = function()
-                return option:Read("get")
-            end,
-            set = function(value)
-                option:Read("set", value)
-                app.core:RefreshOptions("SeamlessActionBars")
-            end,
-            disabled = function()
-                return option:Read("disabled")
-            end,
-            default = function()
-                return page.tooltip(option.path)
-            end,
-        }
-    end
+    -- One section for every status bar, drawn from the declaration on the first bar's page.
     app.core:RegisterEditModeSystemOptions("SeamlessActionBars:xpBarTooltip", {
         system = Enum.EditModeSystem.StatusTrackingBar,
         name = xpBarTooltipOption.name,
         key = "SeamlessActionBars:xpBarTooltip",
+        page = { addon = "SeamlessActionBars", key = "statusBar1", path = { "xpBarTooltip" } },
         enabled = function()
             return app.addon:IsEnabled()
         end,
-        options = rows,
     })
     registered = true
 end

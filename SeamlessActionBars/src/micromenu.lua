@@ -9,41 +9,13 @@ function module:OnInitialize()
     if not Enum.EditModeSystem or not Enum.EditModeSystem.MicroMenu then
         return
     end
-    -- Adapt the settings panel's declarations so both surfaces share every accessor.
-    local args = app.MicroMenuOptions().args
-    local rows = {}
-    for _, key in ipairs({ "orientation", "order", "hideArtwork", "hidden" }) do
-        local option = args[key]
-        if option then
-            local row = {
-                key = key,
-                type = option.type,
-                name = option.name,
-                default = option.default,
-                disabled = option.disabled,
-                get = option.get,
-                set = function(value)
-                    option.set(nil, value)
-                    app.core:RefreshOptions("SeamlessActionBars")
-                end,
-            }
-            if option.type == "select" then
-                row.values = {}
-                for _, value in ipairs(option.sorting) do
-                    row.values[#row.values + 1] = { text = option.values[value], value = value }
-                end
-            end
-            rows[#rows + 1] = row
-        end
-    end
     app.core:RegisterEditModeSystemOptions("SeamlessActionBars:microMenu", {
         system = Enum.EditModeSystem.MicroMenu,
-        name = L["Style"],
-        key = "SeamlessActionBars:microMenu:style",
+        name = L["Micro menu"],
+        page = { addon = "SeamlessActionBars", key = "microMenu" },
         enabled = function()
             return module:IsEnabled() and app.addon:IsEnabled()
         end,
-        options = rows,
     })
 end
 

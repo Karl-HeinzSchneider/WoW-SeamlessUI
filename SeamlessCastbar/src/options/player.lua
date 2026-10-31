@@ -17,6 +17,8 @@ if position then
     size.order = 6
 end
 size = size or { type = "group", inline = true, name = L["Size"], order = 6, args = {} }
+-- Every control below replaces the native layout binding with a profile setting.
+size.layoutStored = false
 size.args.scale = {
     type = "range",
     order = 0,

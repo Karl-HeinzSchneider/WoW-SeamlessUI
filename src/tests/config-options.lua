@@ -122,6 +122,10 @@ C_CVar = {
     GetCVar = function()
         return "1"
     end,
+    -- value, defaultValue, isStoredServerAccount, isStoredServerCharacter
+    GetCVarInfo = function()
+        return "1", "0", false, false
+    end,
 }
 C_Item = { GetItemQualityColor = function() end }
 local function noop() end
@@ -183,10 +187,10 @@ for _, addon in ipairs({
         return {}
     end
     app.EndCapTextureOption = function()
-        return { type = "select", name = "Texture", values = {} }
+        return { type = "select", name = "Texture", values = {}, default = "default" }
     end
     app.EndCapHiddenOption = function()
-        return { type = "toggle", name = "Hide" }
+        return { type = "toggle", name = "Hide", default = function() end }
     end
     app.BarHiddenOption = function(_, name, order)
         return { type = "toggle", name = name, order = order, default = false }
@@ -212,12 +216,12 @@ for _, addon in ipairs({
     app.addon.Refresh = noop
     app.fpsDisplay = {
         GetPositionBinding = function()
-            return {}
+            return { default = function() end }
         end,
     }
     app.combinedBags = {
         GetPositionBinding = function()
-            return {}
+            return { default = function() end }
         end,
     }
     app.blizzardEditMode = {
@@ -440,6 +444,48 @@ for name, panel in pairs(coreApp.options.panels) do
         coreApp.config.categories[name .. ":" .. key].create(page)
         assert(page.option.root == panel.options and page.option.path[1] == key)
     end
+end
+-- Every setting declares its default: a literal `default`, a `default` function (the game's own
+-- preset or CVar default, resolved at use time) or the page's tooltip resolver over its declared
+-- schema. Run before the tests below replace profile tables.
+apps.SeamlessCastbar.PlayerSizeDefault = function(axis)
+    return apps.SeamlessCastbar.optionPages.player.defaults.profile.player[axis]
+end
+do
+    local VALUE_TYPES = { toggle = true, select = true, range = true, color = true, input = true }
+    -- Not stored settings: a picker for which saved fight to show.
+    local notSettings = { ["SeamlessDamageMeter:history.fight"] = true }
+    local missing = {}
+    local function walk(root, group, path, name)
+        for key, child in pairs(group.args or {}) do
+            local childPath = { unpack(path) }
+            childPath[#childPath + 1] = key
+            local id = name .. ":" .. table.concat(childPath, ".")
+            if child.type == "group" then
+                walk(root, child, childPath, name)
+            elseif VALUE_TYPES[child.type] and not notSettings[id] and name ~= "Test" then
+                local option = core:GetSettingsOption(root, childPath, name)
+                local ok, value = pcall(option.DefaultValue, option)
+                -- Damage meter window controls need live windows; damage-meter-settings covers them.
+                local liveWindow = not ok and name == "SeamlessDamageMeter" and childPath[1]:match("^window%d$")
+                -- Core's dead Scale placeholder in a Size group is always disabled and has no value.
+                local placeholder = key == "scale" and path[#path] == "size" and option:Read("disabled") == true
+                if
+                    not liveWindow
+                    and not placeholder
+                    and option:Read("default") == nil
+                    and (not ok or value == nil)
+                then
+                    missing[#missing + 1] = id .. (ok and "" or (" (" .. tostring(value) .. ")"))
+                end
+            end
+        end
+    end
+    for name, panel in pairs(coreApp.options.panels) do
+        walk(panel.options, panel.options, {}, name)
+    end
+    table.sort(missing)
+    assert(#missing == 0, "settings without a declared default:\n" .. table.concat(missing, "\n"))
 end
 local cast = apps.SeamlessCastbar
 local castOptions = coreApp.options.panels.SeamlessCastbar.options

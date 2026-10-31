@@ -118,7 +118,7 @@ app.optionPages.general = {
     defaults = {
         profile = {
             features = {},
-            inputHistoryLines = 25,
+            inputHistoryLines = 32, -- historyLines of ChatFrameEditBoxTemplate (ChatFrameEditBox.xml)
             persistInputHistory = true,
             -- What the profile's characters share (src/chat/sync.lua).
             sync = {

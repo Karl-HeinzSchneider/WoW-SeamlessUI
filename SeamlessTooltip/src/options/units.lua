@@ -35,7 +35,7 @@ app.optionPages.units = {
                     enabled = true,
                     inside = true,
                     inset = 6,
-                    height = 10,
+                    height = 8, -- GameTooltip StatusBar height (GameTooltip.xml)
                     texture = "Blizzard",
                     backgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
                     text = "VALUE_MAX",

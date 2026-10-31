@@ -50,6 +50,7 @@ function app.UnitFrameStatusTextOption()
         name = L["Status Text"],
         desc = L["Controls health and power text using Blizzard's client-wide setting. Changing this on any frame changes it for all supported frames."],
         blizzard = true,
+        -- PROXY_STATUS_TEXT's defaultValue 4 (None) in Blizzard_SettingsDefinitions_Frame/Interface.lua.
         default = "NONE",
         values = { NUMERIC = L["Numeric Value"], PERCENT = L["Percentage"], BOTH = L["Both"], NONE = L["None"] },
         sorting = { "NUMERIC", "PERCENT", "BOTH", "NONE" },

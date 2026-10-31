@@ -21,6 +21,8 @@ function module:EditModeVisibility(value)
     return showAnchor
 end
 local visibilityBeforeEditMode
+-- FramerateFrame's anchor in Blizzard_FramerateFrame/Mainline/FramerateFrame.xml (the client skips
+-- the micro menu override): BOTTOMRIGHT, 2 pixels in from the corner.
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
 local display
 local UPDATE_INTERVAL = 0.25
@@ -305,6 +307,10 @@ function module:GetPositionBinding()
     return {
         get = function(key)
             return CurrentPosition()[key]
+        end,
+        default = function(key)
+            local values = { relativePoint = defaults.point, relativeTo = "UIParent" }
+            return values[key] or defaults[key]
         end,
         set = function(key, value)
             local name = lib:GetActiveLayoutName()

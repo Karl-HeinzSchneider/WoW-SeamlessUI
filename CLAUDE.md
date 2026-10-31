@@ -87,6 +87,20 @@ for subordinate controls while leaving the Enable switch usable. Getters always 
 current profile; never cache its tables. Use small shared helpers for repeated controls such as
 position, scale and window inheritance, rather than factories for entire pages.
 
+**Every setting has an explicit default, taken from game code.** Declare it as a literal in the
+page's `defaults` or the control's `default`. When the setting changes something the game also has
+(a CVar, an Edit Mode setting, a frame size or anchor, a color, a timing, a line count), the default
+is the game's own value: look it up in `../_data/wow_classic_beta` (XML attributes, `UI.xsd`
+attribute defaults, Lua constants, `EditModePresetLayouts.lua`, Settings definitions) and cite the
+file in a comment. Where the game value only exists at run time, read it from the game's own default
+API (`EditModePresetLayoutManager` through the frame position service, `C_CVar.GetCVarInfo`'s default
+through `core:GetCVarOptionInfo`) or the game's formula, never the current value. Never invent a
+value, and never derive a default from the live profile, SavedVariables or a frame's current size,
+position or state. Seamless-only features, including ones whose purpose is a different look than
+the game's (class-colored health bars, a longer chat history, recolored action icons), keep a
+deliberate, declared default; their Enable switch is the way back to the game's behavior.
+`lua src/tests/config-options.lua` fails for any setting without one.
+
 `tooltip(path)` returns a declared default and an optional per-character boolean. A control's
 own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
 bindings. Edit Mode settings windows are drawn from these same page trees (Core's

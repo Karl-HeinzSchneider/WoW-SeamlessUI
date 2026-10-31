@@ -154,8 +154,19 @@ end
 app.core.RefreshOptions = function() end
 assert(loadfile("SeamlessUI/src/options/combinedBags.lua"))("SeamlessUI", app)
 assert(app.optionPages.combinedBags.defaults.profile.combinedBags.positionInCombat == false)
+EditModeUtil = {
+    GetRightActionBarWidth = function()
+        return 40
+    end,
+}
+CONTAINER_OFFSET_Y = 85
 module:OnEnable()
 assert(bags.point[4] == -10, "unsaved layouts retain Blizzard's position")
+-- The declared default is the client's own placement formula, never the bag's live position.
+local binding = module:GetPositionBinding()
+assert(binding.default("point") == "BOTTOMRIGHT" and binding.default("relativePoint") == "BOTTOMRIGHT")
+assert(binding.default("relativeTo") == "UIParent")
+assert(binding.default("x") == -50 and binding.default("y") == 85, "UpdateContainerFrameAnchors' offsets")
 assert(not anchor.shown and bags.shown, "normal bag visibility stays native")
 editing = true
 callbacks.enter()

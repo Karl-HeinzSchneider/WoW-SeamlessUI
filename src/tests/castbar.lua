@@ -1,5 +1,6 @@
 -- Run from the repository root: lua src/tests/castbar.lua
 local root = "SeamlessCastbar/src/"
+unpack = unpack or table.unpack
 
 -- Locale: the English baseline through the real AceLocale.
 GetLocale = function()
@@ -298,17 +299,50 @@ PlayerCastingBarFrame = {
         dimensions.height = value
     end,
 }
+local textPoints = { { "TOP", PlayerCastingBarFrame, "TOP", 0, -10 } }
+PlayerCastingBarFrame.Text = {
+    GetNumPoints = function()
+        return #textPoints
+    end,
+    GetPoint = function(_, index)
+        return unpack(textPoints[index])
+    end,
+    ClearAllPoints = function()
+        textPoints = {}
+    end,
+    SetPoint = function(_, ...)
+        textPoints[#textPoints + 1] = { ... }
+    end,
+}
 load("size.lua")
 app.db.profile.player.width, app.db.profile.player.height = 300, 50
 app.db.profile.player.scale = 3
 app.ApplyPlayerSize()
+assert(
+    textPoints[1][1] == "TOP" and textPoints[1][3] == "BOTTOM" and textPoints[1][5] == 1,
+    "text keeps its native bottom-relative position as height increases"
+)
+app.ApplyPlayerSize()
+assert(textPoints[1][5] == 1, "repeated refreshes do not shift the text")
 assert(dimensions.scale == 3)
 dimensions.scale = 1.5
 app.PlayerScaleChanged()
 assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1.5, "native updates retain the chosen scale")
 assert(dimensions.width == 300 and dimensions.height == 50)
 dimensions.width, dimensions.height = 150, 10
+textPoints = {
+    { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 },
+    { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 },
+}
 app.PlayerSizeLookChanged()
+assert(
+    #textPoints == 2
+        and textPoints[1][3] == "BOTTOMLEFT"
+        and textPoints[2][3] == "BOTTOMRIGHT"
+        and textPoints[1][5] == 13
+        and textPoints[2][5] == 13,
+    "locked bar retains both horizontal anchors"
+)
 assert(dimensions.width == 300 and dimensions.height == 50, "sizes survive a native look change")
 assert(app.PlayerSizeDefault("width") == 150 and app.PlayerSizeDefault("height") == 10)
 local originalProfile = app.db.profile
@@ -316,12 +350,14 @@ app.db.profile = { player = { enabled = true } }
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "a fresh profile restores native dimensions")
 assert(dimensions.scale == 1.5, "a fresh profile restores native scale")
+assert(textPoints[1][3] == "TOPLEFT" and textPoints[1][5] == 3, "fresh profiles restore native text anchors")
 app.db.profile = originalProfile
 app.ApplyPlayerSize()
 enabled = false
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "addon disable restores native dimensions")
 assert(dimensions.scale == 1.5, "addon disable restores native scale")
+assert(textPoints[2][3] == "TOPRIGHT" and textPoints[2][5] == 3, "disabling restores native text anchors")
 enabled = true
 app.db.profile.player.width, app.db.profile.player.height = nil, nil
 app.db.profile.player.scale = nil

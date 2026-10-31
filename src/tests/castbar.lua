@@ -445,7 +445,7 @@ sizeEditMode = true
 assert(sizeArgs.resetSize.hidden(), "reset size option row is hidden in Edit Mode")
 sizeEditMode = false
 local resetButton = app.optionPages.player.config.buttonSection.options[3]
-assert(resetButton.name == "Reset to default size", "Edit Mode footer declares reset size")
+assert(resetButton.name == "Reset To Default Size", "Edit Mode footer declares reset size")
 for _, reset in ipairs({ sizeArgs.resetSize.func, resetButton.click }) do
     local settings = app.db.profile.player
     settings.width, settings.height, settings.scale, settings.iconSize = 250, 22, 2, 32

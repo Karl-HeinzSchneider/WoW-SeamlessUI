@@ -95,4 +95,73 @@ function support.pages(addon, app)
     end
     toc:close()
 end
+-- Core's real settings model and Edit Mode page builder (editmodepages.lua) for a feature
+-- harness's mocked core: the feature's pages register lazily from app.optionPages, as the options
+-- module does, so Edit Mode rows are exactly what the page declares.
+function support.editModePages(core, addonName, pages)
+    local coreApp = {
+        addon = core,
+        config = { optionInfo = {}, NotifyChange = function() end },
+        LibEditMode = {
+            SettingType = {
+                Header = "seamless-header",
+                Option = "seamless-option",
+                Position = "seamless-position",
+                ButtonSection = "seamless-button-section",
+            },
+        },
+    }
+    if not core.GetEditModePositionSetting then
+        function core:GetEditModePositionSetting(spec, options)
+            return { kind = "seamless-position", name = "Position", position = spec, options = options }
+        end
+    end
+    assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
+    assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
+    assert(loadfile("Seamless/src/core/editmodepages.lua"))("Seamless", coreApp)
+    coreApp.options = {
+        panels = setmetatable({}, {
+            __index = function(panels, name)
+                if name ~= addonName then
+                    return nil
+                end
+                local args = {}
+                for key, page in pairs(pages.optionPages) do
+                    core:PrepareSettingsOptions(page.config)
+                    args[key] = page.config
+                end
+                coreApp.config.optionInfo[name] = function(path)
+                    local page = pages.optionPages[path[1]]
+                    if page and page.tooltip then
+                        return page.tooltip(path)
+                    end
+                    return page and page.defaults and core:GetOptionDefault(page.defaults.profile, path)
+                end
+                local panel = { options = { type = "group", args = args } }
+                rawset(panels, name, panel)
+                return panel
+            end,
+        }),
+    }
+    return coreApp
+end
+
+---The rows of LibEditMode settings built from a page, in order, keyed by their option's last key.
+function support.pageRows(settings)
+    local rows, list = {}, {}
+    local function add(row)
+        list[#list + 1] = row
+        rows[row.setting.path[#row.setting.path]] = row
+    end
+    for _, setting in ipairs(settings) do
+        if setting.kind == "seamless-option" then
+            add(setting.row)
+        elseif setting.kind == "seamless-position" then
+            for _, extra in ipairs(setting.options or {}) do
+                add(extra.row)
+            end
+        end
+    end
+    return rows, list
+end
 return support

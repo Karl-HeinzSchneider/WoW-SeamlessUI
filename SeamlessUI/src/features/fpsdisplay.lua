@@ -1,5 +1,5 @@
 ---@type string, SeamlessUI
-local _, app = ...
+local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
@@ -186,22 +186,7 @@ function module:OnEnable()
                 lib:RefreshFrameSettings(anchor)
             end
         end, defaults, L["FPS display"])
-        local settings = {}
-        local args = app.optionPages.fpsDisplay.config.args
-        for _, key in ipairs({ "startup", "showLatency", "whiteLatency", "roundFramerate" }) do
-            local option = args[key]
-            settings[#settings + 1] = {
-                name = option.name,
-                kind = lib.SettingType.Checkbox,
-                default = option.default,
-                get = option.get,
-                set = option.set,
-            }
-        end
-
-        settings[#settings + 1] = app.core:GetEditModePositionSetting(module:GetPositionBinding())
-        settings[#settings + 1] = app.optionPages.fpsDisplay.config.buttonSection
-        lib:AddFrameSettings(anchor, settings)
+        lib:AddFrameSettings(anchor, app.core:GetEditModePageSettings(appName, "fpsDisplay"))
         CreateDisplay()
         HookNativeFramerate()
     end

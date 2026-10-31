@@ -1,5 +1,5 @@
 ---@type string, SeamlessUI
-local _, app = ...
+local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@class SeamlessUI.CombinedBags : AceModule, AceEvent-3.0
@@ -135,17 +135,7 @@ function module:TryInitialize()
             lib:RefreshFrameSettings(anchor)
         end
     end, defaults, L["Combined bags"])
-    lib:AddFrameSettings(anchor, {
-        {
-            name = app.optionPages.combinedBags.config.args.positionInCombat.name,
-            kind = lib.SettingType.Checkbox,
-            default = false,
-            get = app.optionPages.combinedBags.config.args.positionInCombat.get,
-            set = app.optionPages.combinedBags.config.args.positionInCombat.set,
-        },
-        app.core:GetEditModePositionSetting(self:GetPositionBinding()),
-        app.optionPages.combinedBags.config.buttonSection,
-    })
+    lib:AddFrameSettings(anchor, app.core:GetEditModePageSettings(appName, "combinedBags"))
     if not hooked then
         hooksecurefunc("UpdateContainerFrameAnchors", function()
             if not module:IsEnabled() then

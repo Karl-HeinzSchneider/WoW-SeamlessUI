@@ -133,6 +133,10 @@ local app = {
         GetEditModePositionSetting = function(_, spec)
             return spec
         end,
+        GetEditModePageSettings = function(_, addonName, page)
+            assert(addonName == "SeamlessUI" and page == "combinedBags", "Edit Mode reads the frame's page")
+            return {}
+        end,
         RegisterEditModeOptions = function(_, _, spec)
             panel = spec
         end,

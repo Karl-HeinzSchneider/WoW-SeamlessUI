@@ -8,6 +8,9 @@
 ---@field BarKey fun(bar: StatusBar): string?
 ---@field Settings fun(bar: StatusBar): table?
 ---@field Active fun(bar: StatusBar): boolean
+---@field PlayerSizeDefault fun(axis: string): number?
+---@field ApplyPlayerSize fun()
+---@field PlayerSizeLookChanged fun()
 ---@field castTimeFormats table<string, string>
 ---@field castTimeFormatOrder string[]
 ---@field Known fun(value: any): boolean

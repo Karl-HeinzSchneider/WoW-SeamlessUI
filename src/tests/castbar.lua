@@ -270,6 +270,41 @@ app.addon = {
         return enabled
     end,
 }
+-- Player dimensions: exact frame sizes, native look changes and profile restoration.
+local dimensions = { width = 208, height = 11 }
+PlayerCastingBarFrame = {
+    GetWidth = function()
+        return dimensions.width
+    end,
+    GetHeight = function()
+        return dimensions.height
+    end,
+    SetWidth = function(_, value)
+        dimensions.width = value
+    end,
+    SetHeight = function(_, value)
+        dimensions.height = value
+    end,
+}
+load("size.lua")
+app.db.profile.player.width, app.db.profile.player.height = 300, 50
+app.ApplyPlayerSize()
+assert(dimensions.width == 300 and dimensions.height == 50)
+dimensions.width, dimensions.height = 150, 10
+app.PlayerSizeLookChanged()
+assert(dimensions.width == 300 and dimensions.height == 50, "sizes survive a native look change")
+assert(app.PlayerSizeDefault("width") == 150 and app.PlayerSizeDefault("height") == 10)
+local originalProfile = app.db.profile
+app.db.profile = { player = { enabled = true } }
+app.ApplyPlayerSize()
+assert(dimensions.width == 150 and dimensions.height == 10, "a fresh profile restores native dimensions")
+app.db.profile = originalProfile
+app.ApplyPlayerSize()
+enabled = false
+app.ApplyPlayerSize()
+assert(dimensions.width == 150 and dimensions.height == 10, "addon disable restores native dimensions")
+enabled = true
+app.db.profile.player.width, app.db.profile.player.height = nil, nil
 Enum = { EditModeSystem = { CastBar = 11 } }
 local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
@@ -299,6 +334,15 @@ for _, row in ipairs(registered.options) do
     keys[row.key] = true
 end
 local player = app.db.profile.player
+assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
+assert(rows.Height.min == 1 and rows.Height.max == 50 and rows.Height.step == 1)
+rows.Width.set(10)
+rows.Height.set(1)
+app.ApplyPlayerSize()
+assert(player.width == 10 and player.height == 1 and dimensions.width == 10 and dimensions.height == 1)
+player.width, player.height = nil, nil
+app.ApplyPlayerSize()
+refreshes, optionRefreshes = 0, 0
 rows["Spell rank"].set(false)
 assert(player.rank.enabled == false and refreshes == 1 and optionRefreshes == 1)
 assert(rows["Spell rank"].get() == false)
@@ -537,6 +581,7 @@ for _, setting in ipairs(settings) do
     end
 end
 assert(not byName["Spell icon"], "only the player bar has the icon option")
+assert(not byName.Width and not byName.Height, "dimension sliders are player-only")
 app.db.profile.player.castTime.format = "ELAPSED_TOTAL"
 byName["Cast time format"].set("Modern", "REMAINING")
 assert(app.db.profile.target.castTime.format == "REMAINING" and app.db.profile.player.castTime.format ~= "REMAINING")

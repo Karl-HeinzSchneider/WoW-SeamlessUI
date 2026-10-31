@@ -12,6 +12,9 @@ end
 ---@type SeamlessCore.SettingsPage
 app.optionPages.player = {
     tooltip = function(path)
+        if path[2] == "width" or path[2] == "height" then
+            return app.PlayerSizeDefault(path[2])
+        end
         local value = app.core:GetOptionDefault(app.dbDefaults.profile, path)
         if type(value) == "table" then
             return value.enabled
@@ -43,6 +46,42 @@ app.optionPages.player = {
         order = 10,
         args = {
             position = position,
+            width = {
+                type = "range",
+                order = 6,
+                name = L["Width"],
+                min = 10,
+                max = 300,
+                step = 1,
+                disabled = function()
+                    return not app.db.profile.player.enabled
+                end,
+                get = function()
+                    return app.db.profile.player.width or app.PlayerSizeDefault("width")
+                end,
+                set = function(_, value)
+                    app.db.profile.player.width = value
+                    refresh()
+                end,
+            },
+            height = {
+                type = "range",
+                order = 7,
+                name = L["Height"],
+                min = 1,
+                max = 50,
+                step = 1,
+                disabled = function()
+                    return not app.db.profile.player.enabled
+                end,
+                get = function()
+                    return app.db.profile.player.height or app.PlayerSizeDefault("height")
+                end,
+                set = function(_, value)
+                    app.db.profile.player.height = value
+                    refresh()
+                end,
+            },
             icon = {
                 type = "group",
                 feature = true,

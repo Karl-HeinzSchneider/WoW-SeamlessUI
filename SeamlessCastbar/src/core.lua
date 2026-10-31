@@ -61,6 +61,9 @@ function app.addon:OnEnable()
             -- A delayed cast that was not shown as casting turns the bar into a cast.
             self:SecureHook(bar, "HandleCastDelayed", app.UpdateTicks)
             self:SecureHook(bar, "UpdateIconShown", app.UpdateIcon)
+            if key == "player" then
+                self:SecureHook(bar, "SetLook", app.PlayerSizeLookChanged)
+            end
         end
     end
     app.RegisterEditMode()
@@ -71,6 +74,7 @@ end
 
 function app.addon:OnDisable()
     self:UnhookAll()
+    app.ApplyPlayerSize()
     for bar in pairs(keys) do
         app.RestoreCastTime(bar)
         app.RestoreName(bar)
@@ -89,6 +93,7 @@ function app.addon:Refresh()
     if not self:IsEnabled() then
         return
     end
+    app.ApplyPlayerSize()
     for bar in pairs(keys) do
         if app.Active(bar) then
             app.UpdateName(bar)

@@ -188,12 +188,11 @@ so it returns this window. The vendored file stays untouched.
   sections start collapsed.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
 - `core:GetEditModePositionSetting(spec, options)`: one `lib.SettingType.Position` frame setting
-  that the window draws as the shared Position section (`editmodeposition.lua`), the same one
-  Blizzard frames get: Scale (from `spec.scale`, the settings panel's binding; greyed out without
-  one), Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
+  that the window draws as the shared Position and Size sections (`editmodeposition.lua`), the same one
+  Blizzard frames get: Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
   `spec.anchorFrames`, resolved by optional `spec.anchorFrame(value)` or the global name;
   UIParent excluded). Revert is declared in the footer, below. Only changed fields reach
-  `spec.set`. `options` are LibEditMode settings shown at the top of the section (Reset To Default
+  `spec.set`. A separate Size section displays Scale from `spec.scale`, disabled for now. `options` are LibEditMode settings shown at the top of the section (Reset To Default
   resets them, never the position); settings after it go below without a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
 - Every frame's `src/options/<frame>.lua` explicitly sets
@@ -292,12 +291,12 @@ never a second renderer.
 
 ## Position section (`editmodeposition.lua`)
 
-`core:CreateEditModePositionSection(id, binding)` returns a section for the renderer: Scale,
-Anchor, AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow with the value),
+`core:CreateEditModePositionSection(id, binding)` returns a section for the renderer: Anchor, AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow with the value),
 "Quick anchor to frame" and the last refusal message. Revert is an available action on the
 section (`revertButton`), drawn only by an explicit button section. The binding
 (`SeamlessCore.EditModePositionBinding`) reads, validates and applies; the section only builds rows
-and drops changes once `isCurrent()` is false. Build one per selected frame. SeamlessUI uses it for
+and drops changes once `isCurrent()` is false. Its `sizeSection` contains the separate Size header and disabled Scale slider; consumers
+append it after Position. Build one per selected frame. SeamlessUI uses it for
 Blizzard frames; Seamless frames get it through `GetEditModePositionSetting`.
 
 ## Settings for Blizzard systems (`systemoptions.lua`)
@@ -317,7 +316,7 @@ enabled sections in order.
 action bar endcaps) a Scale: `system`, optional `systemIndex`, `enabled` and `scale` (a
 `PositionScale` binding with `get`/`set`, optional `min`/`max`/`step`/`disabled`). The feature
 stores and applies it; `core:GetEditModeSystemScale(system)` returns the enabled binding, which
-SeamlessUI's Position section uses for its Scale row.
+SeamlessUI's disabled Size slider displays.
 
 ## Shared feature databases
 

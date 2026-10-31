@@ -315,7 +315,11 @@ local function createView(service)
         self.section = service:GetSection(system)
         app.core:LayoutEditModeSections(
             self.parent,
-            { self.section, { id = "explicit-buttons", options = { self.section.revertButton } } },
+            {
+                self.section,
+                self.section.sizeSection,
+                { id = "explicit-buttons", options = { self.section.revertButton } },
+            },
             0,
             false,
             function()
@@ -681,16 +685,19 @@ view.AnchorButton.click()
 selected = frame("OtherFrame")
 picker.apply("LEFT", "TargetFrame", "RIGHT", 5, 0)
 assert(position:Read(player).point == "TOPLEFT")
--- Scale leads the rows; without a native size setting it shows the frame's scale, greyed out.
+-- Size is separate from Position and displays the existing scale, always greyed out.
 selected = player
 view.section.error = nil
 local scaleRow = view.controls.scale
 assert(scaleRow.template == "EditModeSettingSliderTemplate" and scaleRow.Label.text == "Scale")
-assert(view.controls.point.points[1][3] - scaleRow.points[1][3] == -35)
+assert(view.section.name == "Position" and view.section.sizeSection.name == "Size")
+for _, row in ipairs(view.section.options) do
+    assert(row.key ~= "scale", "Position contains no size controls")
+end
 view:Refresh(player)
 assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown and scaleRow.Slider.value == 1)
 assert(scaleRow.Slider.min == 0.5 and scaleRow.Slider.max == 2)
--- Unit frames edit Frame Size, in the settings panel's units (1.2 = 120 %).
+-- Unit frames display Frame Size in the settings panel's units (1.2 = 120 %).
 local SIZE = 16
 Enum.EditModeUnitFrameSetting = { FrameSize = SIZE }
 selectedSpec.system = "UnitFrame"
@@ -708,21 +715,11 @@ function EditModeManagerFrame:OnSystemSettingChange(system, setting, value)
     size = value
 end
 view:Refresh(player)
-assert(scaleRow.Slider.enabled and scaleRow.EditBox.shown)
+assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown)
 assert(scaleRow.Slider.value == 1.2 and scaleRow.Slider.min == 1 and scaleRow.Slider.max == 2)
 assert(scaleRow.Slider.steps == 20)
 scaleRow.Slider:SetValue(1.35)
-assert(size == 135 and saves == 0, "slider writes the native draft setting")
-scaleRow.EditBox:SetFocus()
-assert(scaleRow.EditBox:GetText() == "1.35")
-scaleRow.EditBox:SetText("1.62")
-scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
-assert(size == 160 and not view.section.error, "typed values snap to the native step")
-scaleRow.EditBox:SetFocus()
-scaleRow.EditBox:SetText("3")
-scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
-assert(size == 160 and view.section.error, "out-of-range values are rejected")
-view.section.error = nil
+assert(size == 120 and saves == 0, "Size is disabled even with a native scale binding")
 -- A native change (the dialog's own Frame Size slider) is picked up by the poll.
 size = 180
 view:Refresh(player)
@@ -762,19 +759,10 @@ assert(coreMessages > 0, "registering a scale redraws the window")
 assert(not pcall(app.core.RegisterEditModeSystemScale, app.core, "test:endCap", { system = 1, scale = {} }))
 assert(app.core:GetEditModeSystemScale({ system = player.system, systemIndex = -1 }) == nil)
 view:Refresh(player)
-assert(scaleRow.Slider.enabled and scaleRow.EditBox.shown and scaleRow.Slider.value == 1.25)
+assert(not scaleRow.Slider.enabled and not scaleRow.EditBox.shown and scaleRow.Slider.value == 1.25)
 assert(scaleRow.Slider.min == 0.5 and scaleRow.Slider.max == 2 and scaleRow.Slider.steps == 30)
 scaleRow.Slider:SetValue(1.5)
-assert(endCapScale == 1.5 and saves == 0, "slider writes the feature's scale")
-scaleRow.EditBox:SetFocus()
-scaleRow.EditBox:SetText("0.83")
-scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
-assert(math.abs(endCapScale - 0.85) < 1e-9 and not view.section.error, "typed values snap to the binding's step")
-scaleRow.EditBox:SetFocus()
-scaleRow.EditBox:SetText("5")
-scaleRow.EditBox.scripts.OnEnterPressed(scaleRow.EditBox)
-assert(math.abs(endCapScale - 0.85) < 1e-9 and view.section.error, "out-of-range values are rejected")
-view.section.error = nil
+assert(endCapScale == 1.25 and saves == 0, "Size is disabled for registered feature scales")
 preset = true
 view:Refresh(player)
 assert(not scaleRow.Slider.enabled, "preset layouts stay read-only")
@@ -787,10 +775,10 @@ print("Blizzard position controls OK (real override library, validation, draft p
 -- The config view uses the shared core service without requiring SeamlessUI or a selection.
 assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
 local native = app.core:GetFramePositionService()
-local group = app.core:GetNativePositionOptions(function()
+local group, sizeGroup = app.core:GetNativePositionOptions(function()
     return player
 end)
-assert(group.name == "Position and scale" and group.type == "group" and group.inline)
+assert(group.name == "Position" and group.type == "group" and group.inline)
 assert(group.layoutStored and not group.editMode, "native layout groups keep tooltip metadata without a badge")
 local config = group.args
 assert(config.point.get() == position:Read(player).point)
@@ -854,16 +842,14 @@ print("Config position options OK (shared draft, native persistence, layout swit
 function player:GetScale()
     return 0.75
 end
-assert(config.scale.type == "range" and config.scale.name == "Scale")
-for key, row in pairs(config) do
-    assert(key == "scale" or row.order > config.scale.order, "Scale is the first row")
-end
-assert(config.scale.disabled() and config.scale.get() == player:GetScale())
+assert(config.scale == nil and sizeGroup.name == "Size")
+local configScale = sizeGroup.args.scale
+assert(configScale.disabled() and configScale.get() == player:GetScale())
 local originalScale = player:GetScale()
-config.scale.set(nil, 1.2)
+configScale.set(nil, 1.2)
 assert(player:GetScale() == originalScale)
 local scaleValue = 1
-local scalable = app.core:GetNativePositionOptions(function()
+local _, scalableGroup = app.core:GetNativePositionOptions(function()
     return player
 end, {
     get = function()
@@ -875,22 +861,23 @@ end, {
     min = 0.25,
     max = 3,
     step = 0.05,
-}).args.scale
-assert(not scalable.disabled() and scalable.min == 0.25 and scalable.max == 3 and scalable.step == 0.05)
+})
+local scalable = scalableGroup.args.scale
+assert(scalable.disabled() and scalable.min == 0.25 and scalable.max == 3 and scalable.step == 0.05)
 scalable.set(nil, 1.25)
-assert(scaleValue == 1.25 and scalable.get() == 1.25)
+assert(scaleValue == 1 and scalable.get() == 1)
 scalable.set(nil, 4)
 scalable.set(nil, 0 / 0)
-assert(scaleValue == 1.25)
+assert(scaleValue == 1)
 combat = true
 assert(scalable.disabled())
 scalable.set(nil, 2)
-assert(scaleValue == 1.25)
+assert(scaleValue == 1)
 combat = false
 preset = true
 assert(scalable.disabled())
 preset = false
-local generic = app.core:GetPositionOptions({
+local generic, genericSize = app.core:GetPositionOptions({
     get = function()
         return 0
     end,
@@ -899,9 +886,9 @@ local generic = app.core:GetPositionOptions({
     end,
     anchorFrames = {},
 })
-assert(generic.args.scale.disabled() and generic.args.scale.get() == 1)
+assert(genericSize.args.scale.disabled() and genericSize.args.scale.get() == 1)
 assert(not generic.editMode, "profile-stored positions are not tagged")
-generic.args.scale.set(nil, 1.2)
+genericSize.args.scale.set(nil, 1.2)
 print("Optional position scale binding OK")
 
 -- Defaults come from the preset layout, the same source as the native Reset To
@@ -951,32 +938,34 @@ function EditModeManagerFrame:OnSystemSettingChange(system, setting, value)
     frameSize = value
 end
 
-local defaults = app.core:GetNativePositionOptions(
+local defaultPosition, defaultSize = app.core:GetNativePositionOptions(
     function()
         return player
     end,
     app.core:GetNativeSettingScale(function()
         return player
     end, FRAME_SIZE)
-).args
+)
+local defaults = defaultPosition.args
+local sizeDefaults = defaultSize.args
 assert(native:GetDefault(player).offsetX == 300 and native:GetDefault(player) ~= native:GetDefault(player))
 assert(defaults.point.default() == "BOTTOMLEFT" and defaults.relativeTo.default() == "UIParent")
 assert(defaults.x.default() == 300 and defaults.y.default() == 250, "offsets map to offsetX/offsetY")
-assert(defaults.scale.default() == 1, "raw preset value 0 is 100%")
-assert(defaults.scale.min == 1 and defaults.scale.max == 2 and defaults.scale.step == 0.05)
-assert(defaults.scale.get() == 1.2 and not defaults.scale.disabled())
+assert(sizeDefaults.scale.default() == 1, "raw preset value 0 is 100%")
+assert(sizeDefaults.scale.min == 1 and sizeDefaults.scale.max == 2 and sizeDefaults.scale.step == 0.05)
+assert(sizeDefaults.scale.get() == 1.2 and sizeDefaults.scale.disabled())
 
--- Scale writes the native setting in display units and saves outside Edit Mode.
-defaults.scale.set(nil, 1.35)
-assert(frameSize == 135 and settingSaves == 1, "1.35 is stored as exactly 135")
+-- Disabled Scale leaves native settings and saved layouts untouched.
+sizeDefaults.scale.set(nil, 1.35)
+assert(frameSize == 120 and settingSaves == 0, "disabled Size never saves the native setting")
 combat = true
-defaults.scale.set(nil, 1.5)
-assert(frameSize == 135 and defaults.scale.disabled())
+sizeDefaults.scale.set(nil, 1.5)
+assert(frameSize == 120 and sizeDefaults.scale.disabled())
 combat = false
 largerFrame = false
-assert(defaults.scale.disabled(), "hidden native setting (Focus without Larger Frame)")
-defaults.scale.set(nil, 1.5)
-assert(frameSize == 135)
+assert(sizeDefaults.scale.disabled(), "hidden native setting (Focus without Larger Frame)")
+sizeDefaults.scale.set(nil, 1.5)
+assert(frameSize == 120)
 largerFrame = true
 
 -- Reset applies the preset anchor and marks the frame as in its default position.

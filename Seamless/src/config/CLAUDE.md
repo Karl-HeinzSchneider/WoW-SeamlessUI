@@ -130,11 +130,16 @@ Run `lua src/tests/config-window.lua`. Check dragging, scrolling, compact mode a
 
 ## Reusable Position sections
 
-`core:GetPositionOptions(spec)` returns a collapsible inline Position and scale group with
-Anchor, AnchorParent, AnchorFrame, X, Y and Scale. It uses the same `get(key)`,
-`set(key, value)`, `anchorFrames` and optional `disabled()` contract as
-`GetEditModePositionSetting`; the keys are point, relativePoint, relativeTo, x, y.
-No position is stored by the controls. The returned group's order can be changed.
+`core:GetPositionOptions(spec)` returns two collapsible inline groups: Position (Anchor,
+AnchorParent, AnchorFrame, X and Y) and Size (Scale). Each frame page explicitly declares both
+siblings in its `args`, using `local position, size = core:GetPositionOptions(spec)`.
+`GetNativePositionOptions` and addon position helpers return the same pair. Position owns
+Reset to default position; Size keeps the scale binding's current value, range and default.
+Scale is disabled for now in both settings and Edit Mode, even with a writable binding.
+Enable size controls only when explicitly requested for the frame. Saved keys are unchanged.
+The position controls use the same `get(key)`, `set(key, value)`, `anchorFrames` and optional
+`disabled()` contract as `GetEditModePositionSetting`; the keys are point, relativePoint,
+relativeTo, x and y. No position is stored by the controls.
 
 For native Edit Mode frames, use `core:GetNativePositionOptions(function()
 return PlayerFrame end)`. The frame is resolved on every access, and the shared
@@ -146,7 +151,7 @@ exclude self, descendants and cycles. This works without SeamlessUI enabled;
 SeamlessUI's Edit Mode extension uses the same core backend with its own selection
 and feature-enable checks. Settings stay in Edit Mode layouts, not AceDB profiles.
 
-`Unit Frames > Player`, `Target` and `Focus` use it, each with Position and scale and
+`Unit Frames > Player`, `Target` and `Focus` use it, each with Position, Size and
 Style groups. Run `lua src/tests/blizzard-position.lua` for both native and config paths.
 
 Defaults come from the game, not from our schemas: the service's `GetDefault(frame)`
@@ -161,20 +166,11 @@ disabled by `isDefault()`), which applies the preset anchor with
 Any option may carry its own `default` (a value or function). It stays on the declaration and
 wins over the page's `tooltip(path)` resolver; use it for values only the game knows.
 
-Scale is always shown but disabled without an explicit `scale` binding containing
-both `get()` and `set(value)`. Scale uses multipliers (1 = 100%); defaults are
-min 0.5, max 2, step 0.01. Override these with the binding's `min`, `max`, `step`;
-its optional `disabled()` adds to the section's combat/availability guards.
-The binding owns applying and persisting scale through the frame's existing
-settings path. It never routes scale through the position setter.
-
-For a generic frame, add `scale = { get = getScale, set = setScale }` to the
-`GetPositionOptions` spec. For a native frame, pass that binding as the optional
-second argument to `GetNativePositionOptions(getFrame, scale)`; its default
-getter reads the native frame's current scale. Omit the binding to retain the
-disabled slider. The same binding in a `core:GetEditModePositionSetting(spec)` spec drives
-the Scale row that leads every Edit Mode Position section (also disabled without it; Reset To
-Default leaves it alone).
+Scale bindings use multipliers (1 = 100%); defaults are min 0.5, max 2, step 0.01.
+The binding's `min`, `max`, `step`, `get` and `default` supply the disabled Size slider's display.
+Pass `scale` in the generic spec or as `GetNativePositionOptions(getFrame, scale)`'s second
+argument. Edit Mode displays the same binding under its separate Size header. Scale never routes
+through the position setter; Reset Position leaves it alone.
 
 `core:GetNativeSettingScale(getFrame, setting)` binds Scale to a native Edit Mode
 percentage setting (the unit frames pass `Enum.EditModeUnitFrameSetting.FrameSize`):

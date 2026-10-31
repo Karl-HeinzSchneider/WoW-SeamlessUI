@@ -125,6 +125,7 @@ if direction.Left and direction.Right and direction.Up and direction.Down then
     end
 end
 
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
     defaults = {
@@ -144,7 +145,8 @@ app.optionPages.bags = {
         end,
         args = {
             layout = { type = "group", inline = true, name = L["Style"], order = 20, args = args },
-            position = app.core:GetNativePositionOptions(getFrame, scale),
+            position = position,
+            size = size,
         },
     },
 }

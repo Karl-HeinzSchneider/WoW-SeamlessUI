@@ -184,6 +184,7 @@ app.blizzardPosition = {
             id = "position",
             name = "Position",
             key = "settings:position",
+            sizeSection = { id = "position:size", name = "Size", key = "settings:size", options = {} },
             options = {
                 {
                     key = "anchored",
@@ -332,6 +333,7 @@ assert(not positionShown())
 app.db.profile.blizzardEditMode.frames.focus.addPosition = true
 module:RefreshPanel()
 -- Add position appears as an expanded Position header that collapses like every other header.
+assert(headers.Size, "native settings declare a separate Size header")
 local positionHeader, positionRow = headers.Position, created.EditModeSettingCheckboxTemplate
 assert(positionShown() and not positionHeader.collapsed and positionRow.shown)
 assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)

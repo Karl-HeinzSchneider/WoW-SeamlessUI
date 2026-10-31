@@ -186,10 +186,10 @@ function app.WindowAppearanceOptions(windowID)
     return args
 end
 
--- The standard Position and scale section, on the window's own values. Moving or re-anchoring
+-- The standard Position and Size sections, on the window's own values. Moving or re-anchoring
 -- keeps the offsets; dragging the window measures them again.
 function app.WindowPositionOptions(windowID)
-    local group = app.core:GetPositionOptions({
+    local group, size = app.core:GetPositionOptions({
         get = function(key)
             local config = app.db.profile.windows[windowID]
             if key == "relativeTo" then
@@ -259,7 +259,8 @@ function app.WindowPositionOptions(windowID)
         },
     })
     group.order = 2
-    return group
+    size.order = 2.5
+    return group, size
 end
 
 -- Profiles replace saved window records; all declared accessors resolve the current record.

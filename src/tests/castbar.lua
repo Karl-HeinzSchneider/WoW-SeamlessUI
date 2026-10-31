@@ -425,7 +425,7 @@ app.core.GetEditModePositionSetting = function(_, spec)
     return { kind = "position", name = "Position", spec = spec }
 end
 app.core.GetPositionOptions = function(_, spec)
-    return { type = "group", spec = spec }
+    return { type = "group", spec = spec }, { type = "group", name = "Size", args = {} }
 end
 app.core.GetFramePositionService = function()
     return {

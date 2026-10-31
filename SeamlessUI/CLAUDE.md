@@ -61,7 +61,7 @@ Run `lua src/tests/blizzard-editmode.lua`.
 - `position:GetSection(system)` binds Core's `CreateEditModePositionSection` to the selected
   system (one section per selection); Core draws the rows. X/Y and Scale have an editable value
   (click to type, Enter commits, Escape discards).
-- Scale is the first row, like the settings panel's "Position and scale" group: the same slider
+- Scale lives under a separate Size header and is disabled for now, like the settings panel. It displays the same value
   in the panel's units (1 = 100 %), bound to the system's native percentage setting (`FrameSize`
   for unit frames, `IconSize` for action bars and auras, `BarSize` for the cast bar, `Scale` for
   swing timers, otherwise `Size`) with its range and step, written through Core's `ApplySetting`

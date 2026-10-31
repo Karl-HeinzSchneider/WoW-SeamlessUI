@@ -31,6 +31,7 @@ local function visibilityOption(key, name, order)
     }
 end
 
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.minimap = {
     tooltip = function(path)
@@ -114,7 +115,8 @@ app.optionPages.minimap = {
                     hideHeader = visibilityOption("hideHeader", L["Hide complete minimap header"], 60),
                 },
             },
-            position = app.core:GetNativePositionOptions(getFrame, scale),
+            position = position,
+            size = size,
         },
     },
 }

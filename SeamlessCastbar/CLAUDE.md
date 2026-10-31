@@ -27,7 +27,7 @@ system, so they are not part of this addon.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/options/`, `src/editmode.lua`: options and shared Style declarations.
-  The Player tab's Position and scale group is Core's native group for the cast bar system
+  The Player tab's Position and Size groups is Core's native group for the cast bar system
   (`GetNativePositionOptions`, Bar Size via `GetNativeSettingScale`), stored in the Edit Mode
   layout; position is unavailable while Lock to Player Frame is on.
 - `src/position.lua`, `app.position`: target/focus positions per Edit Mode layout name in
@@ -39,8 +39,8 @@ system, so they are not part of this addon.
   placement puts the bar back. A scale per layout in `profile.scales[key][layout]` is set on
   the bar at the same moments (the client never scales these bars; 1 is not stored, and a bar we
   scaled gets 1 back); changing it rescales stored offsets so the anchor point stays put.
-  `GetOptions(key)` is the tab's Position and scale group; `ScaleOption(key)` is also the `scale`
-  binding of the previews' Core Position section, which shows it as its Scale row.
+  `GetOptions(key)` is the tab's Position and Size groups; `ScaleOption(key)` is also the `scale`
+  binding of the previews' Core Size section, whose Scale slider is disabled for now.
 - `src/preview.lua`: target/focus Edit Mode stand-ins using client art: addon-owned UIParent
   children at the bar's position and effective scale, registered with LibEditMode with Core's
   Position section and the Style rows. A drag releases the anchor frame (stored on UIParent where

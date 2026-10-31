@@ -171,7 +171,7 @@ function module:Reset(key)
     self:Changed()
 end
 
----The Position and scale group for the frame's options tab; nil for other frames. Scale stays
+---The Position and Size groups for the frame's options tab; nil for other frames. Scale stays
 ---disabled: these frames take their unit frame's Frame Size.
 ---@param key string
 ---@return table?

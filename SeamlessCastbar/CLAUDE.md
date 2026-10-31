@@ -3,9 +3,7 @@
 Optional addon requiring Seamless that adds information to the game's own player, target and focus
 cast bars without replacing them: cast time text, the spell rank in the name, channel tick marks,
 the spell icon on the detached player bar and how long a bar stays after a cast. It also makes
-the target and focus bars movable. Options have Player, Target and Focus tabs. The player's Style
-section uses SeamlessUI's native Edit Mode extension; target/focus previews use LibEditMode
-settings.
+the target and focus bars movable and the player bar resizable.
 
 ## What the client already does (don't duplicate)
 
@@ -19,7 +17,9 @@ system, so they are not part of this addon.
 
 ## Ownership
 
-- `src/options/`: per-bar feature defaults and page declarations. `src/core.lua`: lifecycle,
+- `src/options/`: per-bar feature defaults and the Player, Target and Focus pages (`shared.lua`
+  holds their common controls). `src/editmode.lua` registers the player's Style and Size rows as
+  system options for SeamlessUI's Blizzard Edit Mode extension. `src/core.lua`: lifecycle,
   hooks and `app.Settings(bar)`. All three bars follow the addon lifecycle; there are no per-bar
   Enable switches. Individual feature switches remain independent.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
@@ -27,15 +27,13 @@ system, so they are not part of this addon.
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
-- `src/options/`: the pages, also shown in Edit Mode; `src/editmode.lua` registers the player page
-  for Blizzard's cast bar system.
-  The Player tab's Position and Size groups is Core's native group for the cast bar system
-  (`GetNativePositionOptions`); position is stored in the Edit Mode layout and unavailable while
-  Lock to Player Frame is on. The player's Size controls override that group's Scale placeholder:
-  Scale (0.5–3), Width and Height use `profile.player` and apply directly to the native frame.
-  `src/size.lua` retains native values for restoration and reapplies overrides after native updates.
-  Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size 16,
-  from the client's player/base casting bar templates and default Bar Size. Tooltips and Reset
+- `src/size.lua`: player bar size. The Player tab's Position and Size groups are Core's native group
+  for the cast bar system (`GetNativePositionOptions`); position is stored in the Edit Mode layout
+  and unavailable while Lock to Player Frame is on. The player's Size controls override that group's
+  Scale placeholder: Scale (0.5–3), Width and Height use `profile.player` and apply directly to the
+  native frame. It retains native values for restoration and reapplies overrides after native
+  updates. Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size
+  16, from the client's player/base casting bar templates and default Bar Size. Tooltips and Reset
   To Default Size use that schema; captured live frame values are only for disabling overrides.
 - `src/position.lua`, `app.position`: target/focus positions per Edit Mode layout name in
   `profile.positions[key][layout]` (point, relativeTo, relativePoint, x, y in the bar's scale),
@@ -48,8 +46,8 @@ system, so they are not part of this addon.
 - `src/preview.lua`: target/focus Edit Mode stand-ins using client art: addon-owned UIParent
   children at the bar's position and effective scale, registered with LibEditMode with Core's
   Position section and their page's rows. A drag releases the anchor frame (stored on UIParent where
-  dropped, like Blizzard's Edit Mode); Reset Position reports the registered default (`RESET`). Preview Frames checkboxes are
-  session-only.
+  dropped); Reset Position reports the registered default (`RESET`). Preview Frames checkboxes
+  are session-only.
 
 ## Rules
 
@@ -71,5 +69,3 @@ casts and interruptions, channel pushback, spell ranks, profile changes and Edit
 Moved target/focus bars: drag, Position rows, Reset Position, layout switch, target with aura
 rows and a ToT, casts in combat.
 Check `/console taintLog 1` stays clean.
-
-All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

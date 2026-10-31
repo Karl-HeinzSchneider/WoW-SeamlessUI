@@ -136,7 +136,7 @@ key when the same English needs a different meaning. Never localize SavedVariabl
 IDs. Then run `npm run locales:sync`: it keeps existing translations in
 `Seamless/locales/<locale>/strings.lua` and inserts commented English stubs in baseline order
 (one double-quoted assignment per line; obsolete keys are reported, resolve them by hand).
-Untranslated entries fall back to English.
+Untranslated entries fall back to English. `lua src/tests/locales.lua` loads every client locale.
 
 ## WoW addon constraints
 

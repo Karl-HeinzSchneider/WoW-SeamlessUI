@@ -5,25 +5,29 @@ the `SeamlessUnitframes` namespace of `SeamlessDB`.
 
 ## Ownership
 
-- `src/core/`: lifecycle, database defaults, unit-frame registry, options and Edit Mode sections.
-  `unitframes.lua` maps keys to native systems or linked frames; `src/options/` is the single source for page defaults and per-frame settings; Edit Mode shows
-  those pages through Core (`editmode.lua` registers them, `GetEditModePageSettings` for stand-ins).
-- `src/healthcolor/`, `src/name/`, `src/portrait/`, `src/pvpicon/`, `src/questicon/`: visual
-  features reading `profile.unitFrames[key]`. Preserve secret-value guards and restore only
-  regions the feature changed. Pets use the player's class color; native class-icon CVars win
-  when restoring portraits.
+- `src/core/`: lifecycle, database defaults, unit-frame registry, quest-unit lookup
+  (`questicons.lua`), VIP previews (`previewcharacters.lua`) and Edit Mode registration.
+  `unitframes.lua` maps keys to native systems or linked frames; `editmode.lua` registers each
+  frame's page with Core, which draws Edit Mode from it.
+- `src/options/`: the single source for page defaults and per-frame settings; `shared.lua` holds
+  the controls every frame shares (layout selector, client-wide Status Text).
+- `src/healthcolor/`, `src/name/` (name display and name background), `src/portrait/` (class icon,
+  player portrait dragon), `src/level/`, `src/pvpicon/`, `src/questicon/`: visual features reading
+  `profile.unitFrames[key]`. Preserve secret-value guards and restore only regions the feature
+  changed. Pets use the player's class color; native class-icon CVars win when restoring portraits.
 - `src/totposition/`: ToT positions and addon-owned Edit Mode stand-ins.
 - `src/layout/`: optional legacy geometry and artwork.
 
 Native Player, Pet, Target and Focus position controls use Core's `GetNativePositionOptions`,
 reading the active layout without a SeamlessUI dependency (Scale is Core's dead placeholder; Frame
 Size stays in Blizzard's dialog). ToT frames use `app.totPosition:GetOptions`; their stand-ins show
-their own pages.
+their own pages through `GetEditModePageSettings`.
 
 New per-frame settings need a default and control in that frame's `src/options/<frame>.lua`.
-Edit Mode shows the same declaration. The shared layout selector appears first in every frame's Style section and changes
-`profile.layout` for all frames; there is no General page.
-Run `lua src/tests/unitframes-options.lua`.
+Edit Mode shows the same declaration. The shared layout selector (Default, Beta, Beta (rounded))
+appears first in every frame's Style section and changes `profile.layout` for all frames; there is
+no General page. Run `lua src/tests/unitframes-options.lua`, plus `unitframes-dragon.lua`,
+`unitframes-level.lua` or `unitframes-questicons.lua` for those features.
 
 ## `src/totposition/`: movable ToT frames
 
@@ -39,17 +43,16 @@ BOTTOMRIGHT (12, 10; the small focus frame 20, 8 from `FocusFrameMixin:SetSmallS
   `FocusFrame.SetSmallSize` re-applies a moved focus ToT. Anchor frames are validated with Core's
   position service and fall back to the unit frame. `GetOptions(key)` is the options tab's
   Position group (Scale is the dead placeholder: the ToT takes its unit frame's Frame Size).
-- `mover.lua`, `app.totMover`: an addon-owned UIParent stand-in per frame with the ToT art, size
-  and effective scale, registered with LibEditMode and shown only in Edit Mode (a Frames checkbox
-  each, on for the session), with Core's Position section. A drag releases the anchor frame: the
-  ToT is stored on UIParent where it was dropped, like Blizzard's Edit Mode. LibEditMode's Reset Position reports the registered default (`RESET`), which means
-  Reset.
-  The stand-ins are public frames named `SeamlessUnitframes<frameName>Preview` (e.g.
-  `SeamlessUnitframesTargetFrameToTPreview`) so SeamlessDarkmode tints their `FrameTexture`; keep
-  those names and that key.
-  The stand-ins show live player name, portrait, health and power. They reuse the layout's fixed
-  ToT geometry and the name, class icon and health color modules' `ApplyPreview` methods with
-  their own ToT settings key. Hooks on those modules' `Refresh` keep visible previews in sync.
+- `mover.lua`, `app.totMover`: an addon-owned UIParent stand-in per frame with the ToT art, size and
+  effective scale, registered with LibEditMode and shown only in Edit Mode (a Frames checkbox each,
+  on for the session), with Core's Position section. A drag releases the anchor frame: the ToT is
+  stored on UIParent where it was dropped. LibEditMode's Reset Position reports the registered
+  default (`RESET`), which means Reset. The stand-ins are public frames named
+  `SeamlessUnitframes<frameName>Preview` (e.g. `SeamlessUnitframesTargetFrameToTPreview`) so
+  SeamlessDarkmode tints their `FrameTexture`; keep those names and that key. The stand-ins show
+  live player name, portrait, health and power. They reuse the layout's fixed ToT geometry and the
+  name, class icon and health color modules' `ApplyPreview` methods with their own ToT settings key.
+  Hooks on those modules' `Refresh` keep visible previews in sync.
 
 Never drag, reparent or `SetUserPlaced` the real frames, change their scripts, store anything on
 them or anchor them to the aura container or cast bar (Forever restricts those). Blizzard still
@@ -62,7 +65,7 @@ Run `lua src/tests/unitframes-totposition.lua`.
 - `atlas.lua`: generated coordinates of the old artwork; regenerate with
   `python src/generate-legacy-unitframe-atlas.py`. The BLP sheets are in `assets/legacy/`; see
   `docs/unit-frame-layout.md` for provenance and limits.
-- `layout.lua`: `app.legacyLayout`; inert until Beta is selected.
+- `layout.lua`: `app.legacyLayout`; inert until Beta or Beta (rounded) is selected.
 - `geometry.lua`: fixed 70374/70425 definitions for player, target/focus/boss, pet/ToT, party and
   combo points.
 
@@ -108,7 +111,7 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 
 ## Conventions
 
-- `src/core/previewcharacters.lua` allows VIP records only for the exact native Player,
+- `src/core/previewcharacters.lua` (Core's preview characters) allows VIP records only for the exact native Player,
   Pet, Target and Focus frames and the addon-owned ToT stand-ins. Native consumers change names,
   portrait textures/atlases and configured health colors through the existing visual modules
   and their secure post-hooks. Never change native unit identifiers, secure attributes, scripts,
@@ -122,5 +125,3 @@ Run `lua src/test-legacy-layout.lua` (its render getters throw if called) and
 - Modules are prototype-style Ace modules (`addon:NewModule("Name", module, …)`); a module that
   depends on profile settings defines `OnProfileRefresh`.
 - `src/types.lua`: annotations for `app.*` and `SeamlessUnitframes.DB`; not in the TOC.
-
-All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

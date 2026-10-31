@@ -97,9 +97,6 @@ function core:GetNativePositionOptions(getFrame, scale)
         args = {},
     }
 end
-function core:GetNativeSettingScale(getFrame, setting)
-    return { getFrame = getFrame, setting = setting }
-end
 function core:GetFramePositionService()
     return {
         ReadSetting = function()

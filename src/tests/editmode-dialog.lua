@@ -309,6 +309,9 @@ for path in embed:gmatch("file='([^']+)'") do
 end
 dofile("src/tests/locale-support.lua")
 app.addon = {}
+-- The shared tooltip and option behavior of the settings model.
+app.config = {}
+assert(loadfile("Seamless/src/config/model.lua"))("Seamless", app)
 UIParent.width = 1500
 local toc = assert(io.open("Seamless/Seamless.toc")):read("*a")
 local tocAce = assert(toc:find("src\\core\\ace.lua", 1, true))

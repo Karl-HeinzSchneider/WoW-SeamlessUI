@@ -63,7 +63,52 @@ function app.addon:GetSettingsOption(root, path, name)
     return Option:New(root, path, name)
 end
 
-function Option:TooltipDetails()
+-- One tooltip for every setting row, in the config window and in Edit Mode: name, description,
+-- then for settings the default line and storage markers. Bottom-left corner on the top-right of
+-- the anchor (the row's name), padded 12 pixels right and 8 up, never following the cursor.
+---@param owner table
+---@param anchor table
+---@param name string?
+---@param desc string?
+---@param details { default: string, perCharacter: boolean?, blizzardCVar: boolean?, layoutStored: boolean? }?
+function app.addon:ShowSettingTooltip(owner, anchor, name, desc, details)
+    GameTooltip:SetOwner(owner, "ANCHOR_NONE")
+    GameTooltip:ClearAllPoints()
+    GameTooltip:SetPoint("BOTTOMLEFT", anchor, "TOPRIGHT", 12, 8)
+    GameTooltip:SetText(name or "", 1, 1, 1)
+    if desc and desc ~= "" then
+        GameTooltip:AddLine(desc, nil, nil, nil, true)
+    end
+    if details then
+        GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], details.default), nil, nil, nil, true)
+        if details.perCharacter then
+            GameTooltip:AddLine(L["|cff8080ff[Per-character setting]|r"], nil, nil, nil, true)
+        end
+        if details.blizzardCVar then
+            GameTooltip:AddLine(L["|cff8080ff[Blizzard CVAR]|r"], nil, nil, nil, true)
+        end
+        if details.layoutStored then
+            GameTooltip:AddLine(L["|cff8080ff[Saved in the Edit Mode layout]|r"], nil, nil, nil, true)
+        end
+    end
+    GameTooltip:Show()
+end
+
+---The refusal of a typed or chosen value, in the setting tooltip's place.
+---@param owner table
+---@param anchor table
+---@param message string?
+function app.addon:ShowSettingError(owner, anchor, message)
+    GameTooltip:SetOwner(owner, "ANCHOR_NONE")
+    GameTooltip:ClearAllPoints()
+    GameTooltip:SetPoint("BOTTOMLEFT", anchor, "TOPRIGHT", 12, 8)
+    GameTooltip:SetText(message or L["Invalid value"], 1, 0.2, 0.2)
+    GameTooltip:Show()
+end
+
+-- The declared default: the option's own `default` wins over the page's tooltip resolver.
+-- Returns the value, then the per-character and Blizzard CVar markers.
+function Option:DefaultValue()
     local resolver = app.config.optionInfo and app.config.optionInfo[self.appName]
     local value, perCharacter, blizzardCVar = self:Read("default"), nil, nil
     if type(value) == "function" then
@@ -77,6 +122,11 @@ function Option:TooltipDetails()
             value = resolved
         end
     end
+    return value, perCharacter, blizzardCVar
+end
+
+function Option:TooltipDetails()
+    local value, perCharacter, blizzardCVar = self:DefaultValue()
     if value == nil then
         return L["Not applicable"], perCharacter, blizzardCVar
     end
@@ -106,6 +156,161 @@ function Option:TooltipDetails()
         return L["Not applicable"], perCharacter, blizzardCVar
     end
     return value == "" and L["None"] or tostring(value), perCharacter, blizzardCVar
+end
+
+local SETTING_TOOLTIP_EXCLUDED = { group = true, header = true, description = true }
+
+---The option's tooltip, the same in both windows; nothing for a group or text without a description.
+---@param owner table
+---@param anchor table
+function Option:ShowTooltip(owner, anchor)
+    local desc = self:Read("desc")
+    local setting = not SETTING_TOOLTIP_EXCLUDED[self:Read("type")]
+    if not setting and not (desc and desc ~= "") then
+        return
+    end
+    local details
+    if setting then
+        local default, perCharacter, blizzardCVar = self:TooltipDetails()
+        details = {
+            default = default,
+            perCharacter = perCharacter,
+            blizzardCVar = blizzardCVar,
+            layoutStored = self:InEditModeLayout(),
+        }
+    end
+    app.addon:ShowSettingTooltip(owner, anchor, self:Read("name"), desc, details)
+end
+
+local CONFIRM = {
+    text = "%s",
+    button1 = ACCEPT,
+    button2 = CANCEL,
+    OnAccept = function(_, callback)
+        callback()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+---Write values without validation or confirmation (a reset or a revert), unless the option is
+---hidden or disabled now. Refreshes the addon's settings pages.
+---@return boolean applied
+function Option:Apply(...)
+    if self:Read("hidden") or self:Read("disabled") then
+        return false
+    end
+    self:Read(self:Read("type") == "execute" and "func" or "set", ...)
+    app.config:NotifyChange(self.appName)
+    return true
+end
+
+---Write values the player chose: `validate`, then `confirm` (the shared dialog), then Apply.
+---@return boolean accepted False when validation refused the values.
+---@return string? message Why they were refused.
+function Option:Commit(...)
+    local count, values = select("#", ...), { ... }
+    local valid = self:Read("validate", ...)
+    if valid == false or type(valid) == "string" then
+        return false, type(valid) == "string" and valid or L["Invalid value"]
+    end
+    local confirm = self:Read("confirm", ...)
+    if confirm then
+        local message = type(confirm) == "string" and confirm or self:Read("confirmText") or L["Apply this change?"]
+        StaticPopupDialogs.SeamlessConfigConfirm = StaticPopupDialogs.SeamlessConfigConfirm or CONFIRM
+        StaticPopup_Show("SeamlessConfigConfirm", message, nil, function()
+            -- Applies only if still enabled, as a profile may have changed meanwhile.
+            self:Apply(unpack(values, 1, count))
+        end)
+    else
+        self:Apply(...)
+    end
+    return true
+end
+
+---Put the declared default back, without confirmation. False when there is none.
+---@return boolean
+function Option:Reset()
+    local kind = self:Read("type")
+    local value = self:DefaultValue()
+    if value == nil or kind == "execute" or kind == "group" or kind == "header" or kind == "description" then
+        return false
+    end
+    if kind == "color" then
+        if type(value) ~= "table" then
+            return false
+        end
+        return self:Apply(value.r or value[1], value.g or value[2], value.b or value[3], value.a or value[4] or 1)
+    end
+    return self:Apply(value)
+end
+
+---A range value clamped to min/max and snapped to the step from min.
+---@param value number
+---@return number
+function Option:Snap(value)
+    local min, max, step = self:Read("min"), self:Read("max"), self:Read("step") or 1
+    value = math.max(min, math.min(max, value))
+    if step > 0 then
+        value = min + math.floor((value - min) / step + 0.5) * step
+    end
+    return math.max(min, math.min(max, tonumber(string.format("%.12g", value))))
+end
+
+---A typed range value: a finite number within min/max, snapped; nil when it is not one.
+---@param text string|number
+---@return number?
+function Option:ParseRange(text)
+    local value = tonumber(text)
+    local min, max = self:Read("min"), self:Read("max")
+    if not value or value ~= value or value == math.huge or value == -math.huge or value < min or value > max then
+        return nil
+    end
+    return self:Snap(value)
+end
+
+---A range value as both windows show it: as many decimals as the step and min need.
+---@param value number
+---@return string
+function Option:FormatRange(value)
+    local step = self:Read("step") or 1
+    if step <= 0 then
+        return string.format("%.12g", value)
+    end
+    local function decimals(number)
+        return #string.format("%.8f", number):match("%.(.-)0*$")
+    end
+    local precision = math.max(decimals(step), decimals(self:Read("min")))
+    local text = string.format("%." .. precision .. "f", value)
+    if precision > 0 then
+        text = text:gsub("0+$", ""):gsub("%.$", "")
+    end
+    return text
+end
+
+---Open the color picker on a color option; cancelling restores the previous color.
+function Option:PickColor()
+    local r, g, b, a = self:Read("get")
+    local function changed()
+        local red, green, blue = ColorPickerFrame:GetColorRGB()
+        if not self:Read("disabled") then
+            self:Apply(red, green, blue, ColorPickerFrame:GetColorAlpha())
+        end
+    end
+    ColorPickerFrame:SetupColorPickerAndShow({
+        r = r,
+        g = g,
+        b = b,
+        opacity = a or 1,
+        hasOpacity = self:Read("hasAlpha"),
+        swatchFunc = changed,
+        opacityFunc = changed,
+        cancelFunc = function()
+            self:Apply(r, g, b, a)
+        end,
+    })
 end
 
 function Option:Read(member, ...)
@@ -154,7 +359,9 @@ function Option:InEditModeLayout()
     return false
 end
 
-function Option:Children()
+---Visible children in display order; with includeHidden, also those hidden now.
+---@param includeHidden boolean?
+function Option:Children(includeHidden)
     local group = self.root
     for _, key in ipairs(self.path) do
         group = group.args[key]
@@ -167,7 +374,7 @@ function Option:Children()
         end
         path[#path + 1] = key
         local child = self:New(self.root, path, self.appName)
-        if not child:Read("hidden") then
+        if includeHidden or not child:Read("hidden") then
             child.order = child:Read("order") or 100
             children[#children + 1] = child
         end

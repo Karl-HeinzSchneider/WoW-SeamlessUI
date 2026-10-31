@@ -28,6 +28,8 @@ function app.addon:GetPositionOptions(spec)
             default = spec.default and function()
                 return spec.default(key)
             end,
+            -- Edit Mode draws these from the same spec in its shared Position section.
+            editModeHidden = true,
         }
         args[key] = row
         return row
@@ -96,6 +98,7 @@ function app.addon:GetPositionOptions(spec)
             return 1
         end,
         default = scale.default,
+        editModeHidden = true,
         -- Size controls are placeholders until explicitly enabled per frame.
         disabled = function()
             return true
@@ -111,6 +114,7 @@ function app.addon:GetPositionOptions(spec)
             type = "execute",
             name = L["Reset to default position"],
             order = 7,
+            editModeHidden = true,
             disabled = function()
                 return disabled() or (spec.isDefault and spec.isDefault()) or false
             end,
@@ -121,12 +125,14 @@ function app.addon:GetPositionOptions(spec)
             end,
         }
     end
-    return { type = "group", inline = true, name = L["Position"], order = 10, args = args }, {
+    -- Edit Mode shows both groups as its shared Position and Size sections (editmodepages.lua).
+    return { type = "group", inline = true, name = L["Position"], order = 10, args = args, editModePosition = spec }, {
         type = "group",
         inline = true,
         name = L["Size"],
         order = 11,
         args = { scale = scaleRow },
+        editModeSize = true,
     }
 end
 

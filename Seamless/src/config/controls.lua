@@ -2,7 +2,6 @@
 local _, app = ...
 
 local config = app.config
-local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- Our row base and control factories own behavior and layout. Reuse SharedXML
 -- primitives and the Settings panel's art without inheriting its setting/CVar
@@ -17,41 +16,13 @@ local function text(parent, font)
     return region
 end
 
-local function anchorTooltip(row)
-    GameTooltip:SetOwner(row, "ANCHOR_NONE")
-    GameTooltip:ClearAllPoints()
-    GameTooltip:SetPoint("BOTTOMLEFT", row.Label, "TOPRIGHT", 12, 8)
-end
-
+-- The option's shared tooltip (model.lua), anchored to the row's name from the row or its control.
 local function tooltip(frame, row)
     if frame.SetMotionScriptsWhileDisabled then
         frame:SetMotionScriptsWhileDisabled(true)
     end
     frame:HookScript("OnEnter", function()
-        local desc = row.option:Read("desc")
-        local kind = row.option:Read("type")
-        local setting = kind ~= "group" and kind ~= "header" and kind ~= "description"
-        if setting or (desc and desc ~= "") then
-            anchorTooltip(row)
-            GameTooltip:SetText(row.option:Read("name") or "", 1, 1, 1)
-            if desc and desc ~= "" then
-                GameTooltip:AddLine(desc, nil, nil, nil, true)
-            end
-            if setting then
-                local default, perCharacter, blizzardCVar = row.option:TooltipDetails()
-                GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], default), nil, nil, nil, true)
-                if perCharacter then
-                    GameTooltip:AddLine(L["|cff8080ff[Per-character setting]|r"], nil, nil, nil, true)
-                end
-                if blizzardCVar then
-                    GameTooltip:AddLine(L["|cff8080ff[Blizzard CVAR]|r"], nil, nil, nil, true)
-                end
-                if row.option:InEditModeLayout() then
-                    GameTooltip:AddLine(L["|cff8080ff[Saved in the Edit Mode layout]|r"], nil, nil, nil, true)
-                end
-            end
-            GameTooltip:Show()
-        end
+        row.option:ShowTooltip(row, row.Label)
     end)
     frame:HookScript("OnLeave", function()
         GameTooltip:Hide()
@@ -102,47 +73,16 @@ function Row:Refresh(option)
     self:SetHeight(math.max(self.rowHeight or 32, self.Label:GetStringHeight() + 12))
 end
 
-StaticPopupDialogs.SeamlessConfigConfirm = {
-    text = "%s",
-    button1 = ACCEPT,
-    button2 = CANCEL,
-    OnAccept = function(_, callback)
-        callback()
-    end,
-    timeout = 0,
-    whileDead = true,
-    hideOnEscape = true,
-    preferredIndex = 3,
-}
-
+-- Validation, confirmation and writing are the option's (model.lua), shared with Edit Mode.
 function Row:Commit(...)
     if self.syncing or not self.enabled then
         return false
     end
-    local option, values = self.option, { ... }
-    local valid = option:Read("validate", unpack(values))
-    if valid == false or type(valid) == "string" then
-        anchorTooltip(self)
-        GameTooltip:SetText(type(valid) == "string" and valid or L["Invalid value"], 1, 0.2, 0.2)
-        GameTooltip:Show()
-        return false
+    local accepted, message = self.option:Commit(...)
+    if not accepted then
+        app.addon:ShowSettingError(self, self.Label, message)
     end
-    local function apply()
-        -- Recheck state after confirmation, as a profile may have changed.
-        if option:Read("hidden") or option:Read("disabled") then
-            return
-        end
-        option:Read(option:Read("type") == "execute" and "func" or "set", unpack(values))
-        config:NotifyChange(option.appName)
-    end
-    local confirm = option:Read("confirm", unpack(values))
-    if confirm then
-        local message = type(confirm) == "string" and confirm or option:Read("confirmText") or L["Apply this change?"]
-        StaticPopup_Show("SeamlessConfigConfirm", message, nil, apply)
-    else
-        apply()
-    end
-    return true
+    return accepted
 end
 
 function creators.toggle(page)
@@ -246,35 +186,12 @@ function creators.range(page)
     input:SetSize(70, 22)
     input:SetPoint("LEFT", slider, "RIGHT", 10, 0)
     local inputError
-    local function snapValue(value)
-        local option = row.option
-        local min, max, step = option:Read("min"), option:Read("max"), option:Read("step") or 1
-        if step > 0 then
-            value = min + math.floor((value - min) / step + 0.5) * step
-        end
-        return math.max(min, math.min(max, tonumber(string.format("%.12g", value))))
-    end
-    local function displayValue(value)
-        local step = row.option:Read("step") or 1
-        if step <= 0 then
-            return string.format("%.12g", value)
-        end
-        local function decimals(number)
-            return #string.format("%.8f", number):match("%.(.-)0*$")
-        end
-        local precision = math.max(decimals(step), decimals(row.option:Read("min")))
-        local text = string.format("%." .. precision .. "f", value)
-        if precision > 0 then
-            text = text:gsub("0+$", ""):gsub("%.$", "")
-        end
-        return text
-    end
     local function resetInput()
         if inputError then
             GameTooltip:Hide()
             inputError = nil
         end
-        input:SetText(displayValue(row.rangeValue or 0))
+        input:SetText(row.option:FormatRange(row.rangeValue or 0))
         input:SetTextColor(1, 1, 1)
     end
     input:SetScript("OnEnterPressed", function()
@@ -284,17 +201,13 @@ function creators.range(page)
             resetInput()
             return
         end
-        local value = tonumber(input:GetText())
-        local min, max = option:Read("min"), option:Read("max")
-        if not value or value ~= value or value == math.huge or value == -math.huge or value < min or value > max then
+        local value = option:ParseRange(input:GetText())
+        if not value then
             inputError = true
             input:SetTextColor(1, 0.2, 0.2)
-            anchorTooltip(row)
-            GameTooltip:SetText(L["Invalid value"], 1, 0.2, 0.2)
-            GameTooltip:Show()
+            app.addon:ShowSettingError(row, row.Label)
             return
         end
-        value = snapValue(value)
         if row:Commit(value) then
             row.rangeValue = option:Read("get")
             input:ClearFocus()
@@ -314,7 +227,7 @@ function creators.range(page)
         resetInput()
     end)
     slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        if row:Commit(snapValue(value)) then
+        if row:Commit(row.option:Snap(value)) then
             row.rangeValue = row.option:Read("get")
             resetInput()
         end
@@ -394,31 +307,9 @@ function creators.color(page)
     row.Control = button
     button:SetPoint("LEFT", row, "CENTER", -73, 0)
     button:SetScript("OnClick", function()
-        local option = row.option
-        local r, g, b, a = option:Read("get")
-        local function apply(red, green, blue, alpha)
-            if option:Read("disabled") then
-                return
-            end
-            option:Read("set", red, green, blue, alpha)
-            config:NotifyChange(option.appName)
+        if row.enabled then
+            row.option:PickColor()
         end
-        local function changed()
-            local red, green, blue = ColorPickerFrame:GetColorRGB()
-            apply(red, green, blue, ColorPickerFrame:GetColorAlpha())
-        end
-        ColorPickerFrame:SetupColorPickerAndShow({
-            r = r,
-            g = g,
-            b = b,
-            opacity = a or 1,
-            hasOpacity = option:Read("hasAlpha"),
-            swatchFunc = changed,
-            opacityFunc = changed,
-            cancelFunc = function()
-                apply(r, g, b, a)
-            end,
-        })
     end)
     tooltip(button, row)
     function row:Update()

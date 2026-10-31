@@ -25,7 +25,7 @@ local function evaluate(value)
 end
 
 -- Settings show their default; buttons only a description they declare.
-local SETTINGS = { toggle = true, select = true, range = true }
+local SETTINGS = { toggle = true, select = true, range = true, input = true, color = true }
 
 -- The declared default as the row shows values, like the config window's tooltips: booleans as
 -- Enabled/Disabled, choices by their label, numbers through the row's format.
@@ -53,30 +53,33 @@ local function defaultText(option)
     return value == "" and L["None"] or tostring(value)
 end
 
--- Anchored like the config window's tooltips, not to the cursor: bottom-left corner on the top-right
--- of the row's name (a button row's button), padded 12 pixels right and 8 up, so on a dropdown or
--- slider row it sits above the control.
+-- The config window's tooltip (model.lua): rows made from a settings page show their option's own;
+-- other rows pass their declared fields to the same function.
 local function showTooltip(row)
     local option = row.option
     if not option then
         return
     end
-    local setting = SETTINGS[option.type]
+    local anchor = row.Label or row.Button or row
+    if option.setting then
+        option.setting:ShowTooltip(row, anchor)
+        return
+    end
     local desc = evaluate(option.desc)
+    local setting = SETTINGS[option.type]
     if not setting and not (desc and desc ~= "") then
         return
     end
-    GameTooltip:SetOwner(row, "ANCHOR_NONE")
-    GameTooltip:ClearAllPoints()
-    GameTooltip:SetPoint("BOTTOMLEFT", row.Label or row.Button or row, "TOPRIGHT", 12, 8)
-    GameTooltip:SetText(option.name or "", 1, 1, 1)
-    if desc and desc ~= "" then
-        GameTooltip:AddLine(desc, nil, nil, nil, true)
+    addon:ShowSettingTooltip(row, anchor, option.name, desc, setting and { default = defaultText(option) } or nil)
+end
+
+-- Write a value through the row's setter; a page option may refuse it with a message.
+local function commit(row, value)
+    local accepted, message = row.option.set(value)
+    if accepted == false then
+        addon:ShowSettingError(row, row.Label or row, message)
     end
-    if setting then
-        GameTooltip:AddLine(string.format(L["\n(Default: |cff8080ff%s|r)"], defaultText(option)), nil, nil, nil, true)
-    end
-    GameTooltip:Show()
+    return accepted ~= false
 end
 
 -- The whole row lights up and shows its tooltip while the cursor is over it or any of its
@@ -145,7 +148,7 @@ function creators.toggle(parent, changed)
             return
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-        self.option.set(not self.option.get())
+        commit(self, not self.option.get())
         changed()
     end
     function row:Refresh(enabled)
@@ -180,7 +183,7 @@ function creators.select(parent, changed)
             local item = root:CreateRadio(entry.text, function()
                 return row.option.get() == entry.value
             end, function()
-                row.option.set(entry.value)
+                commit(row, entry.value)
                 changed()
             end)
             if entry.disabled ~= nil then
@@ -212,6 +215,9 @@ end
 
 -- A typed number for a plain slider: inside its range and on its steps, or nil.
 local function typedValue(option, text)
+    if option.setting then
+        return option.setting:ParseRange(text)
+    end
     local value = tonumber(text)
     if not value or value ~= value or value == math.huge or value == -math.huge then
         return nil
@@ -257,12 +263,17 @@ local function addEditBox(row, changed)
             self:ClearFocus()
             return
         end
-        if option and option.editable then
+        if option.editable then
             option.set(self:GetText())
-        elseif option then
+        else
             local value = typedValue(option, self:GetText())
-            if value then
-                option.set(value)
+            if not value then
+                -- Keep the text for correcting it, like the config window.
+                addon:ShowSettingError(row, row.Label)
+                return
+            end
+            if not commit(row, value) then
+                return
             end
         end
         self:ClearFocus()
@@ -286,14 +297,18 @@ function creators.range(parent, changed, option)
     row.cbrHandles:Unregister()
     row.cbrHandles:RegisterCallback(row.Slider, MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
         if not row.syncing and row.enabled and not evaluate(row.option.disabled) and not InCombatLockdown() then
-            value = typedValue(row.option, value)
+            if row.option.setting then
+                value = row.option.setting:Snap(value)
+            else
+                value = typedValue(row.option, value)
+            end
             if not value then
                 return
             end
             -- Keep the slider where it is being dragged rather than initializing it again, also
             -- when the setter redraws the window before returning.
             row.value = value
-            row.option.set(value)
+            commit(row, value)
             row.value = row.option.get()
             changed()
         end
@@ -352,7 +367,7 @@ function creators.button(parent, changed)
         self.Button:SetWidth(self.option.width or width / 2)
     end
     function row:Refresh(enabled)
-        self.Button:SetText(self.option.name)
+        self.Button:SetText(self.option.setting and self.option.setting:Read("name") or self.option.name)
         fit(self, self:GetWidth())
         self.Button:SetEnabled(enabled)
     end
@@ -363,6 +378,67 @@ function creators.button(parent, changed)
             fit(self, width)
         end
     end)
+    return row
+end
+
+-- A label and a control on the right, like the select row.
+local function labelled(parent)
+    local row = CreateFrame("Frame", nil, parent)
+    row.Label = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightMedium")
+    row.Label:SetPoint("LEFT")
+    row.Label:SetWidth(100)
+    row.Label:SetJustifyH("LEFT")
+    return row
+end
+
+function creators.color(parent, changed)
+    local row = labelled(parent)
+    row.Swatch = CreateFrame("Button", nil, row, "ColorSwatchTemplate")
+    row.Swatch:SetPoint("LEFT", row.Label, "RIGHT", 10, 0)
+    hover(row, row.Swatch)
+    row.Swatch:SetScript("OnClick", function()
+        if row.enabled and not InCombatLockdown() then
+            row.option.pick()
+            changed()
+        end
+    end)
+    function row:Refresh(enabled)
+        self.enabled = enabled
+        self.Swatch:SetColorRGB(self.option.color())
+        self.Swatch:SetEnabled(enabled)
+        setLabelEnabled(self, enabled)
+    end
+    return row
+end
+
+function creators.input(parent, changed)
+    local row = labelled(parent)
+    local input = CreateFrame("EditBox", nil, row, "InputBoxTemplate")
+    row.Input = input
+    input:SetAutoFocus(false)
+    input:SetSize(190, 22)
+    input:SetPoint("LEFT", row.Label, "RIGHT", 10, 0)
+    hover(row, input)
+    input:SetScript("OnEnterPressed", function(self)
+        if row.enabled and not InCombatLockdown() and commit(row, self:GetText()) then
+            self:ClearFocus()
+            changed()
+        end
+    end)
+    input:SetScript("OnEscapePressed", function(self)
+        self:ClearFocus()
+    end)
+    input:SetScript("OnEditFocusLost", function(self)
+        self:SetText(row.option.get() or "")
+    end)
+    function row:Refresh(enabled)
+        self.enabled = enabled
+        if not input:HasFocus() then
+            input:SetText(self.option.get() or "")
+        end
+        input:SetEnabled(enabled)
+        setLabelEnabled(self, enabled)
+    end
     return row
 end
 
@@ -514,7 +590,7 @@ function addon:LayoutEditModeSections(parent, sections, y, spaced, changed)
                     end
                     row.option = option
                     if row.Label then
-                        row.Label:SetText(option.name)
+                        row.Label:SetText(option.setting and option.setting:Read("name") or option.name)
                     end
                     y = y + gap
                     place(row, INSET, y)

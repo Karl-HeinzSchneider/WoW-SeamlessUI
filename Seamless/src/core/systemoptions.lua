@@ -27,6 +27,18 @@ end
 function addon:RegisterEditModeSystemOptions(id, spec)
     assert(type(id) == "string" and id ~= "" and not registrations[id], "Edit Mode system option id must be unique")
     assert(type(spec) == "table" and spec.system ~= nil and type(spec.name) == "string", "System and name are required")
+    if spec.page ~= nil then
+        local page = spec.page
+        assert(
+            type(page) == "table" and type(page.addon) == "string" and type(page.key) == "string",
+            "Edit Mode system page needs addon and key"
+        )
+        assert(spec.options == nil, "Edit Mode system options come from either page or options")
+        spec.id = id
+        registrations[id] = spec
+        self:RefreshEditModeSystemOptions()
+        return
+    end
     assert(type(spec.options) == "table", "Edit Mode system options are required")
     local keys = {}
     for _, option in ipairs(spec.options) do
@@ -67,6 +79,36 @@ function addon:GetEditModeSystemOptions(system)
         end
         return a.id < b.id
     end)
+    return sections
+end
+
+local pageSections = {}
+
+---The renderer sections of a selected system frame's registrations, in order: a registration's
+---page (built once, on first use) or its rows under one collapsible header.
+---@param system table
+---@return SeamlessCore.EditModeSection[]
+function addon:GetEditModeSystemSections(system)
+    local sections = {}
+    for _, spec in ipairs(self:GetEditModeSystemOptions(system)) do
+        local key = "settings:" .. (spec.key or spec.name)
+        if spec.page then
+            local built = pageSections[spec.id]
+            if not built then
+                built = self:GetEditModePageSections(
+                    spec.page.addon,
+                    spec.page.key,
+                    { path = spec.page.path, id = spec.id, name = spec.name, key = key }
+                )
+                pageSections[spec.id] = built
+            end
+            for _, section in ipairs(built) do
+                sections[#sections + 1] = section
+            end
+        else
+            sections[#sections + 1] = { id = spec.id, name = spec.name, key = key, options = spec.options }
+        end
+    end
     return sections
 end
 

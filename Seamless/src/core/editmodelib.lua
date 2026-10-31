@@ -13,6 +13,7 @@ assert(lib.SettingType.Header == nil, "LibEditMode now defines Header; review ed
 assert(lib.SettingType.Button == nil, "LibEditMode now defines Button; review editmodelib.lua")
 assert(lib.SettingType.Position == nil, "LibEditMode now defines Position; review editmodelib.lua")
 assert(lib.SettingType.ButtonSection == nil, "LibEditMode now defines ButtonSection; review editmodelib.lua")
+assert(lib.SettingType.Option == nil, "LibEditMode now defines Option; review editmodelib.lua")
 assert(type(internal.CreateDialog) == "function" and type(internal.MoveParent) == "function")
 assert(type(internal.GetFrameSettings) == "function")
 assert(type(internal.TriggerCallback) == "function" and type(lib.frameSelections) == "table")
@@ -128,6 +129,8 @@ lib.SettingType.Header = "seamless-header"
 lib.SettingType.Button = "seamless-button"
 lib.SettingType.Position = "seamless-position"
 lib.SettingType.ButtonSection = "seamless-button-section"
+-- A settings page control (editmodepages.lua): `row` is a renderer row bound to the page option.
+lib.SettingType.Option = "seamless-option"
 
 local function HeaderKey(data)
     return "settings:" .. (data.key or data.name)
@@ -257,6 +260,9 @@ local function ConvertSetting(data, index, frame)
         return cached.row
     end
     local kind = data.kind
+    if kind == lib.SettingType.Option then
+        return data.row
+    end
     local row = {
         key = kind .. ":" .. index,
         name = data.name,
@@ -595,7 +601,9 @@ local function CreateSettingsWindow()
 
     local function ResetSettings()
         local function reset(data)
-            if data.set then
+            if data.kind == lib.SettingType.Option then
+                data.row.setting:Reset()
+            elseif data.set then
                 data.set(lib:GetActiveLayoutName(), data.default, true)
             end
         end

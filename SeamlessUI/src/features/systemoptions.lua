@@ -12,14 +12,5 @@ app.systemOptions = systemOptions
 ---@param system table The selected system frame.
 ---@return SeamlessCore.EditModeSection[]
 function systemOptions:GetSections(system)
-    local sections = {}
-    for _, spec in ipairs(app.core:GetEditModeSystemOptions(system)) do
-        sections[#sections + 1] = {
-            id = spec.id,
-            name = spec.name,
-            key = "settings:" .. (spec.key or spec.name),
-            options = spec.options,
-        }
-    end
-    return sections
+    return app.core:GetEditModeSystemSections(system)
 end

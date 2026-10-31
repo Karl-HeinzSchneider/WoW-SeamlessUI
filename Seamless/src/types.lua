@@ -104,6 +104,13 @@
 ---@field DetachEditModeSettingsWindow fun(self: SeamlessCore.Addon)
 ---@field RegisterEditModeSystemOptions fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemOptions)
 ---@field GetEditModeSystemOptions fun(self: SeamlessCore.Addon, system: table): SeamlessCore.EditModeSystemOptions[]
+---@field GetEditModeSystemSections fun(self: SeamlessCore.Addon, system: table): SeamlessCore.EditModeSection[]
+---@field GetEditModeOptionRow fun(self: SeamlessCore.Addon, option: table, rowKey: string?): table Renderer row bound to a page option.
+---@field GetPageOption fun(self: SeamlessCore.Addon, addonName: string, pageKey: string, path: string[]?): table
+---@field GetEditModePageSections fun(self: SeamlessCore.Addon, addonName: string, pageKey: string, spec: table?): SeamlessCore.EditModeSection[]
+---@field GetEditModePageSettings fun(self: SeamlessCore.Addon, addonName: string, pageKey: string, path: string[]?): table[] LibEditMode settings built from a page.
+---@field ShowSettingTooltip fun(self: SeamlessCore.Addon, owner: table, anchor: table, name: string?, desc: string?, details: table?)
+---@field ShowSettingError fun(self: SeamlessCore.Addon, owner: table, anchor: table, message: string?)
 ---@field RefreshEditModeSystemOptions fun(self: SeamlessCore.Addon)
 ---@field GetEditModeSystemOptionsMessage fun(self: SeamlessCore.Addon): string
 ---@field RegisterEditModeSystemScale fun(self: SeamlessCore.Addon, id: string, spec: SeamlessCore.EditModeSystemScale)
@@ -190,7 +197,8 @@
 ---@field key string? Collapse key; defaults to the name.
 ---@field order number? Section order; ties use the registration id.
 ---@field enabled boolean|fun(): boolean|nil Whether the feature contributes the section.
----@field options SeamlessCore.EditModeSystemOption[]
+---@field options SeamlessCore.EditModeSystemOption[]? Hand-made rows; prefer `page`.
+---@field page { addon: string, key: string, path: string[]? }? A settings page (or a group on it) drawn from its declaration.
 
 ---@class SeamlessCore.EditModeSystemScale
 ---@field id string? Set by RegisterEditModeSystemScale.

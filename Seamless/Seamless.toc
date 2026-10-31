@@ -30,6 +30,7 @@ src\config\position.lua
 src\core\editmodelib.lua
 src\core\editmodevisibility.lua
 src\core\editmoderows.lua
+src\core\editmodepages.lua
 src\core\editmodeposition.lua
 src\core\previewcharacters.lua
 src\core\previewcharacters-data.lua

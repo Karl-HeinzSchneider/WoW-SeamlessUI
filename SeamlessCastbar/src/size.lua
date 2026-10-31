@@ -7,16 +7,15 @@ local nativeScale
 local nativeTextPoints
 local nativeIconWidth, nativeIconHeight
 
-local function resizePlayerIcon(bar, height)
+local function resizePlayerIcon(bar, size)
     local icon = bar.Icon
     if not icon then
         return
     end
-    if height then
+    if size then
         nativeIconWidth = nativeIconWidth or icon:GetWidth()
         nativeIconHeight = nativeIconHeight or icon:GetHeight()
-        local ratio = height / 11
-        icon:SetSize(nativeIconWidth * ratio, nativeIconHeight * ratio)
+        icon:SetSize(size, size)
     elseif nativeIconWidth then
         icon:SetSize(nativeIconWidth, nativeIconHeight)
         nativeIconWidth, nativeIconHeight = nil, nil
@@ -57,6 +56,10 @@ function app.PlayerSizeDefault(axis)
     if axis == "scale" then
         return nativeScale or (bar and bar:GetScale())
     end
+    if axis == "iconSize" then
+        local value = nativeIconWidth or (bar and bar.Icon and bar.Icon:GetWidth())
+        return value and math.floor(value + 0.5)
+    end
     local value = axis == "width" and (nativeWidth or (bar and bar:GetWidth()))
         or (nativeHeight or (bar and bar:GetHeight()))
     return value and math.floor(value + 0.5)
@@ -69,7 +72,7 @@ function app.ApplyPlayerSize()
     end
     local settings = app.db.profile.player
     local active = app.addon:IsEnabled() and settings.enabled
-    resizePlayerIcon(bar, active and settings.height)
+    resizePlayerIcon(bar, active and settings.iconSize)
     anchorPlayerText(bar, active and settings.height ~= nil, nativeHeight or bar:GetHeight())
     if active and settings.scale then
         nativeScale = nativeScale or bar:GetScale()

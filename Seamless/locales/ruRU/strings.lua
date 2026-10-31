@@ -282,6 +282,7 @@ end
 -- L["Elapsed / total (1.2 / 2.5)"] = "Elapsed / total (1.2 / 2.5)"
 -- L["Hold time"] = "Hold time"
 -- L["How long a cast bar stays before it fades out."] = "How long a cast bar stays before it fades out."
+-- L["Icon size"] = "Icon size"
 -- L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."] = "Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."
 -- L["Remaining (1.3)"] = "Remaining (1.3)"
 -- L["Remaining / total (1.3 / 2.5)"] = "Remaining / total (1.3 / 2.5)"

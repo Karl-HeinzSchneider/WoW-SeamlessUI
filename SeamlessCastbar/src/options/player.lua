@@ -68,10 +68,32 @@ size.args.height = {
 }
 size.args.width.layoutStored = false
 size.args.height.layoutStored = false
+size.args.iconSize = {
+    type = "range",
+    order = 8,
+    name = L["Icon size"],
+    min = 8,
+    max = 64,
+    step = 1,
+    layoutStored = false,
+    disabled = function()
+        return not app.db.profile.player.enabled
+    end,
+    get = function()
+        return app.db.profile.player.iconSize or app.PlayerSizeDefault("iconSize")
+    end,
+    set = function(_, value)
+        app.db.profile.player.iconSize = value
+        refresh()
+    end,
+}
 ---@type SeamlessCore.SettingsPage
 app.optionPages.player = {
     tooltip = function(path)
-        if path[2] == "size" and (path[3] == "width" or path[3] == "height" or path[3] == "scale") then
+        if
+            path[2] == "size"
+            and (path[3] == "width" or path[3] == "height" or path[3] == "scale" or path[3] == "iconSize")
+        then
             return app.PlayerSizeDefault(path[3])
         end
         local value = app.core:GetOptionDefault(app.dbDefaults.profile, path)

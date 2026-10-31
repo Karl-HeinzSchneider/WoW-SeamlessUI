@@ -354,12 +354,15 @@ assert(
 dimensions.width, dimensions.height = 208, 11
 app.db.profile.player.height = 22
 app.ApplyPlayerSize()
-assert(iconSize.width == 40 and iconSize.height == 40, "double bar height doubles the icon")
+assert(iconSize.width == 20 and iconSize.height == 20, "bar height does not resize the icon")
+app.db.profile.player.iconSize = 40
 app.ApplyPlayerSize()
-assert(iconSize.width == 40, "repeated refreshes do not compound icon sizing")
+assert(iconSize.width == 40 and iconSize.height == 40, "manual icon size sets both dimensions")
+app.ApplyPlayerSize()
+assert(iconSize.width == 40, "repeated refreshes preserve manual icon size")
 app.db.profile.player.height = 11
 app.ApplyPlayerSize()
-assert(iconSize.width == 20 and iconSize.height == 20, "height 11 uses native icon size")
+assert(iconSize.width == 40 and iconSize.height == 40, "manual icon size is independent of bar height")
 app.db.profile.player.width, app.db.profile.player.height = 300, 50
 app.db.profile.player.scale = 3
 app.ApplyPlayerSize()
@@ -408,6 +411,7 @@ assert(textPoints[2][3] == "TOPRIGHT" and textPoints[2][5] == 3, "disabling rest
 enabled = true
 app.db.profile.player.width, app.db.profile.player.height = nil, nil
 app.db.profile.player.scale = nil
+app.db.profile.player.iconSize = nil
 Enum = { EditModeSystem = { CastBar = 11 } }
 local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
@@ -430,7 +434,7 @@ app.RegisterEditMode()
 app.RegisterEditMode()
 assert(registrations == 2 and registered.system == 11, "Style and Size registered once for the cast bar system")
 assert(registered.name == "Style" and registered.enabled())
-assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 3)
+assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 4)
 local sizeArgs = app.optionPages.player.config.args.size.args
 assert(sizeArgs.width and sizeArgs.height and not app.optionPages.player.config.args.width)
 local rows, keys = {}, {}
@@ -446,6 +450,11 @@ end
 local player = app.db.profile.player
 assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
 assert(rows.Height.min == 8 and rows.Height.max == 32 and rows.Height.step == 1)
+assert(rows["Icon size"].min == 8 and rows["Icon size"].max == 64 and rows["Icon size"].step == 1)
+rows["Icon size"].set(32)
+app.ApplyPlayerSize()
+assert(player.iconSize == 32 and iconSize.width == 32 and iconSize.height == 32)
+player.iconSize = nil
 assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3 and not rows.Scale.disabled())
 rows.Scale.set(0.5)
 app.ApplyPlayerSize()

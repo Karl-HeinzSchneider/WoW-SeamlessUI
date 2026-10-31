@@ -279,6 +279,7 @@ L["Each cast bar has its own tab. The player cast bar's options are also under S
 L["Elapsed / total (1.2 / 2.5)"] = true
 L["Hold time"] = true
 L["How long a cast bar stays before it fades out."] = true
+L["Icon size"] = true
 L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."] = true
 L["Remaining (1.3)"] = true
 L["Remaining / total (1.3 / 2.5)"] = true

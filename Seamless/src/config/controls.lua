@@ -246,12 +246,35 @@ function creators.range(page)
     input:SetSize(70, 22)
     input:SetPoint("LEFT", slider, "RIGHT", 10, 0)
     local inputError
+    local function snapValue(value)
+        local option = row.option
+        local min, max, step = option:Read("min"), option:Read("max"), option:Read("step") or 1
+        if step > 0 then
+            value = min + math.floor((value - min) / step + 0.5) * step
+        end
+        return math.max(min, math.min(max, tonumber(string.format("%.12g", value))))
+    end
+    local function displayValue(value)
+        local step = row.option:Read("step") or 1
+        if step <= 0 then
+            return string.format("%.12g", value)
+        end
+        local function decimals(number)
+            return #string.format("%.8f", number):match("%.(.-)0*$")
+        end
+        local precision = math.max(decimals(step), decimals(row.option:Read("min")))
+        local text = string.format("%." .. precision .. "f", value)
+        if precision > 0 then
+            text = text:gsub("0+$", ""):gsub("%.$", "")
+        end
+        return text
+    end
     local function resetInput()
         if inputError then
             GameTooltip:Hide()
             inputError = nil
         end
-        input:SetText(string.format("%.12g", row.rangeValue or 0))
+        input:SetText(displayValue(row.rangeValue or 0))
         input:SetTextColor(1, 1, 1)
     end
     input:SetScript("OnEnterPressed", function()
@@ -271,11 +294,7 @@ function creators.range(page)
             GameTooltip:Show()
             return
         end
-        local step = option:Read("step") or 1
-        if step > 0 then
-            value = min + math.floor((value - min) / step + 0.5) * step
-            value = math.max(min, math.min(max, tonumber(string.format("%.12g", value))))
-        end
+        value = snapValue(value)
         if row:Commit(value) then
             row.rangeValue = option:Read("get")
             input:ClearFocus()
@@ -295,7 +314,7 @@ function creators.range(page)
         resetInput()
     end)
     slider:RegisterCallback(MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        if row:Commit(value) then
+        if row:Commit(snapValue(value)) then
             row.rangeValue = row.option:Read("get")
             resetInput()
         end

@@ -674,6 +674,20 @@ app.config:RefreshOptionsPage(page)
 assert(edit:GetText() == "1.5" and not edit:HasFocus(), "refresh discards stale profile input")
 range.Control.callback(range.Control.owner, 2.5)
 assert(profile.amount == 2.5 and edit:GetText() == "2.5", "dragging updates the numeric field")
+amount.min, amount.max, amount.step = 0.5, 3, 0.01
+profile.amount = 2.6099998951
+app.config:RefreshOptionsPage(page)
+assert(edit:GetText() == "2.61" and profile.amount == 2.6099998951, "refresh formats existing noise without saving")
+range.Control.callback(range.Control.owner, 2.6099998951)
+assert(profile.amount == 2.61 and edit:GetText() == "2.61", "dragging snaps noisy values to the declared step")
+enter("2.606")
+assert(profile.amount == 2.61 and edit:GetText() == "2.61", "typing and dragging use the same steps")
+amount.min, amount.max, amount.step = 0.05, 3.05, 0.1
+range.Control.callback(range.Control.owner, 2.24999999)
+assert(profile.amount == 2.25 and edit:GetText() == "2.25", "fractional minimum offsets retain their precision")
+amount.min, amount.max, amount.step = 0, 10, 1
+range.Control.callback(range.Control.owner, 6.9999999)
+assert(profile.amount == 7 and edit:GetText() == "7", "integer sliders have no decimal noise")
 -- A fresh page measures long names before its rows have screen anchors. Clicking must not
 -- change the label column or reveal a second line that was clipped on the first display.
 root.args.general.args.enabled.name = "Pass unused Edit Mode keys through"

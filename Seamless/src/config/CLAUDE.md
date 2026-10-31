@@ -43,8 +43,8 @@ the selected page is refreshed. Callbacks own their controls, never reparent
 the supplied page. All categories currently belong to the single Config tab.
 
 `SeamlessConfigWindow` is the public frame name used by Escape handling.
-`/seamless [options]` and minimap right-click toggle this shell (`core:ToggleConfig()`). Minimap left-click
-opens General in this window. `core:OpenOptions(addonName, tab)` opens the corresponding
+`/seamless [options]` and minimap right-click toggle this shell (`core:ToggleConfig()`). Minimap
+left-click opens General in this window. `core:OpenOptions(addonName, tab)` opens the corresponding
 addon subview here as well.
 
 ## Feature tags
@@ -94,22 +94,22 @@ finite numbers within the declared min/max and snaps to the declared step from
 min; the same option validation, confirmation and disabled checks still apply.
 Invalid input remains editable with an error tooltip; Escape, focus loss, hiding
 or refresh discard unfinished input. Refresh/profile changes update the displayed
-value without writing settings. No SettingsPanel mixins,
-global setting registration, AceGUI or AceConfigDialog rendering is involved.
+value without writing settings. No SettingsPanel mixins, global setting registration, AceGUI or
+AceConfigDialog rendering is involved.
 Groups become collapsible section headings using the category headers' same
 `common-button-list-plus/minus` art. Clicking either the label or button toggles
 the section. Collapse state is kept per page and full option path for the session,
 including across refreshes and profile switches. Nested groups retain their own
 state; standalone header rows control following siblings until the next header.
-Controls are pooled per page and type. The page
-owns its height and the shell scrolls it. Registry notifications refresh visible
-controls on the next frame, after the originating callback has finished.
+Controls are pooled per page and type. The page owns its height and the shell scrolls it.
+Registry notifications refresh visible controls on the next frame, after the originating callback has finished.
 
 Tooltips use one anchor for both the row and its control: tooltip BOTTOMLEFT to
 label TOPRIGHT, padded 12 pixels right and 8 up. Every setting gets the localized
 `\n(Default: |cff8080ff%s|r)` line; per-character settings also get
 `|cff8080ff[Per-character setting]|r`. Each page accepts a `tooltip(path)`
-resolver returning the declared default and a per-character boolean. Metadata belongs to the page declaration. Resolve defaults from addon schemas or CVar
+resolver returning the declared default and a per-character boolean. Metadata belongs to the
+page declaration. Resolve defaults from addon schemas or CVar
 defaults, never from the current value. Profile settings that control per-character
 data remain profile settings. Actions and transient selections with no stored
 default display Not applicable. Select defaults use their localized choice labels;
@@ -136,7 +136,8 @@ siblings in its `args`, using `local position, size = core:GetPositionOptions(sp
 `GetNativePositionOptions` and addon position helpers return the same pair. Position owns
 Reset to default position; Size keeps the scale binding's current value, range and default.
 Scale is disabled for now in both settings and Edit Mode, even with a writable binding.
-Enable size controls only when explicitly requested for the frame. Saved keys are unchanged.
+Enable size controls only when explicitly requested for the frame (so far only the player cast
+bar, whose page replaces the Size group with its own controls). Saved keys are unchanged.
 The position controls use the same `get(key)`, `set(key, value)`, `anchorFrames` and optional
 `disabled()` contract as `GetEditModePositionSetting`; the keys are point, relativePoint,
 relativeTo, x and y. No position is stored by the controls.
@@ -151,8 +152,9 @@ exclude self, descendants and cycles. This works without SeamlessUI enabled;
 SeamlessUI's Edit Mode extension uses the same core backend with its own selection
 and feature-enable checks. Settings stay in Edit Mode layouts, not AceDB profiles.
 
-`Unit Frames > Player`, `Target` and `Focus` use it, each with Position, Size and
-Style groups. Run `lua src/tests/blizzard-position.lua` for both native and config paths.
+The native unit frames, the player cast bar, the action bar frames (bars, status bars, endcaps,
+micro menu, bags) and the minimap use it. Run `lua src/tests/blizzard-position.lua` for both
+native and config paths.
 
 Defaults come from the game, not from our schemas: the service's `GetDefault(frame)`
 returns `EditModePresetLayoutManager:GetDefaultSystemAnchorInfo`, the anchor the native
@@ -218,16 +220,13 @@ the matching registered config; the native details extension passes that exact d
 the renderer with its position callbacks. All frame pages must declare their footer explicitly,
 including native frames without a Position group in their standalone page.
 
-These are native schema fields, validated by `PrepareSettingsOptions` and retained on the
-config table. It supplies the selected frame's Edit Mode footer; it does not create rows in
-the standalone settings window. Frame registration only consumes this field. Omitting it means
-no footer, with no automatic fallback.
+`buttonSection` and `editModeFrame` are native schema fields, validated by
+`PrepareSettingsOptions`. They supply the selected frame's Edit Mode footer only and create no
+rows in the standalone window.
 
-`GetEditModeButtonSection(buttons)` accepts one ordered array of arbitrary button declarations:
-`name`, `click(frame)`, optional `desc`, `hidden` and `disabled` (boolean or a layout-aware
-function). It fills the internal Button kind when omitted. It does not choose, append or reorder
-buttons. A section can contain only custom actions, only standard actions, or any mixture.
-`GetEditModePositionButton("revert"|"resetPosition")` is an optional helper returning one standard
-button; its position binding is independent of the generic section structure. The damage meter's
-shared options helper returns named custom declarations, which each window page explicitly lists
-alongside its standard buttons. Empty or entirely hidden sections draw no footer or divider.
+`GetEditModeButtonSection(buttons)` takes one ordered array of button declarations (`name`,
+`click(frame)`, optional `desc`, `hidden` and `disabled`, a boolean or layout-aware function) and
+never chooses, appends or reorders buttons. `GetEditModePositionButton("revert"|"resetPosition")`
+returns one standard button. The damage meter's shared options helper returns named custom
+declarations that each window page lists alongside its standard buttons. Empty or entirely hidden
+sections draw no footer or divider.

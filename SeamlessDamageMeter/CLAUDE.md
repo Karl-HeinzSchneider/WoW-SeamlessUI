@@ -1,7 +1,9 @@
 # SeamlessDamageMeter
 
-Optional damage and threat meter: up to `app.MAX_WINDOWS` (6) windows on top of the client's `C_DamageMeter`.
-The `SeamlessDamageMeter` namespace in `SeamlessDB` holds shared suite profiles (window layouts, skins, selections);
+Optional damage and threat meter: up to `app.MAX_WINDOWS` (6) windows on top of the client's
+`C_DamageMeter`.
+The `SeamlessDamageMeter` namespace in `SeamlessDB` holds shared suite profiles (window layouts,
+skins, selections);
 `db.char.combatHistory` holds saved fights per character, independently of profiles.
 
 **Saving fights is switched off for now** (`combatService.saveSessions = false` in `service.lua`):
@@ -11,15 +13,15 @@ The archive and capture rules below apply when it is switched back on.
 
 ## Load order
 
-`src/core.lua` (lifecycle, database), `data.lua` (statistics, icons, Edit Mode samples),
-`archive.lua` (saved fight schema and storage), `live.lua` (the only caller of combat APIs),
-`service.lua` (`app.combatService`: shared queries and cache), `breakdowns.lua` (enemy
+`src/db.lua` (schema skeleton), `core.lua` (lifecycle, database), `data.lua` (statistics, icons,
+Edit Mode samples), `archive.lua` (saved fight schema and storage), `live.lua` (the only caller of
+combat APIs), `service.lua` (`app.combatService`: shared queries and cache), `breakdowns.lua` (enemy
 relationships), `capture.lua` (bounded capture after restrictions clear), `blizzard.lua` (native
-meter visibility), `settings.lua` (defaults, overrides, migrations), `editmode.lua`,
-`windows.lua` (frames and menus), `options.lua` (General, Window defaults, one tab per window,
-Skin, History).
-`src/types.lua` is annotations only. `docs/damage-meter-history.md` describes the archive's
-architecture, limits and in-game acceptance checks.
+meter visibility), `settings.lua` (defaults, overrides, migrations), `editmode.lua`, `windows.lua`
+(frames and menus), then `src/options/` (`shared.lua` helpers, General, Skin, Window defaults, one
+page per window, History, `register.lua`). `src/types.lua` is annotations only.
+`docs/damage-meter-history.md` describes the archive's architecture, limits and in-game acceptance
+checks.
 
 ## Combat data
 
@@ -61,8 +63,8 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 
 - `app.MAX_WINDOWS` (`settings.lua`) is the only limit on window slots: frames, Edit Mode
   registration, options tabs and tests all follow it. Every profile has slots 1–`MAX_WINDOWS`; a
-  fresh profile activates slot 1. `config.enabled` activates a slot, `config.hidden` hides it temporarily (`/sdm show` brings hidden windows back). All slot
-  frames always exist (globals `SeamlessDamageMeterWindow<ID>`, an authorized exception for other
+  fresh profile activates slot 1. `config.enabled` activates a slot, `config.hidden` hides it
+  temporarily (`/sdm show` brings hidden windows back). All slot frames always exist (globals `SeamlessDamageMeterWindow<ID>`, an authorized exception for other
   addons; the ID is the fixed slot), keep their positions while inactive and can be anchor
   targets. Deactivating keeps all settings.
 - Size and layout: `profile.windowDefaults` plus explicit `config.overrides` (nil inherits, false
@@ -71,8 +73,8 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
   `config.position`, never overrides; `app.positionDefaults` only seeds new windows and Reset to
   default position. Write them with `app:SetWindowValue`. Each window's options tab
   shows them in Core's standard Position and Size sections (`core:GetPositionOptions`).
-  `config.anchorTo` is a window ID or nil for UIParent; circular anchors are rejected. Old window IDs, geometry fields and appearance settings are migrated idempotently;
-  excess windows from old profiles stay in `profile.legacyWindows`.
+  `config.anchorTo` is a window ID or nil for UIParent; circular anchors are rejected. Old window
+  IDs, geometry fields and appearance settings are migrated idempotently; excess windows from old profiles stay in `profile.legacyWindows`.
 - Skins: `profile.skins` holds named appearances, selected by `config.skin` (`default`).
   `app:RemoveSkin` deletes any skin but Default; windows using it fall back to Default.
   `config.modifyGlobalStyle` (default true) edits the shared skin; when false,
@@ -101,8 +103,7 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
   anchor overrides; layout and profile switches restore it, and layout create/copy/rename/delete
   updates every profile. Edit Mode moves always save, even with Lock position on.
 - Moving a window (Edit Mode drag, nudge or Reset Position, or a header drag outside Edit Mode)
-  releases its `anchorTo` and anchors it to UIParent where it was dropped, like Blizzard's Edit
-  Mode; windows anchored to it keep following it.
+  releases its `anchorTo` (see the root `CLAUDE.md`).
 - One Frames checkbox ("Seamless Damage Meter", via `core:RegisterEditModeOptions` with
   `section = "frames"`) previews active slots without changing activation. Previews use local
   sample sessions only, never live combat data, and expand collapsed windows visually.
@@ -123,5 +124,3 @@ In game: tracking on, a second window with another statistic, current/overall se
 scrolling in a group, drag/resize/hide/show, deactivating every window, reload and profile
 switch/reset, restricted combat values in and out of combat, inherited versus overridden settings,
 windows anchored to each other, Edit Mode dragging, arrow keys, sliders, layouts and reload.
-
-All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

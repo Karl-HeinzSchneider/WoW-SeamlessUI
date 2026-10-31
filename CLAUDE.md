@@ -89,8 +89,8 @@ position, scale and window inheritance, rather than factories for entire pages.
 
 `tooltip(path)` returns a declared default and an optional per-character boolean. A control's
 own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
-bindings. Castbar and Unitframes derive their Edit Mode Style rows from these same page trees;
-do not declare those settings a second time.
+bindings. Edit Mode Style rows (Castbar, Unitframes, Action Bars, the minimap) derive from these
+same page trees; do not declare those settings a second time.
 
 `OpenOptions(addonName, page)` opens a page; `RefreshOptions(addonName)` schedules its existing
 controls to refresh after the current callback. The window and controls live in `src/config/`;
@@ -135,7 +135,7 @@ key when the same English needs a different meaning. Never localize SavedVariabl
 IDs. Then run `npm run locales:sync`: it keeps existing translations in
 `Seamless/locales/<locale>/strings.lua` and inserts commented English stubs in baseline order
 (one double-quoted assignment per line; obsolete keys are reported, resolve them by hand).
-Untranslated entries fall back to English.
+Untranslated entries fall back to English. `lua src/tests/locales.lua` loads every client locale.
 
 ## WoW addon constraints
 

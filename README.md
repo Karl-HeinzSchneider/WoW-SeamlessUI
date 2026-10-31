@@ -5,13 +5,16 @@ instead of replacing it: each part is a separate addon you can switch on or off.
 
 ## Addons
 
-- **Seamless** (required): the core. Shared libraries, logging, one minimap button and the
-  **Seamless** settings window (`/seamless`). It also adds small tweaks: `/rl` to reload, completed
-  quests and their XP in the quest log, and more XP details on the experience bar tooltip.
+- **Seamless** (required): the core. Shared libraries, logging, the **Seamless** settings window
+  (`/seamless`, a minimap button and an addon compartment entry), suite-wide profiles and the
+  shared Edit Mode panel. It adds a "SeamlessUI (Preset)" Edit Mode layout, `/rl` to reload, `/kb`
+  for Quick Keybind Mode, completed quests and their XP in the quest log, and BetterGroupLoot roll
+  frames (Embed page).
 - **SeamlessUnitframes**: per-frame settings for the player, pet, target, target of target, focus,
   target of focus and party frames: health colors (default, class, reaction or class and reaction),
-  first, last or full player names, class icons as portraits, hiding the PvP icon, a quest icon on
-  quest targets, the numeric threat display and an optional legacy frame layout.
+  name display, class icons as portraits, level display, the player's portrait dragon, hiding the
+  PvP icon or name background, a quest icon on quest targets, threat percentage, status text, a
+  shared Default, Beta or Beta (rounded) layout and movable target of target frames.
 - **SeamlessTooltip**: 23 switchable tooltip enhancements, including cursor or action button
   anchoring, scale, backgrounds and borders, player and NPC text, status tags and raid markers,
   targets and "targeted by", health bars, item level, IDs, stack sizes, vendor prices, spell IDs
@@ -23,17 +26,20 @@ instead of replacing it: each part is a separate addon you can switch on or off.
 - **SeamlessDamageMeter**: up to six movable, resizable meter windows on the client's combat
   statistics (damage, DPS, healing, HPS, absorbs, interrupts, dispels, damage taken, deaths) and a
   live threat meter, with spell breakdowns on hover or click, shared skins and favorites.
-- **SeamlessUI**: general improvements: a fuller XP bar tooltip, an FPS display with optional
-  latency, and extra controls in the game's Edit Mode (exact positions and anchors for Blizzard
-  frames, and the Style settings of the other addons).
+- **SeamlessUI**: extra controls in the game's Edit Mode (exact positions and anchors for Blizzard
+  frames, and the Style settings of the other addons), minimap options (square shape, hidden
+  header buttons), a movable combined bags window, an FPS display with optional latency and
+  keyboard pass-through in Edit Mode.
 - **SeamlessDarkmode**: one shared dark tint for the borders of unit frames, the minimap and its
   addon buttons, action bar slots, gryphons and the XP and reputation bars, switchable per group.
 - **SeamlessActionBars**: action button icons turn red when out of range and blue when you lack
   mana, rage or energy (both colors configurable), and keybind labels get shorter (`SM4`, `N5`,
-  `WU`).
+  `WU`). It also adds endcap scale and textures, micro menu and bag bar options (hiding, a
+  retail-style bag bar, free bag slots) and a fuller XP bar tooltip with rested details.
 - **SeamlessCastbar**: cast time on the player, target and focus cast bars, the spell rank in the
-  spell name, tick marks on channeled spells, the spell icon on the detached player bar and a
-  configurable hold time after a cast, with each bar's settings in Edit Mode.
+  spell name, tick marks on channeled spells, the spell icon on the detached player bar, a
+  configurable hold time after a cast, player bar size and movable target and focus bars, with
+  each bar's settings in Edit Mode.
 
 ## Installation
 
@@ -47,23 +53,23 @@ suite. Blizzard's AddOns options panels are currently not registered.
 
 ## Commands
 
-| Command                                                        | Does                                                                                          |
-| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `/seamless`                                                    | Opens the Seamless options.                                                                   |
-| `/seamless loglevel <level>`                                   | Sets logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).                  |
-| `/seamless reset`                                              | Resets the current core profile.                                                              |
-| `/rl`                                                          | Reloads the UI (can be switched off under Seamless > Tweaks).                                 |
-| `/seamlessunitframes`, `/seamlesstooltip`                      | Open the addon's options; `reset` resets its current profile.                                 |
-| `/seamlesschat`                                                | Opens the Chat options; `log` or `search <text>` opens the chat log, `save`/`apply` the sync. |
-| `/sdm`                                                         | Opens the Damage Meter options; `/sdm new` adds a window, `/sdm show` shows hidden windows.   |
-| `/seamlessui`                                                  | Opens the UI options; `reset` resets its current profile.                                     |
-| `/seamlessdarkmode`, `/seamlessactionbars`, `/seamlesscastbar` | Open the addon's options.                                                                     |
+| Command                                                        | Does                                                                                           |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `/seamless`                                                    | Opens the Seamless options.                                                                    |
+| `/seamless loglevel <level>`                                   | Sets logging (`none`, `error`, `warn`, `info`, `verbose`, `debug`, `silly`).                   |
+| `/seamless reset`                                              | Resets the current suite profile.                                                              |
+| `/rl`, `/kb`                                                   | Reload the UI and start Quick Keybind Mode (each can be switched off under Seamless > Tweaks). |
+| `/seamlessunitframes`, `/seamlesstooltip`                      | Open the addon's options; `reset` resets its current profile.                                  |
+| `/seamlesschat`                                                | Opens the Chat options; `log` or `search <text>` opens the chat log, `save`/`apply` the sync.  |
+| `/sdm`, `/seamlessdamagemeter`                                 | Opens the Damage Meter options; `/sdm new` adds a window, `/sdm show` shows hidden windows.    |
+| `/seamlessui`                                                  | Opens the UI options; `reset` resets its current profile.                                      |
+| `/seamlessdarkmode`, `/seamlessactionbars`, `/seamlesscastbar` | Open the addon's options.                                                                      |
 
 ## Edit Mode
 
 Seamless adds a panel below the game's Edit Mode window. Its **Frames** list turns on previews of
-the suite's own frames (damage meter windows, FPS display, target and focus cast bars) so they
-can be selected and moved. Selecting a frame shows its settings, including a Position section with
+the suite's own frames (damage meter windows, FPS display, target and focus cast bars, target of
+target frames, combined bags, group loot) so they can be selected and moved. Selecting a frame shows its settings, including a Position section with
 exact anchors and a quick anchor picker. With SeamlessUI enabled, Blizzard's own frames get the
 same position controls and the Style settings of the other addons.
 

@@ -4,6 +4,11 @@ One combat-data service handles meter windows, hover panels and session menus.
 WoW Forever's `C_DamageMeter` collects combat; Seamless captures public completed results into
 character-scoped SavedVariables independently of appearance profiles.
 
+**Session saving is switched off** (`combatService.saveSessions = false` in `service.lua`). Only
+client sessions are displayed; existing saved history is preserved but not loaded, capture is
+skipped and the History page is hidden. The rest of this document describes the archive for
+when saving is switched back on.
+
 ## Using it
 
 - History's Maximum saved segments setting defaults to 50 and accepts 1–1,000 per character.
@@ -11,7 +16,6 @@ character-scoped SavedVariables independently of appearance profiles.
   segments. Lowering the limit removes excess segments immediately; 1,000 is the hard cap.
 - Select a saved fight to delete it or delete every older segment, from History or the session
   menu. Both also offer clearing all saved segments. These actions leave native tracking running.
-
 - Completed fights are captured even with all windows hidden/inactive. Capture waits for
   restrictions to clear and runs in bounded steps. The header uses `S<number>` for saved fights.
 - Session menus show date, duration, capture status and encounter outcome when available.
@@ -24,9 +28,7 @@ character-scoped SavedVariables independently of appearance profiles.
   Main and hover bars align amounts, rates and percentages in separate columns; restricted
   percentages stay blank. DPS/HPS views put rates first, including target rows.
 - Saved session menus offer pinning and deletion.
-- Seamless > Damage Meter > History manages retention and saved fights. The default is
-  50 saved segments, including pinned fights, with a hard cap of 1,000. Clearing saved history
-  does not reset Blizzard tracking.
+- Seamless > Damage Meter > History manages retention and saved fights.
 
 ## Modules
 
@@ -40,7 +42,7 @@ character-scoped SavedVariables independently of appearance profiles.
 | `breakdowns.lua` | Enemy contribution indexes                                                  |
 | `windows.lua`    | Meter rendering and service-backed selection/hover                          |
 
-History lives under `SeamlessDamageMeterDB.char[character].combatHistory`. Incompatible schemas
+History lives in the `SeamlessDamageMeter` namespace's `char[character].combatHistory`. Incompatible schemas
 are preserved for recovery and malformed records quarantined. Only explicitly allowed public
 scalar fields and owned tables are saved; no frames/functions or live API references.
 
@@ -62,23 +64,18 @@ combined without mutating API tables. Indexes are shared for player → enemy an
 queries. Non-reconciling contributions are labelled incomplete. Available creature identities are
 retained; units already combined by the client and same-name contributors cannot be reliably split.
 
-Session saving is temporarily disabled (`combatService.saveSessions = false`). Only Blizzard
-sessions are displayed. Existing saved history is preserved but not loaded, capture is skipped,
-and History options are hidden. The architecture below remains available for re-enabling saving.
-
 ## Limits
 
 - Successfully captured public completed fights survive normal reload/relog. Immediate reloads,
   disconnects or restricted combat can leave incomplete data. SavedVariables are game-written,
   so this is not continuous crash-safe disk storage.
 - Live reads use the API's availability result, independently of `damageMeterEnabled`.
-  Seamless preserves that native UI toggle on load so other meters can keep Blizzard's UI hidden.
 - Public saved fights remain readable during combat, with the native UI off, or without client APIs.
 - Live spell hover accepts readable secret-bearing tables and passes restricted amounts directly
   to widgets. Local-player queries use the known public player GUID; other restricted identities
   are not guessed. Target analysis checks only its required public fields, even during combat.
-- Native meter/CVar callbacks use isolated calls to original native functions; hiding uses OnShow,
-  without hooking the timer pipeline. Reload after installing an update to clear prior hooks/taint.
+- Blizzard's own meter is never hooked, called, hidden or written to (see
+  `SeamlessDamageMeter/CLAUDE.md`); its on/off setting is only changed in the game's settings.
 - Imported client history uses the observation date. Encounter association requires in-game QA.
 - Current and Overall remain client views. Arbitrary time slices, dungeon-wide aggregates,
   cast/crit counts and aura uptime are not fabricated from aggregate totals.
@@ -91,6 +88,7 @@ lua src/tests/damage-meter-service.lua
 lua src/tests/damage-meter-blizzard.lua
 lua src/tests/damage-meter-windows.lua
 lua src/tests/damage-meter-settings.lua
+lua src/tests/damage-meter-threat.lua
 ```
 
 Tests cover shared reads, nested secret rejection, contributor aggregation, stale rows, delayed
@@ -115,14 +113,14 @@ Window tests also exercise archived hover without APIs, and settings tests valid
 7. Disable the native meter UI, enable Details alongside Seamless, and fight a new mob.
    Verify fresh live totals, spell hover and saved history still update, then switch/copy/reset
    appearance profiles. Saved history must remain intact.
-8. Pin the oldest fight and lower retention; verify it is removed first. Delete a fight, reload with client history intact, and
-   confirm it is not silently restored. Clearing saved history must not reset the live meter.
+8. Pin the oldest fight and lower retention; verify it is removed first. Delete a fight, reload
+   with client history intact, and confirm it is not silently restored. Clearing saved history must not reset the live meter.
 9. Reset Blizzard history and fight again. Old archives remain, and the new fight gets a new ID.
    Expired/deleted selections must not silently show a different fight.
-10. Left-click combat bars and verify no detail window opens. Hover them to check spell and
-    target breakdowns, then right-click to verify favorites still open.
+10. Hover combat bars to check spell and target breakdowns, left-click one for the in-window
+    breakdown and right-click to return.
 11. Reload immediately after combat and during combat. Missing data must be labelled and no
     restricted-value errors should occur; only successfully captured results are guaranteed.
-12. Recheck Edit Mode, collapse, resize, linked anchors, pinned local-player rows and ten slots.
-    Enable/disable the native-meter hide option and native UI toggle, including during combat. After reload,
+12. Recheck Edit Mode, collapse, resize, linked anchors, pinned local-player rows and all six
+    slots. Toggle the native meter in the game's settings, including during combat. After reload,
     confirm no native secret-duration timer errors occur across combat transitions or Edit Mode.

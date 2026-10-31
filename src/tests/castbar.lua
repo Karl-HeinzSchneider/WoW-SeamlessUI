@@ -720,6 +720,10 @@ layout = "Modern"
 
 -- The Position rows and options tab write the same layout position.
 local positionSpec = frameSettings[target][1].spec
+for _, field in ipairs({ "point", "relativeTo", "relativePoint", "x", "y" }) do
+    assert(positionSpec.default(field) == nil, "a preview estimate is not an authoritative native default")
+    assert(app.position:GetOptions("target").spec.default(field) == nil)
+end
 positionSpec.set("y", -60)
 assert(stored ~= app.db.profile.positions.target.Modern and app.db.profile.positions.target.Modern.y == -60)
 assert(app.position:GetOptions("target").spec.get("y") == -60)

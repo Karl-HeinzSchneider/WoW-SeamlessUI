@@ -10,8 +10,9 @@ local lib = app.core:GetEditModeLibrary()
 local anchor
 local hooked = false
 local showAnchor = false
--- Updated from Blizzard's actual layout before applying our override.
-local defaults = { point = "BOTTOMRIGHT", x = -10, y = 100 }
+-- Preview placement only, refreshed after native layout. These observed coordinates
+-- are not factory defaults: native bag placement depends on the current screen/bags.
+local nativePosition = { point = "BOTTOMRIGHT", x = -10, y = 100 }
 
 local function SavedPosition()
     local name = lib:GetActiveLayoutName()
@@ -19,7 +20,7 @@ local function SavedPosition()
 end
 
 local function CurrentPosition()
-    local position = SavedPosition() or defaults
+    local position = SavedPosition() or nativePosition
     return {
         point = position.point,
         relativePoint = position.relativePoint or position.point,
@@ -100,6 +101,11 @@ end
 
 function module:GetPositionBinding()
     return {
+        default = function()
+            -- Reset removes our override and runs UpdateContainerFrameAnchors.
+            -- The client exposes no fixed default coordinates for this window.
+            return nil
+        end,
         get = function(key)
             return CurrentPosition()[key]
         end,
@@ -134,7 +140,7 @@ function module:TryInitialize()
             module:Refresh()
             lib:RefreshFrameSettings(anchor)
         end
-    end, defaults, L["Combined bags"])
+    end, nativePosition, L["Combined bags"])
     lib:AddFrameSettings(anchor, app.core:GetEditModePageSettings(appName, "combinedBags"))
     if not hooked then
         hooksecurefunc("UpdateContainerFrameAnchors", function()
@@ -148,8 +154,8 @@ function module:TryInitialize()
             local frame = ContainerFrameCombinedBags
             if frame:IsShown() and frame:GetRight() and frame:GetBottom() then
                 local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-                defaults.x = frame:GetRight() * ratio - UIParent:GetWidth()
-                defaults.y = frame:GetBottom() * ratio
+                nativePosition.x = frame:GetRight() * ratio - UIParent:GetWidth()
+                nativePosition.y = frame:GetBottom() * ratio
             end
             module:Refresh()
         end)

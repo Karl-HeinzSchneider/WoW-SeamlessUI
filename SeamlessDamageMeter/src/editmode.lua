@@ -231,6 +231,9 @@ local function RegisterControls(frame)
             end
             app:RebuildWindows()
         end,
+        default = function(key)
+            return key == "relativeTo" and "screen" or app.positionDefaults[key]
+        end,
         anchorFrame = function(value)
             if value == "screen" then
                 return UIParent
@@ -270,7 +273,7 @@ local function RegisterControls(frame)
     settings[#settings + 1] = {
         name = L["Numbers"],
         kind = lib.SettingType.Dropdown,
-        default = "complete",
+        default = app.windowDefaults.numbers,
         get = function()
             return app:GetWindowSetting(frame.config, "numbers")
         end,

@@ -451,8 +451,12 @@ local function PositionSection(data, frame)
         hasChanges = function()
             return differs(snapshot)
         end,
-        -- Where Reset Position puts the frame: the library's default, on the frame's parent.
+        -- A feature may reset by removing an override. Its preview's registered
+        -- position can be a callback sentinel, not the client's default anchor.
         default = function(key)
+            if spec.default then
+                return spec.default(key == "offsetX" and "x" or key == "offsetY" and "y" or key)
+            end
             local position, parent = DefaultPosition(frame), frame:GetParent()
             local defaults = {
                 point = position.point,

@@ -236,6 +236,8 @@ for _, addon in ipairs({
     assert(loadfile(addon .. "/src/" .. file))(addon, app)
     if addon == "SeamlessUnitframes" then
         assert(loadfile(addon .. "/src/core/unitframes.lua"))(addon, app)
+    elseif addon == "SeamlessCastbar" then
+        assert(loadfile(addon .. "/src/size.lua"))(addon, app)
     end
     support.pages(addon, app)
     app.dbDefaults = core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
@@ -451,9 +453,122 @@ assert(
     core:GetSettingsOption(castOptions, { "player", "position" }, "SeamlessCastbar"):InEditModeLayout(),
     "native player position retains its layout storage tooltip"
 )
+-- Every declared editable setting must resolve the same factory default after
+-- switching to a profile with different values. Never alias the schema while
+-- constructing the deliberately customized profiles used by this check.
+local function customized(value)
+    if type(value) == "table" then
+        local result = {}
+        for key, child in pairs(value) do
+            result[key] = customized(child)
+        end
+        return result
+    elseif type(value) == "boolean" then
+        return not value
+    elseif type(value) == "number" then
+        return value + 17
+    elseif type(value) == "string" then
+        return value .. ".audit"
+    end
+    return value
+end
+local function equalDefault(a, b)
+    if type(a) ~= type(b) then
+        return false
+    elseif type(a) ~= "table" then
+        return a == b
+    end
+    for key, value in pairs(a) do
+        if not equalDefault(value, b[key]) then
+            return false
+        end
+    end
+    for key in pairs(b) do
+        if a[key] == nil then
+            return false
+        end
+    end
+    return true
+end
+local liveCVar = "1"
+C_CVar.GetCVar = function()
+    return liveCVar
+end
+C_CVar.GetCVarBool = function()
+    return liveCVar == "1"
+end
+GetCVar, GetCVarBool = C_CVar.GetCVar, C_CVar.GetCVarBool
+C_CVar.GetCVarInfo = function()
+    return liveCVar, "0", false, true
+end
+local auditedOptions = 0
+local auditApps = { Seamless = coreApp }
+for addon, app in pairs(apps) do
+    auditApps[addon] = app
+end
+for addon, app in pairs(auditApps) do
+    local original = app.db.profile
+    for pageKey, page in pairs(app.optionPages) do
+        local function visit(config, path)
+            if config.type == "group" then
+                for key, child in pairs(config.args or {}) do
+                    local nextPath = { unpack(path) }
+                    nextPath[#nextPath + 1] = key
+                    visit(child, nextPath)
+                end
+            elseif config.type ~= "header" and config.type ~= "execute" and config.type ~= "description" then
+                local option = core:GetSettingsOption(coreApp.options.panels[addon].options, path, addon)
+                local function resolve()
+                    local value = option:Read("default")
+                    if type(value) == "function" then
+                        value = value()
+                    end
+                    if value == nil and page.tooltip then
+                        value = page.tooltip(path)
+                    end
+                    return value
+                end
+                local expected = resolve()
+                app.db.profile, liveCVar = customized(original or app.dbDefaults.profile), "unexpected live value"
+                assert(
+                    equalDefault(expected, resolve()),
+                    addon .. ":" .. table.concat(path, ".") .. " sampled live defaults"
+                )
+                app.db.profile, liveCVar = original, "1"
+                auditedOptions = auditedOptions + 1
+            end
+        end
+        visit(page.config, { pageKey })
+    end
+end
+assert(auditedOptions > 200, "the suite-wide independence check must cover every declared editable setting")
+local cvarDefault, character, nativeCVar = core:GetCVarOptionInfo("audit")
+assert(cvarDefault == false and character and nativeCVar, "read the API's default return and preserve storage metadata")
+print(
+    ("PASS: %d declared options retain factory defaults across customized profiles and changed live CVars"):format(
+        auditedOptions
+    )
+)
 -- The actual shared position builder must load before a feature's database exists.
 -- Its bounds are resolved later and follow the current profile, including off-screen offsets.
 local meter = apps.SeamlessDamageMeter
+-- Tooltips describe factory defaults even when a profile's inheritance baseline
+-- has been customized or replaced. Inherited controls still display that baseline.
+local meterProfile = meter.db.profile
+for _, baseline in ipairs({ { width = 777, fixedHeight = false }, { width = 222, fixedHeight = false } }) do
+    meter.db.profile = { windowDefaults = baseline }
+    for _, page in ipairs({ "windows", "window1", "window2", "window3", "window4", "window5", "window6" }) do
+        local resolve = meter.optionPages[page].tooltip
+        assert(resolve({ page, "width", "default" }) == 400)
+        assert(resolve({ page, "width", "value" }) == 400)
+        assert(resolve({ page, "fixedHeight", "value" }) == true)
+        assert(resolve({ page, "width", "override" }) == false)
+        assert(resolve({ page, "management", "enabled" }) == (page == "window1"))
+        assert(resolve({ page, "management", "reset" }) == nil)
+    end
+    assert(baseline.width ~= 400 and baseline.fixedHeight == false, "resolving defaults never writes the profile")
+end
+meter.db.profile = meterProfile
 function meter:GetWindowSetting(config, key)
     return config.position[key]
 end

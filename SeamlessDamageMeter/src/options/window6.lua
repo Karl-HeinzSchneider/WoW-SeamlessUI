@@ -10,22 +10,7 @@ local layout = app.WindowAppearanceOptions(6)
 local position, size = app.WindowPositionOptions(6)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.window6 = {
-    tooltip = function(path)
-        local key = path[#path]
-        if key == "override" or key == "hidden" then
-            return false
-        end
-        if key == "skin" then
-            return "default"
-        end
-        if key == "enabled" then
-            return path[1] == "window1"
-        end
-        if key == "default" or key == "value" then
-            return app.db.profile.windowDefaults[path[#path - 1]]
-        end
-        return app.windowDefaults[key]
-    end,
+    tooltip = app.WindowOptionDefault,
     defaults = {},
     config = {
         editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessDamageMeter.windows", function()

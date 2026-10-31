@@ -18,6 +18,7 @@
 ---@field skinOptions table
 ---@field newSkinName string?
 ---@field windowDefaults table
+---@field WindowOptionDefault fun(path: string[]): any Declared window defaults, independent of the editable inheritance baseline.
 ---@field positionDefaults table Seeds each window's own `config.position` (point, relativePoint, x, y, scale).
 ---@field windowOptions table Window defaults tab.
 ---@field windowTabs table<string, table> One options tab per window slot, keyed window<ID>.

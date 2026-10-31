@@ -210,6 +210,9 @@ callbacks.layout()
 assert(bags.point[4] == 250)
 module:ResetPosition()
 assert(profile.combinedBags.layouts.Modern == nil and bags.point[4] == -10, "reset restores native placement")
+for _, key in ipairs({ "point", "relativeTo", "relativePoint", "x", "y" }) do
+    assert(module:GetPositionBinding().default(key) == nil, "observed native bag positions are not factory defaults")
+end
 move(anchor, layout, "CENTER", 80, 40)
 enabled = false
 module:OnDisable()

@@ -173,8 +173,11 @@ function module:GetOptions(key)
         set = function(field, value)
             self:Set(key, field, value)
         end,
-        default = function(field)
-            return self:Default(key)[field]
+        default = function()
+            -- AdjustPosition also depends on aura-container placement and gamepad
+            -- state. Our no-aura preview estimate is not a default position API.
+            -- Reset removes the override and lets the client place the bar again.
+            return nil
         end,
         isDefault = function()
             return not self:IsMoved(key)

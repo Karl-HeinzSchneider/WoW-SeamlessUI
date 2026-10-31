@@ -807,7 +807,11 @@ do
     end
     local stored, locked = { point = "TOP", relativePoint = "TOP", relativeTo = "screen", x = 5, y = 6 }, false
     local lock = { on = false }
+    local declaredPosition = { point = "TOPRIGHT", relativePoint = "BOTTOMRIGHT", relativeTo = "2", x = 12, y = 10 }
     local setting = app.addon:GetEditModePositionSetting({
+        default = function(key)
+            return declaredPosition[key]
+        end,
         get = function(key)
             return stored[key]
         end,
@@ -851,6 +855,14 @@ do
         return -row.points.TOPLEFT[2]
     end
     local lockRow, scaleRow, xRow = Row(list, "Lock it"), Row(list, "Scale"), Row(list, "X")
+    assert(xRow.option.default() == 12 and Row(list, "Y").option.default() == 10)
+    assert(Row(list, "AnchorFrame").option.default() == "2", "use feature defaults, not preview reset sentinels")
+    declaredPosition.x = nil
+    assert(xRow.option.default() == nil, "an unknown default must not fall back to the preview sentinel")
+    declaredPosition.x = 12
+    stored.x = 999
+    assert(xRow.option.default() == 12, "default is independent of the current position")
+    stored.x = 5
     assert(
         Header(list, "Size")
             and Header(list, "Position")

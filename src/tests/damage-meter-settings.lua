@@ -170,6 +170,20 @@ assert(targets["6"] == "Window 6" and targets["7"] == nil)
 local enabledDefault = app.optionSpec.pages.window1.tooltip({ "window1", "management", "enabled" })
 assert(enabledDefault == true and app.optionSpec.pages.window2.tooltip({ "window2", "management", "enabled" }) == false)
 assert(defaults.width.get() == 400)
+-- Factory reset and "Clear all overrides" have different contracts. Factory
+-- reset uses authored defaults; clearing overrides follows the editable baseline.
+dofile("src/tests/settings-support.lua").editModePages(app.core, "SeamlessDamageMeter", app)
+local resetWindow = app.db.profile.windows[2]
+app.db.profile.windowDefaults.width = 777
+resetWindow.overrides.width, resetWindow.overrides.lockPosition = 666, true
+local widthOption = app.core:GetPageOption("SeamlessDamageMeter", "window2", { "width", "value" })
+local lockOption = app.core:GetPageOption("SeamlessDamageMeter", "window2", { "lockPosition", "value" })
+assert(widthOption:DefaultValue() == 400 and widthOption:Reset())
+assert(resetWindow.overrides.width == 400 and app.db.profile.windowDefaults.width == 777)
+assert(lockOption:Reset() and resetWindow.overrides.lockPosition == false, "false is a real factory default")
+app.windowTabs.window2.args.management.args.reset.func()
+assert(next(resetWindow.overrides) == nil and app:GetWindowSetting(resetWindow, "width") == 777)
+app.db.profile.windowDefaults.width = 400
 local highID = { id = 18, anchorTo = 27, overrides = { fontSize = 19 } }
 local anchor = { id = 27, overrides = {} }
 local existing = { id = 1, anchorTo = 18, overrides = {} }

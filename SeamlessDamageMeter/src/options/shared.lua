@@ -3,6 +3,24 @@ local appName, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
+-- The editable inheritance baseline is a profile value, not a factory default.
+function app.WindowOptionDefault(path)
+    local key = path[#path]
+    if key == "override" or key == "hidden" then
+        return false
+    end
+    if key == "skin" then
+        return "default"
+    end
+    if key == "enabled" then
+        return path[1] == "window1"
+    end
+    if key == "default" or key == "value" then
+        key = path[#path - 1]
+    end
+    return app.windowDefaults[key]
+end
+
 -- Layout controls inherit window defaults; appearance controls belong to skins. Position and scale
 -- are each window's own values (`WindowPositionOptions`).
 local settings = {

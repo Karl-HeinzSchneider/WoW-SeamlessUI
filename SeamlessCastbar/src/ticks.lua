@@ -73,7 +73,7 @@ end
 ---@param bar StatusBar
 function app.UpdateTicks(bar)
     app.HideTicks(bar)
-    if not (app.Active(bar) and app.Settings(bar).ticks.enabled and bar.channeling) then
+    if not (app.Settings(bar) and app.Settings(bar).ticks.enabled and bar.channeling) then
         return
     end
     local name = UnitChannelInfo(bar.unit)

@@ -143,7 +143,7 @@ function app.UpdatePreviews()
                 position.y
             )
             preview.Text:SetText(spec.name)
-            local castTime = settings.enabled and settings.castTime.enabled
+            local castTime = settings.castTime.enabled
             preview.Time:SetText(
                 castTime and app.FormatCastTime(1.2, 2.5, settings.castTime.format, settings.castTime.decimals) or ""
             )

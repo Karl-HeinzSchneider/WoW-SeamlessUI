@@ -143,7 +143,6 @@ load("ticks.lua")
 load("hold.lua")
 local function barSettings()
     return {
-        enabled = true,
         castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
         rank = { enabled = true },
         ticks = { enabled = true },
@@ -158,9 +157,6 @@ app.BarKey = function(bar)
 end
 app.Settings = function(bar)
     return keys[bar] and app.db.profile[keys[bar]]
-end
-app.Active = function(bar)
-    return keys[bar] ~= nil and app.db.profile[keys[bar]].enabled
 end
 
 -- Formats
@@ -183,8 +179,11 @@ app.UpdateCastTime(target)
 assert(target.ownText:GetText() == "0.5 / 2.5", "channel elapsed")
 app.db.profile.target.enabled = false
 app.UpdateCastTime(target)
-assert(not target.ownText:IsShown(), "hidden when the bar is switched off")
-app.db.profile.target.enabled = true
+assert(target.ownText:IsShown(), "obsolete per-bar enable values do not disable addon behavior")
+app.db.profile.target.castTime.enabled = false
+app.UpdateCastTime(target)
+assert(not target.ownText:IsShown(), "the cast time feature can still be switched off")
+app.db.profile.target.castTime.enabled = true
 
 -- Player: the game's own text is reformatted, nothing created.
 local player = Bar("player", true)
@@ -401,7 +400,7 @@ assert(dimensions.width == 300 and dimensions.height == 50, "sizes survive a nat
 assert(app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11)
 assert(app.PlayerSizeDefault("iconSize") == 16, "icon defaults come from the client template, not the live icon")
 local originalProfile = app.db.profile
-app.db.profile = { player = { enabled = true } }
+app.db.profile = { player = {} }
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "removing overrides restores native dimensions")
 assert(dimensions.scale == 1.5, "removing overrides restores native scale")
@@ -482,7 +481,7 @@ rows["Icon size"].set(32)
 app.ApplyPlayerSize()
 assert(player.iconSize == 32 and iconSize.width == 32 and iconSize.height == 32)
 player.iconSize = nil
-assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3 and not rows.Scale.disabled())
+assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3)
 rows.Scale.set(0.5)
 app.ApplyPlayerSize()
 assert(player.scale == 0.5 and dimensions.scale == 0.5)
@@ -506,8 +505,10 @@ rows["After a finished cast"].set(0.30000000000000004)
 assert(player.hold.success == 0.3 and rows["After a finished cast"].format(0.3) == "0.3")
 player.hold.enabled = false
 assert(rows["After a finished cast"].disabled(), "hold sliders follow their switch")
-rows["Enable"].set(false)
-assert(player.enabled == false and rows["Spell rank"].disabled() and not rows["Enable"].disabled)
+assert(not rows["Enable"], "no per-bar Enable row in Edit Mode")
+for _, key in ipairs({ "player", "target", "focus" }) do
+    assert(not app.optionPages[key].config.args.enabled and app.dbDefaults.profile[key].enabled == nil)
+end
 enabled = false
 assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")
@@ -647,7 +648,6 @@ app.db.profile.positions = { target = {}, focus = {} }
 app.db.profile.scales = { target = {}, focus = {} }
 app.db.profiles = { Default = app.db.profile }
 enabled = true
-app.db.profile.player.enabled = true
 load("position.lua")
 load("preview.lua")
 app.RegisterPreviews()

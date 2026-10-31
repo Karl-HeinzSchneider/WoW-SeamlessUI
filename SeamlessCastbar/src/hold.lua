@@ -35,7 +35,7 @@ end
 
 ---@param bar StatusBar
 function app.ApplyHold(bar)
-    local settings = app.Active(bar) and app.Settings(bar).hold
+    local settings = app.Settings(bar) and app.Settings(bar).hold
     if not (settings and settings.enabled) then
         app.RestoreHold(bar)
         return

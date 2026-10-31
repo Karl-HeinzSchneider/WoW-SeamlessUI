@@ -271,7 +271,6 @@ end
 -- L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."] = "Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."
 -- L["After a finished cast"] = "After a finished cast"
 -- L["After an interrupt"] = "After an interrupt"
--- L["Apply the Seamless options to this cast bar."] = "Apply the Seamless options to this cast bar."
 -- L["Cast bars"] = "Cast bars"
 -- L["Cast time format"] = "Cast time format"
 -- L["Cast time"] = "Cast time"

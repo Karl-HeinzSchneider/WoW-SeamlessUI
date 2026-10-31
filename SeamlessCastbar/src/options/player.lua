@@ -29,9 +29,6 @@ size.args.scale = {
     max = 3,
     step = 0.01,
     layoutStored = false,
-    disabled = function()
-        return not app.db.profile.player.enabled
-    end,
     get = function()
         return app.db.profile.player.scale or app.PlayerSizeDefault("scale")
     end,
@@ -47,9 +44,6 @@ size.args.width = {
     min = 10,
     max = 300,
     step = 1,
-    disabled = function()
-        return not app.db.profile.player.enabled
-    end,
     get = function()
         return app.db.profile.player.width or app.PlayerSizeDefault("width")
     end,
@@ -65,9 +59,6 @@ size.args.height = {
     min = 8,
     max = 32,
     step = 1,
-    disabled = function()
-        return not app.db.profile.player.enabled
-    end,
     get = function()
         return app.db.profile.player.height or app.PlayerSizeDefault("height")
     end,
@@ -86,9 +77,6 @@ size.args.iconSize = {
     max = 64,
     step = 1,
     layoutStored = false,
-    disabled = function()
-        return not app.db.profile.player.enabled
-    end,
     get = function()
         return app.db.profile.player.iconSize or app.PlayerSizeDefault("iconSize")
     end,
@@ -125,7 +113,6 @@ app.optionPages.player = {
     defaults = {
         profile = {
             player = {
-                enabled = true,
                 -- PlayerCastingBarFrameTemplate/CastingBarFrameBaseTemplate in the client XML;
                 -- Bar Size defaults to 100% in Edit Mode's setting display info.
                 width = 208,
@@ -163,30 +150,12 @@ app.optionPages.player = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.player.enabled
-                end,
 
                 order = 40,
                 name = L["Spell icon"],
                 desc = L["Show the spell icon beside the player cast bar when it is not locked to the player frame."],
             },
 
-            enabled = {
-                type = "toggle",
-                order = 1,
-                width = "full",
-                name = L["Enable"],
-                desc = L["Apply the Seamless options to this cast bar."],
-                descStyle = "inline",
-                get = function()
-                    return app.db.profile["player"].enabled
-                end,
-                set = function(_, value)
-                    app.db.profile["player"].enabled = value
-                    refresh()
-                end,
-            },
             castTime = {
                 type = "group",
                 feature = true,
@@ -195,10 +164,6 @@ app.optionPages.player = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.player.enabled
-                        or (info[#info] ~= "enabled" and not app.db.profile.player.castTime.enabled)
-                end,
 
                 order = 10,
                 name = L["Cast time"],
@@ -222,9 +187,6 @@ app.optionPages.player = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.player.enabled
-                end,
 
                 order = 20,
                 name = L["Spell rank"],
@@ -238,9 +200,6 @@ app.optionPages.player = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.player.enabled
-                end,
 
                 order = 30,
                 name = L["Channel ticks"],
@@ -254,10 +213,6 @@ app.optionPages.player = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.player.enabled
-                        or (info[#info] ~= "enabled" and not app.db.profile.player.hold.enabled)
-                end,
 
                 order = 50,
                 name = L["Hold time"],

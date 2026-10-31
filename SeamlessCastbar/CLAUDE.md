@@ -19,8 +19,9 @@ system, so they are not part of this addon.
 
 ## Ownership
 
-- `src/options/`: per-bar defaults and page declarations. `src/core.lua`: lifecycle, hooks, `app.Settings(bar)` and
-  `app.Active(bar)`.
+- `src/options/`: per-bar feature defaults and page declarations. `src/core.lua`: lifecycle,
+  hooks and `app.Settings(bar)`. All three bars follow the addon lifecycle; there are no per-bar
+  Enable switches. Individual feature switches remain independent.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
   text when disabled. The player reuses native cast-time text and visibility; target/focus get
   addon-owned font strings.

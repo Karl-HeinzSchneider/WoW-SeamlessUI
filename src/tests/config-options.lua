@@ -485,7 +485,7 @@ assert(not rank:Read("get") and not rank:Read("disabled"), "A disabled feature c
 rank:Read("set", true)
 assert(rank:Read("get"))
 cast.db.profile.player = { enabled = false, rank = { enabled = true } }
-assert(rank:Read("disabled"), "Bar enable state guards its feature switches")
+assert(not rank:Read("disabled"), "Obsolete bar enable values no longer guard feature switches")
 assert(coreApp.config.categories.SeamlessTooltip.header)
 assert(coreApp.config.categories["SeamlessTooltip:units"])
 assert(apps.SeamlessChat.dbDefaults.profile.features.timestamps.format == "%H:%M:%S")

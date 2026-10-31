@@ -56,7 +56,7 @@ end
 ---@param bar StatusBar
 function app.UpdateCastTime(bar)
     local own = not bar.CastTimeText
-    local settings = app.Active(bar) and app.Settings(bar).castTime
+    local settings = app.Settings(bar) and app.Settings(bar).castTime
     if not (settings and settings.enabled) then
         if own and timeTexts[bar] then
             timeTexts[bar]:Hide()
@@ -109,7 +109,7 @@ end
 
 ---@param bar StatusBar
 function app.UpdateName(bar)
-    if not (app.Active(bar) and app.Settings(bar).rank.enabled) then
+    if not (app.Settings(bar) and app.Settings(bar).rank.enabled) then
         app.RestoreName(bar)
         return
     end
@@ -163,7 +163,7 @@ function app.UpdateIcon(bar)
     if app.BarKey(bar) ~= "player" or not bar.Icon then
         return
     end
-    if not (app.Active(bar) and app.Settings(bar).icon.enabled) then
+    if not (app.Settings(bar) and app.Settings(bar).icon.enabled) then
         app.RestoreIcon(bar)
         return
     end

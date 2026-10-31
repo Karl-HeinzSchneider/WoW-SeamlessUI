@@ -61,7 +61,7 @@ function app.ApplyPlayerSize()
         return
     end
     local settings = app.db.profile.player
-    local active = app.addon:IsEnabled() and settings.enabled
+    local active = app.addon:IsEnabled()
     resizePlayerIcon(bar, active and settings.iconSize)
     anchorPlayerText(bar, active and settings.height ~= nil, nativeHeight or bar:GetHeight())
     if active and settings.scale then

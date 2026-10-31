@@ -22,7 +22,6 @@ app.optionPages.target = {
     defaults = {
         profile = {
             target = {
-                enabled = true,
                 castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
                 rank = { enabled = true },
                 ticks = { enabled = true },
@@ -47,21 +46,6 @@ app.optionPages.target = {
             position = position,
             size = size,
 
-            enabled = {
-                type = "toggle",
-                order = 1,
-                width = "full",
-                name = L["Enable"],
-                desc = L["Apply the Seamless options to this cast bar."],
-                descStyle = "inline",
-                get = function()
-                    return app.db.profile["target"].enabled
-                end,
-                set = function(_, value)
-                    app.db.profile["target"].enabled = value
-                    refresh()
-                end,
-            },
             castTime = {
                 type = "group",
                 feature = true,
@@ -70,10 +54,6 @@ app.optionPages.target = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.target.enabled
-                        or (info[#info] ~= "enabled" and not app.db.profile.target.castTime.enabled)
-                end,
 
                 order = 10,
                 name = L["Cast time"],
@@ -97,9 +77,6 @@ app.optionPages.target = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.target.enabled
-                end,
 
                 order = 20,
                 name = L["Spell rank"],
@@ -113,9 +90,6 @@ app.optionPages.target = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.target.enabled
-                end,
 
                 order = 30,
                 name = L["Channel ticks"],
@@ -129,10 +103,6 @@ app.optionPages.target = {
                 end,
                 toggled = refresh,
                 changed = refresh,
-                disabled = function(info)
-                    return not app.db.profile.target.enabled
-                        or (info[#info] ~= "enabled" and not app.db.profile.target.hold.enabled)
-                end,
 
                 order = 50,
                 name = L["Hold time"],

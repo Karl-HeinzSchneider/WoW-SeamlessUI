@@ -21,19 +21,12 @@ function app.BarKey(bar)
     return keys[bar]
 end
 
--- The bar's settings in the current profile: `enabled` and one table per feature.
+-- The bar's feature settings in the current profile.
 ---@param bar StatusBar
 ---@return table?
 function app.Settings(bar)
     local key = keys[bar]
     return key and app.db.profile[key]
-end
-
--- Whether the features apply to this bar in the current profile.
----@param bar StatusBar
-function app.Active(bar)
-    local settings = app.Settings(bar)
-    return settings ~= nil and settings.enabled == true
 end
 
 function app.addon:OnInitialize()
@@ -96,19 +89,11 @@ function app.addon:Refresh()
     end
     app.ApplyPlayerSize()
     for bar in pairs(keys) do
-        if app.Active(bar) then
-            app.UpdateName(bar)
-            app.UpdateTicks(bar)
-            app.UpdateCastTime(bar)
-            app.UpdateIcon(bar)
-            app.ApplyHold(bar)
-        else
-            app.RestoreCastTime(bar)
-            app.RestoreName(bar)
-            app.HideTicks(bar)
-            app.RestoreIcon(bar)
-            app.RestoreHold(bar)
-        end
+        app.UpdateName(bar)
+        app.UpdateTicks(bar)
+        app.UpdateCastTime(bar)
+        app.UpdateIcon(bar)
+        app.ApplyHold(bar)
     end
     app.position:Refresh()
     app.UpdatePreviews()

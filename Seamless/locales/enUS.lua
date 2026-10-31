@@ -268,7 +268,6 @@ L["%s / %s (cast time)"] = "%s / %s"
 L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."] = true
 L["After a finished cast"] = true
 L["After an interrupt"] = true
-L["Apply the Seamless options to this cast bar."] = true
 L["Cast bars"] = true
 L["Cast time format"] = true
 L["Cast time"] = true

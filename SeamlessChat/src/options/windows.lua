@@ -203,7 +203,7 @@ app.optionPages.windows = {
             features = {
                 background = {
                     enabled = true,
-                    color = { r = 0, g = 0, b = 0, a = 1 }, -- black, fully opaque
+                    color = { r = 0, g = 0, b = 0, a = 0.25 }, -- DEFAULT_CHATFRAME_COLOR, DEFAULT_CHATFRAME_ALPHA (FloatingChatFrame.lua)
                 },
                 copy = {
                     enabled = true,
@@ -214,8 +214,8 @@ app.optionPages.windows = {
                 fading = {
                     enabled = true,
                     fade = true, -- messages fade out at all
-                    timeVisible = 120, -- seconds a message stays before fading (the game's value)
-                    fadeDuration = 3, -- seconds the fade takes (the game's value)
+                    timeVisible = 120, -- seconds a message stays before fading (ChatFrameMixin:OnLoad)
+                    fadeDuration = 3, -- seconds the fade takes (ScrollingMessageFrame fadeDuration, UI.xsd)
                 },
                 history = {
                     enabled = true,

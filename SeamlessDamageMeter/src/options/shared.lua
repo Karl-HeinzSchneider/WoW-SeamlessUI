@@ -207,7 +207,6 @@ function app.WindowPositionOptions(windowID)
             app:RebuildWindows()
         end,
         default = function(key)
-            local config = app.db.profile.windows[windowID]
             if key == "relativeTo" then
                 return "screen"
             end
@@ -253,7 +252,6 @@ function app.WindowPositionOptions(windowID)
                 app:RebuildWindows()
             end,
             default = function()
-                local config = app.db.profile.windows[windowID]
                 return app.positionDefaults.scale
             end,
         },

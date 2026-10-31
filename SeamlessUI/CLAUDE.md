@@ -102,7 +102,9 @@ Frames checkbox defaults off and controls only that outline; inventory visibilit
 and item logic remain native. Positions live in profile `combinedBags.layouts`, with layout
 copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors` reapplies only saved
 positions, converting offsets for the native bag scale; other bags keep their native anchors. Reset
-removes the override and restores Blizzard placement. Combat defers position writes, including
+removes the override and restores Blizzard placement. The default position is the client's own
+formula from `UpdateContainerFrameAnchors` (BOTTOMRIGHT on UIParent, the right action bars' width
+plus 10 to the left, `CONTAINER_OFFSET_Y` up), never the bag's measured position. Combat defers position writes, including
 restoration when disabled. The per-frame "Keep position in combat" option (`positionInCombat`,
 default off) reapplies saved bag positions in combat only when the bag is unprotected; it never
 updates the Edit Mode outline in combat. Run `lua src/tests/combined-bags.lua`.

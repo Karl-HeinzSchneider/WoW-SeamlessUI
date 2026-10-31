@@ -10,8 +10,17 @@ local lib = app.core:GetEditModeLibrary()
 local anchor
 local hooked = false
 local showAnchor = false
--- Updated from Blizzard's actual layout before applying our override.
-local defaults = { point = "BOTTOMRIGHT", x = -10, y = 100 }
+-- The client's placement of the first bag (UpdateContainerFrameAnchors in ContainerFrame.lua):
+-- BOTTOMRIGHT on UIParent, GetInitialContainerFrameOffsetX() to the left (the right action bars'
+-- width plus 10, or 20 with the gamepad UI) and CONTAINER_OFFSET_Y (85) up, in UIParent units.
+local defaults = { point = "BOTTOMRIGHT", x = -10, y = 85 }
+
+local function UpdateDefaults()
+    local offsetX = InputUtil and InputUtil.IsGamepadUIEnabled and InputUtil.IsGamepadUIEnabled() and 20 or 10
+    local rightBars = EditModeUtil and EditModeUtil.GetRightActionBarWidth and EditModeUtil:GetRightActionBarWidth()
+    defaults.x = -((tonumber(rightBars) or 0) + offsetX)
+    defaults.y = CONTAINER_OFFSET_Y or 85
+end
 
 local function SavedPosition()
     local name = lib:GetActiveLayoutName()
@@ -103,6 +112,11 @@ function module:GetPositionBinding()
         get = function(key)
             return CurrentPosition()[key]
         end,
+        default = function(key)
+            UpdateDefaults()
+            local values = { relativePoint = defaults.point, relativeTo = "UIParent" }
+            return values[key] or defaults[key]
+        end,
         set = function(key, value)
             local name = lib:GetActiveLayoutName()
             if not name or not module:IsEnabled() or InCombatLockdown() then
@@ -127,6 +141,7 @@ function module:TryInitialize()
     anchor:SetSize(400, 500)
     anchor:SetClampedToScreen(true)
     anchor:Hide()
+    UpdateDefaults()
     lib:AddFrame(anchor, function(_, name, point, x, y)
         if module:IsEnabled() and name and not InCombatLockdown() then
             -- A drag always breaks the previous anchor and stores UIParent coordinates.
@@ -145,12 +160,7 @@ function module:TryInitialize()
                 module:Refresh()
                 return
             end
-            local frame = ContainerFrameCombinedBags
-            if frame:IsShown() and frame:GetRight() and frame:GetBottom() then
-                local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-                defaults.x = frame:GetRight() * ratio - UIParent:GetWidth()
-                defaults.y = frame:GetBottom() * ratio
-            end
+            UpdateDefaults()
             module:Refresh()
         end)
         hooked = true

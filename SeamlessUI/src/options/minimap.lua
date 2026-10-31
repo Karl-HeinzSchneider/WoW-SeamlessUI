@@ -32,14 +32,6 @@ end
 local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.minimap = {
-    tooltip = function(path)
-        if path[#path] == "rotateMinimap" then
-            local value = rotation and nativeSettings:GetDefaultSetting(getFrame(), rotation)
-            if value ~= nil then
-                return value == 1
-            end
-        end
-    end,
     defaults = {
         profile = {
             hideMinimapDayNight = false,
@@ -78,6 +70,13 @@ app.optionPages.minimap = {
                         name = L["Rotate minimap"],
                         blizzard = true,
                         editMode = true,
+                        -- The Edit Mode preset layouts' RotateMinimap value.
+                        default = function()
+                            local value = rotation and nativeSettings:GetDefaultSetting(getFrame(), rotation)
+                            if value ~= nil then
+                                return value == 1
+                            end
+                        end,
                         disabled = function()
                             return not rotation or not nativeSettings:CanEdit(getFrame())
                         end,

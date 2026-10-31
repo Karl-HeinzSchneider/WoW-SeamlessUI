@@ -23,7 +23,7 @@ app.optionPages.windows = {
             return path[1] == "window1"
         end
         if key == "default" or key == "value" then
-            return app.db.profile.windowDefaults[path[#path - 1]]
+            return app.windowDefaults[path[#path - 1]]
         end
         return app.windowDefaults[key]
     end,

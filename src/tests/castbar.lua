@@ -438,9 +438,21 @@ app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages)
 load("editmode.lua")
 app.RegisterEditMode()
 app.RegisterEditMode()
-assert(registrations == 2 and registered.system == 11, "Style and Size registered once for the cast bar system")
-assert(registered.name == "Style" and registered.enabled())
-assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 4)
+assert(registrations == 1 and registered.system == 11, "registered once for the cast bar system")
+assert(registered.page.addon == "SeamlessCastbar" and registered.page.key == "player" and registered.enabled())
+-- Core draws the page: Size rows go to the window's Size section by their plain keys.
+dofile("src/tests/settings-support.lua").editModePages(app.core, "SeamlessCastbar", app)
+registered.options = {}
+for _, section in ipairs(app.core:GetEditModePageSections("SeamlessCastbar", "player")) do
+    if section.key == "settings:size" then
+        registeredSize = section
+    else
+        for _, row in ipairs(section.options) do
+            registered.options[#registered.options + 1] = row
+        end
+    end
+end
+assert(registeredSize.name == "Size" and #registeredSize.options == 5)
 local sizeArgs = app.optionPages.player.config.args.size.args
 assert(not sizeArgs.resetSize.hidden(), "reset size is visible in standalone options")
 sizeEditMode = true
@@ -474,14 +486,17 @@ for _, row in ipairs(registeredSize.options) do
     rows[row.name] = row
 end
 local player = app.db.profile.player
-assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
-assert(rows.Height.min == 8 and rows.Height.max == 32 and rows.Height.step == 1)
-assert(rows["Icon size"].min == 8 and rows["Icon size"].max == 64 and rows["Icon size"].step == 1)
+assert(rows.Width.min() == 10 and rows.Width.max() == 300 and rows.Width.step() == 1)
+assert(rows.Height.min() == 8 and rows.Height.max() == 32 and rows.Height.step() == 1)
+assert(rows["Icon size"].min() == 8 and rows["Icon size"].max() == 64 and rows["Icon size"].step() == 1)
+sizeEditMode = true
+assert(rows["Reset To Default Size"].hidden(), "the footer resets size in Edit Mode")
+sizeEditMode = false
 rows["Icon size"].set(32)
 app.ApplyPlayerSize()
 assert(player.iconSize == 32 and iconSize.width == 32 and iconSize.height == 32)
 player.iconSize = nil
-assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3)
+assert(rows.Scale.key == "scale" and rows.Scale.min() == 0.5 and rows.Scale.max() == 3)
 rows.Scale.set(0.5)
 app.ApplyPlayerSize()
 assert(player.scale == 0.5 and dimensions.scale == 0.5)
@@ -500,12 +515,12 @@ rows["Spell rank"].set(false)
 assert(player.rank.enabled == false and refreshes == 1 and optionRefreshes == 1)
 assert(rows["Spell rank"].get() == false)
 rows["Cast time format"].set("REMAINING")
-assert(player.castTime.format == "REMAINING" and #rows["Cast time format"].values == 3)
+assert(player.castTime.format == "REMAINING" and #rows["Cast time format"].values() == 3)
 rows["After a finished cast"].set(0.30000000000000004)
 assert(player.hold.success == 0.3 and rows["After a finished cast"].format(0.3) == "0.3")
 player.hold.enabled = false
 assert(rows["After a finished cast"].disabled(), "hold sliders follow their switch")
-assert(not rows["Enable"], "no per-bar Enable row in Edit Mode")
+assert(rows.Enable and rows.Enable.setting.path[2] ~= nil, "feature groups keep their Enable switch, as in settings")
 for _, key in ipairs({ "player", "target", "focus" }) do
     assert(not app.optionPages[key].config.args.enabled and app.dbDefaults.profile[key].enabled == nil)
 end
@@ -624,7 +639,12 @@ app.core.GetEditModePositionSetting = function(_, spec)
     return { kind = "position", name = "Position", spec = spec }
 end
 app.core.GetPositionOptions = function(_, spec)
-    return { type = "group", spec = spec }, { type = "group", name = "Size", args = {} }
+    return { type = "group", name = "Position", spec = spec, args = {}, editModePosition = spec }, {
+        type = "group",
+        name = "Size",
+        args = {},
+        editModeSize = true,
+    }
 end
 app.core.GetFramePositionService = function()
     return {
@@ -650,6 +670,12 @@ app.db.profiles = { Default = app.db.profile }
 enabled = true
 load("position.lua")
 load("preview.lua")
+-- As in the TOC, the target and focus pages load after position.lua and declare its Position groups.
+load("options/target.lua")
+load("options/focus.lua")
+app.core:PrepareSettingsOptions(app.optionPages.target.config)
+app.core:PrepareSettingsOptions(app.optionPages.focus.config)
+dofile("src/tests/settings-support.lua").editModePages(app.core, "SeamlessCastbar", app)
 app.RegisterPreviews()
 local target, focus = added["Target cast bar"], added["Focus cast bar"]
 assert(target and focus and not fixed[target] and #previewOptions == 2, "movable stand-ins")
@@ -724,24 +750,28 @@ TargetFrameSpellBar:AdjustPosition()
 hooks[TargetFrameSpellBar].AdjustPosition(TargetFrameSpellBar)
 assert(TargetFrameSpellBar.point[2] == "client")
 
--- The preview's dialog shows Position, then the target bar's Style rows, writing the target profile.
+-- The preview's dialog shows the target page: Position, then its groups and rows, writing the
+-- target profile.
 local settings = frameSettings[target]
-assert(settings[1].name == "Position" and settings[2].name == "Style")
+assert(settings[1].name == "Position" and settings[2].kind == "seamless-header")
 assert(settings[1].spec.scale.min == 0.5 and settings[1].spec.scale.max == 2, "Scale comes from Core's Position rows")
-local byName = {}
+local byName, byPath = {}, {}
 for _, setting in ipairs(settings) do
-    if setting.name then
+    if setting.kind == "seamless-option" then
+        byName[setting.row.setting:Read("name")] = setting.row
+        byPath[table.concat(setting.row.setting.path, ".")] = setting.row
+    elseif setting.name then
         byName[setting.name] = setting
     end
 end
 assert(not byName["Spell icon"], "only the player bar has the icon option")
 assert(not byName.Width and not byName.Height, "dimension sliders are player-only")
 app.db.profile.player.castTime.format = "ELAPSED_TOTAL"
-byName["Cast time format"].set("Modern", "REMAINING")
+byName["Cast time format"].set("REMAINING")
 assert(app.db.profile.target.castTime.format == "REMAINING" and app.db.profile.player.castTime.format ~= "REMAINING")
-byName["After an interrupt"].set("Modern", 0.30000000000000004)
-assert(app.db.profile.target.hold.interrupt == 0.3 and byName["After an interrupt"].formatter(0.3) == "0.3")
-assert(byName["Decimals"].formatter(1) == "1" and byName["Cast time"].default == true)
+byName["After an interrupt"].set(0.30000000000000004)
+assert(app.db.profile.target.hold.interrupt == 0.3 and byName["After an interrupt"].format(0.3) == "0.3")
+assert(byName["Decimals"].format(1) == "1" and byPath["target.castTime.enabled"].default() == true)
 app.UpdatePreviews()
 assert(target.Time.text == "1.3", "the preview follows the Style options")
 previewOptions[1].set(false)

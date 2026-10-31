@@ -101,7 +101,14 @@ end
 function support.editModePages(core, addonName, pages)
     local coreApp = {
         addon = core,
-        config = { optionInfo = {}, NotifyChange = function() end },
+        config = {
+            optionInfo = {},
+            NotifyChange = function(_, name)
+                if core.RefreshOptions then
+                    core:RefreshOptions(name)
+                end
+            end,
+        },
         LibEditMode = {
             SettingType = {
                 Header = "seamless-header",
@@ -116,7 +123,10 @@ function support.editModePages(core, addonName, pages)
             return { kind = "seamless-position", name = "Position", position = spec, options = options }
         end
     end
-    assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
+    -- A harness that already prepares its pages keeps its schema instance.
+    if not core.PrepareSettingsOptions then
+        assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
+    end
     assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
     assert(loadfile("Seamless/src/core/editmodepages.lua"))("Seamless", coreApp)
     coreApp.options = {

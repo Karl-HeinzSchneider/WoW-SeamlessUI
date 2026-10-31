@@ -80,6 +80,9 @@ function addon:GetEditModeOptionRow(option, rowKey)
             return option:Read("get")
         end
         row.set = function(value)
+            if rowType == "range" and type(value) == "number" then
+                value = option:Snap(value)
+            end
             return option:Commit(value)
         end
         row.restore = function(value)

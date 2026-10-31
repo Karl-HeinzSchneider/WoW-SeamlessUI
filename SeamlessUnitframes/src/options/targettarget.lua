@@ -11,6 +11,7 @@ end
 local healthBarColorDesc =
     L["Default: the game's green.\nClass: players in their class color, NPCs keep the default.\nReaction: red for hostile, yellow for neutral, green for friendly, grey for a mob someone else tagged.\nClass, reaction for NPCs: both."]
 
+local position, size = app.UnitFramePositionOptions(entry)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.targettarget = {
     tooltip = function(path)
@@ -57,7 +58,8 @@ app.optionPages.targettarget = {
             return not app.unitFrames:Exists(entry)
         end,
         args = {
-            position = app.UnitFramePositionOptions(entry),
+            position = position,
+            size = size,
             style = {
                 type = "group",
                 inline = true,

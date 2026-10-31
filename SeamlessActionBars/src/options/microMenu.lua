@@ -7,6 +7,7 @@ local function getFrame()
 end
 local setting = Enum.EditModeMicroMenuSetting and Enum.EditModeMicroMenuSetting.Size
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.microMenu = {
     defaults = { profile = { microMenu = { hideArtwork = false, hidden = false } } },
@@ -22,6 +23,6 @@ app.optionPages.microMenu = {
         hidden = function()
             return getFrame() == nil
         end,
-        args = { layout = app.MicroMenuOptions(), position = app.core:GetNativePositionOptions(getFrame, scale) },
+        args = { layout = app.MicroMenuOptions(), position = position, size = size },
     },
 }

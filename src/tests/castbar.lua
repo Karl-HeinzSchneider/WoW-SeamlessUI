@@ -248,6 +248,7 @@ print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 
 -- Edit Mode: a Style section in the extended window of the cast bar system, writing the player profile.
 local registered, registrations, refreshes, optionRefreshes, enabled = nil, 0, 0, 0, true
+local registeredSize
 local editLib = { SettingType = { Checkbox = 1, Dropdown = 2, Slider = 3, Header = "header" } }
 app.core = {
     GetCustomEditModeVisibility = dofile("src/tests/settings-support.lua").customVisibility,
@@ -255,8 +256,13 @@ app.core = {
         return editLib
     end,
     RegisterEditModeSystemOptions = function(_, id, spec)
-        registered, registrations = spec, registrations + 1
-        assert(id == "SeamlessCastbar")
+        registrations = registrations + 1
+        if id == "SeamlessCastbarSize" then
+            registeredSize = spec
+        else
+            assert(id == "SeamlessCastbar")
+            registered = spec
+        end
     end,
     RefreshOptions = function()
         optionRefreshes = optionRefreshes + 1
@@ -325,13 +331,20 @@ app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages)
 load("editmode.lua")
 app.RegisterEditMode()
 app.RegisterEditMode()
-assert(registrations == 1 and registered.system == 11, "registered once for the cast bar system")
+assert(registrations == 2 and registered.system == 11, "Style and Size registered once for the cast bar system")
 assert(registered.name == "Style" and registered.enabled())
+assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 2)
+local sizeArgs = app.optionPages.player.config.args.size.args
+assert(sizeArgs.width and sizeArgs.height and not app.optionPages.player.config.args.width)
 local rows, keys = {}, {}
 for _, row in ipairs(registered.options) do
     rows[row.name] = row
     assert(not keys[row.key], "unique row keys")
     keys[row.key] = true
+end
+assert(not rows.Width and not rows.Height, "dimensions belong to Size, not Style")
+for _, row in ipairs(registeredSize.options) do
+    rows[row.name] = row
 end
 local player = app.db.profile.player
 assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
@@ -469,7 +482,7 @@ app.core.GetEditModePositionSetting = function(_, spec)
     return { kind = "position", name = "Position", spec = spec }
 end
 app.core.GetPositionOptions = function(_, spec)
-    return { type = "group", spec = spec }
+    return { type = "group", spec = spec }, { type = "group", name = "Size", args = {} }
 end
 app.core.GetFramePositionService = function()
     return {

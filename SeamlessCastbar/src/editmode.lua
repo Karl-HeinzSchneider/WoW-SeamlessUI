@@ -11,7 +11,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local lib = app.core:GetEditModeLibrary()
 
 ---The page declaration is also the source for Edit Mode's Style rows.
-function app.StyleOptions(key)
+local function pageOptions(key, section)
     local config = app.optionPages[key].config
     local root = { type = "group", args = { [key] = config } }
     local rows = {}
@@ -19,7 +19,9 @@ function app.StyleOptions(key)
         local kind = option:Read("type")
         if kind == "group" then
             for _, child in ipairs(option:Children()) do
-                visit(child)
+                if section ~= "size" or child.path[3] ~= "scale" then
+                    visit(child)
+                end
             end
         elseif kind == "toggle" or kind == "select" or kind == "range" then
             local path = option.path
@@ -66,11 +68,16 @@ function app.StyleOptions(key)
         end
     end
     for _, option in ipairs(app.core:GetSettingsOption(root, { key }, appName):Children()) do
-        if option.path[2] ~= "position" then
+        local group = option.path[2]
+        if (section == "size" and group == "size") or (not section and group ~= "position" and group ~= "size") then
             visit(option)
         end
     end
     return rows
+end
+
+function app.StyleOptions(key)
+    return pageOptions(key)
 end
 
 ---The player bar's Style rows.
@@ -130,5 +137,14 @@ function app.RegisterEditMode()
             return app.addon:IsEnabled()
         end,
         options = app.EditModeSettings(),
+    })
+    app.core:RegisterEditModeSystemOptions(appName .. "Size", {
+        system = Enum.EditModeSystem.CastBar,
+        name = L["Size"],
+        key = "size",
+        enabled = function()
+            return app.addon:IsEnabled()
+        end,
+        options = pageOptions("player", "size"),
     })
 end

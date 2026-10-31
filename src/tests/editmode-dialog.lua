@@ -830,7 +830,14 @@ do
         return -row.points.TOPLEFT[2]
     end
     local lockRow, scaleRow, xRow = Row(list, "Lock it"), Row(list, "Scale"), Row(list, "X")
-    assert(Header(list, "Position") and lockRow and scaleRow and xRow and Row(list, "Below position"))
+    assert(
+        Header(list, "Size")
+            and Header(list, "Position")
+            and lockRow
+            and scaleRow
+            and xRow
+            and Row(list, "Below position")
+    )
     assert(top(lockRow) < top(scaleRow), "the feature's rows open the section")
     assert(not Row(list, "Revert changes") and Row(buttons, "Revert changes"), "Revert is in the explicit footer")
     for _, name in ipairs({ "Anchor", "AnchorParent", "AnchorFrame", "Y", "Quick anchor to frame" }) do
@@ -915,11 +922,12 @@ do
     lib.frameSelections[scaledFrame] = scaledSelection
     dialog:Update(scaledSelection)
     local bound = Row(list, "Scale").option
-    assert(not bound.disabled() and bound.get() == 1.5 and bound.min() == 0.75 and bound.max() == 1.5)
+    assert(bound.disabled() and bound.get() == 1.5 and bound.min() == 0.75 and bound.max() == 1.5)
     bound.set("1.1")
-    assert(scaled == 1.1)
+    assert(scaled == 1.5)
     bound.set(3)
-    assert(scaled == 1.1, "outside the binding's range")
+    assert(scaled == 1.5, "Size is disabled")
+    scaled = 1.1 -- External changes still participate in Revert.
     local scaleRevert = app.addon:GetEditModePositionButton("revert")
     assert(not scaleRevert.disabled(), "scale changes enable Revert")
     dialog:Update(positionSelection)

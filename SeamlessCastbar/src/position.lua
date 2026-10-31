@@ -211,7 +211,7 @@ function module:Reset(key)
     self:Changed()
 end
 
----The bar's options tab Position and scale group; nil for bars that can't move.
+---The bar's options tab Position and Size groups; nil for bars that can't move.
 ---@param key string
 ---@return table?
 function module:GetOptions(key)

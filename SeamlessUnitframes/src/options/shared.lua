@@ -2,10 +2,10 @@
 local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- Frames with their own Edit Mode position and Frame Size get a native Position and scale group.
+-- Frames with their own Edit Mode position and Frame Size get a native Position and Size groups.
 local NATIVE = { player = true, pet = true, target = true, focus = true }
 
----The frame's Position and scale group, or nil when it has none.
+---The frame's Position and Size groups, or nil when it has none.
 ---@param entry SeamlessUnitframes.UnitFrame
 ---@return table?
 function app.UnitFramePositionOptions(entry)

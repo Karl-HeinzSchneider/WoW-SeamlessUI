@@ -74,6 +74,9 @@ dofile("src/tests/locale-support.lua")
 assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
 app.core = {
     RefreshOptions = function() end,
+    GetCustomEditModeVisibility = function(_, _, get)
+        return get
+    end,
     GetPositionOptions = function(_, spec)
         return coreApp.addon:GetPositionOptions(spec)
     end,
@@ -139,17 +142,18 @@ assert(not app:RemoveSkin("default") and app.db.profile.skins.default)
 -- Position and scale are the window's own values in the standard section, not overrides.
 assert(values.x == nil and values.point == nil and values.scale == nil and defaults.x == nil)
 local position = values.position.args
+assert(position.scale == nil and values.size.name == "Size" and values.size.args.scale.disabled())
 assert(fresh.position.point == "CENTER" and fresh.position.x == 0 and fresh.position.scale == 1)
 position.x.set(nil, 40)
 position.point.set(nil, "TOPLEFT")
-position.scale.set(nil, 1.25)
+values.size.args.scale.set(nil, 1.25)
 assert(fresh.position.x == 40 and fresh.position.point == "TOPLEFT" and fresh.overrides.x == nil)
-assert(app:GetWindowSetting(fresh, "scale") == 1.25 and position.scale.get() == 1.25)
+assert(app:GetWindowSetting(fresh, "scale") == 1 and values.size.args.scale.get() == 1)
 assert(position.relativeTo.get() == "1" and position.relativeTo.values()["1"] == "Window 1")
 assert(app.windowTabs.window1.args.position.args.relativeTo.values()["2"] == nil, "Circular anchors are excluded")
 assert(not position.reset.disabled())
 position.reset.func()
-assert(fresh.position.x == 0 and fresh.position.point == "CENTER" and fresh.position.scale == 1.25)
+assert(fresh.position.x == 0 and fresh.position.point == "CENTER" and fresh.position.scale == 1)
 assert(position.reset.disabled() and fresh.anchorTo == nil, "Reset to default clears offsets and anchor, not scale")
 app.db.profile = { windows = {}, windowDefaults = copy(app.windowDefaults) }
 app:BuildWindowOptions()

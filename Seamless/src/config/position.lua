@@ -4,7 +4,8 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---Build a reusable Position section from the same get/set contract as Edit Mode.
 ---@param spec SeamlessCore.EditModePosition
----@return table
+---@return table position
+---@return table size
 function app.addon:GetPositionOptions(spec)
     local args = {}
     local function disabled()
@@ -87,7 +88,6 @@ function app.addon:GetPositionOptions(spec)
     local scaleRow = {
         type = "range",
         name = L["Scale"],
-        -- Scale leads the group, before the anchor rows.
         order = 0,
         min = scale.min or 0.5,
         max = scale.max or 2,
@@ -96,8 +96,9 @@ function app.addon:GetPositionOptions(spec)
             return 1
         end,
         default = scale.default,
+        -- Size controls are placeholders until explicitly enabled per frame.
         disabled = function()
-            return not scale.get or not scale.set or disabled() or (scale.disabled and scale.disabled()) or false
+            return true
         end,
     }
     scaleRow.set = function(_, value)
@@ -105,7 +106,6 @@ function app.addon:GetPositionOptions(spec)
             scale.set(value)
         end
     end
-    args.scale = scaleRow
     if spec.reset then
         args.reset = {
             type = "execute",
@@ -121,14 +121,20 @@ function app.addon:GetPositionOptions(spec)
             end,
         }
     end
-    return { type = "group", inline = true, name = L["Position and scale"], order = 10, args = args }
+    return { type = "group", inline = true, name = L["Position"], order = 10, args = args }, {
+        type = "group",
+        inline = true,
+        name = L["Size"],
+        order = 11,
+        args = { scale = scaleRow },
+    }
 end
 
----A native frame's active layout is the only source of position values, so the group
----carries the EDIT MODE tag.
+---Native Position and Size groups use the active layout and its storage tooltip.
 ---@param getFrame fun(): table?
 ---@param scale? SeamlessCore.PositionScale Explicit scale binding; omitted means read-only.
----@return table
+---@return table position
+---@return table size
 function app.addon:GetNativePositionOptions(getFrame, scale)
     local service = self:GetFramePositionService()
     local keys = { x = "offsetX", y = "offsetY" }
@@ -147,7 +153,7 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
             app.logger:warn("%s", err)
         end
     end
-    local group = self:GetPositionOptions({
+    local group, size = self:GetPositionOptions({
         scale = scaleOptions,
         default = function(key)
             local values = service:GetDefault(getFrame())
@@ -185,7 +191,8 @@ function app.addon:GetNativePositionOptions(getFrame, scale)
         end,
     })
     group.layoutStored = true
-    return group
+    size.layoutStored = true
+    return group, size
 end
 
 ---Scale bound to a native Edit Mode percentage setting, such as the unit frames'

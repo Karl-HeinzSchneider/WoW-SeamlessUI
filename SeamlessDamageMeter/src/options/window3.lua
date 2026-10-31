@@ -7,6 +7,7 @@ local function config()
 end
 local buttons = app.WindowEditModeButtons()
 local layout = app.WindowAppearanceOptions(3)
+local position, size = app.WindowPositionOptions(3)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.window3 = {
     tooltip = function(path)
@@ -107,7 +108,8 @@ app.optionPages.window3 = {
                     },
                 },
             },
-            position = app.WindowPositionOptions(3),
+            position = position,
+            size = size,
             info = layout.info,
             width = layout.width,
             height = layout.height,

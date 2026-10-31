@@ -114,8 +114,8 @@
 ---@field SetEditModeFrameFixed fun(self: SeamlessCore.Addon, frame: table) Selectable in Edit Mode, never movable.
 ---@field GetEditModePositionSectionKey fun(self: SeamlessCore.Addon): string Collapse key shared by every Position header.
 ---@field GetFramePositionService fun(self: SeamlessCore.Addon): SeamlessCore.FramePosition
----@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table Reusable Position option group.
----@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table Native layout Position and scale option group, with preset defaults and Reset to default position.
+---@field GetPositionOptions fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition): table, table Reusable Position and disabled Size option groups.
+---@field GetNativePositionOptions fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, scale?: SeamlessCore.PositionScale): table, table Native layout Position and disabled Size groups, with preset defaults and Reset to default position.
 ---@field GetNativeSettingScale fun(self: SeamlessCore.Addon, getFrame: SeamlessCore.FrameResolver, setting: number): SeamlessCore.PositionScale Scale bound to a native Edit Mode percentage setting (Frame Size).
 ---@field GetEditModeFrameButtonSection fun(self: SeamlessCore.Addon, frame: table): SeamlessCore.EditModeButtonSection? Reads a native frame page declaration.
 ---@field GetEditModeButtonSection fun(self: SeamlessCore.Addon, buttons: SeamlessCore.EditModeButton[]): SeamlessCore.EditModeButtonSection Explicit ordered buttons, including custom actions.
@@ -145,7 +145,7 @@
 ---@field get fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y"): any
 ---@field set fun(key: "point"|"relativePoint"|"relativeTo"|"x"|"y", value: any) Not called on Reset To Default or in combat.
 ---@field anchorFrames table[]|fun(): table[] `{ text, value }` entries for relativeTo.
----@field scale? SeamlessCore.PositionScale Optional binding for the config Position and scale group and the Edit Mode Scale row; both are disabled without it.
+---@field scale? SeamlessCore.PositionScale Binding for the Size section in settings and Edit Mode; its Scale slider is currently disabled.
 ---@field anchorFrame? fun(value: any): table? The frame of an anchorFrames entry; defaults to the global named by the value.
 ---@field disabled? fun(): boolean
 

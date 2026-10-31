@@ -2,6 +2,7 @@
 local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
+local position, size = app.core:GetPositionOptions(app.fpsDisplay:GetPositionBinding())
 ---@type SeamlessCore.SettingsPage
 app.optionPages.fpsDisplay = {
     defaults = {
@@ -69,7 +70,8 @@ app.optionPages.fpsDisplay = {
                     app.fpsDisplay:SetOption("roundFramerate", value)
                 end,
             },
-            position = app.core:GetPositionOptions(app.fpsDisplay:GetPositionBinding()),
+            position = position,
+            size = size,
         },
     },
 }

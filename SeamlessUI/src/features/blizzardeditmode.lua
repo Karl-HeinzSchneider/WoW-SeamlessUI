@@ -255,10 +255,40 @@ function module:RefreshPanel()
         sections = function()
             local sections = {}
             if frameOption(spec, "addPosition") then
-                sections[1] = app.blizzardPosition:GetSection(system)
+                local position = app.blizzardPosition:GetSection(system)
+                sections[1] = position
+                sections[2] = position.sizeSection
             end
             for _, section in ipairs(app.systemOptions:GetSections(system)) do
-                sections[#sections + 1] = section
+                local existing
+                for _, candidate in ipairs(sections) do
+                    if section.key == "settings:size" and candidate.key == section.key then
+                        existing = candidate
+                        break
+                    end
+                end
+                if existing then
+                    -- Copy the section and rows: the position service reuses its Size section.
+                    local merged = {}
+                    for key, value in pairs(existing) do
+                        merged[key] = value
+                    end
+                    merged.options = {}
+                    for _, row in ipairs(existing.options) do
+                        merged.options[#merged.options + 1] = row
+                    end
+                    for _, row in ipairs(section.options) do
+                        merged.options[#merged.options + 1] = row
+                    end
+                    for index, candidate in ipairs(sections) do
+                        if candidate == existing then
+                            sections[index] = merged
+                            break
+                        end
+                    end
+                else
+                    sections[#sections + 1] = section
+                end
             end
             return sections
         end,

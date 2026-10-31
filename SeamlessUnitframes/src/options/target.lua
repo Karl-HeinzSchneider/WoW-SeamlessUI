@@ -14,6 +14,7 @@ local healthBarColorDesc =
 local function questIcon()
     return app.db.profile.targetQuestIcon
 end
+local position, size = app.UnitFramePositionOptions(entry)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.target = {
     tooltip = function(path)
@@ -61,7 +62,8 @@ app.optionPages.target = {
             return not app.unitFrames:Exists(entry)
         end,
         args = {
-            position = app.UnitFramePositionOptions(entry),
+            position = position,
+            size = size,
             style = {
                 type = "group",
                 inline = true,

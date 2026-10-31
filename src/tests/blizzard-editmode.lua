@@ -184,6 +184,7 @@ app.blizzardPosition = {
             id = "position",
             name = "Position",
             key = "settings:position",
+            sizeSection = { id = "position:size", name = "Size", key = "settings:size", options = {} },
             options = {
                 {
                     key = "anchored",
@@ -332,18 +333,52 @@ assert(not positionShown())
 app.db.profile.blizzardEditMode.frames.focus.addPosition = true
 module:RefreshPanel()
 -- Add position appears as an expanded Position header that collapses like every other header.
+assert(headers.Size, "native settings declare a separate Size header")
 local positionHeader, positionRow = headers.Position, created.EditModeSettingCheckboxTemplate
 assert(positionShown() and not positionHeader.collapsed and positionRow.shown)
 assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)
 -- Attached below the native dialog, titled after the frame.
 assert(panel.spec.anchor == EditModeSystemSettingsDialog and panel.spec.key == positionSystem)
 assert(panel.spec.title == "SeamlessUI - Focus frame", panel.spec.title)
--- Header, one row: 28 + 8 + 32.
-assert(panel.height == 68, panel.height)
+-- Position header and one row, then the separate Size header.
+assert(panel.height == 104, panel.height)
 positionHeader.onClick()
-assert(positionHeader.collapsed and not positionRow.shown and panel.height == 28 and panel:IsShown())
+assert(positionHeader.collapsed and not positionRow.shown and panel.height == 64 and panel:IsShown())
 positionHeader.onClick()
 assert(not positionHeader.collapsed and positionRow.shown)
+-- Registered Size controls join the existing header without accumulating on refresh.
+local sizeEnabled = true
+app.core:RegisterEditModeSystemOptions("TestSize", {
+    system = positionSystem.system,
+    name = "Size",
+    key = "size",
+    enabled = function()
+        return sizeEnabled
+    end,
+    options = {
+        {
+            key = "width",
+            type = "range",
+            name = "Width",
+            min = 10,
+            max = 300,
+            step = 1,
+            get = function()
+                return 208
+            end,
+            set = function() end,
+        },
+    },
+})
+for _ = 1, 2 do
+    module:RefreshPanel()
+    local sections = panel.spec.sections()
+    assert(#sections == 2 and sections[2].name == "Size" and #sections[2].options == 1)
+    assert(sections[2].options[1].key == "width", "width joins the native Size section")
+end
+sizeEnabled = false
+module:RefreshPanel()
+assert(#panel.spec.sections()[2].options == 0, "disabled addons leave no Size controls behind")
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
 Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
 Enum.EditModeSystem.ObjectiveTracker = 6

@@ -70,7 +70,7 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
 - Position and scale (point, relativePoint, x, y, scale) are each window's own values in
   `config.position`, never overrides; `app.positionDefaults` only seeds new windows and Reset to
   default position. Write them with `app:SetWindowValue`. Each window's options tab
-  shows them in Core's standard Position and scale section (`core:GetPositionOptions`).
+  shows them in Core's standard Position and Size sections (`core:GetPositionOptions`).
   `config.anchorTo` is a window ID or nil for UIParent; circular anchors are rejected. Old window IDs, geometry fields and appearance settings are migrated idempotently;
   excess windows from old profiles stay in `profile.legacyWindows`.
 - Skins: `profile.skins` holds named appearances, selected by `config.skin` (`default`).
@@ -108,8 +108,8 @@ keep roster order. Run `lua src/tests/damage-meter-threat.lua`.
   sample sessions only, never live combat data, and expand collapsed windows visually.
   Every window settings page's header visibility checkbox shares this same state and queue ID;
   there are no per-window Edit Mode visibility preferences.
-- Reuse Core's Position section, whose Scale row edits the window scale (5 % steps; there is no
-  separate Window scale slider); window and Style settings follow it.
+- Reuse Core's Position and Size sections. Size displays the window scale but is disabled for
+  now; window and Style settings follow it.
 - Callbacks ignore calls outside Edit Mode or in combat. Never read or alter library-owned state
   (Selection, pools) or native layout containers.
 

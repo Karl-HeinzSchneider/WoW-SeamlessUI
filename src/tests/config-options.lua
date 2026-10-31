@@ -75,7 +75,12 @@ function core:GetEditModeLibrary()
     return { SettingType = { Button = "seamless-button" } }
 end
 function core:GetNativePositionOptions(getFrame, scale)
-    return { type = "group", order = 10, name = "Position and scale", args = {}, getFrame = getFrame, scale = scale }
+    return { type = "group", order = 10, name = "Position", args = {}, getFrame = getFrame, scale = scale }, {
+        type = "group",
+        name = "Size",
+        order = 11,
+        args = {},
+    }
 end
 function core:GetNativeSettingScale(getFrame, setting)
     return { getFrame = getFrame, setting = setting }
@@ -180,7 +185,7 @@ for _, addon in ipairs({
     end
     app.position = {
         GetOptions = function()
-            return { type = "group", args = {} }
+            return { type = "group", args = {} }, { type = "group", name = "Size", args = {} }
         end,
     }
     app.totPosition = app.position
@@ -233,6 +238,11 @@ for _, addon in ipairs({
     for key, page in pairs(app.optionPages) do
         assert(page.config.type == "group" and type(page.config.args) == "table", addon .. ":" .. key)
         assert(coreApp.config.categories[addon .. ":" .. key], "Missing page " .. key)
+        local args = page.config.args
+        if args.position and args.position.type == "group" then
+            assert(args.size and args.size.type == "group", addon .. ":" .. key .. " declares Size beside Position")
+            assert(args.position.args.scale == nil, "Position has no Scale slider")
+        end
     end
     apps[addon] = app
 end

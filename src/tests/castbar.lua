@@ -279,7 +279,19 @@ app.addon = {
 }
 -- Player dimensions: exact frame sizes, native look changes and profile restoration.
 local dimensions = { width = 208, height = 11, scale = 1 }
+local iconSize = { width = 20, height = 20 }
 PlayerCastingBarFrame = {
+    Icon = {
+        GetWidth = function()
+            return iconSize.width
+        end,
+        GetHeight = function()
+            return iconSize.height
+        end,
+        SetSize = function(_, width, height)
+            iconSize.width, iconSize.height = width, height
+        end,
+    },
     GetScale = function()
         return dimensions.scale
     end,
@@ -315,6 +327,20 @@ PlayerCastingBarFrame.Text = {
     end,
 }
 load("size.lua")
+dimensions.width, dimensions.height = 207.99998474121, 11.00000095367
+assert(
+    app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11,
+    "native size defaults are rounded for sliders and tooltips"
+)
+dimensions.width, dimensions.height = 208, 11
+app.db.profile.player.height = 22
+app.ApplyPlayerSize()
+assert(iconSize.width == 40 and iconSize.height == 40, "double bar height doubles the icon")
+app.ApplyPlayerSize()
+assert(iconSize.width == 40, "repeated refreshes do not compound icon sizing")
+app.db.profile.player.height = 11
+app.ApplyPlayerSize()
+assert(iconSize.width == 20 and iconSize.height == 20, "height 11 uses native icon size")
 app.db.profile.player.width, app.db.profile.player.height = 300, 50
 app.db.profile.player.scale = 3
 app.ApplyPlayerSize()
@@ -350,6 +376,7 @@ app.db.profile = { player = { enabled = true } }
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "a fresh profile restores native dimensions")
 assert(dimensions.scale == 1.5, "a fresh profile restores native scale")
+assert(iconSize.width == 20 and iconSize.height == 20, "a fresh profile restores native icon size")
 assert(textPoints[1][3] == "TOPLEFT" and textPoints[1][5] == 3, "fresh profiles restore native text anchors")
 app.db.profile = originalProfile
 app.ApplyPlayerSize()
@@ -357,6 +384,7 @@ enabled = false
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "addon disable restores native dimensions")
 assert(dimensions.scale == 1.5, "addon disable restores native scale")
+assert(iconSize.width == 20 and iconSize.height == 20, "disabling restores native icon size")
 assert(textPoints[2][3] == "TOPRIGHT" and textPoints[2][5] == 3, "disabling restores native text anchors")
 enabled = true
 app.db.profile.player.width, app.db.profile.player.height = nil, nil

@@ -379,6 +379,64 @@ end
 sizeEnabled = false
 module:RefreshPanel()
 assert(#panel.spec.sections()[2].options == 0, "disabled addons leave no Size controls behind")
+local getPositionSection = app.blizzardPosition.GetSection
+app.blizzardPosition.GetSection = function(...)
+    local section = getPositionSection(...)
+    section.sizeSection.options = {
+        {
+            key = "scale",
+            type = "range",
+            name = "Scale",
+            min = 1,
+            max = 1.5,
+            step = 0.1,
+            get = function()
+                return 1
+            end,
+            set = function() end,
+            disabled = function()
+                return true
+            end,
+        },
+    }
+    return section
+end
+app.core:RegisterEditModeSystemOptions("TestScale", {
+    system = positionSystem.system,
+    name = "Size",
+    key = "size",
+    enabled = function()
+        return sizeEnabled
+    end,
+    options = {
+        {
+            key = "scale",
+            type = "range",
+            name = "Scale",
+            min = 0.5,
+            max = 3,
+            step = 0.01,
+            get = function()
+                return 2
+            end,
+            set = function() end,
+        },
+    },
+})
+sizeEnabled = true
+module:RefreshPanel()
+local mergedSize = panel.spec.sections()[2].options
+local scaleCount = 0
+for _, row in ipairs(mergedSize) do
+    if row.key == "scale" then
+        scaleCount = scaleCount + 1
+        assert(row.max == 3 and not row.disabled, "active Scale replaces the disabled placeholder")
+    end
+end
+assert(scaleCount == 1, "only one Scale slider")
+sizeEnabled = false
+app.blizzardPosition.GetSection = getPositionSection
+module:RefreshPanel()
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3
 Enum.EditModeSystem.StatusTrackingBar, Enum.EditModeSystem.Minimap = 4, 5
 Enum.EditModeSystem.ObjectiveTracker = 6

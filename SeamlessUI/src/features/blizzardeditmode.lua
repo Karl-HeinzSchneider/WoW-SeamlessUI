@@ -275,7 +275,16 @@ function module:RefreshPanel()
                     end
                     merged.options = {}
                     for _, row in ipairs(existing.options) do
-                        merged.options[#merged.options + 1] = row
+                        local replaced = false
+                        for _, added in ipairs(section.options) do
+                            if added.key == row.key then
+                                replaced = true
+                                break
+                            end
+                        end
+                        if not replaced then
+                            merged.options[#merged.options + 1] = row
+                        end
                     end
                     for _, row in ipairs(section.options) do
                         merged.options[#merged.options + 1] = row

@@ -28,8 +28,10 @@ system, so they are not part of this addon.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/options/`, `src/editmode.lua`: options and shared Style declarations.
   The Player tab's Position and Size groups is Core's native group for the cast bar system
-  (`GetNativePositionOptions`, Bar Size via `GetNativeSettingScale`), stored in the Edit Mode
-  layout; position is unavailable while Lock to Player Frame is on.
+  (`GetNativePositionOptions`); position is stored in the Edit Mode layout and unavailable while
+  Lock to Player Frame is on. The player's Size controls override that group's Scale placeholder:
+  Scale (0.5–3), Width and Height use `profile.player` and apply directly to the native frame.
+  `src/size.lua` retains native values for restoration and reapplies overrides after native updates.
 - `src/position.lua`, `app.position`: target/focus positions per Edit Mode layout name in
   `profile.positions[key][layout]` (point, relativeTo, relativePoint, x, y in the bar's scale),
   following layout copies, renames and deletes. A layout without one keeps the client's anchor.

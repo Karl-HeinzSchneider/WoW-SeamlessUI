@@ -277,8 +277,14 @@ app.addon = {
     end,
 }
 -- Player dimensions: exact frame sizes, native look changes and profile restoration.
-local dimensions = { width = 208, height = 11 }
+local dimensions = { width = 208, height = 11, scale = 1 }
 PlayerCastingBarFrame = {
+    GetScale = function()
+        return dimensions.scale
+    end,
+    SetScale = function(_, value)
+        dimensions.scale = value
+    end,
     GetWidth = function()
         return dimensions.width
     end,
@@ -294,7 +300,12 @@ PlayerCastingBarFrame = {
 }
 load("size.lua")
 app.db.profile.player.width, app.db.profile.player.height = 300, 50
+app.db.profile.player.scale = 3
 app.ApplyPlayerSize()
+assert(dimensions.scale == 3)
+dimensions.scale = 1.5
+app.PlayerScaleChanged()
+assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1.5, "native updates retain the chosen scale")
 assert(dimensions.width == 300 and dimensions.height == 50)
 dimensions.width, dimensions.height = 150, 10
 app.PlayerSizeLookChanged()
@@ -304,13 +315,16 @@ local originalProfile = app.db.profile
 app.db.profile = { player = { enabled = true } }
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "a fresh profile restores native dimensions")
+assert(dimensions.scale == 1.5, "a fresh profile restores native scale")
 app.db.profile = originalProfile
 app.ApplyPlayerSize()
 enabled = false
 app.ApplyPlayerSize()
 assert(dimensions.width == 150 and dimensions.height == 10, "addon disable restores native dimensions")
+assert(dimensions.scale == 1.5, "addon disable restores native scale")
 enabled = true
 app.db.profile.player.width, app.db.profile.player.height = nil, nil
+app.db.profile.player.scale = nil
 Enum = { EditModeSystem = { CastBar = 11 } }
 local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
@@ -333,7 +347,7 @@ app.RegisterEditMode()
 app.RegisterEditMode()
 assert(registrations == 2 and registered.system == 11, "Style and Size registered once for the cast bar system")
 assert(registered.name == "Style" and registered.enabled())
-assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 2)
+assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 3)
 local sizeArgs = app.optionPages.player.config.args.size.args
 assert(sizeArgs.width and sizeArgs.height and not app.optionPages.player.config.args.width)
 local rows, keys = {}, {}
@@ -349,6 +363,14 @@ end
 local player = app.db.profile.player
 assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
 assert(rows.Height.min == 1 and rows.Height.max == 50 and rows.Height.step == 1)
+assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3 and not rows.Scale.disabled())
+rows.Scale.set(0.5)
+app.ApplyPlayerSize()
+assert(player.scale == 0.5 and dimensions.scale == 0.5)
+rows.Scale.set(3)
+app.ApplyPlayerSize()
+assert(dimensions.scale == 3)
+player.scale = nil
 rows.Width.set(10)
 rows.Height.set(1)
 app.ApplyPlayerSize()

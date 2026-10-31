@@ -19,15 +19,16 @@ local function pageOptions(key, section)
         local kind = option:Read("type")
         if kind == "group" then
             for _, child in ipairs(option:Children()) do
-                if section ~= "size" or child.path[3] ~= "scale" then
-                    visit(child)
-                end
+                visit(child)
             end
         elseif kind == "toggle" or kind == "select" or kind == "range" then
             local path = option.path
             local id = path[2]
             if #path > 2 and path[3] ~= "enabled" then
                 id = id .. "." .. path[3]
+            end
+            if section == "size" then
+                id = path[3]
             end
             local row = {
                 key = id,
@@ -60,7 +61,7 @@ local function pageOptions(key, section)
                 row.min, row.max, row.step = option:Read("min"), option:Read("max"), option:Read("step")
                 row.format = row.step < 1
                         and function(value)
-                            return ("%.1f"):format(value)
+                            return (row.step < 0.1 and "%.2f" or "%.1f"):format(value)
                         end
                     or tostring
             end

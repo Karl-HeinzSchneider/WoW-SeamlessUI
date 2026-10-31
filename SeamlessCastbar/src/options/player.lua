@@ -11,6 +11,25 @@ if position then
     size.order = 6
 end
 size = size or { type = "group", inline = true, name = L["Size"], order = 6, args = {} }
+size.args.scale = {
+    type = "range",
+    order = 0,
+    name = L["Scale"],
+    min = 0.5,
+    max = 3,
+    step = 0.01,
+    layoutStored = false,
+    disabled = function()
+        return not app.db.profile.player.enabled
+    end,
+    get = function()
+        return app.db.profile.player.scale or app.PlayerSizeDefault("scale")
+    end,
+    set = function(_, value)
+        app.db.profile.player.scale = value
+        refresh()
+    end,
+}
 size.args.width = {
     type = "range",
     order = 6,
@@ -52,7 +71,7 @@ size.args.height.layoutStored = false
 ---@type SeamlessCore.SettingsPage
 app.optionPages.player = {
     tooltip = function(path)
-        if path[2] == "size" and (path[3] == "width" or path[3] == "height") then
+        if path[2] == "size" and (path[3] == "width" or path[3] == "height" or path[3] == "scale") then
             return app.PlayerSizeDefault(path[3])
         end
         local value = app.core:GetOptionDefault(app.dbDefaults.profile, path)

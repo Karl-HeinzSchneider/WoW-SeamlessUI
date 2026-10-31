@@ -63,6 +63,7 @@ function app.addon:OnEnable()
             self:SecureHook(bar, "UpdateIconShown", app.UpdateIcon)
             if key == "player" then
                 self:SecureHook(bar, "SetLook", app.PlayerSizeLookChanged)
+                self:SecureHook(bar, "UpdateSystemSettingBarSize", app.PlayerScaleChanged)
             end
         end
     end

@@ -3,9 +3,13 @@ local _, app = ...
 
 -- Keep native dimensions outside the frame so disabling or changing profiles restores them.
 local nativeWidth, nativeHeight
+local nativeScale
 
 function app.PlayerSizeDefault(axis)
     local bar = PlayerCastingBarFrame
+    if axis == "scale" then
+        return nativeScale or (bar and bar:GetScale())
+    end
     if axis == "width" then
         return nativeWidth or (bar and bar:GetWidth())
     end
@@ -19,6 +23,13 @@ function app.ApplyPlayerSize()
     end
     local settings = app.db.profile.player
     local active = app.addon:IsEnabled() and settings.enabled
+    if active and settings.scale then
+        nativeScale = nativeScale or bar:GetScale()
+        bar:SetScale(settings.scale)
+    elseif nativeScale then
+        bar:SetScale(nativeScale)
+        nativeScale = nil
+    end
     if active and (settings.width or settings.height) then
         nativeWidth = nativeWidth or bar:GetWidth()
         nativeHeight = nativeHeight or bar:GetHeight()
@@ -29,6 +40,12 @@ function app.ApplyPlayerSize()
         bar:SetHeight(nativeHeight)
         nativeWidth, nativeHeight = nil, nil
     end
+end
+
+-- The native Bar Size update also runs when locking the bar or changing layouts.
+function app.PlayerScaleChanged()
+    nativeScale = nil
+    app.ApplyPlayerSize()
 end
 
 -- SetLook has already restored both native dimensions when this post-hook runs.

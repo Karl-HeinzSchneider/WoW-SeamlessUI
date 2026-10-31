@@ -56,7 +56,7 @@ end
 ---@param bar StatusBar
 function app.UpdateCastTime(bar)
     local own = not bar.CastTimeText
-    local settings = app.Active(bar) and app.Settings(bar).castTime
+    local settings = app.Settings(bar) and app.Settings(bar).castTime
     if not (settings and settings.enabled) then
         if own and timeTexts[bar] then
             timeTexts[bar]:Hide()
@@ -109,7 +109,7 @@ end
 
 ---@param bar StatusBar
 function app.UpdateName(bar)
-    if not (app.Active(bar) and app.Settings(bar).rank.enabled) then
+    if not (app.Settings(bar) and app.Settings(bar).rank.enabled) then
         app.RestoreName(bar)
         return
     end
@@ -138,9 +138,18 @@ end
 -- The player bar shows the spell icon only while it is locked to the player frame.
 ---@type table<StatusBar, true>
 local icons = {}
+local fallbackIcons = {}
 
 ---@param bar StatusBar
 function app.RestoreIcon(bar)
+    local fallback = fallbackIcons[bar]
+    if fallback then
+        local texture = bar.Icon:GetTexture()
+        if known(texture) and texture == fallback then
+            bar.Icon:SetTexture(nil)
+        end
+        fallbackIcons[bar] = nil
+    end
     if icons[bar] then
         icons[bar] = nil
         if bar.look == "CLASSIC" then
@@ -154,9 +163,15 @@ function app.UpdateIcon(bar)
     if app.BarKey(bar) ~= "player" or not bar.Icon then
         return
     end
-    if not (app.Active(bar) and app.Settings(bar).icon.enabled) then
+    if not (app.Settings(bar) and app.Settings(bar).icon.enabled) then
         app.RestoreIcon(bar)
         return
+    end
+    local texture = bar.Icon:GetTexture()
+    if not (issecretvalue and issecretvalue(texture)) and not texture then
+        -- The client does not assign a spell texture until the first cast after a reload.
+        bar.Icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        fallbackIcons[bar] = bar.Icon:GetTexture()
     end
     if bar.look == "CLASSIC" then
         icons[bar] = true

@@ -72,12 +72,26 @@ function core:GetEditModeVisibility(setting, update)
     end
 end
 function core:GetEditModeLibrary()
-    return { SettingType = { Button = "seamless-button" } }
+    return {
+        SettingType = { Button = "seamless-button" },
+        IsInEditMode = function()
+            return false
+        end,
+    }
 end
 function core:GetNativePositionOptions(getFrame, scale)
-    return { type = "group", order = 10, name = "Position", args = {}, getFrame = getFrame, scale = scale }, {
+    return {
+        type = "group",
+        order = 10,
+        name = "Position",
+        args = {},
+        getFrame = getFrame,
+        scale = scale,
+        layoutStored = true,
+    }, {
         type = "group",
         name = "Size",
+        layoutStored = true,
         order = 11,
         args = {},
     }
@@ -427,6 +441,15 @@ for name, panel in pairs(coreApp.options.panels) do
     end
 end
 local cast = apps.SeamlessCastbar
+local castOptions = coreApp.options.panels.SeamlessCastbar.options
+for _, key in ipairs({ "width", "height", "scale", "iconSize" }) do
+    local option = core:GetSettingsOption(castOptions, { "player", "size", key }, "SeamlessCastbar")
+    assert(not option:InEditModeLayout(), key .. " is profile-stored and must not claim Edit Mode layout storage")
+end
+assert(
+    core:GetSettingsOption(castOptions, { "player", "position" }, "SeamlessCastbar"):InEditModeLayout(),
+    "native player position retains its layout storage tooltip"
+)
 -- The actual shared position builder must load before a feature's database exists.
 -- Its bounds are resolved later and follow the current profile, including off-screen offsets.
 local meter = apps.SeamlessDamageMeter
@@ -462,7 +485,7 @@ assert(not rank:Read("get") and not rank:Read("disabled"), "A disabled feature c
 rank:Read("set", true)
 assert(rank:Read("get"))
 cast.db.profile.player = { enabled = false, rank = { enabled = true } }
-assert(rank:Read("disabled"), "Bar enable state guards its feature switches")
+assert(not rank:Read("disabled"), "Obsolete bar enable values no longer guard feature switches")
 assert(coreApp.config.categories.SeamlessTooltip.header)
 assert(coreApp.config.categories["SeamlessTooltip:units"])
 assert(apps.SeamlessChat.dbDefaults.profile.features.timestamps.format == "%H:%M:%S")

@@ -1,5 +1,6 @@
 -- Run from the repository root: lua src/tests/castbar.lua
 local root = "SeamlessCastbar/src/"
+unpack = unpack or table.unpack
 
 -- Locale: the English baseline through the real AceLocale.
 GetLocale = function()
@@ -31,7 +32,14 @@ end
 
 local function FontString(text)
     local shown = true
+    local texture
     return {
+        GetTexture = function()
+            return texture
+        end,
+        SetTexture = function(_, value)
+            texture = value
+        end,
         GetText = function()
             return text
         end,
@@ -135,7 +143,6 @@ load("ticks.lua")
 load("hold.lua")
 local function barSettings()
     return {
-        enabled = true,
         castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
         rank = { enabled = true },
         ticks = { enabled = true },
@@ -150,9 +157,6 @@ app.BarKey = function(bar)
 end
 app.Settings = function(bar)
     return keys[bar] and app.db.profile[keys[bar]]
-end
-app.Active = function(bar)
-    return keys[bar] ~= nil and app.db.profile[keys[bar]].enabled
 end
 
 -- Formats
@@ -175,8 +179,11 @@ app.UpdateCastTime(target)
 assert(target.ownText:GetText() == "0.5 / 2.5", "channel elapsed")
 app.db.profile.target.enabled = false
 app.UpdateCastTime(target)
-assert(not target.ownText:IsShown(), "hidden when the bar is switched off")
-app.db.profile.target.enabled = true
+assert(target.ownText:IsShown(), "obsolete per-bar enable values do not disable addon behavior")
+app.db.profile.target.castTime.enabled = false
+app.UpdateCastTime(target)
+assert(not target.ownText:IsShown(), "the cast time feature can still be switched off")
+app.db.profile.target.castTime.enabled = true
 
 -- Player: the game's own text is reformatted, nothing created.
 local player = Bar("player", true)
@@ -206,9 +213,21 @@ player.look = "CLASSIC"
 player.Icon:Hide()
 app.UpdateIcon(player)
 assert(player.Icon:IsShown())
+assert(
+    player.Icon:GetTexture() == "Interface\\Icons\\INV_Misc_QuestionMark",
+    "empty icon has a texture before the first cast"
+)
 app.db.profile.player.icon.enabled = false
 app.UpdateIcon(player)
 assert(not player.Icon:IsShown(), "icon restored")
+assert(player.Icon:GetTexture() == nil, "disabling removes the fallback texture")
+app.db.profile.player.icon.enabled = true
+app.UpdateIcon(player)
+player.Icon:SetTexture(12345)
+app.UpdateIcon(player)
+assert(player.Icon:GetTexture() == 12345, "a real cast replaces the fallback and is preserved")
+app.RestoreIcon(player)
+assert(player.Icon:GetTexture() == 12345, "restoring never clears a real spell texture")
 target.look = "UNITFRAME"
 target.Icon:Hide()
 app.UpdateIcon(target)
@@ -248,15 +267,25 @@ print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 
 -- Edit Mode: a Style section in the extended window of the cast bar system, writing the player profile.
 local registered, registrations, refreshes, optionRefreshes, enabled = nil, 0, 0, 0, true
+local registeredSize
 local editLib = { SettingType = { Checkbox = 1, Dropdown = 2, Slider = 3, Header = "header" } }
+local sizeEditMode = false
+function editLib:IsInEditMode()
+    return sizeEditMode
+end
 app.core = {
     GetCustomEditModeVisibility = dofile("src/tests/settings-support.lua").customVisibility,
     GetEditModeLibrary = function()
         return editLib
     end,
     RegisterEditModeSystemOptions = function(_, id, spec)
-        registered, registrations = spec, registrations + 1
-        assert(id == "SeamlessCastbar")
+        registrations = registrations + 1
+        if id == "SeamlessCastbarSize" then
+            registeredSize = spec
+        else
+            assert(id == "SeamlessCastbar")
+            registered = spec
+        end
     end,
     RefreshOptions = function()
         optionRefreshes = optionRefreshes + 1
@@ -270,6 +299,125 @@ app.addon = {
         return enabled
     end,
 }
+-- Player dimensions: exact frame sizes, native look changes and profile restoration.
+local dimensions = { width = 208, height = 11, scale = 1 }
+local iconSize = { width = 20, height = 20 }
+PlayerCastingBarFrame = {
+    Icon = {
+        GetWidth = function()
+            return iconSize.width
+        end,
+        GetHeight = function()
+            return iconSize.height
+        end,
+        SetSize = function(_, width, height)
+            iconSize.width, iconSize.height = width, height
+        end,
+    },
+    GetScale = function()
+        return dimensions.scale
+    end,
+    SetScale = function(_, value)
+        dimensions.scale = value
+    end,
+    GetWidth = function()
+        return dimensions.width
+    end,
+    GetHeight = function()
+        return dimensions.height
+    end,
+    SetWidth = function(_, value)
+        dimensions.width = value
+    end,
+    SetHeight = function(_, value)
+        dimensions.height = value
+    end,
+}
+local textPoints = { { "TOP", PlayerCastingBarFrame, "TOP", 0, -10 } }
+PlayerCastingBarFrame.Text = {
+    GetNumPoints = function()
+        return #textPoints
+    end,
+    GetPoint = function(_, index)
+        return unpack(textPoints[index])
+    end,
+    ClearAllPoints = function()
+        textPoints = {}
+    end,
+    SetPoint = function(_, ...)
+        textPoints[#textPoints + 1] = { ... }
+    end,
+}
+app.dbDefaults = {}
+dofile("src/tests/settings-support.lua").defaults("SeamlessCastbar", app)
+load("size.lua")
+dimensions.width, dimensions.height = 207.99998474121, 11.00000095367
+assert(
+    app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11,
+    "declared size defaults are independent of live frame geometry"
+)
+dimensions.width, dimensions.height = 208, 11
+app.db.profile.player.height = 22
+app.ApplyPlayerSize()
+assert(iconSize.width == 20 and iconSize.height == 20, "bar height does not resize the icon")
+app.db.profile.player.iconSize = 40
+app.ApplyPlayerSize()
+assert(iconSize.width == 40 and iconSize.height == 40, "manual icon size sets both dimensions")
+app.ApplyPlayerSize()
+assert(iconSize.width == 40, "repeated refreshes preserve manual icon size")
+app.db.profile.player.height = 11
+app.ApplyPlayerSize()
+assert(iconSize.width == 40 and iconSize.height == 40, "manual icon size is independent of bar height")
+app.db.profile.player.width, app.db.profile.player.height = 300, 50
+app.db.profile.player.scale = 3
+app.ApplyPlayerSize()
+assert(
+    textPoints[1][1] == "TOP" and textPoints[1][3] == "BOTTOM" and textPoints[1][5] == 1,
+    "text keeps its native bottom-relative position as height increases"
+)
+app.ApplyPlayerSize()
+assert(textPoints[1][5] == 1, "repeated refreshes do not shift the text")
+assert(dimensions.scale == 3)
+dimensions.scale = 1.5
+app.PlayerScaleChanged()
+assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1, "native scale updates cannot change the default")
+assert(dimensions.width == 300 and dimensions.height == 50)
+dimensions.width, dimensions.height = 150, 10
+textPoints = {
+    { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 },
+    { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 },
+}
+app.PlayerSizeLookChanged()
+assert(
+    #textPoints == 2
+        and textPoints[1][3] == "BOTTOMLEFT"
+        and textPoints[2][3] == "BOTTOMRIGHT"
+        and textPoints[1][5] == 13
+        and textPoints[2][5] == 13,
+    "locked bar retains both horizontal anchors"
+)
+assert(dimensions.width == 300 and dimensions.height == 50, "sizes survive a native look change")
+assert(app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11)
+assert(app.PlayerSizeDefault("iconSize") == 16, "icon defaults come from the client template, not the live icon")
+local originalProfile = app.db.profile
+app.db.profile = { player = {} }
+app.ApplyPlayerSize()
+assert(dimensions.width == 150 and dimensions.height == 10, "removing overrides restores native dimensions")
+assert(dimensions.scale == 1.5, "removing overrides restores native scale")
+assert(iconSize.width == 20 and iconSize.height == 20, "removing overrides restores native icon size")
+assert(textPoints[1][3] == "TOPLEFT" and textPoints[1][5] == 3, "removing overrides restores native text anchors")
+app.db.profile = originalProfile
+app.ApplyPlayerSize()
+enabled = false
+app.ApplyPlayerSize()
+assert(dimensions.width == 150 and dimensions.height == 10, "addon disable restores native dimensions")
+assert(dimensions.scale == 1.5, "addon disable restores native scale")
+assert(iconSize.width == 20 and iconSize.height == 20, "disabling restores native icon size")
+assert(textPoints[2][3] == "TOPRIGHT" and textPoints[2][5] == 3, "disabling restores native text anchors")
+enabled = true
+app.db.profile.player.width, app.db.profile.player.height = nil, nil
+app.db.profile.player.scale = nil
+app.db.profile.player.iconSize = nil
 Enum = { EditModeSystem = { CastBar = 11 } }
 local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", coreApp)
@@ -290,15 +438,64 @@ app.dbDefaults = app.core:GetOptionsDefaults(app.optionPages)
 load("editmode.lua")
 app.RegisterEditMode()
 app.RegisterEditMode()
-assert(registrations == 1 and registered.system == 11, "registered once for the cast bar system")
+assert(registrations == 2 and registered.system == 11, "Style and Size registered once for the cast bar system")
 assert(registered.name == "Style" and registered.enabled())
+assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 4)
+local sizeArgs = app.optionPages.player.config.args.size.args
+assert(not sizeArgs.resetSize.hidden(), "reset size is visible in standalone options")
+sizeEditMode = true
+assert(sizeArgs.resetSize.hidden(), "reset size option row is hidden in Edit Mode")
+sizeEditMode = false
+local resetButton = app.optionPages.player.config.buttonSection.options[3]
+assert(resetButton.name == "Reset To Default Size", "Edit Mode footer declares reset size")
+for _, reset in ipairs({ sizeArgs.resetSize.func, resetButton.click }) do
+    local settings = app.db.profile.player
+    settings.width, settings.height, settings.scale, settings.iconSize = 250, 22, 2, 32
+    app.ApplyPlayerSize()
+    reset()
+    app.ApplyPlayerSize()
+    assert(settings.width == 208 and settings.height == 11 and settings.scale == 1 and settings.iconSize == 16)
+    assert(dimensions.width == 208 and dimensions.height == 11 and dimensions.scale == 1)
+    assert(
+        iconSize.width == 16 and iconSize.height == 16,
+        "both reset buttons apply actual defaults, not captured values"
+    )
+end
+refreshes, optionRefreshes = 0, 0
+assert(sizeArgs.width and sizeArgs.height and not app.optionPages.player.config.args.width)
 local rows, keys = {}, {}
 for _, row in ipairs(registered.options) do
     rows[row.name] = row
     assert(not keys[row.key], "unique row keys")
     keys[row.key] = true
 end
+assert(not rows.Width and not rows.Height, "dimensions belong to Size, not Style")
+for _, row in ipairs(registeredSize.options) do
+    rows[row.name] = row
+end
 local player = app.db.profile.player
+assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
+assert(rows.Height.min == 8 and rows.Height.max == 32 and rows.Height.step == 1)
+assert(rows["Icon size"].min == 8 and rows["Icon size"].max == 64 and rows["Icon size"].step == 1)
+rows["Icon size"].set(32)
+app.ApplyPlayerSize()
+assert(player.iconSize == 32 and iconSize.width == 32 and iconSize.height == 32)
+player.iconSize = nil
+assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3)
+rows.Scale.set(0.5)
+app.ApplyPlayerSize()
+assert(player.scale == 0.5 and dimensions.scale == 0.5)
+rows.Scale.set(3)
+app.ApplyPlayerSize()
+assert(dimensions.scale == 3)
+player.scale = nil
+rows.Width.set(10)
+rows.Height.set(8)
+app.ApplyPlayerSize()
+assert(player.width == 10 and player.height == 8 and dimensions.width == 10 and dimensions.height == 8)
+player.width, player.height = nil, nil
+app.ApplyPlayerSize()
+refreshes, optionRefreshes = 0, 0
 rows["Spell rank"].set(false)
 assert(player.rank.enabled == false and refreshes == 1 and optionRefreshes == 1)
 assert(rows["Spell rank"].get() == false)
@@ -308,8 +505,10 @@ rows["After a finished cast"].set(0.30000000000000004)
 assert(player.hold.success == 0.3 and rows["After a finished cast"].format(0.3) == "0.3")
 player.hold.enabled = false
 assert(rows["After a finished cast"].disabled(), "hold sliders follow their switch")
-rows["Enable"].set(false)
-assert(player.enabled == false and rows["Spell rank"].disabled() and not rows["Enable"].disabled)
+assert(not rows["Enable"], "no per-bar Enable row in Edit Mode")
+for _, key in ipairs({ "player", "target", "focus" }) do
+    assert(not app.optionPages[key].config.args.enabled and app.dbDefaults.profile[key].enabled == nil)
+end
 enabled = false
 assert(not registered.enabled(), "the section leaves while the addon is disabled")
 print("PASS: player cast bar Style section in Edit Mode")
@@ -449,7 +648,6 @@ app.db.profile.positions = { target = {}, focus = {} }
 app.db.profile.scales = { target = {}, focus = {} }
 app.db.profiles = { Default = app.db.profile }
 enabled = true
-app.db.profile.player.enabled = true
 load("position.lua")
 load("preview.lua")
 app.RegisterPreviews()
@@ -537,6 +735,7 @@ for _, setting in ipairs(settings) do
     end
 end
 assert(not byName["Spell icon"], "only the player bar has the icon option")
+assert(not byName.Width and not byName.Height, "dimension sliders are player-only")
 app.db.profile.player.castTime.format = "ELAPSED_TOTAL"
 byName["Cast time format"].set("Modern", "REMAINING")
 assert(app.db.profile.target.castTime.format == "REMAINING" and app.db.profile.player.castTime.format ~= "REMAINING")

@@ -11,7 +11,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local lib = app.core:GetEditModeLibrary()
 
 ---The page declaration is also the source for Edit Mode's Style rows.
-function app.StyleOptions(key)
+local function pageOptions(key, section)
     local config = app.optionPages[key].config
     local root = { type = "group", args = { [key] = config } }
     local rows = {}
@@ -26,6 +26,9 @@ function app.StyleOptions(key)
             local id = path[2]
             if #path > 2 and path[3] ~= "enabled" then
                 id = id .. "." .. path[3]
+            end
+            if section == "size" then
+                id = path[3]
             end
             local row = {
                 key = id,
@@ -58,7 +61,7 @@ function app.StyleOptions(key)
                 row.min, row.max, row.step = option:Read("min"), option:Read("max"), option:Read("step")
                 row.format = row.step < 1
                         and function(value)
-                            return ("%.1f"):format(value)
+                            return (row.step < 0.1 and "%.2f" or "%.1f"):format(value)
                         end
                     or tostring
             end
@@ -66,11 +69,16 @@ function app.StyleOptions(key)
         end
     end
     for _, option in ipairs(app.core:GetSettingsOption(root, { key }, appName):Children()) do
-        if option.path[2] ~= "position" then
+        local group = option.path[2]
+        if (section == "size" and group == "size") or (not section and group ~= "position" and group ~= "size") then
             visit(option)
         end
     end
     return rows
+end
+
+function app.StyleOptions(key)
+    return pageOptions(key)
 end
 
 ---The player bar's Style rows.
@@ -130,5 +138,14 @@ function app.RegisterEditMode()
             return app.addon:IsEnabled()
         end,
         options = app.EditModeSettings(),
+    })
+    app.core:RegisterEditModeSystemOptions(appName .. "Size", {
+        system = Enum.EditModeSystem.CastBar,
+        name = L["Size"],
+        key = "size",
+        enabled = function()
+            return app.addon:IsEnabled()
+        end,
+        options = pageOptions("player", "size"),
     })
 end

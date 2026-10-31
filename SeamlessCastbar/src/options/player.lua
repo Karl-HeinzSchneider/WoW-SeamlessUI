@@ -52,8 +52,8 @@ size.args.height = {
     type = "range",
     order = 7,
     name = L["Height"],
-    min = 1,
-    max = 50,
+    min = 8,
+    max = 32,
     step = 1,
     disabled = function()
         return not app.db.profile.player.enabled

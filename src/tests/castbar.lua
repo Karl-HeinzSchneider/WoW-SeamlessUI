@@ -398,7 +398,7 @@ for _, row in ipairs(registeredSize.options) do
 end
 local player = app.db.profile.player
 assert(rows.Width.min == 10 and rows.Width.max == 300 and rows.Width.step == 1)
-assert(rows.Height.min == 1 and rows.Height.max == 50 and rows.Height.step == 1)
+assert(rows.Height.min == 8 and rows.Height.max == 32 and rows.Height.step == 1)
 assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3 and not rows.Scale.disabled())
 rows.Scale.set(0.5)
 app.ApplyPlayerSize()
@@ -408,9 +408,9 @@ app.ApplyPlayerSize()
 assert(dimensions.scale == 3)
 player.scale = nil
 rows.Width.set(10)
-rows.Height.set(1)
+rows.Height.set(8)
 app.ApplyPlayerSize()
-assert(player.width == 10 and player.height == 1 and dimensions.width == 10 and dimensions.height == 1)
+assert(player.width == 10 and player.height == 8 and dimensions.width == 10 and dimensions.height == 8)
 player.width, player.height = nil, nil
 app.ApplyPlayerSize()
 refreshes, optionRefreshes = 0, 0

@@ -673,6 +673,24 @@ typeSize("99")
 assert(store.size == 20, "typed values stay inside the range")
 typeSize("abc")
 assert(store.size == 20, "text is refused")
+local oldMin, oldMax, oldStep = size.option.min, size.option.max, size.option.step
+size.option.min, size.option.max, size.option.step = 0.5, 3, 0.01
+typeSize("2.6099998951")
+assert(store.size == 2.61, "typed scale strips floating-point noise before saving")
+size.onValueChanged(nil, 2.6099998951)
+assert(store.size == 2.61, "dragged scale uses the same normalization")
+typeSize("0.71")
+assert(store.size == 0.71, "step arithmetic does not leave long decimals")
+size:Refresh(false)
+typeSize("2.22")
+assert(store.size == 0.71, "disabled numeric inputs cannot save changes")
+size:Refresh(true)
+for _, text in ipairs({ "nan", "1e999", "-1e999" }) do
+    typeSize(text)
+    assert(store.size == 0.71, "nonfinite typed values are refused")
+end
+size.option.min, size.option.max, size.option.step = oldMin, oldMax, oldStep
+typeSize("20")
 
 -- Collapsing a section hides its rows, is remembered, and keeps the width.
 scroll.verticalScroll = 0

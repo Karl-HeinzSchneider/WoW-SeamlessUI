@@ -221,7 +221,7 @@ local function typedValue(option, text)
     if step and step > 0 then
         value = math.min(max, min + math.floor((value - min) / step + 0.5) * step)
     end
-    return value
+    return tonumber(string.format("%.12g", value))
 end
 
 -- Click the value to type one: Enter commits, Escape discards. With `editable`, the typed text goes
@@ -253,6 +253,10 @@ local function addEditBox(row, changed)
     end)
     edit:SetScript("OnEnterPressed", function(self)
         local option = row.option
+        if not option or not row.enabled or evaluate(option.disabled) or InCombatLockdown() then
+            self:ClearFocus()
+            return
+        end
         if option and option.editable then
             option.set(self:GetText())
         elseif option then
@@ -281,7 +285,11 @@ function creators.range(parent, changed, option)
     local row = CreateFrame("Frame", nil, parent, "EditModeSettingSliderTemplate")
     row.cbrHandles:Unregister()
     row.cbrHandles:RegisterCallback(row.Slider, MinimalSliderWithSteppersMixin.Event.OnValueChanged, function(_, value)
-        if not row.syncing then
+        if not row.syncing and row.enabled and not evaluate(row.option.disabled) and not InCombatLockdown() then
+            value = typedValue(row.option, value)
+            if not value then
+                return
+            end
             -- Keep the slider where it is being dragged rather than initializing it again, also
             -- when the setter redraws the window before returning.
             row.value = value

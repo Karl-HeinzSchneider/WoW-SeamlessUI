@@ -46,5 +46,3 @@ Manual validation: toggle each group and the master switch, change the color, sw
 rotate the minimap, and check the frames in a vehicle, in a party and in boss fights. Check
 occupied and empty action slots, pet/stance bars, gryphons, and XP/reputation swapping between
 the main and secondary containers (including a switch to honor with its original border).
-
-All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.

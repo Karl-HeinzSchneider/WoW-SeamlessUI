@@ -1,7 +1,7 @@
 # SeamlessTooltip
 
 Optional tooltip addon: switchable enhancements of the game's tooltips. Settings and profiles
-live in the `SeamlessTooltip` namespace in `SeamlessDB`; feature keys there are persistent (see Features and conventions).
+live in the `SeamlessTooltip` namespace in `SeamlessDB`.
 
 ## Ownership
 
@@ -27,15 +27,10 @@ live in the `SeamlessTooltip` namespace in `SeamlessDB`; feature keys there are 
 ## Features and conventions
 
 A feature is one file in `src/features/` plus its TOC entry. It declares itself through
-`app.features:NewFeature(key)`, where `key` is the persistent key in `profile.features`.
-Never rename an existing key without migration. Page files own category placement, headings,
-descriptions, order, controls and defaults.
-
-Settings and defaults live in `src/options/general.lua`, `units.lua`, `items.lua` and
-`spells.lua`, using the shared `defaults`/`config` page shape. Features declare behavior only.
-Each page lists its sections explicitly as `feature = true` groups bound to `feature:Settings()`.
-Keep persistent feature keys unchanged. An explicit disabled predicate must preserve the
-feature-off check for subordinate controls and leave its Enable switch usable.
+`app.features:NewFeature(key)`, where `key` is the persistent key in `profile.features`; never
+rename an existing key without migration. Features declare behavior only. Their settings,
+defaults, headings and order live in the pages `src/options/general.lua`, `units.lua`,
+`items.lua` and `spells.lua`, as `feature = true` groups bound to `feature:Settings()`.
 
 Features are nested Ace modules with AceEvent/AceHook. Register hooks/events in `OnEnable` and
 undo frame changes in `OnDisable`. TooltipDataProcessor wrappers register once from `OnInitialize`
@@ -46,7 +41,6 @@ Read settings through `self:Settings()` at use time. `ApplySettings()` reapplies
 when enabled settings or profiles change; `OnEnable` applies settings on activation.
 Update the suite README when adding features.
 
-All settings use the page contract documented in the root `CLAUDE.md`; do not register native AddOns panels.
-
 Run `lua src/tests/tooltip-loading.lua` after changing feature registration or settings ownership.
-It loads every runtime feature before AceDB, then the page declarations, and checks item-quality choices and border behavior.
+It loads every runtime feature before AceDB, then the page declarations, and checks item-quality
+choices and border behavior.

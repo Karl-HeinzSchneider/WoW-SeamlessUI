@@ -1,15 +1,15 @@
 # Unit-frame layout switch
 
-Settings → AddOns → Seamless → Unit Frames → General → **Unit frame layout**.
-**Default** is the default. This layout module installs no frame hooks and
-changes no frames until Beta has been selected. Existing health-color settings
-remain independent.
+The **Unit frame layout** selector comes first in every unit frame's Style section (settings
+page and Edit Mode) and applies to all frames: **Default** (the default), **Beta** or **Beta
+(rounded)**. The layout module installs no frame hooks and changes no frames until a Beta layout
+is selected. Health-color settings remain independent.
 
-**Beta** uses the old exported artwork and pre-update geometry.
-Switching back applies explicit 70425 sizes, anchors, justification, layering and
-atlas definitions. It never restores snapshots of live rendering state.
-The selection belongs to the Unit Frames appearance profile and follows profile
-copy/reset/switch operations.
+**Beta** uses the old exported artwork and pre-update geometry; **Beta (rounded)** uses the same
+layout with a round player portrait border. Switching back applies explicit 70425 sizes, anchors,
+justification, layering and atlas definitions. It never restores snapshots of live rendering
+state. The selection belongs to the Unit Frames profile and follows profile copy/reset/switch
+operations.
 
 ## Source references
 
@@ -105,8 +105,7 @@ transparent. The visual bar draws its own heal, absorb and heal-absorb bars from
 bar is anchored to the previous fill and only receives forwarded values. They use the player's old
 white health fill (the old art has none for targets) and the raid shield/absorb fills. Player and
 party keep their native segments and only get the old white fill of their family.
-Native frames, events, targeting and tooltips remain in place. Layout
-repairs can resize the visuals in combat and skip every protected region.
+Native frames, events, targeting and tooltips remain in place. Layout repairs can resize the visuals in combat and skip every protected region.
 
 Repairs run before native update calls return; no next-frame timer exposes new
 art with old coordinates. A private cache of the addon's last writes is invalidated
@@ -128,8 +127,7 @@ restoration, class/reaction color modes, minus targets, party/vehicle/resource
 styles, missing components, secret inputs and combat deferral. It also asserts
 synchronous target-art repair, no texture writes on ordinary health updates,
 matching loss colors, native red restoration, and power fallback without warnings.
-Python tests check
-BLP dimensions, deterministic generation and source pixels. These checks cannot
+Python tests check BLP dimensions, deterministic generation and source pixels. These checks cannot
 prove live-client visual correctness or taint safety.
 
 ## In-game validation still required

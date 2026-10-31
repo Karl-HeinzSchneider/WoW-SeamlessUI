@@ -6,10 +6,12 @@ Required entry point of the suite; works with no feature addon enabled.
 
 - `embeds.xml`: shared libraries. LibEditMode is namespaced into Core, not registered with
   LibStub; features use `core:GetEditModeLibrary()`.
-- `src/core/`: lifecycle, defaults, profiles, logger, options, minimap launcher, quests and tweaks.
-  `frameposition.lua` owns native position validation and persistence; `editmode.lua`,
-  `editmodelib.lua`, `editmoderows.lua`, `editmodeposition.lua`, `systemoptions.lua` and
-  `anchorpicker.lua` own shared Edit Mode services.
+- `src/core/`: lifecycle, defaults, profiles, logger, options, minimap launcher, quests, tweaks,
+  preview characters and the Seamless Edit Mode layout. `frameposition.lua` owns native position
+  validation and persistence; `editmode.lua`, `editmodevisibility.lua`, `editmodelib.lua`,
+  `editmoderows.lua`, `editmodeposition.lua`, `systemoptions.lua` and `anchorpicker.lua` own
+  shared Edit Mode services.
+- `src/options/`: Core's General, Tweaks and Profiles pages.
 - `src/embed/`: optional embedded-addon registry and Embed page, isolated behind one XML
   entry in the TOC. Read its `CLAUDE.md` before adding embedded addons.
 - `src/config/`: custom options renderer and reusable Position groups; read its `CLAUDE.md`.
@@ -18,28 +20,6 @@ Required entry point of the suite; works with no feature addon enabled.
 Only `src/core/editmodelib.lua` may access LibEditMode's `lib.internal`.
 
 ## Public API
-
-- `src/core/previewcharacters.lua`: `RegisterPreviewCharacter(id, record)` registers a flat,
-  validated VIP record. `previewcharacters-data.lua` is the shipped, editable catalogue, loaded
-  immediately after the service. `GetPreviewCharacter(consumerID)` returns a copy, or nil outside
-  Edit Mode/in combat/with an empty catalogue. Assignments stay stable for the session, drawing
-  from a shuffled bag without repeats until exhausted. Assignments survive Edit Mode enter/exit
-  and reset only on logout or UI reload. Core owns
-  only data and never modifies unit APIs, secure bindings or feature frames.
-- Records allow missing names/classes. Missing names use the client's localized unknown label;
-  missing classes retain the consumer's fallback portrait. Optional text resolves to empty strings.
-  Keep missing fields commented out in the authored catalogue; never invent VIP metadata.
-  Records use optional `name`/`surname`, uppercase `class`, numeric `health`/`healthMax` and
-  `power`/`powerMax` (default 100), `powerType` and `reaction` (1–8). Optional `displayTexture` is
-  a full path to an existing BLP/TGA. Without an asset, consumers may show a class icon. Metadata
-  (`level`, titles, realm, guild/rank, zone, race/sex, faction, role, classification, `displayID`)
-  is available for future consumers; registration does not automatically render it. Add scalar
-  metadata as needed; nested tables are rejected. Character names and guilds are proper names,
-  not localization keys. Do not draw new portraits without asking.
-- Run `lua src/tests/preview-characters.lua` and `lua src/tests/preview-catalogue.lua`.
-  The latter accepts an optional original VIP Lua path to audit every migrated field for exact
-  preservation. `assets/VIP/` contains all 14 supplied, unmodified portrait BLPs; the catalogue
-  contains 15 records, with shared portraits retained and missing portrait paths commented out.
 
 At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamless")`.
 
@@ -50,12 +30,13 @@ At file load a feature gets Core with `LibStub("AceAddon-3.0"):GetAddon("Seamles
   `QUEST_LOG_UPDATE`.
 - `core:RegisterAddonDatabase`: a feature's AceDB namespace, see Shared feature databases.
 - `core:RegisterOptions`, `OpenOptions`, `RefreshOptions`, `GetSettingsOption`,
-  `GetOptionDefault`, `GetCVarOptionInfo`: see Options.
+  `GetOptionDefault`, `GetCVarOptionInfo`: see Settings pages.
 - Custom config window: `RegisterConfigCategory`, `OpenConfig`, `ToggleConfig`, `RefreshConfig`,
   and the Position groups `GetPositionOptions`, `GetNativePositionOptions`,
   `GetFramePositionService`: see `src/config/CLAUDE.md`.
 - Edit Mode: `RegisterEditModeOptions`, `RefreshEditModeOptions`, `RegisterEditModeSystemOptions`
   and the `editmodelib.lua` helpers, below.
+- `RegisterPreviewCharacter`, `GetPreviewCharacter`: see Preview characters.
 
 Core never references a feature by name or loads disabled features; core profiles include all
 feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
@@ -63,46 +44,9 @@ on the suite profile.
 
 ## Settings pages
 
-Seamless owns one AceConfig-shaped settings format and its custom window. Blizzard's AddOns
-options panels are intentionally not registered. AceDBOptions is used only to build Core's
-Profiles page; AceConfigRegistry, AceConfigDialog and AceGUI are not loaded for settings.
+The page contract is in the root `CLAUDE.md`; the window and controls are in `src/config/CLAUDE.md`.
 
-Every navigation page is a separate file in its addon's `src/options/` folder. Declare
-`app.optionPages.<key> = { defaults = <AceDB schema fragment>, config = <group>, tooltip = <optional resolver> }`.
-The `config` group uses readable `type`, `name`, `order`, `args`, `get`, `set`, `disabled`,
-`hidden`, `values`, `min`, `max` and `step` fields. `new`, `blizzard`, `editMode` and `default`
-are native fields of our schema: they stay on the table and are never stripped.
-
-Keep the page's defaults beside its declaration, at existing SavedVariables paths. Database
-files contain only the schema skeleton and non-option data. Before AceDB initializes,
-`core:GetOptionsDefaults(app.optionPages, app.dbDefaults)` combines the page fragments and
-rejects conflicting defaults. Never change saved keys as part of reorganizing pages.
-
-Each addon registers once with `core:RegisterOptions(addonName, { title = L["Title"],
-pages = app.optionPages })`. Its header contains the page groups in `order`; General is first,
-and only Core has Profiles. List every page in the TOC before the registration module and before
-AceDB's `OnInitialize` runs. Page declarations must not read a live profile at file load.
-
-Switchable sections use a plain group with `feature = true`, `settings = function() return
-app.db.profile.feature end`, `toggled`, optional `changed`, and subordinate controls in `args`.
-Core supplies their accessors, Enable switch and disabled behavior. With no subordinate controls,
-the feature becomes one named toggle. An explicit `disabled` must include the feature-off check
-for subordinate controls while leaving the Enable switch usable. Getters always resolve the
-current profile; never cache its tables. Use small shared helpers for repeated controls such as
-position, scale and window inheritance, rather than factories for entire pages.
-
-`tooltip(path)` returns a declared default and an optional per-character boolean. A control's
-own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
-bindings. Castbar and Unitframes derive their Edit Mode Style rows from these same page trees;
-do not declare those settings a second time.
-
-`OpenOptions(addonName, page)` opens a page; `RefreshOptions(addonName)` schedules its existing
-controls to refresh after the current callback. The window and controls live in `src/config/`;
-read its `CLAUDE.md` when changing rendering. Run `lua src/tests/config-options.lua`, plus the
-affected addon's harnesses. Check navigation, controls, defaults, profile changes and Edit Mode
-in game.
-
-## Shared Edit Mode panel (`editmode.lua`)
+## Edit Mode visibility (`editmodevisibility.lua`)
 
 `core:EditModeVisibility(accountSettingID, value)` is the shared native visibility binding.
 With no value it reads the pending choice, or LibEditModeOverride's saved account value.
@@ -127,8 +71,11 @@ pages use the single ID `SeamlessDamageMeter.windows`, matching the shared Frame
 Custom preview state remains session-only after application, like the existing Frames controls;
 unapplied choices survive reloads. No visibility binding opens or closes Edit Mode.
 
+## Shared Edit Mode panel (`editmode.lua`)
+
 The panel below the main Edit Mode window, with the native translucent border and the window's
-width. It is the public frame `SeamlessEditModeWindow` (created once it first has rows to show). Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
+width. It is the public frame `SeamlessEditModeWindow` (created once it first has rows to show).
+Feature addons register once and call `core:RefreshEditModeOptions()` when their profile,
 enabled state or other outside values change; Core refreshes on Edit Mode enter/exit, layout
 changes and combat.
 
@@ -176,8 +123,8 @@ so it returns this window. The vendored file stays untouched.
 - The window is drawn by the shared renderer (`core:LayoutEditModeSections`): it splits the
   frame's settings into sections at each Header, appends Reset To Default, and lists the frame's
   explicit ButtonSection declarations below, under a divider, outside the scrolling list.
-  No footer buttons are inferred from the frame registration or legacy library buttons. Fixed width (370), the list scrolls past 400 pixels or 60%
-  of the screen height, grows downward only and keeps its scroll offset across refreshes.
+  Fixed width (370); the list scrolls past 400 pixels or 60% of the screen height, grows downward
+  only and keeps its scroll offset across refreshes.
 - Supported kinds: Checkbox, Dropdown (`values`, `height` scrolls the menu), Slider (`minValue`,
   `maxValue`, `valueStep`, `formatter`), `lib.SettingType.Header`, `lib.SettingType.Button`,
   `lib.SettingType.Position` and `lib.SettingType.ButtonSection`.
@@ -188,33 +135,22 @@ so it returns this window. The vendored file stays untouched.
   sections start collapsed.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
 - `core:GetEditModePositionSetting(spec, options)`: one `lib.SettingType.Position` frame setting
-  that the window draws as the shared Position and Size sections (`editmodeposition.lua`), the same one
-  Blizzard frames get: Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
+  that the window draws as the shared Position and Size sections (`editmodeposition.lua`), the same
+  ones Blizzard frames get: Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame" (targets
   `spec.anchorFrames`, resolved by optional `spec.anchorFrame(value)` or the global name;
-  UIParent excluded). Revert is declared in the footer, below. Only changed fields reach
-  `spec.set`. A separate Size section displays Scale from `spec.scale`, disabled for now. `options` are LibEditMode settings shown at the top of the section (Reset To Default
-  resets them, never the position); settings after it go below without a header. Collapse key
+  UIParent excluded). Only changed fields reach `spec.set`. A separate Size section displays Scale
+  from `spec.scale`, disabled for now. `options` are LibEditMode settings shown at the top of the
+  section (Reset To Default resets them, never the position); settings after it go below without
+  a header. Collapse key
   `core:GetEditModePositionSectionKey()`, shared by every Position header.
-- Every frame's `src/options/<frame>.lua` explicitly sets
-  `config.buttonSection = core:GetEditModeButtonSection({ ... })`, an ordered array of arbitrary
-  button declarations (`name`, `click(frame)`, optional `desc`, `hidden`, `disabled`). Standard
-  actions are individual optional entries from `GetEditModePositionButton("revert")` and
-  `GetEditModePositionButton("resetPosition")`; custom button tables use the same list.
-  Frame registration passes that config field to `AddFrameSettings`; it must never manufacture
-  a footer or substitute default actions when the field is absent. Native frame pages also
-  declare `config.editModeFrame`; Core looks up their explicit section with
-  `GetEditModeFrameButtonSection(frame)`. The attached window receives `buttonSection` and a
-  `buttonBinding` (canEdit, hasChanges, revert, isDefault, reset), so both native and suite frames
-  draw their declared footer outside the scroll. The helper returns a `lib.SettingType.ButtonSection`
-  with the declared Button settings in order; it never chooses or appends actions. Revert
-  restores the frame's custom setting values (including scale) and its position snapshot at first
-  selection in the Edit Mode session. Baselines survive selection changes and clear on a new
-  session, layout or profile. Dirty state compares current values, including external changes;
-  returning to the baseline disables Revert. Native bindings also compare and restore the whole
-  saved Blizzard system, independently of native dirty flags. Reset Position uses its registered
-  default and movement callback. Native bindings restore the saved layout baseline or preset
-  anchor through the native position service. Omit actions or the whole section to omit buttons.
-  Empty sections draw nothing. The Position section never inserts Revert into its controls.
+- Footer buttons: every frame's `src/options/<frame>.lua` declares
+  `config.buttonSection = core:GetEditModeButtonSection({ ... })` (see "Edit Mode button sections"
+  in `src/config/CLAUDE.md`). Registration passes it to `AddFrameSettings`; nothing is inferred
+  when it is absent, and the Position section never inserts Revert itself. Revert restores the
+  frame's custom setting values and its position from first selection in the Edit Mode session
+  (baselines clear on a new session, layout or profile; returning to the baseline disables it).
+  Native bindings also compare and restore the whole saved Blizzard system. Reset Position uses
+  the registered default and movement callback, or the native layout baseline/preset anchor.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).
 - The window opens 16 pixels beside its frame (the side with more room).
@@ -279,7 +215,8 @@ Enabled/Disabled, choices by label, numbers through `format`, nil as Not applica
 show one only with a `desc`. The tooltip never follows the cursor: like the config window's, its
 bottom-left corner sits on the top-right of the row's name (a button row's button), padded 12
 pixels right and 8 up. Setting rows light up as a whole, like the config rows, while the cursor
-is over the row or any of its controls (also disabled ones). LibEditMode settings pass their `default`;
+is over the row or any of its controls (also disabled ones). LibEditMode settings pass their
+`default`;
 Position rows take theirs from the binding's optional `default(key)` (Reset Position's target for
 suite frames, the preset layout for Blizzard frames).
 
@@ -291,12 +228,13 @@ never a second renderer.
 
 ## Position section (`editmodeposition.lua`)
 
-`core:CreateEditModePositionSection(id, binding)` returns a section for the renderer: Anchor, AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow with the value),
-"Quick anchor to frame" and the last refusal message. Revert is an available action on the
-section (`revertButton`), drawn only by an explicit button section. The binding
-(`SeamlessCore.EditModePositionBinding`) reads, validates and applies; the section only builds rows
-and drops changes once `isCurrent()` is false. Its `sizeSection` contains the separate Size header and disabled Scale slider; consumers
-append it after Position. Build one per selected frame. SeamlessUI uses it for
+`core:CreateEditModePositionSection(id, binding)` returns a section for the renderer: Anchor,
+AnchorParent, AnchorFrame, X, Y (editable, screen-sized ranges that grow with the value), "Quick
+anchor to frame" and the last refusal message. Its `revertButton` is drawn only by an explicit
+button section. The binding (`SeamlessCore.EditModePositionBinding`) reads, validates and
+applies; the section only builds rows and drops changes once `isCurrent()` is false. Its
+`sizeSection` holds the separate Size header and disabled Scale slider; consumers append it after
+Position. Build one per selected frame. SeamlessUI uses it for
 Blizzard frames; Seamless frames get it through `GetEditModePositionSetting`.
 
 ## Settings for Blizzard systems (`systemoptions.lua`)
@@ -317,6 +255,26 @@ action bar endcaps) a Scale: `system`, optional `systemIndex`, `enabled` and `sc
 `PositionScale` binding with `get`/`set`, optional `min`/`max`/`step`/`disabled`). The feature
 stores and applies it; `core:GetEditModeSystemScale(system)` returns the enabled binding, which
 SeamlessUI's disabled Size slider displays.
+
+## Preview characters (`previewcharacters.lua`)
+
+`RegisterPreviewCharacter(id, record)` registers a flat, validated VIP record;
+`previewcharacters-data.lua` is the shipped, editable catalogue. `GetPreviewCharacter(consumerID)`
+returns a copy, or nil outside Edit Mode, in combat or with an empty catalogue. Assignments draw
+from a shuffled bag without repeats until exhausted and stay stable until logout or reload. Core
+owns only data and never modifies unit APIs, secure bindings or feature frames.
+
+Records use optional `name`/`surname`, uppercase `class`, numeric `health`/`healthMax` and
+`power`/`powerMax` (default 100), `powerType` and `reaction` (1–8), and an optional
+`displayTexture` (full path to an existing BLP/TGA; without one, consumers may show a class icon).
+Missing names use the client's unknown label; missing optional text is empty. Other scalar
+metadata (level, titles, guild, zone, race, …) is stored but not rendered; nested tables are
+rejected. Keep missing fields commented out in the catalogue and never invent VIP metadata or
+draw new portraits. Names and guilds are proper names, not localization keys. `assets/VIP/` holds
+the supplied, unmodified portrait BLPs.
+
+Run `lua src/tests/preview-characters.lua` and `lua src/tests/preview-catalogue.lua` (optionally
+with the original VIP Lua path, to audit the migrated fields).
 
 ## Shared feature databases
 

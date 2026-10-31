@@ -5,6 +5,12 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function refresh()
     app.addon:Refresh()
 end
+local function resetSize()
+    local settings = app.db.profile.player
+    settings.width, settings.height, settings.scale, settings.iconSize = nil, nil, nil, nil
+    refresh()
+    app.core:RefreshOptions(appName)
+end
 local position, size = app.PlayerCastbarPosition()
 if position then
     position.order = 5
@@ -87,6 +93,16 @@ size.args.iconSize = {
         refresh()
     end,
 }
+size.args.resetSize = {
+    type = "execute",
+    order = 9,
+    name = L["Reset to default size"],
+    layoutStored = false,
+    hidden = function()
+        return app.core:GetEditModeLibrary():IsInEditMode()
+    end,
+    func = resetSize,
+}
 ---@type SeamlessCore.SettingsPage
 app.optionPages.player = {
     tooltip = function(path)
@@ -121,6 +137,7 @@ app.optionPages.player = {
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
             app.core:GetEditModePositionButton("resetPosition"),
+            { name = L["Reset to default size"], click = resetSize },
         }),
         type = "group",
         name = L["Player"],

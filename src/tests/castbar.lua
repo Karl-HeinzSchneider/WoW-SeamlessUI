@@ -270,6 +270,10 @@ print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 local registered, registrations, refreshes, optionRefreshes, enabled = nil, 0, 0, 0, true
 local registeredSize
 local editLib = { SettingType = { Checkbox = 1, Dropdown = 2, Slider = 3, Header = "header" } }
+local sizeEditMode = false
+function editLib:IsInEditMode()
+    return sizeEditMode
+end
 app.core = {
     GetCustomEditModeVisibility = dofile("src/tests/settings-support.lua").customVisibility,
     GetEditModeLibrary = function()
@@ -436,6 +440,23 @@ assert(registrations == 2 and registered.system == 11, "Style and Size registere
 assert(registered.name == "Style" and registered.enabled())
 assert(registeredSize.name == "Size" and registeredSize.key == "size" and #registeredSize.options == 4)
 local sizeArgs = app.optionPages.player.config.args.size.args
+assert(not sizeArgs.resetSize.hidden(), "reset size is visible in standalone options")
+sizeEditMode = true
+assert(sizeArgs.resetSize.hidden(), "reset size option row is hidden in Edit Mode")
+sizeEditMode = false
+local resetButton = app.optionPages.player.config.buttonSection.options[3]
+assert(resetButton.name == "Reset to default size", "Edit Mode footer declares reset size")
+for _, reset in ipairs({ sizeArgs.resetSize.func, resetButton.click }) do
+    local settings = app.db.profile.player
+    settings.width, settings.height, settings.scale, settings.iconSize = 250, 22, 2, 32
+    app.ApplyPlayerSize()
+    reset()
+    app.ApplyPlayerSize()
+    assert(not settings.width and not settings.height and not settings.scale and not settings.iconSize)
+    assert(dimensions.width == 150 and dimensions.height == 10 and dimensions.scale == 1.5)
+    assert(iconSize.width == 20 and iconSize.height == 20, "both reset buttons restore all native sizes")
+end
+refreshes, optionRefreshes = 0, 0
 assert(sizeArgs.width and sizeArgs.height and not app.optionPages.player.config.args.width)
 local rows, keys = {}, {}
 for _, row in ipairs(registered.options) do

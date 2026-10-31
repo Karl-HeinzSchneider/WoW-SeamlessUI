@@ -45,6 +45,7 @@ L["Profile reset"] = true
 L["Profiles"] = true
 L["Reset"] = true
 L["Reset to default position"] = true
+L["Reset to default size"] = true
 L["Revert changes"] = true
 L["Right"] = true
 L["Scale"] = true

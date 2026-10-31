@@ -72,7 +72,12 @@ function core:GetEditModeVisibility(setting, update)
     end
 end
 function core:GetEditModeLibrary()
-    return { SettingType = { Button = "seamless-button" } }
+    return {
+        SettingType = { Button = "seamless-button" },
+        IsInEditMode = function()
+            return false
+        end,
+    }
 end
 function core:GetNativePositionOptions(getFrame, scale)
     return { type = "group", order = 10, name = "Position", args = {}, getFrame = getFrame, scale = scale }, {

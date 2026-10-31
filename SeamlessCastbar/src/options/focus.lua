@@ -5,9 +5,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function refresh()
     app.addon:Refresh()
 end
-local position = app.position:GetOptions("focus")
+local position, size = app.position:GetOptions("focus")
 if position then
     position.order = 5
+    size.order = 6
 end
 ---@type SeamlessCore.SettingsPage
 app.optionPages.focus = {
@@ -44,6 +45,7 @@ app.optionPages.focus = {
         order = 30,
         args = {
             position = position,
+            size = size,
 
             enabled = {
                 type = "toggle",

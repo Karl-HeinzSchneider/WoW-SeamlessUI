@@ -335,7 +335,7 @@ local function TrackSettings(frame, sections, attached)
         for _, row in ipairs(section.options or {}) do
             -- Position has its own validated, ordered restore path. Custom scale
             -- is a setting; native scale belongs to Blizzard's saved system state.
-            local position = section.id == "position"
+            local position = (section.id == "position" or section.id == "position:size")
                 and (
                     row.key == "point"
                     or row.key == "relativePoint"
@@ -365,7 +365,7 @@ local function SettingsChanged(frame, restore)
         if row.get() ~= snapshot.value then
             changed = true
             if restore then
-                row.set(snapshot.value)
+                (row.restore or row.set)(snapshot.value)
             end
         end
     end
@@ -619,7 +619,9 @@ local function CreateSettingsWindow()
             if data.kind == lib.SettingType.ButtonSection then
                 -- Explicit footer declarations are drawn separately, outside the scrolling list.
             elseif data.kind == lib.SettingType.Position then
-                sections[#sections + 1] = PositionSection(data, frame)
+                local position = PositionSection(data, frame)
+                sections[#sections + 1] = position
+                sections[#sections + 1] = position.sizeSection
                 -- Rows after it, up to the next header, go below without a header of their own.
                 sections[#sections + 1] = { id = "after:" .. index, options = {} }
             elseif data.kind == lib.SettingType.Header then

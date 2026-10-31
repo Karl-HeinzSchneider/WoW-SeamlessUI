@@ -2,8 +2,9 @@
 local _, app = ...
 
 -- The Position section of Edit Mode windows, as rows for the shared renderer (editmoderows.lua):
--- Scale, Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame", Revert and the reason
--- the last change was refused. The binding reads and writes the frame; this file only builds rows.
+-- Anchor, AnchorParent, AnchorFrame, X, Y, "Quick anchor to frame", Revert and the reason
+-- the last change was refused. A separate Size section displays the disabled Scale slider.
+-- The binding reads and writes the frame; this file only builds rows.
 
 local addon = app.addon
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
@@ -125,38 +126,6 @@ function addon:CreateEditModePositionSection(id, binding)
     end
     section.options = {
         {
-            key = "scale",
-            type = "range",
-            name = L["Scale"],
-            editable = true,
-            format = formatNumber,
-            default = default("scale"),
-            get = function()
-                return (binding.readScale())
-            end,
-            min = function()
-                return select(2, binding.readScale())
-            end,
-            max = function()
-                return select(3, binding.readScale())
-            end,
-            step = function()
-                return select(4, binding.readScale())
-            end,
-            set = function(value)
-                if not binding.isCurrent() then
-                    return
-                end
-                if tostring(binding.readScale()) ~= tostring(value) then
-                    commit(binding.applyScale(value))
-                end
-            end,
-            -- Greyed out like the settings panel's Scale when the frame has no size setting.
-            disabled = function()
-                return not (binding.canEdit() and select(5, binding.readScale()) ~= nil)
-            end,
-        },
-        {
             key = "point",
             type = "select",
             name = L["Anchor"],
@@ -265,6 +234,39 @@ function addon:CreateEditModePositionSection(id, binding)
         click = function()
             commit(binding.revert())
         end,
+    }
+    section.sizeSection = {
+        id = id .. ":size",
+        name = L["Size"],
+        key = "settings:size",
+        options = {
+            {
+                key = "scale",
+                type = "range",
+                name = L["Scale"],
+                editable = true,
+                format = formatNumber,
+                default = default("scale"),
+                get = function()
+                    return (binding.readScale())
+                end,
+                min = function()
+                    return select(2, binding.readScale())
+                end,
+                max = function()
+                    return select(3, binding.readScale())
+                end,
+                step = function()
+                    return select(4, binding.readScale())
+                end,
+                set = function() end,
+                disabled = function()
+                    return true
+                end,
+                -- Revert can restore an external change while the slider stays disabled.
+                restore = binding.applyScale,
+            },
+        },
     }
     return section
 end

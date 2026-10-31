@@ -5,9 +5,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function refresh()
     app.addon:Refresh()
 end
-local position = app.PlayerCastbarPosition()
+local position, size = app.PlayerCastbarPosition()
 if position then
     position.order = 5
+    size.order = 6
 end
 ---@type SeamlessCore.SettingsPage
 app.optionPages.player = {
@@ -43,6 +44,7 @@ app.optionPages.player = {
         order = 10,
         args = {
             position = position,
+            size = size,
             icon = {
                 type = "group",
                 feature = true,

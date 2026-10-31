@@ -6,6 +6,7 @@ local function getFrame()
     return _G["MainMenuBarVehicleLeaveButton"]
 end
 local scale = nil
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.vehicleLeave = {
     defaults = {},
@@ -21,6 +22,6 @@ app.optionPages.vehicleLeave = {
         hidden = function()
             return getFrame() == nil
         end,
-        args = { position = app.core:GetNativePositionOptions(getFrame, scale) },
+        args = { position = position, size = size },
     },
 }

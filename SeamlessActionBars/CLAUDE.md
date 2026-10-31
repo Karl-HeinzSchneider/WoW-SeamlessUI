@@ -23,7 +23,7 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
 - `src/options/`: on General, a Show action bars button opening the game's Action Bars
   settings (`Settings.OpenToCategory(Settings.ACTION_BAR_CATEGORY_ID)`), then the feature groups;
   then one tab per native Edit Mode frame (action bars 1-8, both XP / reputation bars, pet action bar, leave vehicle button, left and right endcap) holding
-  Core's native Position and scale group. Scale is Icon Size for action bars, Size for status bars,
+  Core's native Position and Size groups. Scale is disabled for now; it displays Icon Size for action bars, Size for status bars,
   the profile scale for the endcaps and disabled for the leave vehicle button. The endcap tabs
   also have Hide endcap, bound to the native Hidden setting, and independent Texture selectors
   (Default leaves native art unchanged, Alliance uses gryphons, Horde uses wyverns). Texture
@@ -40,7 +40,7 @@ The `SeamlessActionBars` namespace holds settings in shared suite profiles: `ran
   horizontally, up/down vertically) use the native layout service as well;
   unavailable settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style
   controls into the selected frame's extended Edit Mode window. Native Size is exposed only as
-  Position's Scale. These native settings stay in Edit Mode layouts.
+  the disabled Size slider. These native settings stay in Edit Mode layouts.
   Show free bag slots binds Blizzard's `displayFreeBagSlots` CVar directly and works with either
   skin; the native backpack handles the count and its visibility. It is shared with Edit Mode's
   Style section, and the config page refreshes on external CVar changes.

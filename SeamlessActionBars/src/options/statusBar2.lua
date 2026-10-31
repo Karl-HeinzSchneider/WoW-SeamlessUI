@@ -7,6 +7,7 @@ local function getFrame()
 end
 local setting = Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTrackingBarSetting.Size
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar2 = {
     tooltip = function(path)
@@ -27,7 +28,8 @@ app.optionPages.statusBar2 = {
         end,
         args = {
             xpBarTooltip = app.XPBarTooltipOptions(),
-            position = app.core:GetNativePositionOptions(getFrame, scale),
+            position = position,
+            size = size,
         },
     },
 }

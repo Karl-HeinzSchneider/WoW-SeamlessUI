@@ -28,6 +28,6 @@
 ---@class SeamlessDamageMeter
 ---@field WindowEditModeButtons fun(): table<string, SeamlessCore.EditModeButton>
 ---@field WindowAppearanceOptions fun(windowID?: number): table
----@field WindowPositionOptions fun(windowID: number): table
+---@field WindowPositionOptions fun(windowID: number): table, table
 ---@field meterSettingDefinitions table[]
 ---@field MeterSettingControl fun(definition: table, windowID?: number, inherited?: boolean, skin?: table): table

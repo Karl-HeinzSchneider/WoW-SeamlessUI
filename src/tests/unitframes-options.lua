@@ -65,7 +65,12 @@ local app = {
     totPosition = {
         GetOptions = function(_, key)
             if key == "targettarget" or key == "focustarget" then
-                return { type = "group", inline = true, name = "Position and scale", order = 10, args = {} }
+                return { type = "group", inline = true, name = "Position", order = 10, args = {} }, {
+                    type = "group",
+                    name = "Size",
+                    order = 11,
+                    args = {},
+                }
             end
         end,
     },
@@ -73,7 +78,12 @@ local app = {
         GetNativePositionOptions = function(_, getFrame, scale)
             assert(scale.setting == Enum.EditModeUnitFrameSetting.FrameSize and scale.getFrame == getFrame)
             positioned[#positioned + 1] = getFrame()
-            return { type = "group", inline = true, name = "Position and scale", order = 10, args = {} }
+            return { type = "group", inline = true, name = "Position", order = 10, args = {} }, {
+                type = "group",
+                name = "Size",
+                order = 11,
+                args = {},
+            }
         end,
         GetNativeSettingScale = function(_, getFrame, setting)
             return { getFrame = getFrame, setting = setting }
@@ -180,9 +190,9 @@ local function find(tab, key)
         end
     end
 end
-assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position and scale")
+assert(tabs.player.args.style.name == "Style" and tabs.player.args.position.name == "Position")
 for _, key in ipairs({ "pet", "target", "focus" }) do
-    assert(tabs[key].args.style and tabs[key].args.position, key .. " has Position and scale")
+    assert(tabs[key].args.style and tabs[key].args.position, key .. " has Position")
 end
 assert(not tabs.party.args.position, "only frames with their own position")
 assert(tabs.targettarget.args.position and tabs.targettarget.args.style, "the ToT frames are movable too")

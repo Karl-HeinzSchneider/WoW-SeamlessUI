@@ -38,4 +38,4 @@
 ---@field Refresh fun(self: SeamlessCastbar.Addon)
 
 ---@class SeamlessCastbar
----@field PlayerCastbarPosition fun(): table?
+---@field PlayerCastbarPosition fun(): table?, table?

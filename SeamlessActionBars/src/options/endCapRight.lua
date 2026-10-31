@@ -7,6 +7,7 @@ local function getFrame()
     return app.EndCapFrame(entry)
 end
 local scale = app.EndCapScale(entry)
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.endCapRight = {
     defaults = { profile = { endCaps = { right = { scale = 1, texture = "default" } } } },
@@ -25,7 +26,8 @@ app.optionPages.endCapRight = {
         args = {
             hidden = app.EndCapHiddenOption(entry),
             texture = app.EndCapTextureOption(entry),
-            position = app.core:GetNativePositionOptions(getFrame, scale),
+            position = position,
+            size = size,
         },
     },
 }

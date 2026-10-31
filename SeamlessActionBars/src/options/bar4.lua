@@ -7,6 +7,7 @@ local function getFrame()
 end
 local setting = Enum.EditModeActionBarSetting and Enum.EditModeActionBarSetting.IconSize
 local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
+local position, size = app.core:GetNativePositionOptions(getFrame, scale)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bar4 = {
     defaults = {},
@@ -22,6 +23,6 @@ app.optionPages.bar4 = {
         hidden = function()
             return getFrame() == nil
         end,
-        args = { position = app.core:GetNativePositionOptions(getFrame, scale) },
+        args = { position = position, size = size },
     },
 }

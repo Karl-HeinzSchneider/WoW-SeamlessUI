@@ -255,7 +255,9 @@ function module:RefreshPanel()
         sections = function()
             local sections = {}
             if frameOption(spec, "addPosition") then
-                sections[1] = app.blizzardPosition:GetSection(system)
+                local position = app.blizzardPosition:GetSection(system)
+                sections[1] = position
+                sections[2] = position.sizeSection
             end
             for _, section in ipairs(app.systemOptions:GetSections(system)) do
                 sections[#sections + 1] = section

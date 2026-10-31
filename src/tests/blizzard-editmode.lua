@@ -184,6 +184,7 @@ app.blizzardPosition = {
             id = "position",
             name = "Position",
             key = "settings:position",
+            sizeSection = { id = "position:size", name = "Size", key = "settings:size", options = {} },
             options = {
                 {
                     key = "anchored",
@@ -332,16 +333,17 @@ assert(not positionShown())
 app.db.profile.blizzardEditMode.frames.focus.addPosition = true
 module:RefreshPanel()
 -- Add position appears as an expanded Position header that collapses like every other header.
+assert(headers.Size, "native settings declare a separate Size header")
 local positionHeader, positionRow = headers.Position, created.EditModeSettingCheckboxTemplate
 assert(positionShown() and not positionHeader.collapsed and positionRow.shown)
 assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)
 -- Attached below the native dialog, titled after the frame.
 assert(panel.spec.anchor == EditModeSystemSettingsDialog and panel.spec.key == positionSystem)
 assert(panel.spec.title == "SeamlessUI - Focus frame", panel.spec.title)
--- Header, one row: 28 + 8 + 32.
-assert(panel.height == 68, panel.height)
+-- Position header and one row, then the separate Size header.
+assert(panel.height == 104, panel.height)
 positionHeader.onClick()
-assert(positionHeader.collapsed and not positionRow.shown and panel.height == 28 and panel:IsShown())
+assert(positionHeader.collapsed and not positionRow.shown and panel.height == 64 and panel:IsShown())
 positionHeader.onClick()
 assert(not positionHeader.collapsed and positionRow.shown)
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3

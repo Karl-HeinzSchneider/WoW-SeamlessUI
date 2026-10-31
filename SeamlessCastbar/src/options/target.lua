@@ -5,9 +5,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function refresh()
     app.addon:Refresh()
 end
-local position = app.position:GetOptions("target")
+local position, size = app.position:GetOptions("target")
 if position then
     position.order = 5
+    size.order = 6
 end
 ---@type SeamlessCore.SettingsPage
 app.optionPages.target = {
@@ -44,6 +45,7 @@ app.optionPages.target = {
         order = 20,
         args = {
             position = position,
+            size = size,
 
             enabled = {
                 type = "toggle",

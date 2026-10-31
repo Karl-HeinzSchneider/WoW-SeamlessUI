@@ -340,10 +340,10 @@ assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)
 -- Attached below the native dialog, titled after the frame.
 assert(panel.spec.anchor == EditModeSystemSettingsDialog and panel.spec.key == positionSystem)
 assert(panel.spec.title == "SeamlessUI - Focus frame", panel.spec.title)
--- Header, one row: 28 + 8 + 32.
-assert(panel.height == 68, panel.height)
+-- Position header and one row, then the separate Size header.
+assert(panel.height == 104, panel.height)
 positionHeader.onClick()
-assert(positionHeader.collapsed and not positionRow.shown and panel.height == 28 and panel:IsShown())
+assert(positionHeader.collapsed and not positionRow.shown and panel.height == 64 and panel:IsShown())
 positionHeader.onClick()
 assert(not positionHeader.collapsed and positionRow.shown)
 Enum.EditModeSystem.ActionBar, Enum.EditModeSystem.AuraFrame = 2, 3

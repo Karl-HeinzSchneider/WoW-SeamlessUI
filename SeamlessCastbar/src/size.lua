@@ -1,7 +1,7 @@
 ---@type string, SeamlessCastbar
 local _, app = ...
 
--- Keep native dimensions outside the frame so disabling or changing profiles restores them.
+-- Capture native values only for restoration when overrides are inactive, never as defaults.
 local nativeWidth, nativeHeight
 local nativeScale
 local nativeTextPoints
@@ -52,17 +52,7 @@ local function anchorPlayerText(bar, resize, height)
 end
 
 function app.PlayerSizeDefault(axis)
-    local bar = PlayerCastingBarFrame
-    if axis == "scale" then
-        return nativeScale or (bar and bar:GetScale())
-    end
-    if axis == "iconSize" then
-        local value = nativeIconWidth or (bar and bar.Icon and bar.Icon:GetWidth())
-        return value and math.floor(value + 0.5)
-    end
-    local value = axis == "width" and (nativeWidth or (bar and bar:GetWidth()))
-        or (nativeHeight or (bar and bar:GetHeight()))
-    return value and math.floor(value + 0.5)
+    return app.dbDefaults.profile.player[axis]
 end
 
 function app.ApplyPlayerSize()

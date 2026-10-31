@@ -7,7 +7,9 @@ local function refresh()
 end
 local function resetSize()
     local settings = app.db.profile.player
-    settings.width, settings.height, settings.scale, settings.iconSize = nil, nil, nil, nil
+    for _, key in ipairs({ "width", "height", "scale", "iconSize" }) do
+        settings[key] = app.PlayerSizeDefault(key)
+    end
     refresh()
     app.core:RefreshOptions(appName)
 end
@@ -124,6 +126,12 @@ app.optionPages.player = {
         profile = {
             player = {
                 enabled = true,
+                -- PlayerCastingBarFrameTemplate/CastingBarFrameBaseTemplate in the client XML;
+                -- Bar Size defaults to 100% in Edit Mode's setting display info.
+                width = 208,
+                height = 11,
+                scale = 1,
+                iconSize = 16,
                 castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
                 rank = { enabled = true },
                 ticks = { enabled = true },

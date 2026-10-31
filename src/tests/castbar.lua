@@ -349,11 +349,13 @@ PlayerCastingBarFrame.Text = {
         textPoints[#textPoints + 1] = { ... }
     end,
 }
+app.dbDefaults = {}
+dofile("src/tests/settings-support.lua").defaults("SeamlessCastbar", app)
 load("size.lua")
 dimensions.width, dimensions.height = 207.99998474121, 11.00000095367
 assert(
     app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11,
-    "native size defaults are rounded for sliders and tooltips"
+    "declared size defaults are independent of live frame geometry"
 )
 dimensions.width, dimensions.height = 208, 11
 app.db.profile.player.height = 22
@@ -379,7 +381,7 @@ assert(textPoints[1][5] == 1, "repeated refreshes do not shift the text")
 assert(dimensions.scale == 3)
 dimensions.scale = 1.5
 app.PlayerScaleChanged()
-assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1.5, "native updates retain the chosen scale")
+assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1, "native scale updates cannot change the default")
 assert(dimensions.width == 300 and dimensions.height == 50)
 dimensions.width, dimensions.height = 150, 10
 textPoints = {
@@ -396,14 +398,15 @@ assert(
     "locked bar retains both horizontal anchors"
 )
 assert(dimensions.width == 300 and dimensions.height == 50, "sizes survive a native look change")
-assert(app.PlayerSizeDefault("width") == 150 and app.PlayerSizeDefault("height") == 10)
+assert(app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11)
+assert(app.PlayerSizeDefault("iconSize") == 16, "icon defaults come from the client template, not the live icon")
 local originalProfile = app.db.profile
 app.db.profile = { player = { enabled = true } }
 app.ApplyPlayerSize()
-assert(dimensions.width == 150 and dimensions.height == 10, "a fresh profile restores native dimensions")
-assert(dimensions.scale == 1.5, "a fresh profile restores native scale")
-assert(iconSize.width == 20 and iconSize.height == 20, "a fresh profile restores native icon size")
-assert(textPoints[1][3] == "TOPLEFT" and textPoints[1][5] == 3, "fresh profiles restore native text anchors")
+assert(dimensions.width == 150 and dimensions.height == 10, "removing overrides restores native dimensions")
+assert(dimensions.scale == 1.5, "removing overrides restores native scale")
+assert(iconSize.width == 20 and iconSize.height == 20, "removing overrides restores native icon size")
+assert(textPoints[1][3] == "TOPLEFT" and textPoints[1][5] == 3, "removing overrides restores native text anchors")
 app.db.profile = originalProfile
 app.ApplyPlayerSize()
 enabled = false
@@ -452,9 +455,12 @@ for _, reset in ipairs({ sizeArgs.resetSize.func, resetButton.click }) do
     app.ApplyPlayerSize()
     reset()
     app.ApplyPlayerSize()
-    assert(not settings.width and not settings.height and not settings.scale and not settings.iconSize)
-    assert(dimensions.width == 150 and dimensions.height == 10 and dimensions.scale == 1.5)
-    assert(iconSize.width == 20 and iconSize.height == 20, "both reset buttons restore all native sizes")
+    assert(settings.width == 208 and settings.height == 11 and settings.scale == 1 and settings.iconSize == 16)
+    assert(dimensions.width == 208 and dimensions.height == 11 and dimensions.scale == 1)
+    assert(
+        iconSize.width == 16 and iconSize.height == 16,
+        "both reset buttons apply actual defaults, not captured values"
+    )
 end
 refreshes, optionRefreshes = 0, 0
 assert(sizeArgs.width and sizeArgs.height and not app.optionPages.player.config.args.width)

@@ -380,7 +380,19 @@ assert(textPoints[1][5] == 1, "repeated refreshes do not shift the text")
 assert(dimensions.scale == 3)
 dimensions.scale = 1.5
 app.PlayerScaleChanged()
-assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1, "native scale updates cannot change the default")
+assert(dimensions.scale == 4.5, "a native Bar Size change is multiplied by our scale")
+app.ApplyPlayerSize()
+assert(dimensions.scale == 4.5, "repeated refreshes do not compound the scale")
+assert(app.PlayerSizeDefault("scale") == 1, "native scale updates cannot change the default")
+app.db.profile.player.scale = 1
+app.ApplyPlayerSize()
+assert(dimensions.scale == 1.5, "the default scale leaves Bar Size in charge")
+dimensions.scale = 1.2
+app.PlayerScaleChanged()
+assert(dimensions.scale == 1.2, "Bar Size changes apply unchanged at the default scale")
+dimensions.scale = 1.5
+app.db.profile.player.scale = 3
+app.PlayerScaleChanged()
 assert(dimensions.width == 300 and dimensions.height == 50)
 dimensions.width, dimensions.height = 150, 10
 textPoints = {
@@ -455,7 +467,8 @@ for _, reset in ipairs({ sizeArgs.resetSize.func, resetButton.click }) do
     reset()
     app.ApplyPlayerSize()
     assert(settings.width == 208 and settings.height == 11 and settings.scale == 1 and settings.iconSize == 16)
-    assert(dimensions.width == 208 and dimensions.height == 11 and dimensions.scale == 1)
+    assert(dimensions.width == 208 and dimensions.height == 11)
+    assert(dimensions.scale == 1.5, "resetting the scale hands the bar back to Bar Size")
     assert(
         iconSize.width == 16 and iconSize.height == 16,
         "both reset buttons apply actual defaults, not captured values"
@@ -484,10 +497,10 @@ player.iconSize = nil
 assert(rows.Scale.key == "scale" and rows.Scale.min == 0.5 and rows.Scale.max == 3)
 rows.Scale.set(0.5)
 app.ApplyPlayerSize()
-assert(player.scale == 0.5 and dimensions.scale == 0.5)
+assert(player.scale == 0.5 and dimensions.scale == 0.75, "the Scale row multiplies Bar Size")
 rows.Scale.set(3)
 app.ApplyPlayerSize()
-assert(dimensions.scale == 3)
+assert(dimensions.scale == 4.5)
 player.scale = nil
 rows.Width.set(10)
 rows.Height.set(8)

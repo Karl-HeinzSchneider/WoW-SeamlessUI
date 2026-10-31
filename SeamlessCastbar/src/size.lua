@@ -64,9 +64,10 @@ function app.ApplyPlayerSize()
     local active = app.addon:IsEnabled()
     resizePlayerIcon(bar, active and settings.iconSize)
     anchorPlayerText(bar, active and settings.height ~= nil, nativeHeight or bar:GetHeight())
-    if active and settings.scale then
+    -- Our scale multiplies the native Bar Size scale, so Edit Mode's Bar Size keeps working.
+    if active and settings.scale and settings.scale ~= 1 then
         nativeScale = nativeScale or bar:GetScale()
-        bar:SetScale(settings.scale)
+        bar:SetScale(nativeScale * settings.scale)
     elseif nativeScale then
         bar:SetScale(nativeScale)
         nativeScale = nil
@@ -83,7 +84,8 @@ function app.ApplyPlayerSize()
     end
 end
 
--- The native Bar Size update also runs when locking the bar or changing layouts.
+-- The native Bar Size update also runs when locking the bar or changing layouts. It has just set
+-- the bar's scale from Bar Size, which becomes the base our multiplier applies to.
 function app.PlayerScaleChanged()
     nativeScale = nil
     app.ApplyPlayerSize()

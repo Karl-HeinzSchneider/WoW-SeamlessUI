@@ -281,6 +281,7 @@ L["Hold time"] = true
 L["How long a cast bar stays before it fades out."] = true
 L["Icon size"] = true
 L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."] = true
+L["Multiplies the Bar Size from the cast bar's Edit Mode settings."] = true
 L["Remaining (1.3)"] = true
 L["Remaining / total (1.3 / 2.5)"] = true
 L["Seconds. The game uses 0.2."] = true

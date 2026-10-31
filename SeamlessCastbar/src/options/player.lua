@@ -25,6 +25,7 @@ size.args.scale = {
     type = "range",
     order = 0,
     name = L["Scale"],
+    desc = L["Multiplies the Bar Size from the cast bar's Edit Mode settings."],
     min = 0.5,
     max = 3,
     step = 0.01,

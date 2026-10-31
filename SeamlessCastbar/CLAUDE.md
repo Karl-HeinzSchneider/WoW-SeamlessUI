@@ -32,6 +32,8 @@ system, so they are not part of this addon.
   (`GetNativePositionOptions`); position is stored in the Edit Mode layout and unavailable while
   Lock to Player Frame is on. The player's Size controls override that group's Scale placeholder:
   Scale (0.5–3), Width and Height use `profile.player` and apply directly to the native frame.
+  Scale multiplies the scale the native Bar Size setting gives the bar (1 leaves Bar Size alone);
+  never set it absolutely, or Edit Mode's Bar Size stops working.
   `src/size.lua` retains native values for restoration and reapplies overrides after native updates.
   Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size 16,
   from the client's player/base casting bar templates and default Bar Size. Tooltips and Reset

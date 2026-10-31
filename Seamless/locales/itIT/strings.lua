@@ -284,6 +284,7 @@ end
 -- L["How long a cast bar stays before it fades out."] = "How long a cast bar stays before it fades out."
 -- L["Icon size"] = "Icon size"
 -- L["Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."] = "Mark where each tick of a channeled spell lands, such as Drain Life, Arcane Missiles or Blizzard."
+-- L["Multiplies the Bar Size from the cast bar's Edit Mode settings."] = "Multiplies the Bar Size from the cast bar's Edit Mode settings."
 -- L["Remaining (1.3)"] = "Remaining (1.3)"
 -- L["Remaining / total (1.3 / 2.5)"] = "Remaining / total (1.3 / 2.5)"
 -- L["Seconds. The game uses 0.2."] = "Seconds. The game uses 0.2."

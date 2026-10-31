@@ -138,6 +138,13 @@ IDs. Then run `npm run locales:sync`: it keeps existing translations in
 (one double-quoted assignment per line; obsolete keys are reported, resolve them by hand).
 Untranslated entries fall back to English. `lua src/tests/locales.lua` loads every client locale.
 
+**Anchors always use their exact native spelling**, wherever they are shown (labels, dropdown
+entries, tooltips, defaults, docs): `TOPLEFT`, `TOP`, `TOPRIGHT`, `LEFT`, `CENTER`, `RIGHT`,
+`BOTTOMLEFT`, `BOTTOM`, `BOTTOMRIGHT`, and tooltip owner anchors such as `ANCHOR_CURSOR`,
+`ANCHOR_CURSOR_RIGHT` or `ANCHOR_TOP`. Never paraphrase or translate them ("Top right", "Right of
+the cursor"); they are technical IDs, not locale strings. Only a choice that is not a native anchor
+(such as an automatic mode) gets a localized label.
+
 ## WoW addon constraints
 
 - Lua 5.1 with Blizzard's restricted API: no `require`, `io`, `os` or loading external files.

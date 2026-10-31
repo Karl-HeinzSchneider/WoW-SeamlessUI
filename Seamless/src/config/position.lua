@@ -35,20 +35,10 @@ function app.addon:GetPositionOptions(spec)
         return row
     end
     local points = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
-    local labels = {
-        L["Top left"],
-        L["Top"],
-        L["Top right"],
-        L["Left"],
-        L["Center"],
-        L["Right"],
-        L["Bottom left"],
-        L["Bottom"],
-        L["Bottom right"],
-    }
+    -- Native anchor names (TOPRIGHT), never translated.
     local values = {}
-    for i, point in ipairs(points) do
-        values[point] = labels[i]
+    for _, point in ipairs(points) do
+        values[point] = point
     end
     for i, key in ipairs({ "point", "relativePoint" }) do
         local row = option(key, i == 1 and L["Anchor"] or L["AnchorParent"], i, "select")

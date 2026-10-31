@@ -9,20 +9,9 @@ local _, app = ...
 local addon = app.addon
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
--- Anchor points in dropdown order and their labels, shared with editmodelib.lua.
+-- Anchor points in dropdown order, shown with their native names (TOPRIGHT), never translated.
 local POINTS = { "TOPLEFT", "TOP", "TOPRIGHT", "LEFT", "CENTER", "RIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" }
-local POINT_LABELS = {
-    TOPLEFT = L["Top left"],
-    TOP = L["Top"],
-    TOPRIGHT = L["Top right"],
-    LEFT = L["Left"],
-    CENTER = L["Center"],
-    RIGHT = L["Right"],
-    BOTTOMLEFT = L["Bottom left"],
-    BOTTOM = L["Bottom"],
-    BOTTOMRIGHT = L["Bottom right"],
-}
-app.EditModePoints, app.EditModePointLabels = POINTS, POINT_LABELS
+app.EditModePoints = POINTS
 
 -- At most two decimals: a dragged frame's offsets carry long float tails.
 local function formatNumber(value)
@@ -111,12 +100,13 @@ function addon:CreateEditModePositionSection(id, binding)
             commit(binding.apply(values))
         end
     end
-    local points = {}
+    local points, known = {}, {}
     for _, point in ipairs(POINTS) do
-        points[#points + 1] = { text = POINT_LABELS[point], value = point }
+        points[#points + 1] = { text = point, value = point }
+        known[point] = true
     end
     local function pointText(value)
-        return POINT_LABELS[value] or L["Unknown"]
+        return known[value] and value or L["Unknown"]
     end
     local function offset(key, name, size)
         -- Screen-sized ranges, expanded for an existing offset so large layouts are never

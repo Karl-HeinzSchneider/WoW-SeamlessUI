@@ -408,12 +408,12 @@ function menu:CreateRadio(text, get, set)
     return entry
 end
 view.controls.point.Dropdown.menu(nil, menu)
-assert(menu.entries.Bottom.get())
-menu.entries["Top right"].set()
+assert(menu.entries.BOTTOM.get())
+menu.entries.TOPRIGHT.set()
 assert(position:Read(player).point == "TOPRIGHT")
 local parentMenu = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 view.controls.relativePoint.Dropdown.menu(nil, parentMenu)
-parentMenu.entries["Bottom left"].set()
+parentMenu.entries.BOTTOMLEFT.set()
 assert(position:Read(player).relativePoint == "BOTTOMLEFT" and position:Read(player).point == "TOPRIGHT")
 local frameMenu = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 view.controls.relativeTo.Dropdown.menu(nil, frameMenu)
@@ -574,10 +574,10 @@ assert(not view.RevertButton.enabled)
 view.RevertButton.click()
 assert(position:Read(player).offsetX == 999)
 preset = false
--- A translated catalogue changes labels/order, but never the frame/anchor IDs.
+-- A translated catalogue changes labels/order, but never the frame IDs or native anchor names.
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 L["Focus frame"], L["Target frame"] = "Z Focus", "A Target"
-L["Anchor"], L["Top right"], L["Revert changes"] = "Translated anchor", "Translated top right", "Translated revert"
+L["Anchor"], L["Revert changes"] = "Translated anchor", "Translated revert"
 L["X and Y must be finite numbers."] = "Translated numeric error"
 local coreApp = { addon = app.core }
 assert(loadfile("Seamless/src/core/frameposition.lua"))("Seamless", coreApp)
@@ -593,7 +593,7 @@ localizedView.controls.relativeTo.Dropdown.menu(nil, localizedMenu)
 assert(table.concat(localizedMenu.order, ",") == "UIParent,A Target,Minimap,Player frame,Z Focus")
 local localizedAnchors = { entries = {}, CreateRadio = menu.CreateRadio, SetScrollMode = menu.SetScrollMode }
 localizedView.controls.point.Dropdown.menu(nil, localizedAnchors)
-localizedAnchors.entries["Translated top right"].set()
+localizedAnchors.entries.TOPRIGHT.set()
 assert(localizedPosition:Read(player).point == "TOPRIGHT")
 local invalid = localizedPosition:Read(player)
 invalid.offsetX = "invalid"

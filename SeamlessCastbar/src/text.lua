@@ -138,9 +138,18 @@ end
 -- The player bar shows the spell icon only while it is locked to the player frame.
 ---@type table<StatusBar, true>
 local icons = {}
+local fallbackIcons = {}
 
 ---@param bar StatusBar
 function app.RestoreIcon(bar)
+    local fallback = fallbackIcons[bar]
+    if fallback then
+        local texture = bar.Icon:GetTexture()
+        if known(texture) and texture == fallback then
+            bar.Icon:SetTexture(nil)
+        end
+        fallbackIcons[bar] = nil
+    end
     if icons[bar] then
         icons[bar] = nil
         if bar.look == "CLASSIC" then
@@ -157,6 +166,12 @@ function app.UpdateIcon(bar)
     if not (app.Active(bar) and app.Settings(bar).icon.enabled) then
         app.RestoreIcon(bar)
         return
+    end
+    local texture = bar.Icon:GetTexture()
+    if not (issecretvalue and issecretvalue(texture)) and not texture then
+        -- The client does not assign a spell texture until the first cast after a reload.
+        bar.Icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+        fallbackIcons[bar] = bar.Icon:GetTexture()
     end
     if bar.look == "CLASSIC" then
         icons[bar] = true

@@ -32,7 +32,14 @@ end
 
 local function FontString(text)
     local shown = true
+    local texture
     return {
+        GetTexture = function()
+            return texture
+        end,
+        SetTexture = function(_, value)
+            texture = value
+        end,
         GetText = function()
             return text
         end,
@@ -207,9 +214,21 @@ player.look = "CLASSIC"
 player.Icon:Hide()
 app.UpdateIcon(player)
 assert(player.Icon:IsShown())
+assert(
+    player.Icon:GetTexture() == "Interface\\Icons\\INV_Misc_QuestionMark",
+    "empty icon has a texture before the first cast"
+)
 app.db.profile.player.icon.enabled = false
 app.UpdateIcon(player)
 assert(not player.Icon:IsShown(), "icon restored")
+assert(player.Icon:GetTexture() == nil, "disabling removes the fallback texture")
+app.db.profile.player.icon.enabled = true
+app.UpdateIcon(player)
+player.Icon:SetTexture(12345)
+app.UpdateIcon(player)
+assert(player.Icon:GetTexture() == 12345, "a real cast replaces the fallback and is preserved")
+app.RestoreIcon(player)
+assert(player.Icon:GetTexture() == 12345, "restoring never clears a real spell texture")
 target.look = "UNITFRAME"
 target.Icon:Hide()
 app.UpdateIcon(target)

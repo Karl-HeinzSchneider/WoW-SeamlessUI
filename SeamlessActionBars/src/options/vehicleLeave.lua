@@ -5,8 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function getFrame()
     return _G["MainMenuBarVehicleLeaveButton"]
 end
-local scale = nil
-local position, size = app.core:GetNativePositionOptions(getFrame, scale)
+local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.vehicleLeave = {
     defaults = {},

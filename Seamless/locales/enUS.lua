@@ -885,12 +885,6 @@ L["Shows the game's threat percentage badge above the target frame. This client-
 L["Smaller"] = true
 L["Status Text"] = true
 L["Surname only"] = true
-L["Target of Focus class icon"] = true
-L["Target of Focus health bar color"] = true
-L["Target of Focus name display"] = true
-L["Target of Target class icon"] = true
-L["Target of Target health bar color"] = true
-L["Target of Target name display"] = true
 L["Threat percentage"] = true
 L["Unit frame layout"] = true
 L["Unit Frames"] = true

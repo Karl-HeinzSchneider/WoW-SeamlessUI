@@ -1,12 +1,10 @@
 ---@type string, SeamlessUnitframes
 local appName, app = ...
 
-local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
-
--- Each unit frame's style rows (style.lua) under a collapsible Style header in its Edit Mode
--- settings, writing the same profile as its options tab. The section sits in SeamlessUI's extended
--- window below the frame's own settings (SeamlessUI draws it); it is never a window of its own.
--- Target of Target and Target of Focus get their own Style sections on their stand-ins in mover.lua.
+-- Each unit frame's page, drawn by Core in Edit Mode from its declaration and writing the same
+-- profile as its options tab. The sections sit in SeamlessUI's extended window below the frame's own
+-- settings (SeamlessUI draws it); it is never a window of its own. Target of Target and Target of
+-- Focus show their pages on their stand-ins (mover.lua).
 
 ---@class SeamlessUnitframes.EditMode : AceModule
 local module = {}
@@ -27,12 +25,11 @@ function module:OnEnable()
             app.core:RegisterEditModeSystemOptions(appName .. "." .. entry.key, {
                 system = Enum.EditModeSystem.UnitFrame,
                 systemIndex = systemIndex,
-                name = L["Style"],
-                key = "unitframe-style",
+                name = entry.name,
+                page = { addon = appName, key = entry.key },
                 enabled = function()
                     return app.addon:IsEnabled()
                 end,
-                options = app.StyleOptions(entry),
             })
         end
     end

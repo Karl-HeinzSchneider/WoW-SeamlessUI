@@ -38,6 +38,7 @@ for _, file in ipairs({
     "config/model.lua",
     "config/position.lua",
     "core/options.lua",
+    "core/editmodepages.lua",
     "embed/embed.lua",
 }) do
     if withEmbed or file ~= "embed/embed.lua" then
@@ -95,9 +96,6 @@ function core:GetNativePositionOptions(getFrame, scale)
         order = 11,
         args = {},
     }
-end
-function core:GetNativeSettingScale(getFrame, setting)
-    return { getFrame = getFrame, setting = setting }
 end
 function core:GetFramePositionService()
     return {
@@ -367,11 +365,14 @@ Enum.EditModeSystem.StatusTrackingBar = Enum.EditModeSystem.StatusTrackingBar or
 bars.RegisterXPTooltipEditMode()
 core.RegisterEditModeSystemOptions = registerSystemOptions
 assert(xpSection.system == Enum.EditModeSystem.StatusTrackingBar and xpSection.systemIndex == nil)
-assert(#xpSection.options == 5, "Both status bars expose all shared XP tooltip controls")
+local xpSections =
+    core:GetEditModePageSections(xpSection.page.addon, xpSection.page.key, { path = xpSection.page.path })
+assert(#xpSections == 1 and #xpSections[1].options == 5, "Both status bars expose all shared XP tooltip controls")
 local xpRows = {}
-for _, row in ipairs(xpSection.options) do
-    xpRows[row.key] = row
-    assert(row.default() == bars.dbDefaults.profile.xpBarTooltip[row.key])
+for _, row in ipairs(xpSections[1].options) do
+    local key = row.setting.path[#row.setting.path]
+    xpRows[key] = row
+    assert(row.default() == bars.dbDefaults.profile.xpBarTooltip[key])
 end
 xpRows.automaticRestedXP.set(false)
 assert(bars.db.profile.xpBarTooltip.automaticRestedXP == false)

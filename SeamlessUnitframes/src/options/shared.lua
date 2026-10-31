@@ -15,10 +15,7 @@ function app.UnitFramePositionOptions(entry)
     local function getFrame()
         return _G[entry.frameName]
     end
-    return app.core:GetNativePositionOptions(
-        getFrame,
-        app.core:GetNativeSettingScale(getFrame, Enum.EditModeUnitFrameSetting.FrameSize)
-    )
+    return app.core:GetNativePositionOptions(getFrame)
 end
 
 ---The shared layout setting, exposed on every affected frame.

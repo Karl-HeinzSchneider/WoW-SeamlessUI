@@ -1,5 +1,5 @@
 ---@type string, SeamlessUI
-local _, app = ...
+local appName, app = ...
 
 ---@class SeamlessUI.Minimap : AceModule, AceEvent-3.0, AceHook-3.0
 local module = app.addon:NewModule("Minimap", "AceEvent-3.0", "AceHook-3.0") --[[@as SeamlessUI.Minimap]]
@@ -32,35 +32,13 @@ function module:OnInitialize()
     if not Enum.EditModeSystem or not Enum.EditModeSystem.Minimap then
         return
     end
-    local style = app.optionPages.minimap.config.args.style
-    local options = {}
-    for key, option in pairs(style.args) do
-        options[#options + 1] = {
-            key = key,
-            type = option.type,
-            name = option.name,
-            default = option.default,
-            blizzard = option.blizzard,
-            editMode = option.editMode,
-            disabled = option.disabled,
-            order = option.order,
-            get = option.get,
-            set = function(value)
-                option.set(nil, value)
-            end,
-        }
-    end
-    table.sort(options, function(a, b)
-        return a.order < b.order
-    end)
     app.core:RegisterEditModeSystemOptions("SeamlessUI:minimap", {
         system = Enum.EditModeSystem.Minimap,
-        name = style.name,
-        key = "SeamlessUI:minimap:style",
+        name = app.optionPages.minimap.config.name,
+        page = { addon = appName, key = "minimap" },
         enabled = function()
             return self:IsEnabled() and app.addon:IsEnabled()
         end,
-        options = options,
     })
 end
 

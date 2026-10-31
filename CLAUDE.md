@@ -89,8 +89,9 @@ position, scale and window inheritance, rather than factories for entire pages.
 
 `tooltip(path)` returns a declared default and an optional per-character boolean. A control's
 own `default` wins. Dynamic defaults may come from `GetCVarOptionInfo` or native position
-bindings. Edit Mode Style rows (Castbar, Unitframes, Action Bars, the minimap) derive from these
-same page trees; do not declare those settings a second time.
+bindings. Edit Mode settings windows are drawn from these same page trees (Core's
+`editmodepages.lua`), with the same tooltips, validation and disabled states; page options show
+in Edit Mode unless marked `editModeHidden = true`. Do not declare those settings a second time.
 
 `OpenOptions(addonName, page)` opens a page; `RefreshOptions(addonName)` schedules its existing
 controls to refresh after the current callback. The window and controls live in `src/config/`;

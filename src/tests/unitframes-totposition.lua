@@ -229,20 +229,8 @@ local function load(file)
     assert(loadfile("SeamlessUnitframes/src/" .. file))("SeamlessUnitframes", app)
 end
 load("core/unitframes.lua")
-app.StyleOptions = function(entry)
-    return {
-        {
-            type = "select",
-            name = "Name display",
-            default = function()
-                return "full"
-            end,
-            get = function()
-                return "full"
-            end,
-            set = function() end,
-        },
-    }
+app.core.GetEditModePageSettings = function(_, addonName, key)
+    return { addon = addonName, page = key }
 end
 local previewCalls = {}
 for _, name in ipairs({ "legacyLayout", "healthColor", "nameDisplay", "classIcon" }) do
@@ -347,11 +335,10 @@ print("PASS: focus ToT follows Larger Frame")
 -- Edit Mode stand-ins: one per frame, Frames checkboxes, shown only in Edit Mode.
 local targetMover = registeredFrames["Target of Target"]
 local focusMover = registeredFrames["Target of Focus"]
-assert(targetMover and focusMover and targetMover.settings[1].spec, "registered with LibEditMode and Position rows")
-assert(targetMover.settings[2].kind == "header" and targetMover.settings[2].name == "Style")
-assert(targetMover.settings[3].kind == "dropdown" and targetMover.settings[3].default == "full")
-assert(targetMover.settings[4] == app.optionPages.targettarget.config.buttonSection)
-assert(focusMover.settings[4] == app.optionPages.focustarget.config.buttonSection)
+assert(targetMover and focusMover, "registered with LibEditMode")
+-- Their settings windows show their pages: Position, Style and the declared buttons.
+assert(targetMover.settings.addon == "SeamlessUnitframes" and targetMover.settings.page == "targettarget")
+assert(focusMover.settings.page == "focustarget")
 local frames = editModeGroups["SeamlessUnitframes.ToT"]
 assert(frames.section == "frames" and #frames.options == 2 and frames.options[1].get() == true)
 assert(not targetMover.frame.shown)

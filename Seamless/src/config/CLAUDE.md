@@ -54,8 +54,7 @@ group/control. These fields belong to our schema and stay directly on the table.
 flags mark the subcategory; individual control flags mark their row. Flags combine and do not
 propagate to children or clear on hover/open.
 
-Suite options do not set Blizzard or Edit Mode visual tags. Native Position and scale
-and other layout-backed settings use `layoutStored = true` solely for the tooltip line
+Suite options do not set Blizzard or Edit Mode visual tags. Native Position and other layout-backed settings use `layoutStored = true` solely for the tooltip line
 `|cff8080ff[Saved in the Edit Mode layout]|r`. It is inherited by settings inside the
 group and never renders a badge. Profile-stored positions stay unmarked.
 
@@ -134,10 +133,11 @@ Run `lua src/tests/config-window.lua`. Check dragging, scrolling, compact mode a
 AnchorParent, AnchorFrame, X and Y) and Size (Scale). Each frame page explicitly declares both
 siblings in its `args`, using `local position, size = core:GetPositionOptions(spec)`.
 `GetNativePositionOptions` and addon position helpers return the same pair. Position owns
-Reset to default position; Size keeps the scale binding's current value, range and default.
-Scale is disabled for now in both settings and Edit Mode, even with a writable binding.
-Enable size controls only when explicitly requested for the frame (so far only the player cast
-bar, whose page replaces the Size group with its own controls). Saved keys are unchanged.
+Reset to default position. Size holds a dead Scale placeholder: always disabled at 100%, with no
+default, reading and writing nothing, in both settings and Edit Mode. A frame that can really be
+sized declares its own controls in the Size group (so far only the player cast bar, whose page
+replaces the Size group with its own controls); never reroute another setting into the
+placeholder. Saved keys are unchanged.
 The position controls use the same `get(key)`, `set(key, value)`, `anchorFrames` and optional
 `disabled()` contract as `GetEditModePositionSetting`; the keys are point, relativePoint,
 relativeTo, x and y. No position is stored by the controls.
@@ -168,19 +168,8 @@ disabled by `isDefault()`), which applies the preset anchor with
 Any option may carry its own `default` (a value or function). It stays on the declaration and
 wins over the page's `tooltip(path)` resolver; use it for values only the game knows.
 
-Scale bindings use multipliers (1 = 100%); defaults are min 0.5, max 2, step 0.01.
-The binding's `min`, `max`, `step`, `get` and `default` supply the disabled Size slider's display.
-Pass `scale` in the generic spec or as `GetNativePositionOptions(getFrame, scale)`'s second
-argument. Edit Mode displays the same binding under its separate Size header. Scale never routes
-through the position setter; Reset Position leaves it alone.
-
-`core:GetNativeSettingScale(getFrame, setting)` binds Scale to a native Edit Mode
-percentage setting (the unit frames pass `Enum.EditModeUnitFrameSetting.FrameSize`):
-range, step and default from the setting's display info and preset, values written as
-whole percentages through `EditModeManagerFrame:OnSystemSettingChange` like the native
-slider (`ApplySetting`: saved at once outside Edit Mode, a draft inside it). It is
-disabled while Edit Mode hides the setting (`ShouldShowSetting`, e.g. Focus without
-Larger Frame).
+The Position group is marked `editModePosition` (Edit Mode draws it as the shared Position
+section) and the Size group `editModeSize`; their generated rows carry `editModeHidden`.
 
 ## Edit Mode button sections
 

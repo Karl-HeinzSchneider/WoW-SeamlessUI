@@ -18,7 +18,7 @@ if position then
     position.order = 5
     size.order = 6
 end
-size = size or { type = "group", inline = true, name = L["Size"], order = 6, args = {} }
+size = size or { type = "group", inline = true, name = L["Size"], order = 6, args = {}, editModeSize = true }
 -- Every control below replaces the native layout binding with a profile setting.
 size.layoutStored = false
 size.args.scale = {

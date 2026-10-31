@@ -5,9 +5,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 local function getFrame()
     return _G["MainStatusTrackingBarContainer"]
 end
-local setting = Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTrackingBarSetting.Size
-local scale = setting and app.core:GetNativeSettingScale(getFrame, setting)
-local position, size = app.core:GetNativePositionOptions(getFrame, scale)
+local position, size = app.core:GetNativePositionOptions(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar1 = {
     tooltip = function(path)

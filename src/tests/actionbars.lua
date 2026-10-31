@@ -14,6 +14,20 @@ dofile("Seamless/lib/LibStub/LibStub.lua")
 dofile("Seamless/lib/AceLocale-3.0/AceLocale-3.0.lua")
 dofile("Seamless/locales/enUS.lua")
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
+local support = dofile("src/tests/settings-support.lua")
+-- The Edit Mode rows Core draws for a page, by order and by their option's key.
+local app
+local function pageRows(pageKey, path)
+    support.editModePages(app.core, "SeamlessActionBars", app)
+    local rows = {}
+    for _, section in ipairs(app.core:GetEditModePageSections("SeamlessActionBars", pageKey, { path = path })) do
+        for _, row in ipairs(section.options) do
+            rows[#rows + 1] = row
+            rows[row.setting.path[#row.setting.path]] = row
+        end
+    end
+    return rows
+end
 local libStub = LibStub
 local addon = {}
 function addon:IsEnabled()
@@ -92,7 +106,7 @@ local function Button(name, action, text)
     }
 end
 
-local app = {}
+app = {}
 app.BarHiddenOption = function(_, name, order)
     return { type = "toggle", name = name, order = order, default = false }
 end
@@ -227,20 +241,17 @@ app.core = {
     RegisterEditModeSystemOptions = function(_, id, spec)
         styleSections[id] = spec
     end,
-    RegisterEditModeSystemScale = function(_, id, spec)
-        registered[id] = spec
-    end,
 }
 local enabled = true
 function addon:IsEnabled()
     return enabled
 end
 app.addon = addon
-app.dbDefaults = { profile = { endCaps = { left = { scale = 1 }, right = { scale = 1 } } } }
-app.db.profile.endCaps = { left = { scale = 1.5 }, right = { scale = 1 } }
+app.dbDefaults = { profile = { endCaps = { left = {}, right = {} } } }
+app.db.profile.endCaps = { left = {}, right = {} }
 load("endcaps.lua")
-app.ApplyEndCapScales()
-assert(left.scale == 1.5 and right.scale == 1 and right.scaleCalls == 0, "profile scale applied, unchanged left alone")
+app.ApplyEndCaps()
+assert(left.scaleCalls == 0 and right.scaleCalls == 0, "the endcaps' scale is never changed")
 assert(left.Texture.calls == 0 and right.Texture.calls == 0, "default leaves native art untouched")
 local texture = app.EndCapTextureOption(app.endCaps[1])
 texture.set(nil, "ally")
@@ -252,44 +263,43 @@ rightTexture.set(nil, "horde")
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
 texture.set(nil, "default")
 assert(left.Texture.atlas == "native-1", "Default restores original atlas")
-app.ApplyEndCapScales(true)
+app.ApplyEndCaps(true)
 assert(right.Texture.atlas == "native-2", "disable restores original atlas")
-app.ApplyEndCapScales()
+app.ApplyEndCaps()
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right", "enable reapplies profile")
-app.db.profile.endCaps = { left = { scale = 1.5, texture = "horde" }, right = { scale = 1, texture = "default" } }
-app.ApplyEndCapScales()
+app.db.profile.endCaps = { left = { texture = "horde" }, right = { texture = "default" } }
+app.ApplyEndCaps()
 assert(
     left.Texture.atlas == "ui-hud-actionbar-wyvern-left" and right.Texture.atlas == "native-2",
     "profile refresh switches artwork"
 )
-local leftEntry = app.endCaps[1]
-local scale = app.EndCapScale(leftEntry)
-assert(scale.get() == 1.5 and scale.default() == 1 and scale.min == 0.5 and scale.max == 2)
-scale.set(0.8)
-assert(app.db.profile.endCaps.left.scale == 0.8 and left.scale == 0.8 and refreshed == 1)
-combat = true
-scale.set(1.2)
-assert(app.db.profile.endCaps.left.scale == 1.2 and left.scale == 0.8, "no SetScale in combat")
-combat = false
-app.ApplyEndCapScales()
-assert(left.scale == 1.2, "applied after combat")
-enabled = false
-scale.set(1.4)
-assert(app.db.profile.endCaps.left.scale == 1.4 and left.scale == 1.2, "disabled addon only stores")
-app.ApplyEndCapScales(true)
-assert(left.scale == 1 and right.scale == 1, "disable restores the game's scale")
-enabled = true
 app.optionPages = {
-    endCapLeft = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[1]) } } },
-    endCapRight = { config = { args = { texture = app.EndCapTextureOption(app.endCaps[2]) } } },
+    endCapLeft = {
+        config = {
+            type = "group",
+            name = "Left",
+            args = {
+                hidden = app.EndCapHiddenOption(app.endCaps[1]),
+                texture = app.EndCapTextureOption(app.endCaps[1]),
+            },
+        },
+    },
+    endCapRight = {
+        config = { type = "group", name = "Right", args = { texture = app.EndCapTextureOption(app.endCaps[2]) } },
+    },
 }
-app.RegisterEndCapScales()
+app.RegisterEndCapEditMode()
 local leftStyle = styleSections["SeamlessActionBars:endCap:left:style"]
 local rightStyle = styleSections["SeamlessActionBars:endCap:right:style"]
 assert(leftStyle.system == 26 and leftStyle.systemIndex == 1 and rightStyle.systemIndex == 2)
+assert(leftStyle.page.key == "endCapLeft" and rightStyle.page.key == "endCapRight")
+leftStyle.options = pageRows("endCapLeft")
+rightStyle.options = pageRows("endCapRight")
+assert(#leftStyle.options == 1, "Blizzard's dialog keeps the native Hide endcap setting")
 local row = leftStyle.options[1]
-assert(row.type == "select" and row.default == "default" and #row.values == 3)
-assert(row.values[1].value == "default" and row.values[2].value == "ally" and row.values[3].value == "horde")
+assert(row.type == "select" and row.default() == "default" and #row.values() == 3)
+local values = row.values()
+assert(values[1].value == "default" and values[2].value == "ally" and values[3].value == "horde")
 row.set("ally")
 assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
 assert(rightStyle.options[1].get() == "default", "Edit Mode controls each side independently")
@@ -298,9 +308,6 @@ assert(left.Texture.atlas == "native-1")
 enabled = false
 assert(not leftStyle.enabled() and not rightStyle.enabled())
 enabled = true
-local spec = registered["SeamlessActionBars:endCap:left"]
-assert(spec and spec.system == 26 and spec.systemIndex == 1 and spec.enabled())
-assert(registered["SeamlessActionBars:endCap:right"].systemIndex == 2)
 local toggle = app.EndCapHiddenOption(app.endCaps[2])
 assert(toggle.type == "toggle" and toggle.layoutStored and not toggle.editMode and toggle.name == L["Hide endcap"])
 assert(toggle.get() == false and toggle.default() == false and not toggle.disabled())
@@ -312,8 +319,8 @@ canEdit = false
 assert(toggle.disabled(), "preset layouts are read-only")
 canEdit = true
 MainActionBar = nil
-assert(toggle.disabled() and app.EndCapFrame(leftEntry) == nil, "missing bar is safe")
-app.ApplyEndCapScales()
+assert(toggle.disabled() and app.EndCapFrame(app.endCaps[1]) == nil, "missing bar is safe")
+app.ApplyEndCaps()
 
 -- Micro menu: layout settings use the native service; artwork follows the current profile.
 local microModule = { enabled = true }
@@ -342,25 +349,6 @@ end
 function service:GetDefaultSetting(_, setting)
     return setting == 2 and 100 or 0
 end
-function app.core:GetNativeSettingScale(getFrame, setting)
-    return {
-        min = 0.7,
-        max = 2,
-        step = 0.05,
-        get = function()
-            return service:ReadSetting(getFrame(), setting) / 100
-        end,
-        set = function(value)
-            service:ApplySetting(getFrame(), setting, value * 100)
-        end,
-        default = function()
-            return 1
-        end,
-        disabled = function()
-            return not getFrame()
-        end,
-    }
-end
 local function Art(alpha)
     return {
         alpha = alpha,
@@ -381,8 +369,11 @@ function app.core:RegisterEditModeSystemOptions(_, value)
 end
 function app.core:RefreshEditModeSystemOptions() end
 microModule:OnInitialize()
-assert(menuSpec.name == L["Style"] and menuSpec.system == 20 and #menuSpec.options == 4)
+assert(menuSpec.page.key == "microMenu" and menuSpec.system == 20)
 local group = app.MicroMenuOptions()
+app.optionPages = { microMenu = { config = { type = "group", name = "Micro menu", args = { layout = group } } } }
+menuSpec.options = pageRows("microMenu")
+assert(#menuSpec.options == 4)
 assert(group.name == L["Style"])
 local menu = group.args
 assert(menu.orientation.get() == 0 and menu.order.default() == 0)
@@ -390,14 +381,14 @@ assert(menu.size == nil, "size is only exposed through Position and scale")
 menu.orientation.set(nil, 1)
 menu.order.set(nil, 1)
 assert(native[0] == 1 and native[1] == 1 and native[2] == 100)
-menuSpec.options[1].set(0)
-assert(menu.orientation.get() == 0 and menuSpec.options[1].values[1].value == 0)
-menuSpec.options[2].set(0)
+menuSpec.options.orientation.set(0)
+assert(menu.orientation.get() == 0 and menuSpec.options.orientation.values()[1].value == 0)
+menuSpec.options.order.set(0)
 assert(menu.order.get() == 0)
 canEdit = false
-assert(menu.orientation.disabled() and menu.order.disabled() and menuSpec.options[1].disabled())
+assert(menu.orientation.disabled() and menu.order.disabled() and menuSpec.options.orientation.disabled())
 canEdit = true
-menuSpec.options[3].set(true)
+menuSpec.options.hideArtwork.set(true)
 app.RefreshMicroMenu()
 assert(MicroMenu.BorderArt.alpha == 0 and MicroMenu.BackgroundArt.alpha == 0 and MicroMenu.button.alpha == 1)
 app.db.profile = { microMenu = { hideArtwork = false } }
@@ -423,14 +414,14 @@ function service:ApplySetting(frame, setting, value)
     return true
 end
 function app.core:GetNativePositionOptions(getFrame, scale)
-    return { getFrame = getFrame, scale = scale }
+    return { type = "group", args = {}, editModePosition = {}, getFrame = getFrame, scale = scale }, {
+        type = "group",
+        args = {},
+        editModeSize = true,
+    }
 end
-function app.core:GetEditModePositionButton(key)
-    return { name = key }
-end
-function app.core:GetEditModeButtonSection(buttons)
-    return { options = buttons }
-end
+app.core.GetEditModePositionButton = support.positionButton
+app.core.GetEditModeButtonSection = support.buttonSection
 app.optionPages = {}
 assert(loadfile(root .. "options/bags.lua"))("SeamlessActionBars", app)
 local bags = app.optionPages.bags.config
@@ -439,7 +430,9 @@ Enum.EditModeSystem.Bags = 21
 load("bags.lua")
 microModule:OnInitialize()
 local bagSpec = menuSpec
-assert(bagSpec.name == L["Style"] and bagSpec.system == 21 and #bagSpec.options == 7)
+assert(bagSpec.page.key == "bags" and bagSpec.system == 21)
+bagSpec.options = pageRows("bags")
+assert(#bagSpec.options == 7)
 local showFreeSlots = false
 GetCVarBool = function(name)
     assert(name == "displayFreeBagSlots")
@@ -450,7 +443,7 @@ SetCVar = function(name, value)
     showFreeSlots = value
 end
 assert(not bagStyle.freeSlots.get() and not bagStyle.freeSlots.blizzard and not bagStyle.freeSlots.editMode)
-bagSpec.options[6].set(true)
+bagSpec.options.freeSlots.set(true)
 assert(bagStyle.freeSlots.get(), "the native CVar is shared by config and Edit Mode")
 app.db.profile.bags = { retailStyle = false, spacing = 4 }
 app.RefreshBagStyle = function() end
@@ -461,20 +454,28 @@ assert(bagStyle.spacing.disabled() and bagStyle.spacing.default == 0)
 app.db.profile.bags.retailStyle = true
 assert(not bagStyle.spacing.disabled())
 assert(not bagStyle.smallButtonSize.disabled() and bagStyle.smallButtonSize.default == 30)
-bagSpec.options[4].set(20)
-assert(bagStyle.smallButtonSize.get() == 20 and bagSpec.options[4].get() == 20)
+bagSpec.options.smallButtonSize.set(20)
+assert(bagStyle.smallButtonSize.get() == 20 and bagSpec.options.smallButtonSize.get() == 20)
 
-bagSpec.options[5].set(8)
-assert(bagStyle.spacing.get() == 8 and bagSpec.options[5].get() == 8)
-assert(bagSpec.options[2].values()[1].text == L["Left"])
+bagSpec.options.spacing.set(8)
+assert(bagStyle.spacing.get() == 8 and bagSpec.options.spacing.get() == 8)
+-- Choices are listed as in the settings window.
+local function choiceText(row, value)
+    for _, entry in ipairs(row.values()) do
+        if entry.value == value then
+            return entry.text
+        end
+    end
+end
+assert(choiceText(bagSpec.options.direction, 0) == L["Left"])
 assert(bags.editModeFrame() == BagsBar and not bags.hidden())
 assert(bagStyle.direction.values()[0] == L["Left"])
 bagStyle.orientation.set(nil, 1)
-assert(bagSpec.options[2].values()[1].text == L["Up"])
+assert(choiceText(bagSpec.options.direction, 0) == L["Up"])
 assert(bagStyle.direction.values()[0] == L["Up"] and bagStyle.direction.values()[1] == L["Down"])
 bagStyle.direction.set(nil, 1)
-bags.args.position.scale.set(1.25)
-assert(native[0] == 1 and native[1] == 1 and native[2] == 125 and native[3] == 4)
+assert(native[0] == 1 and native[1] == 1 and native[2] == 100 and native[3] == 4)
+assert(bags.args.position.scale == nil, "the native Size setting is not rerouted to a Scale")
 assert(bagStyle.padding == nil, "unsupported slot spacing is not exposed")
 assert(bagStyle.size == nil, "size is only exposed through Position and scale")
 canEdit = false

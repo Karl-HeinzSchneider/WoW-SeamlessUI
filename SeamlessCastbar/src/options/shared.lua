@@ -3,8 +3,8 @@ local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- The player bar is the client's Edit Mode cast bar system: its Position and Size groups reads
--- and writes the active layout like the native settings, with Bar Size as the scale. While the
--- bar is locked to the player frame, the player frame places it, so position is unavailable.
+-- and writes the active layout like the native settings; its own Scale is the player page's. While
+-- the bar is locked to the player frame, the player frame places it, so position is unavailable.
 function app.PlayerCastbarPosition()
     local settings = Enum.EditModeCastBarSetting
     if not settings then
@@ -22,5 +22,5 @@ function app.PlayerCastbarPosition()
         end
         return frame
     end
-    return app.core:GetNativePositionOptions(getMovableBar, app.core:GetNativeSettingScale(getBar, settings.BarSize))
+    return app.core:GetNativePositionOptions(getMovableBar)
 end

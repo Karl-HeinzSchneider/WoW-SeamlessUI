@@ -27,6 +27,18 @@ end
 function addon:RegisterEditModeSystemOptions(id, spec)
     assert(type(id) == "string" and id ~= "" and not registrations[id], "Edit Mode system option id must be unique")
     assert(type(spec) == "table" and spec.system ~= nil and type(spec.name) == "string", "System and name are required")
+    if spec.page ~= nil then
+        local page = spec.page
+        assert(
+            type(page) == "table" and type(page.addon) == "string" and type(page.key) == "string",
+            "Edit Mode system page needs addon and key"
+        )
+        assert(spec.options == nil, "Edit Mode system options come from either page or options")
+        spec.id = id
+        registrations[id] = spec
+        self:RefreshEditModeSystemOptions()
+        return
+    end
     assert(type(spec.options) == "table", "Edit Mode system options are required")
     local keys = {}
     for _, option in ipairs(spec.options) do
@@ -70,6 +82,36 @@ function addon:GetEditModeSystemOptions(system)
     return sections
 end
 
+local pageSections = {}
+
+---The renderer sections of a selected system frame's registrations, in order: a registration's
+---page (built once, on first use) or its rows under one collapsible header.
+---@param system table
+---@return SeamlessCore.EditModeSection[]
+function addon:GetEditModeSystemSections(system)
+    local sections = {}
+    for _, spec in ipairs(self:GetEditModeSystemOptions(system)) do
+        local key = "settings:" .. (spec.key or spec.name)
+        if spec.page then
+            local built = pageSections[spec.id]
+            if not built then
+                built = self:GetEditModePageSections(
+                    spec.page.addon,
+                    spec.page.key,
+                    { path = spec.page.path, id = spec.id, name = spec.name, key = key }
+                )
+                pageSections[spec.id] = built
+            end
+            for _, section in ipairs(built) do
+                sections[#sections + 1] = section
+            end
+        else
+            sections[#sections + 1] = { id = spec.id, name = spec.name, key = key, options = spec.options }
+        end
+    end
+    return sections
+end
+
 ---Ask the window showing system options to redraw.
 function addon:RefreshEditModeSystemOptions()
     self:SendMessage(CHANGED)
@@ -79,42 +121,4 @@ end
 ---@return string
 function addon:GetEditModeSystemOptionsMessage()
     return CHANGED
-end
-
--- Scale for Blizzard systems without a native size setting (the action bar endcaps). The owning
--- feature stores and applies it; SeamlessUI's Position section edits it through the binding.
-local scales = {}
-
----Bind the Scale row of a Blizzard Edit Mode system that has no native size setting.
----@param id string Unique identifier.
----@param spec SeamlessCore.EditModeSystemScale
-function addon:RegisterEditModeSystemScale(id, spec)
-    assert(type(id) == "string" and id ~= "" and not scales[id], "Edit Mode system scale id must be unique")
-    assert(type(spec) == "table" and spec.system ~= nil, "System is required")
-    local scale = spec.scale
-    assert(
-        type(scale) == "table" and type(scale.get) == "function" and type(scale.set) == "function",
-        "Scale needs get/set"
-    )
-    spec.id = id
-    scales[id] = spec
-    self:RefreshEditModeSystemOptions()
-end
-
----The scale binding of a system frame, or nil when none is registered or its feature is off.
----@param system table
----@return SeamlessCore.PositionScale?
-function addon:GetEditModeSystemScale(system)
-    if not system then
-        return nil
-    end
-    for _, spec in pairs(scales) do
-        if
-            IsEnabled(spec)
-            and system.system == spec.system
-            and (spec.systemIndex == nil or system.systemIndex == spec.systemIndex)
-        then
-            return spec.scale
-        end
-    end
 end

@@ -89,14 +89,10 @@ function LibStub(name)
 end
 Enum = { EditModeSystem = { Minimap = 42 }, EditModeMinimapSetting = { RotateMinimap = 2 } }
 app.optionPages = {}
-app.core.GetEditModeButtonSection = function()
-    return {}
-end
-app.core.GetEditModePositionButton = function()
-    return {}
-end
+app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
+app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
 app.core.GetNativePositionOptions = function()
-    return {}
+    return { type = "group", args = {}, editModePosition = {} }, { type = "group", args = {}, editModeSize = true }
 end
 app.core.RefreshOptions = function(_, name)
     assert(name == "SeamlessUI")
@@ -136,13 +132,22 @@ function app.core:RegisterEditModeSystemOptions(_, spec)
 end
 assert(loadfile("SeamlessUI/src/options/minimap.lua"))("SeamlessUI", app)
 module:OnInitialize()
-assert(registration.system == Enum.EditModeSystem.Minimap and registration.name == "Style")
+assert(registration.system == Enum.EditModeSystem.Minimap and registration.name == "Minimap")
 assert(registration.enabled())
+-- Edit Mode draws the page itself: the Style group becomes its section, in the page's order.
+assert(registration.page.addon == "SeamlessUI" and registration.page.key == "minimap" and not registration.options)
+dofile("src/tests/settings-support.lua").editModePages(app.core, "SeamlessUI", app)
+local sections = app.core:GetEditModePageSections("SeamlessUI", "minimap")
+assert(#sections == 1 and sections[1].name == "Style", "only Style has rows; Position and Size are native")
+registration.options = {}
+for _, option in ipairs(sections[1].options) do
+    option.key = option.setting.path[#option.setting.path]
+    registration.options[#registration.options + 1] = option
+end
 assert(registration.options[1].key == "square" and registration.options[2].key == "rotateMinimap")
-assert(registration.options[2].blizzard, "rotation wrapper carries Blizzard metadata into Edit Mode")
+assert(registration.options[2].setting:Read("blizzard"), "rotation keeps its Blizzard metadata in Edit Mode")
 local row = registration.options[3]
-assert(row.get == app.optionPages.minimap.config.args.style.args.hideMinimapDayNight.get)
-assert(row.default == false and row.type == "toggle")
+assert(row.key == "hideMinimapDayNight" and row.default() == false and row.type == "toggle")
 module:OnEnable() -- Also safe before Blizzard_Minimap loads.
 local frame = { shown = true }
 function frame:IsShown()

@@ -15,7 +15,6 @@
 ---@field db SeamlessUnitframes.DB
 ---@field options SeamlessUnitframes.Options  # Custom settings pages
 ---@field editMode SeamlessUnitframes.EditMode  # Style sections in the unit frames' Edit Mode settings
----@field StyleOptions fun(entry: SeamlessUnitframes.UnitFrame): SeamlessCore.EditModeSystemOption[]
 ---@field unitFrames SeamlessUnitframes.UnitFrames
 ---@field healthColor SeamlessUnitframes.HealthColor
 ---@field nameBackground SeamlessUnitframes.NameBackground

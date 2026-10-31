@@ -78,11 +78,12 @@ local app = {
         GetNativePositionOptions = function(_, getFrame, scale)
             assert(scale.setting == Enum.EditModeUnitFrameSetting.FrameSize and scale.getFrame == getFrame)
             positioned[#positioned + 1] = getFrame()
-            return { type = "group", inline = true, name = "Position", order = 10, args = {} }, {
+            return { type = "group", inline = true, name = "Position", order = 10, args = {}, editModePosition = {} }, {
                 type = "group",
                 name = "Size",
                 order = 11,
                 args = {},
+                editModeSize = true,
             }
         end,
         GetNativeSettingScale = function(_, getFrame, setting)
@@ -145,7 +146,6 @@ local function load(file)
     assert(loadfile(root .. file))("SeamlessUnitframes", app)
 end
 load("unitframes.lua")
-load("style.lua")
 app.optionPages, app.dbDefaults = {}, {}
 local coreApp = { addon = app.core, config = {} }
 assert(loadfile("Seamless/src/config/model.lua"))("Seamless", coreApp)
@@ -162,6 +162,18 @@ function app.core:GetEditModeVisibility(setting, update)
 end
 dofile("src/tests/settings-support.lua").pages("SeamlessUnitframes", app)
 dofile("src/tests/settings-support.lua").defaults("SeamlessUnitframes", app)
+dofile("src/tests/settings-support.lua").editModePages(app.core, "SeamlessUnitframes", app)
+-- The rows Core draws in Edit Mode for a page, keyed by their option's key.
+local function pageRows(key)
+    local byKey, list = {}, {}
+    for _, section in ipairs(app.core:GetEditModePageSections("SeamlessUnitframes", key)) do
+        for _, row in ipairs(section.options) do
+            list[#list + 1] = row
+            byKey[row.setting.path[#row.setting.path]] = row
+        end
+    end
+    return byKey, list
+end
 load("editmode.lua")
 
 -- Options: every unit frame exposes the shared layout in its Style section.
@@ -214,12 +226,20 @@ for key, tab in pairs(tabs) do
         assert(other.args.style.args.layout.get() == "legacyRounded", "all selectors share the layout")
     end
     assert(app.optionPages[key].tooltip({ key, "style", "layout" }) == "current")
-    local rows = app.StyleOptions(app.unitFrames:Get(key))
-    assert(rows[1].key == "layout" and rows[1].default() == "current")
-    rows[1].set("current")
+    local _, rows = pageRows(key)
+    assert(rows[1].setting.path[3] == "layout" and rows[1].default() == "current")
+    if rows[1].hidden() then
+        -- A page whose frame does not exist is hidden, and so are its rows; they never write.
+        rows[1].set("current")
+        assert(option.get() == "legacyRounded")
+        option.set(nil, "current")
+    else
+        rows[1].set("current")
+    end
     assert(option.get() == "current", "Edit Mode updates the same setting")
 end
-assert(layoutRefreshes == 14 and counts.optionRefreshes == 14 and counts.systemRefreshes == 14)
+-- Writes from Edit Mode also refresh the settings pages, like the settings window's own (6 rows).
+assert(layoutRefreshes == 14 and counts.optionRefreshes == 20 and counts.systemRefreshes == 14)
 local levelRefreshes = 0
 app.levelDisplay = {
     Refresh = function()
@@ -312,43 +332,34 @@ modules.EditMode:OnEnable()
 modules.EditMode:OnEnable()
 local function rows(id)
     local spec = systemOptions["SeamlessUnitframes." .. id]
-    assert(spec and spec.system == 0 and spec.name == "Style", id)
-    local byKey, keys = {}, {}
-    for _, row in ipairs(spec.options) do
-        assert(not keys[row.key], "unique row keys")
-        keys[row.key] = true
-        byKey[row.key] = row
-    end
-    return spec, byKey
+    assert(spec and spec.system == 0 and spec.page.key == id, id)
+    return spec, (pageRows(id))
 end
 local playerSpec, playerRows = rows("player")
 assert(playerSpec.systemIndex == 1 and playerSpec.enabled())
 assert(not systemOptions["SeamlessUnitframes.targettarget"], "no section without a system")
 local targetSpec, targetRows = rows("target")
 assert(targetSpec.systemIndex == 2)
-assert(not targetRows["targettarget.healthBarColor"], "ToT style is not linked to Target")
-assert(targetRows["target.nameDisplay"].name == "Name display")
-assert(targetRows.threatPercentage and targetRows["questIcon.x"])
+assert(not targetRows.targettarget_healthBarColor, "ToT style is not linked to Target")
+assert(targetRows.target_nameDisplay.name == "Name display")
+assert(targetRows.threatPercentage and targetRows.questIcon_x)
 local _, focusRows = rows("focus")
-assert(not focusRows["focustarget.healthBarColor"], "focus ToT style is not linked to Focus")
-local childRows = {}
-for _, row in ipairs(app.StyleOptions(app.unitFrames:Get("targettarget"))) do
-    childRows[row.key] = row
-end
-assert(childRows["targettarget.healthBarColor"].name == "Health bar color")
-assert(childRows["targettarget.classIcon"].name == "Class icon")
+assert(not focusRows.focustarget_healthBarColor, "focus ToT style is not linked to Focus")
+local childRows = pageRows("targettarget")
+assert(childRows.targettarget_healthBarColor.name == "Health bar color")
+assert(childRows.targettarget_classIcon.name == "Class icon")
 local _, petRows = rows("pet")
-assert(rows("party") and petRows["pet.healthBarColor"].values[1].value == "default")
+assert(rows("party") and petRows.pet_healthBarColor.values()[1].value == "default")
 
-childRows["targettarget.healthBarColor"].set("default")
+childRows.targettarget_healthBarColor.set("default")
 assert(app.db.profile.unitFrames.targettarget.healthBarColor == "default")
 assert(find(tabs.targettarget, "targettarget_healthBarColor").get() == "default", "same profile as the tab")
-playerRows["player.healthBarColor"].set("class")
+playerRows.player_healthBarColor.set("class")
 assert(playerColor.get() == "class")
-assert(targetRows["questIcon.scale"].format(2.3) == "2.3")
+assert(targetRows.questIcon_scale.format(2.3) == "2.3")
 enabled = false
 assert(not playerSpec.enabled(), "the section leaves while the addon is disabled")
-childRows["targettarget.nameDisplay"].set("last")
+childRows.targettarget_nameDisplay.set("last")
 assert(find(tabs.targettarget, "targettarget_nameDisplay").get() == "last")
 print("PASS: unit frame Style sections in Edit Mode")
 

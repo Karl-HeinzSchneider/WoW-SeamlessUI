@@ -137,51 +137,7 @@ local function Create(key)
     lib:AddFrame(frame, function(_, _, point, x, y)
         OnMoved(key, point, x, y)
     end, RESET, entry.name)
-    local position = app.totPosition
-    local settings = {
-        app.core:GetEditModePositionSetting({
-            get = function(field)
-                return position:Get(key)[field]
-            end,
-            set = function(field, value)
-                position:Set(key, field, value)
-            end,
-            anchorFrames = function()
-                return app.core:GetFramePositionService():GetAnchorFrames((position:Frames(key)))
-            end,
-            disabled = function()
-                return not position.active
-            end,
-        }),
-    }
-    settings[#settings + 1] = { kind = lib.SettingType.Header, name = L["Style"], key = "unitframe-style" }
-    local kinds = { toggle = "Checkbox", select = "Dropdown", range = "Slider" }
-    for _, row in ipairs(app.StyleOptions(entry)) do
-        local default = row.default
-        if type(default) == "function" then
-            default = default()
-        end
-        settings[#settings + 1] = {
-            kind = lib.SettingType[kinds[row.type]],
-            name = row.name,
-            desc = row.desc,
-            default = default,
-            values = row.values,
-            minValue = row.min,
-            maxValue = row.max,
-            valueStep = row.step,
-            formatter = row.format or tostring,
-            get = row.get,
-            set = function(_, value)
-                row.set(value)
-                lib:RefreshFrameSettings(frame)
-            end,
-            disabled = row.disabled,
-            hidden = row.hidden,
-        }
-    end
-    settings[#settings + 1] = app.optionPages[key].config.buttonSection
-    lib:AddFrameSettings(frame, settings)
+    lib:AddFrameSettings(frame, app.core:GetEditModePageSettings(appName, key))
     mover.movers[key] = frame
     mover.shown[key] = true
 end

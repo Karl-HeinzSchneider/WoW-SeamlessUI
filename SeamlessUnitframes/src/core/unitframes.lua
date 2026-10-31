@@ -15,7 +15,6 @@ app.unitFrames = unitFrames
 ---@field frameName? string  # the global unit frame; nil for the party frames
 ---@field system? string  # its Enum.EditModeUnitFrameSystemIndices name, if it has an Edit Mode system
 ---@field parentKey? string  # the key of the native parent frame for ToT positioning
----@field linkedTo? string  # the key of the frame whose Edit Mode settings show this one's
 ---@field players? boolean  # shows player characters: name display and class icon apply
 ---@field pvpIcon? boolean  # has a PvP icon
 

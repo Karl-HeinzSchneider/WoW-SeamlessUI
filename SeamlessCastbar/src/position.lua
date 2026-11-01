@@ -161,7 +161,8 @@ end
 
 ---The bar's options tab Position and Size groups; nil for bars that can't move.
 ---@param key string
----@return table?
+---@return table? position
+---@return table? size
 function module:GetOptions(key)
     if not specs[key] then
         return nil

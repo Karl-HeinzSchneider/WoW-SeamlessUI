@@ -174,7 +174,8 @@ end
 ---The Position and Size groups for the frame's options tab; nil for other frames. Scale stays
 ---disabled: these frames take their unit frame's Frame Size.
 ---@param key string
----@return table?
+---@return table? position
+---@return table? size
 function module:GetOptions(key)
     if not self:IsMovable(key) then
         return nil

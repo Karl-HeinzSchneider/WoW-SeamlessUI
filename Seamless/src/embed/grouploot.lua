@@ -34,19 +34,19 @@ end
 
 -- The anchor also parents real rolls, so it stays shown: only previews and the selection hide.
 local function RefreshEditMode()
-    if not IsRegistered() then
+    if not (controller and controller.editMode) then
         return
     end
     local lib = controller.editMode.library
     local editing = lib:IsInEditMode()
-    if editing and showInEditMode and controller.active and not InCombatLockdown() then
+    if editing and wanted and showInEditMode and controller.active and not InCombatLockdown() then
         controller:ShowPreviews()
     else
         controller:HidePreviews()
     end
     local selection = lib.frameSelections[controller.anchor]
     if selection and editing then
-        if not showInEditMode then
+        if not (wanted and controller.active and showInEditMode) then
             selection:Hide()
         elseif not selection:IsShown() then
             selection:ShowHighlighted()
@@ -89,6 +89,13 @@ local function RegisterEditMode()
         settings = EditModeSettings,
         managePreviews = false,
     })
+    -- LibEditMode highlights every registered selection when another frame is selected.
+    -- Keep the anchor shown for real rolls, but enforce our selection visibility on every show.
+    lib.frameSelections[controller.anchor]:HookScript("OnShow", function(selection)
+        if not (wanted and controller.active and showInEditMode) then
+            selection:Hide()
+        end
+    end)
     for _, event in ipairs({ "enter", "exit", "layout" }) do
         lib:RegisterCallback(event, RefreshEditMode)
     end
@@ -161,6 +168,7 @@ app.embed:Register("groupLoot", {
         if controller then
             controller:Stop()
         end
+        RefreshEditMode()
         app.addon:RefreshEditModeOptions()
     end,
     refresh = function()

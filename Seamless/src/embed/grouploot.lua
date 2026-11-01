@@ -32,6 +32,39 @@ local function IsRegistered()
     return wanted and controller ~= nil and controller.editMode ~= nil
 end
 
+-- Keep the library's existing offsets in UIParent units; anchor choices are host-owned.
+local function ApplyPosition(anchor)
+    local profile = GetDatabase().profile
+    local position, scale = profile.position, profile.scale
+    anchor:SetScale(scale)
+    anchor:ClearAllPoints()
+    anchor:SetPoint(
+        position.point or "BOTTOM",
+        UIParent,
+        position.relativePoint or "BOTTOM",
+        position.x / scale,
+        position.y / scale
+    )
+    if controller and controller.editMode then
+        local default = controller.editMode.defaultPosition
+        default.x, default.y = BGL.defaults.position.x / scale, BGL.defaults.position.y / scale
+    end
+end
+
+local function SavePosition(anchor)
+    local position, scale = GetDatabase().profile.position, anchor:GetScale()
+    -- A drag always breaks the old anchor and stores the exact drop on UIParent.
+    position.point, position.relativePoint = "BOTTOM", "BOTTOM"
+    position.x = anchor:GetCenter() * scale - UIParent:GetWidth() / 2
+    position.y = anchor:GetBottom() * scale
+end
+
+local function ResetPosition()
+    local position = GetDatabase().profile.position
+    position.point, position.relativePoint = nil, nil
+    position.x, position.y = BGL.defaults.position.x, BGL.defaults.position.y
+end
+
 -- The anchor also parents real rolls, so it stays shown: only previews and the selection hide.
 local function RefreshEditMode()
     if not (controller and controller.editMode) then
@@ -55,7 +88,7 @@ local function RefreshEditMode()
 end
 
 local function EditModeSettings(current, lib)
-    local settings = current:GetEditModeSettings(lib, {
+    local rows = current:GetEditModeSettings(lib, {
         defaults = BGL.defaults,
         strings = {
             scale = L["Scale"],
@@ -67,6 +100,43 @@ local function EditModeSettings(current, lib)
             showUndecidedDescription = L["The roll buttons' tooltips also list who hasn't chosen yet."],
         },
     })
+    -- Preserve the embedded rows' defaults, bounds, setters and combat guards.
+    local scale, spacing, growUp, showUndecided = rows[1], rows[2], rows[3], rows[4]
+    scale.formatter = function(value)
+        return ("%.2f"):format(value):gsub("0+$", ""):gsub("%.$", "")
+    end
+    local settings = {
+        app.addon:GetEditModePositionSetting({
+            get = function(key)
+                local profile = GetDatabase().profile
+                if key == "relativeTo" then
+                    return "UIParent"
+                elseif key == "point" or key == "relativePoint" then
+                    return profile.position[key] or "BOTTOM"
+                end
+                return profile.position[key] / profile.scale
+            end,
+            set = function(key, value)
+                if not current.active or InCombatLockdown() then
+                    return
+                end
+                local profile = GetDatabase().profile
+                if key == "x" or key == "y" then
+                    profile.position[key] = value * profile.scale
+                elseif key == "point" or key == "relativePoint" then
+                    profile.position[key] = value
+                end
+                current:ApplySettings()
+            end,
+            anchorFrames = { { text = L["Screen (UIParent)"], value = "UIParent" } },
+            disabled = function()
+                return not current.active or InCombatLockdown()
+            end,
+        }, nil, { scale, spacing }),
+        { name = L["Style"], kind = lib.SettingType.Header },
+        growUp,
+        showUndecided,
+    }
     settings[#settings + 1] = app.addon:GetEditModeButtonSection({
         app.addon:GetEditModePositionButton("revert"),
         app.addon:GetEditModePositionButton("resetPosition"),
@@ -136,6 +206,10 @@ app.embed:Register("groupLoot", {
         controller, owner = BGL:Start({
             name = PREFIX,
             logger = app.logger,
+            defaultPosition = BGL.defaults.position,
+            applyPosition = ApplyPosition,
+            savePosition = SavePosition,
+            resetPosition = ResetPosition,
             getProfile = function()
                 return GetDatabase().profile
             end,

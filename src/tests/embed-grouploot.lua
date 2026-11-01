@@ -26,7 +26,7 @@ function selection:HookScript(event, callback)
     self.onShow = callback
 end
 local callbacks = {}
-local editModeLib = { id = "core", frameSelections = {} }
+local editModeLib = { id = "core", frameSelections = {}, SettingType = { Header = "header" } }
 function editModeLib:IsInEditMode()
     return editing
 end
@@ -58,22 +58,61 @@ function controller:HidePreviews()
 end
 function controller:GetEditModeSettings(lib, options)
     assert(lib == editModeLib and options.strings.spacing == "Spacing")
-    return { { key = "spacing" } }
+    return {
+        { key = "scale", default = 1 },
+        { key = "spacing" },
+        { key = "growUp" },
+        { key = "showUndecided" },
+    }
 end
+local frameSettings
 function controller:RegisterEditMode(lib, options)
     assert(not self.editMode and not combat and options.managePreviews == false)
     registrations = registrations + 1
     local settings = options.settings(self, lib)
-    assert(#settings == 2 and settings[2].kind == "buttons" and #settings[2].options == 2)
-    self.editMode = { library = lib }
+    assert(#settings == 5 and settings[5].kind == "buttons" and #settings[5].options == 2)
+    assert(settings[1].kind == "position" and #settings[1].sizeOptions == 2)
+    assert(settings[1].sizeOptions[1].key == "scale" and settings[1].sizeOptions[2].key == "spacing")
+    assert(settings[1].sizeOptions[1].formatter(1) == "1")
+    assert(settings[1].sizeOptions[1].formatter(0.55) == "0.55")
+    assert(settings[2].name == "Style" and settings[2].kind == "header")
+    assert(settings[3].key == "growUp" and settings[4].key == "showUndecided")
+    frameSettings = settings
+    self.editMode = { library = lib, defaultPosition = {} }
 end
 local owner = { prefix = "Other", reason = "owned" }
 local startResult
 local BGL = { defaults = { scale = 1, position = { x = 600, y = 420 } } }
+local host
+function controller:ApplySettings()
+    host.applyPosition(self.anchor)
+end
+function controller.anchor:SetScale(value)
+    self.scale = value
+end
+function controller.anchor:GetScale()
+    return self.scale or 1
+end
+function controller.anchor:ClearAllPoints() end
+function controller.anchor:SetPoint(point, parent, relativePoint, x, y)
+    self.point = { point, parent, relativePoint, x, y }
+end
+function controller.anchor:GetCenter()
+    return 500
+end
+function controller.anchor:GetBottom()
+    return 100
+end
+UIParent = {
+    GetWidth = function()
+        return 1000
+    end,
+}
 function BGL:Start(options)
     starts = starts + 1
     assert(options.name == "SeamlessGroupLoot" and options.strings.undecided == "Undecided")
     assert(options.getProfile().scale == 1)
+    host = options
     if startResult then
         startResult.active = true
         return startResult
@@ -145,6 +184,9 @@ local app = {
         GetEditModeButtonSection = function(_, buttons)
             return { kind = "buttons", options = buttons }
         end,
+        GetEditModePositionSetting = function(_, spec, options, sizeOptions)
+            return { kind = "position", position = spec, options = options, sizeOptions = sizeOptions }
+        end,
         GetEditModePositionButton = function(_, action)
             return { name = action }
         end,
@@ -185,6 +227,30 @@ eventFrame.handler(eventFrame, "PLAYER_REGEN_ENABLED")
 assert(registrations == 1 and frameOptions.enabled())
 spec.refresh()
 assert(refreshes == 1)
+
+-- Existing offsets keep their screen position; Size and Position share the same live scale.
+local position = frameSettings[1].position
+assert(position.get("point") == "BOTTOM" and position.get("relativeTo") == "UIParent")
+host.applyPosition(controller.anchor)
+assert(controller.anchor.point[4] == 600 and controller.anchor.point[5] == 420)
+host.getProfile().scale = 2
+host.applyPosition(controller.anchor)
+assert(position.get("x") == 300 and controller.anchor.point[4] == 300)
+position.set("point", "TOPLEFT")
+position.set("relativePoint", "TOPRIGHT")
+position.set("x", 125)
+assert(controller.anchor.point[1] == "TOPLEFT" and controller.anchor.point[3] == "TOPRIGHT")
+assert(host.getProfile().position.x == 250 and controller.anchor.point[4] == 125)
+combat = true
+position.set("x", 999)
+assert(host.getProfile().position.x == 250)
+combat = false
+host.savePosition(controller.anchor)
+assert(position.get("point") == "BOTTOM" and position.get("relativePoint") == "BOTTOM")
+assert(host.getProfile().position.x == 500 and host.getProfile().position.y == 200)
+host.resetPosition()
+host.getProfile().scale = 1
+assert(position.get("point") == "BOTTOM" and position.get("x") == 600 and position.get("y") == 420)
 
 -- Edit Mode shows previews; the Frames checkbox hides previews and the selection, not the anchor.
 editing = true

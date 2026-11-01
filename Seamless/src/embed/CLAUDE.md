@@ -21,8 +21,11 @@ example checkboxes to the shipped page.
   standalone BetterGroupLoot started first, enable only logs at debug level. Ownership stays
   reserved until reload. Edit Mode registers once per session with Core's LibEditMode,
   the library's own Scale/Spacing/Stack/Undecided rows and an explicit Revert/Reset
-  Position footer; in combat it waits for `PLAYER_REGEN_ENABLED`. Position stays the
-  library's bottom-center offset on UIParent in the namespace profile. It registers with
+  Position footer; in combat it waits for `PLAYER_REGEN_ENABLED`. The settings use the shared
+  Position and Size sections, with real Scale (a multiplier) and Spacing under Size, followed by
+  Style (Stack upwards and List undecided players). Host position callbacks retain the existing
+  UIParent-unit x/y offsets in the namespace profile, with optional point/relativePoint choices
+  (both default to BOTTOM); dragging saves the exact drop on UIParent. It registers with
   `managePreviews = false` and adds a "Group loot" row to the Edit Mode window's Frames
   list (session-only, on by default). Turning it off hides the previews and the
   selection but never the anchor, because the anchor also parents real rolls.

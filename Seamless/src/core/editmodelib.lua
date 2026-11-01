@@ -234,9 +234,13 @@ local function DefaultPosition(frame)
 end
 
 local function IsDefaultPosition(frame)
-    local point, _, _, x, y = frame:GetPoint()
+    local point, relativeTo, relativePoint, x, y = frame:GetPoint()
     local default = DefaultPosition(frame)
-    return point == default.point and math.abs(x - default.x) < 0.01 and math.abs(y - default.y) < 0.01
+    return point == default.point
+        and (not relativeTo or relativeTo == frame:GetParent())
+        and (relativePoint or point) == default.point
+        and math.abs(x - default.x) < 0.01
+        and math.abs(y - default.y) < 0.01
 end
 
 local function ResetPosition(frame)
@@ -471,6 +475,12 @@ local function PositionSection(data, frame)
     for index, extra in ipairs(data.options or {}) do
         table.insert(section.options, index, ConvertSetting(extra, "position" .. index, frame))
     end
+    if data.sizeOptions then
+        section.sizeSection.options = {}
+        for index, extra in ipairs(data.sizeOptions) do
+            section.sizeSection.options[index] = ConvertSetting(extra, "size" .. index, frame)
+        end
+    end
     positionSections[data] = { frame = frame, section = section }
     return section
 end
@@ -579,6 +589,9 @@ local function CreateSettingsWindow()
             -- Reset To Default leaves the position alone, but not the feature's rows beside it.
             if data.kind == lib.SettingType.Position then
                 for _, extra in ipairs(data.options or {}) do
+                    reset(extra)
+                end
+                for _, extra in ipairs(data.sizeOptions or {}) do
                     reset(extra)
                 end
             end
@@ -894,13 +907,21 @@ end
 ---`spec.get(key)` and `spec.set(key, value)` use the keys point, relativePoint, relativeTo, x and
 ---y; `spec.anchorFrames()` returns `{ text, value }` entries for relativeTo, and the optional
 ---`spec.anchorFrame(value)` returns the frame of an entry (default: the global of that name).
----Its Size section shows a disabled Scale placeholder. Declare Revert separately with GetEditModeButtonSection. `options` are LibEditMode settings
+---Its Size section shows a disabled Scale placeholder unless `sizeOptions` supplies real settings.
+---Declare Revert separately with GetEditModeButtonSection. `options` are LibEditMode settings
 ---shown at the top of the section.
 ---@param spec SeamlessCore.EditModePosition
 ---@param options? table[]
+---@param sizeOptions? table[]
 ---@return table setting
-function addon:GetEditModePositionSetting(spec, options)
-    return { kind = lib.SettingType.Position, name = L["Position"], position = spec, options = options }
+function addon:GetEditModePositionSetting(spec, options, sizeOptions)
+    return {
+        kind = lib.SettingType.Position,
+        name = L["Position"],
+        position = spec,
+        options = options,
+        sizeOptions = sizeOptions,
+    }
 end
 
 ---@class SeamlessCore.EditModeButtonSection
@@ -993,11 +1014,12 @@ function addon:GetEditModePositionButton(action)
                     ResetPosition(frame)
                 end
             else
+                -- Restore Scale before position: a frame's position binding may use its scale.
+                SettingsChanged(frame, true)
                 local section = position(frame)
                 if section and not section.revertButton.disabled() then
                     section.revertButton.click()
                 end
-                SettingsChanged(frame, true)
                 dialog:LayoutContent()
             end
         end,

@@ -133,6 +133,9 @@ so it returns this window. The vendored file stays untouched.
   reputation headers (`name`, optional `key`, `hidden`). Collapsed sections are saved in
   `SeamlessDB.global.editModeCollapsed` (`core:Is/SetEditModeSectionCollapsed`). Position
   sections start collapsed.
+  `GetEditModePositionSetting(spec, options, sizeOptions)` can replace the Size placeholder with
+  real LibEditMode settings (for example Group Loot's Scale and Spacing); these participate in
+  Revert and Reset To Default. Revert restores scale before applying the saved position.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
 - `core:GetEditModePositionSetting(spec, options)`: one `lib.SettingType.Position` frame setting
   that the window draws as the shared Position and Size sections (`editmodeposition.lua`), the same

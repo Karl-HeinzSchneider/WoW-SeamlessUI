@@ -29,21 +29,22 @@ options, `/seamless loglevel debug` shows the debug log.
 
 ## Commands (Node 20+, from the root after `npm install`)
 
-| Command                            | Does                                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `npm run check`                    | typecheck, check:addons, check:lua, check:xml, format:check, in that order. Run it before finishing a change.                  |
-| `npm run format`                   | Prettier on TS/JSON/Markdown/YAML, then StyLua on Lua. XML is left to the editor. `format:check` only reports.                 |
-| `npm run check:addons`             | Every TOC entry exists (for every client language of `[TextLocale]`), features depend on `Seamless`, no dependency cycles.     |
-| `npm run check:lua`                | `luac -p` on every addon Lua file (needs Lua 5.1 `luac` on PATH).                                                              |
-| `npm run check:xml`                | Validates addon XML against Blizzard's `UI.xsd` (python + lxml); skipped without `../_data/wow_classic_beta`; `lib/` skipped.  |
-| `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                      |
-| `npm run locales:sync`             | Synchronizes the client locale files with the English catalogue (see Localization).                                            |
-| `npm run dev:link -- <AddOns dir>` | Symlinks (junctions on Windows) every addon into a client; never replaces a path that isn't already our link.                  |
-| `npm run package:addons`           | Quick `dist/Seamless-<version>.zip` of the addons in `.pkgmeta` `move-folders`, without `CLAUDE.md` files.                     |
-| `npm run package:local`            | The BigWigs packager the release workflows use, locally and without uploading, into `.release/`. Needs bash (Git for Windows). |
+| Command                            | Does                                                                                                                                                                        |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run check`                    | typecheck, check:addons, check:lua, check:xml, format:check, with up to three running in parallel. Runs every check even after a failure. Run it before finishing a change. |
+| `npm run format`                   | Prettier on TS/JSON/Markdown/YAML, then StyLua on Lua. XML is left to the editor. `format:check` only reports.                                                              |
+| `npm run check:addons`             | Every TOC entry exists (for every client language of `[TextLocale]`), features depend on `Seamless`, no dependency cycles.                                                  |
+| `npm run check:lua`                | Batched `luac -p` on every addon Lua file, retrying failed batches per file (needs Lua 5.1 `luac` on PATH).                                                                 |
+| `npm run check:xml`                | Validates addon XML against Blizzard's `UI.xsd` (python + lxml); skipped without `../_data/wow_classic_beta`; `lib/` skipped.                                               |
+| `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                   |
+| `npm run locales:sync`             | Synchronizes the client locale files with the English catalogue (see Localization).                                                                                         |
+| `npm run dev:link -- <AddOns dir>` | Symlinks (junctions on Windows) every addon into a client; never replaces a path that isn't already our link.                                                               |
+| `npm run package:addons`           | Quick `dist/Seamless-<version>.zip` of the addons in `.pkgmeta` `move-folders`, without `CLAUDE.md` files.                                                                  |
+| `npm run package:local`            | The BigWigs packager the release workflows use, locally and without uploading, into `.release/`. Needs bash (Git for Windows).                                              |
 
 Tests are plain Lua harnesses with mocks, run from the root: `lua src/tests/<name>.lua` (each
-addon's `CLAUDE.md` names its own), plus `npx tsx src/tests/sync-locales.ts`. LuaLS
+addon's `CLAUDE.md` names its own), plus `npx tsx src/tests/sync-locales.ts` and
+`npx tsx src/tests/checks.ts` for the validation runner and Lua batching. LuaLS
 (`lua-language-server --check`, `.luarc.json`) is used ad hoc; `lib/` is excluded from LuaLS,
 StyLua and Prettier.
 

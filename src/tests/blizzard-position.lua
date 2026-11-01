@@ -237,7 +237,11 @@ end
 function EditModeManagerFrame:SetHasActiveChanges(value)
     self.dirty = value
 end
-EditModeSystemSettingsDialog = { UpdateDialog = function() end }
+EditModeSystemSettingsDialog = setmetatable({}, {
+    __index = function()
+        error("addon position edits must not access Blizzard's settings dialog")
+    end,
+})
 assert(loadfile("Seamless/lib/LibEditModeOverride/LibEditModeOverride.lua"))()
 dofile("src/tests/locale-support.lua")
 local player = frame("PlayerFrame", UIParent)
@@ -343,7 +347,18 @@ values.offsetY = 13.25
 values.point, values.relativePoint, values.relativeTo = "BOTTOM", "CENTER", "AnchorTarget"
 local oldBaseline = copy(player.savedSystemInfo)
 draft.systems[1].pendingOtherSetting = 123
+local nativeSystemInfo = player.systemInfo
+player.systemInfo = nil
+setmetatable(player, {
+    __index = { systemInfo = nativeSystemInfo },
+    __newindex = function(target, key, value)
+        assert(key ~= "systemInfo", "position edits must not taint the native systemInfo field")
+        rawset(target, key, value)
+    end,
+})
 assert(position:Apply(player, values))
+setmetatable(player, nil)
+player.systemInfo = nativeSystemInfo
 assert(library:AreLayoutsLoaded() and loads == 1 and saves == 0)
 assert(
     draft.systems[1].pendingOtherSetting == 123

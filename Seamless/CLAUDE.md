@@ -133,6 +133,9 @@ so it returns this window. The vendored file stays untouched.
   reputation headers (`name`, optional `key`, `hidden`). Collapsed sections are saved in
   `SeamlessDB.global.editModeCollapsed` (`core:Is/SetEditModeSectionCollapsed`). Position
   sections start collapsed.
+  `GetEditModePositionSetting(spec, options, sizeOptions)` can replace the Size placeholder with
+  real LibEditMode settings (for example Group Loot's Scale and Spacing); these participate in
+  Revert and Reset To Default. Revert restores scale before applying the saved position.
 - `lib.SettingType.Button`: a button row whose `click(frame)` gets the selected frame.
 - `core:GetEditModePositionSetting(spec, options)`: one `lib.SettingType.Position` frame setting
   that the window draws as the shared Position and Size sections (`editmodeposition.lua`), the same
@@ -241,6 +244,8 @@ Never declare a page's settings a second time for Edit Mode.
   (`AddFrameSettings`): a Header per group, the group marked `editModePosition` as the shared
   Position section (its extra rows included), every control as a `lib.SettingType.Option` row, and
   the page's `buttonSection` last.
+  Real controls in the page's `editModeSize` group replace the shared Size placeholder and use
+  the same option model, defaults, validation, bounds and formatting as the custom panel.
 - `core:GetEditModePageSections(addonName, pageKey, spec?)`: renderer sections for a window that
   draws its own Position section (Blizzard systems): groups become sections keyed
   `"page:<addon>:<path>"`, Position is left out, and the `editModeSize` group's own rows go to a

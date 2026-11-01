@@ -124,7 +124,7 @@
 ---@field GetEditModeFrameButtonSection fun(self: SeamlessCore.Addon, frame: table): SeamlessCore.EditModeButtonSection? Reads a native frame page declaration.
 ---@field GetEditModeButtonSection fun(self: SeamlessCore.Addon, buttons: SeamlessCore.EditModeButton[]): SeamlessCore.EditModeButtonSection Explicit ordered buttons, including custom actions.
 ---@field GetEditModePositionButton fun(self: SeamlessCore.Addon, action: "revert"|"resetPosition"): SeamlessCore.EditModeButton Optional standard position action.
----@field GetEditModePositionSetting fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition, options?: table[]): table LibEditMode frame setting for the shared Position section.
+---@field GetEditModePositionSetting fun(self: SeamlessCore.Addon, spec: SeamlessCore.EditModePosition, options?: table[], sizeOptions?: table[]): table LibEditMode frame setting for shared Position and Size sections.
 ---@field StartEditModeAnchorPicker fun(self: SeamlessCore.Addon, spec: SeamlessCore.AnchorPicker): boolean Pick an anchor point on the selected frame, then on another frame.
 ---@field StopEditModeAnchorPicker fun(self: SeamlessCore.Addon)
 ---@field IsEditModeAnchorPickerActive fun(self: SeamlessCore.Addon): boolean

@@ -32,6 +32,39 @@ local function IsRegistered()
     return wanted and controller ~= nil and controller.editMode ~= nil
 end
 
+-- Keep the library's existing offsets in UIParent units; anchor choices are host-owned.
+local function ApplyPosition(anchor)
+    local profile = GetDatabase().profile
+    local position, scale = profile.position, profile.scale
+    anchor:SetScale(scale)
+    anchor:ClearAllPoints()
+    anchor:SetPoint(
+        position.point or "BOTTOM",
+        UIParent,
+        position.relativePoint or "BOTTOM",
+        position.x / scale,
+        position.y / scale
+    )
+    if controller and controller.editMode then
+        local default = controller.editMode.defaultPosition
+        default.x, default.y = BGL.defaults.position.x / scale, BGL.defaults.position.y / scale
+    end
+end
+
+local function SavePosition(anchor)
+    local position, scale = GetDatabase().profile.position, anchor:GetScale()
+    -- A drag always breaks the old anchor and stores the exact drop on UIParent.
+    position.point, position.relativePoint = "BOTTOM", "BOTTOM"
+    position.x = anchor:GetCenter() * scale - UIParent:GetWidth() / 2
+    position.y = anchor:GetBottom() * scale
+end
+
+local function ResetPosition()
+    local position = GetDatabase().profile.position
+    position.point, position.relativePoint = nil, nil
+    position.x, position.y = BGL.defaults.position.x, BGL.defaults.position.y
+end
+
 -- The anchor also parents real rolls, so it stays shown: only previews and the selection hide.
 local function RefreshEditMode()
     if not (controller and controller.editMode) then
@@ -54,24 +87,89 @@ local function RefreshEditMode()
     end
 end
 
-local function EditModeSettings(current, lib)
-    local settings = current:GetEditModeSettings(lib, {
-        defaults = BGL.defaults,
-        strings = {
-            scale = L["Scale"],
-            spacing = L["Spacing"],
-            spacingDescription = L["Gap between two rolls."],
-            growUp = L["Stack upwards"],
-            growUpDescription = L["New rolls appear above the first one. Off: below it."],
-            showUndecided = L["List undecided players"],
-            showUndecidedDescription = L["The roll buttons' tooltips also list who hasn't chosen yet."],
-        },
-    })
-    settings[#settings + 1] = app.addon:GetEditModeButtonSection({
-        app.addon:GetEditModePositionButton("revert"),
-        app.addon:GetEditModePositionButton("resetPosition"),
-    })
-    return settings
+---@class SeamlessCore.GroupLootOptions
+---@field position SeamlessCore.EditModePosition
+local options = {}
+app.embed.groupLoot = options
+
+function options:GetProfile()
+    return GetDatabase().profile
+end
+
+function options:GetFrame()
+    return controller and controller.anchor
+end
+
+function options:Disabled()
+    return not (controller and controller.active) or InCombatLockdown()
+end
+
+local function RefreshOptions()
+    app.addon:RefreshOptions()
+    if controller and controller.editMode then
+        controller.editMode.library:RefreshFrameSettings(controller.anchor)
+    end
+end
+
+function options:Changed()
+    if controller and controller.active then
+        controller:ApplySettings()
+    end
+    RefreshOptions()
+end
+
+options.position = {
+    get = function(key)
+        local profile = GetDatabase().profile
+        if key == "relativeTo" then
+            return "UIParent"
+        elseif key == "point" or key == "relativePoint" then
+            return profile.position[key] or "BOTTOM"
+        end
+        return profile.position[key] / profile.scale
+    end,
+    set = function(key, value)
+        if options:Disabled() then
+            return
+        end
+        local profile = GetDatabase().profile
+        if key == "x" or key == "y" then
+            profile.position[key] = value * profile.scale
+        elseif key == "point" or key == "relativePoint" then
+            profile.position[key] = value
+        end
+        options:Changed()
+    end,
+    default = function(key)
+        if key == "relativeTo" then
+            return "UIParent"
+        elseif key == "point" or key == "relativePoint" then
+            return "BOTTOM" -- BetterGroupLoot-1.0/rolls/rolls.lua: ApplySettings.
+        end
+        -- Read the library's registered reset target, never infer a default from saved values.
+        local editMode = controller and controller.editMode
+        local default = editMode and editMode.library:GetFrameDefaultPosition(controller.anchor)
+        return default and default[key] or BGL.defaults.position[key] / BGL.defaults.scale
+    end,
+    reset = function()
+        ResetPosition()
+        options:Changed()
+    end,
+    isDefault = function()
+        local position = GetDatabase().profile.position
+        return (position.point or "BOTTOM") == "BOTTOM"
+            and (position.relativePoint or "BOTTOM") == "BOTTOM"
+            and position.x == BGL.defaults.position.x
+            and position.y == BGL.defaults.position.y
+    end,
+    anchorFrames = { { text = L["Screen (UIParent)"], value = "UIParent" } },
+    disabled = function()
+        return options:Disabled()
+    end,
+}
+
+local function EditModeSettings()
+    return app.addon:GetEditModePageSettings("Seamless", "groupLoot")
 end
 
 -- LibEditMode registration must happen outside combat; it is kept for the session and
@@ -136,6 +234,11 @@ app.embed:Register("groupLoot", {
         controller, owner = BGL:Start({
             name = PREFIX,
             logger = app.logger,
+            defaultPosition = BGL.defaults.position,
+            applyPosition = ApplyPosition,
+            savePosition = SavePosition,
+            resetPosition = ResetPosition,
+            changed = RefreshOptions,
             getProfile = function()
                 return GetDatabase().profile
             end,

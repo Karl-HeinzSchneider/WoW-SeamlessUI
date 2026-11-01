@@ -3,4 +3,5 @@
     <!-- Vendored, unmodified; loading it creates nothing until grouploot.lua starts it. -->
     <Include file="..\..\lib\BetterGroupLoot-1.0\BetterGroupLoot-1.0.xml" />
     <Script file="grouploot.lua" />
+    <Script file="options\grouploot.lua" />
 </Ui>

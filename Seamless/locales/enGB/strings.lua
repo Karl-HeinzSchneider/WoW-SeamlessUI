@@ -25,6 +25,7 @@ end
 -- L["Disabled"] = "Disabled"
 -- L["EDIT MODE"] = "EDIT MODE"
 -- L["Edit Mode Visibility"] = "Edit Mode Visibility"
+-- L["Embedded"] = "Embedded"
 -- L["Enable"] = "Enable"
 -- L["Enabled"] = "Enabled"
 -- L["Error"] = "Error"

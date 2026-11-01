@@ -229,6 +229,7 @@ function addon:GetEditModePageSettings(addonName, pageKey, path)
     local root = self:GetPageOption(addonName, pageKey, path)
     local settings = {}
     local closed = 0
+    local positionSetting
     for _, entry in ipairs(Walk(root, {})) do
         if entry.group then
             local option = entry.group
@@ -249,7 +250,27 @@ function addon:GetEditModePageSettings(addonName, pageKey, path)
             for _, row in ipairs(GroupRows(entry.position)) do
                 extras[#extras + 1] = { kind = lib.SettingType.Option, row = row }
             end
-            settings[#settings + 1] = self:GetEditModePositionSetting(entry.position:Read("editModePosition"), extras)
+            positionSetting = self:GetEditModePositionSetting(entry.position:Read("editModePosition"), extras)
+            settings[#settings + 1] = positionSetting
+        elseif entry.size then
+            local extras = {}
+            for _, row in ipairs(GroupRows(entry.size)) do
+                extras[#extras + 1] = { kind = lib.SettingType.Option, row = row }
+            end
+            if #extras > 0 then
+                if positionSetting then
+                    positionSetting.sizeOptions = extras
+                else
+                    settings[#settings + 1] = {
+                        kind = lib.SettingType.Header,
+                        name = entry.size:Read("name"),
+                        key = "settings:size",
+                    }
+                    for _, extra in ipairs(extras) do
+                        settings[#settings + 1] = extra
+                    end
+                end
+            end
         elseif entry.row then
             settings[#settings + 1] = { kind = lib.SettingType.Option, row = self:GetEditModeOptionRow(entry.row) }
         end

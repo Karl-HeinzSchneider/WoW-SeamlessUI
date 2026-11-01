@@ -12,6 +12,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@class SeamlessCore.Embed : AceModule
 ---@field active? boolean
+---@field groupLoot SeamlessCore.GroupLootOptions
 local module = {}
 app.embed = app.addon:NewModule("Embed", module) --[[@as SeamlessCore.Embed]]
 
@@ -21,11 +22,22 @@ local running = {}
 local defaults = { profile = { embed = {} } }
 local controls = {}
 
+local HEADER = "Seamless:embedded"
+app.addon:RegisterConfigCategory(HEADER, { name = L["Embedded"], header = true, order = 600 })
+
 -- Kept beside the optional loader so removing embed.xml removes the page too.
 app.optionPages.embed = {
     defaults = defaults,
-    config = { type = "group", name = L["Embed"], order = 600, args = controls },
+    config = { type = "group", name = L["Embed"], navigationParent = HEADER, order = 0, args = controls },
 }
+
+-- Each adapter declares one shared settings page; navigation routing never changes its paths.
+function module:RegisterOptions(id, page)
+    assert(not app.db, "Register embedded options at file load")
+    assert(entries[id] and not app.optionPages[id], "Unknown or duplicate embedded options")
+    page.config.navigationParent = HEADER
+    app.optionPages[id] = page
+end
 
 -- Call from an adapter loaded by embed.xml before AceDB and options initialize.
 function module:Register(id, spec)

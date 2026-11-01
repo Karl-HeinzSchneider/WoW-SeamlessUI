@@ -753,6 +753,11 @@ function securecallfunction(callback, ...)
 end
 resetPosition.Button.click()
 assert(framePoint[1] == "CENTER" and resetCallback[1] == "CENTER" and not resetPosition.Button.enabled)
+framePoint = { "CENTER", UIParent, "TOP", 0, 0 }
+dialog:Update(selection)
+assert(resetPosition.Button.enabled, "changing only AnchorParent still enables Reset Position")
+resetPosition.Button.click()
+assert(not resetPosition.Button.enabled)
 
 -- Arrow keys nudge the selected frame through the library; other keys pass through.
 local nudged
@@ -914,6 +919,44 @@ do
     lock.on = true
     Row(list, "Reset To Default").option.click()
     assert(lock.on == false and stored.point == "TOPLEFT", "Reset To Default keeps the position")
+    -- A frame may replace Size's placeholder with its real scale and spacing controls.
+    -- Revert must restore Scale before a position expressed in scaled coordinates.
+    local actualScale = 1
+    local getPosition, setPosition = setting.position.get, setting.position.set
+    setting.position.get = function(key)
+        local value = getPosition(key)
+        return (key == "x" or key == "y") and value / actualScale or value
+    end
+    setting.position.set = function(key, value)
+        setPosition(key, (key == "x" or key == "y") and value * actualScale or value)
+    end
+    lib.frameSettings[positioned][1] = app.addon:GetEditModePositionSetting(setting.position, setting.options, {
+        {
+            kind = lib.SettingType.Slider,
+            name = "Scale",
+            minValue = 0.5,
+            maxValue = 2,
+            valueStep = 0.05,
+            default = 1,
+            get = function()
+                return actualScale
+            end,
+            set = function(_, value)
+                actualScale = value
+            end,
+        },
+    })
+    dialog:Update(positionSelection)
+    local realScale = Row(list, "Scale")
+    assert(not realScale.option.disabled() and realScale.option.get() == 1)
+    realScale.option.set(2)
+    Row(list, "X").option.set("30")
+    assert(actualScale == 2 and stored.x == 60)
+    Row(buttons, "Revert changes").option.click()
+    assert(actualScale == 1 and stored.x == 5, "Revert restores scale and the original position")
+    Row(list, "Scale").option.set(1.5)
+    Row(list, "Reset To Default").option.click()
+    assert(actualScale == 1, "Reset To Default includes real Size controls")
     app.SetEditModeSectionCollapsed("settings:position", true)
     lib.frameSelections[positioned] = nil
     dialog:Update(selection)

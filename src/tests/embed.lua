@@ -13,6 +13,10 @@ function LibStub(name)
     }
 end
 local app = { addon = {}, optionPages = {} }
+local categories = {}
+function app.addon:RegisterConfigCategory(id, spec)
+    categories[id] = spec
+end
 function app.addon:NewModule(name, module)
     assert(name == "Embed")
     return module
@@ -21,6 +25,7 @@ assert(loadfile("Seamless/src/config/schema.lua"))("Seamless", app)
 assert(loadfile("Seamless/src/embed/embed.lua"))("Seamless", app)
 local page = app.optionPages.embed
 assert(page.config.type == "group" and page.config.name == "Embed")
+assert(categories[page.config.navigationParent].name == "Embedded")
 assert(next(page.config.args) == nil and next(page.defaults.profile.embed) == nil)
 app.embed:OnProfileRefresh() -- Core refreshes before module startup, without a database.
 local enabled, disabled, refreshed = 0, 0, 0
@@ -37,6 +42,15 @@ local spec = {
     end,
 }
 app.embed:Register("test", spec)
+local testPage = { defaults = {}, config = { type = "group", name = "Test addon", args = {} } }
+app.embed:RegisterOptions("test", testPage)
+assert(app.optionPages.test == testPage and testPage.config.navigationParent == page.config.navigationParent)
+assert(not pcall(function()
+    app.embed:RegisterOptions("test", testPage)
+end))
+assert(not pcall(function()
+    app.embed:RegisterOptions("missing", testPage)
+end))
 assert(not pcall(function()
     app.embed:Register("test", spec)
 end))

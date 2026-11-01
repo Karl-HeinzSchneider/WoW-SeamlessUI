@@ -44,7 +44,7 @@ local function RegisterConfigPages(name, title, args, flags, root)
         local id = name .. ":" .. key
         local spec = {
             name = tab.name,
-            parent = parent,
+            parent = tab.navigationParent or parent,
             order = tab.order,
             hidden = tab.hidden,
             new = tab.new,

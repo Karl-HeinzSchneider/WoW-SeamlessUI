@@ -487,6 +487,17 @@ function module:PlayerLoss(color)
     lossColored = colored and true or false
 end
 
+local function AllRoots()
+    local roots = app.unitFrames:All()
+    for i = 1, 5 do
+        local boss = _G["Boss" .. i .. "TargetFrame"]
+        if boss then
+            roots[#roots + 1] = boss
+        end
+    end
+    return roots
+end
+
 local function Request()
     if writing or not enabled then
         return
@@ -494,6 +505,69 @@ local function Request()
     -- Repair in the native update's call stack. Waiting one rendered frame lets
     -- new atlas art draw with old coordinates/geometry and causes a rectangle flash.
     layout:Refresh()
+end
+
+-- Match aliases too: a player event may affect target/focus, and a vehicle may
+-- differ from the frame's displayed unit. Unknown/secret state keeps the old full repair.
+local function MatchesUnit(frame, unit)
+    if not layout:Readable(frame) then
+        return nil
+    end
+    local token, displayed = frame.unit, frame.displayedUnit
+    if not layout:Readable(token) or not layout:Readable(displayed) or (token == nil and displayed == nil) then
+        return nil
+    end
+    for _, candidate in pairs({ token, displayed }) do
+        if type(candidate) ~= "string" then
+            return nil
+        end
+        local same = UnitIsUnit(candidate, unit)
+        if not layout:Readable(same) then
+            return nil
+        end
+        if candidate == unit or same then
+            return true
+        end
+    end
+    return false
+end
+
+local function RequestUnit(_, unit)
+    if writing or not enabled then
+        return
+    end
+    if not applied then
+        -- Default layout remains inert; do not scan units unless Beta is active.
+        Request()
+        return
+    end
+    if not layout:Readable(unit) or type(unit) ~= "string" then
+        Request()
+        return
+    end
+    local affected = {}
+    for _, frame in ipairs(AllRoots()) do
+        local matches = MatchesUnit(frame, unit)
+        if matches == nil then
+            Request()
+            return
+        end
+        local pet = frame.PetFrame
+        if not layout:Readable(pet) then
+            matches = nil
+        elseif pet and matches == false then
+            matches = MatchesUnit(pet, unit)
+        end
+        if matches == nil then
+            Request()
+            return
+        elseif matches then
+            affected[#affected + 1] = frame
+        end
+    end
+    if #affected > 0 then
+        layout:Refresh(false, nil, affected)
+    end
 end
 
 local function RequestFrame(frame)
@@ -590,15 +664,7 @@ function module:Refresh(restore, frame, selectedRoots)
     legacyMode = legacy
     roundedMode = legacy and selected == "legacyRounded"
     local scoped = frame ~= nil or selectedRoots ~= nil
-    local roots = selectedRoots or (frame and { frame } or app.unitFrames:All())
-    if not scoped then
-        for i = 1, 5 do
-            local boss = _G["Boss" .. i .. "TargetFrame"]
-            if boss then
-                roots[#roots + 1] = boss
-            end
-        end
-    end
+    local roots = selectedRoots or (frame and { frame } or AllRoots())
     for _, frame in ipairs(roots) do
         if self:CheckRegion(frame, "unit frame") then
             knownRoots[frame] = true
@@ -655,12 +721,12 @@ function module:OnEnable()
         "PLAYER_ENTERING_WORLD",
         "GROUP_ROSTER_UPDATE",
         "ADDON_LOADED",
-        "UNIT_FACTION",
-        "UNIT_FLAGS",
-        "PLAYER_FLAGS_CHANGED",
-        "UNIT_DISPLAYPOWER",
     }) do
         self:RegisterEvent(event, Request)
+    end
+    -- UnitDocumentation.lua declares a unit token for each of these events.
+    for _, event in ipairs({ "UNIT_FACTION", "UNIT_FLAGS", "PLAYER_FLAGS_CHANGED", "UNIT_DISPLAYPOWER" }) do
+        self:RegisterEvent(event, RequestUnit)
     end
     self:Refresh()
 end

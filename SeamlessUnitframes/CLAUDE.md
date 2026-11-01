@@ -97,6 +97,12 @@ Rules:
   player-art hooks use PlayerFrame, and unrelated/secret owners are ignored. Full
   refreshes remain for settings and roster/lifecycle events. Never rebuild all
   frames or recolor the entire suite in response to one frame's native update.
+- Unit faction/flags/display-power events and player flags changes resolve their
+  event unit against root `unit`/`displayedUnit` and party-pet units, including
+  `UnitIsUnit` aliases and boss roots. Repair all matching roots synchronously in
+  one scoped pass; unrelated units do nothing. Inaccessible or unresolved frame
+  state, secret alias results and missing/secret event units retain the full-refresh
+  fallback. Do not remove that fallback or defer native repairs to a timer.
 - During native Edit Mode entry (`manager:IsEditModeActive()` before the shared
   library enters), deduplicate affected owners and flush one scoped refresh from
   the library's synchronous `enter` callback. The client's `EnterEditMode` fires

@@ -42,7 +42,6 @@ function app.addon:OnInitialize()
 end
 
 function app.addon:OnEnable()
-    app.RegisterXPTooltipEditMode()
     for _, button in ipairs(app.Buttons()) do
         watched[button] = true
         self:SecureHook(button, "UpdateUsable", app.PaintIcon)
@@ -62,6 +61,7 @@ function app.addon:OnDisable()
     self:UnhookAll()
     self:UnregisterAllEvents()
     app.RefreshBagStyle()
+    app.RefreshStatusBarScale()
     app.ApplyEndCaps(true)
     app.core:RefreshEditModeSystemOptions()
     for button in pairs(watched) do
@@ -84,4 +84,5 @@ function app.addon:Refresh()
     app.RefreshMicroMenu()
     app.RefreshBarVisibility()
     app.RefreshBagStyle()
+    app.RefreshStatusBarScale()
 end

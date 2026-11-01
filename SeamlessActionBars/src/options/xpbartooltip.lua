@@ -64,22 +64,3 @@ end
 app.XPBarTooltipOptions = function()
     return xpBarTooltipOption
 end
-
--- Edit Mode draws the same declaration as both settings pages.
-local registered = false
-function app.RegisterXPTooltipEditMode()
-    if registered or not (Enum.EditModeSystem and Enum.EditModeSystem.StatusTrackingBar) then
-        return
-    end
-    -- One section for every status bar, drawn from the declaration on the first bar's page.
-    app.core:RegisterEditModeSystemOptions("SeamlessActionBars:xpBarTooltip", {
-        system = Enum.EditModeSystem.StatusTrackingBar,
-        name = xpBarTooltipOption.name,
-        key = "SeamlessActionBars:xpBarTooltip",
-        page = { addon = "SeamlessActionBars", key = "statusBar1", path = { "xpBarTooltip" } },
-        enabled = function()
-            return app.addon:IsEnabled()
-        end,
-    })
-    registered = true
-end

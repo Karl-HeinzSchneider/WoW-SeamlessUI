@@ -6,6 +6,9 @@ local function getFrame()
     return _G["MainStatusTrackingBarContainer"]
 end
 local position, size = app.core:GetNativePositionOptions(getFrame)
+size.layoutStored = nil
+size.args.scale = app.StatusBarScaleOption("statusBar1")
+size.args.width = app.StatusBarWidthOption(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar1 = {
     tooltip = function(path)
@@ -13,6 +16,7 @@ app.optionPages.statusBar1 = {
     end,
     defaults = {
         profile = {
+            statusBar1 = { scale = 1 },
             xpBarTooltip = {
                 enabled = true,
                 completedQuests = true,

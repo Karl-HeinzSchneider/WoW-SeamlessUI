@@ -6,12 +6,15 @@ local function getFrame()
     return _G["SecondaryStatusTrackingBarContainer"]
 end
 local position, size = app.core:GetNativePositionOptions(getFrame)
+size.layoutStored = nil
+size.args.scale = app.StatusBarScaleOption("statusBar2")
+size.args.width = app.StatusBarWidthOption(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar2 = {
     tooltip = function(path)
         return app.core:GetOptionDefault(app.dbDefaults.profile, path, 2)
     end,
-    defaults = {},
+    defaults = { profile = { statusBar2 = { scale = 1 } } },
     config = {
         editModeFrame = getFrame,
         buttonSection = app.core:GetEditModeButtonSection({

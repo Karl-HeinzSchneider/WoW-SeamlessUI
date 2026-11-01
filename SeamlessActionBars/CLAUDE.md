@@ -80,6 +80,15 @@ labels, endcaps, the micro menu, the bag bar and the XP bar tooltip. Settings li
   purchased ranks, 4% per rank on the base 150% cap and 5% per eight hours; manual values are the
   fallback. Run `lua src/tests/xp-bar-tooltip.lua`. Check actual rested cap and Legacy changes in
   game.
+- `src/statusbars.lua`: independent profile `statusBar1.scale` / `statusBar2.scale` values
+  (default 1, range 0.5–2) replace the disabled Scale placeholders on both status bar pages
+  and selected-frame Edit Mode Size sections. Applies `SetScale` to the containers, refreshes
+  with profiles, defers combat writes and restores original scales on disable.
+  The same Size header mirrors the native Width (`EditModeStatusTrackingBarSetting.Size`)
+  through the frame position service, using Blizzard's range/defaults and active layout draft.
+  Registers each complete status bar page for its native system, so the existing page builder
+  merges Size controls and includes the shared XP tooltip group once.
+  Run `lua src/tests/statusbar-scale.lua`.
 
 ## Rules
 

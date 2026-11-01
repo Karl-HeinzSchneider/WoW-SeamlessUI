@@ -173,6 +173,30 @@ for _, frame in ipairs(frames) do
     assert(frame.healthbar.rgb[1] == 0.2)
 end
 -- A native event must repaint the VIP cosmetics while editing.
+-- Classes absent from this client still have preview colors on every native frame.
+for class, rgb in pairs({
+    DEATHKNIGHT = { 0.77, 0.12, 0.23 },
+    MONK = { 0, 1, 0.59 },
+    DEMONHUNTER = { 0.64, 0.19, 0.79 },
+    EVOKER = { 0.2, 0.58, 0.5 },
+}) do
+    assert(RAID_CLASS_COLORS[class] == nil)
+    character.class = class
+    for _, mode in ipairs({ "class", "classReaction" }) do
+        for key in pairs(app.db.profile.unitFrames) do
+            app.db.profile.unitFrames[key].healthBarColor = mode
+        end
+        app.healthColor:Refresh()
+        for _, frame in ipairs(frames) do
+            for component = 1, 3 do
+                assert(frame.healthbar.rgb[component] == rgb[component])
+            end
+        end
+    end
+    assert(RAID_CLASS_COLORS[class] == nil)
+end
+character.class = "MAGE"
+app.healthColor:Refresh()
 TargetFrame.name:SetText("Native update")
 hooks.UnitFrame_Update(TargetFrame)
 assert(TargetFrame.name.text == "VIP Preview")

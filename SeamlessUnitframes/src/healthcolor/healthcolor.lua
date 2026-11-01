@@ -25,6 +25,14 @@ app.healthColor = addon:NewModule("HealthColor", module, "AceEvent-3.0") --[[@as
 
 local TAP_DENIED_COLOR = CreateColor(0.5, 0.5, 0.5)
 local reactionColor = CreateColor(0, 0, 0)
+-- Standard class colors for preview characters whose classes the client may not ship.
+-- Keep these local to previews; never extend the game's RAID_CLASS_COLORS table.
+local previewClassColors = {
+    DEATHKNIGHT = CreateColor(0.77, 0.12, 0.23),
+    MONK = CreateColor(0, 1, 0.59),
+    DEMONHUNTER = CreateColor(0.64, 0.19, 0.79),
+    EVOKER = CreateColor(0.2, 0.58, 0.5),
+}
 local known, colored = {}, {}
 local settingAtlas = false
 
@@ -94,7 +102,7 @@ local function BarColor(bar, key, character)
     local mode = app.db.profile.unitFrames[key].healthBarColor
     if character then
         if mode == "class" or mode == "classReaction" then
-            return RAID_CLASS_COLORS[character.class]
+            return RAID_CLASS_COLORS[character.class] or previewClassColors[character.class]
         elseif mode == "reaction" then
             -- Match unit selection colors rather than the muted reputation bar palette.
             reactionColor:SetRGB(character.reaction <= 4 and 1 or 0, character.reaction >= 4 and 1 or 0, 0)

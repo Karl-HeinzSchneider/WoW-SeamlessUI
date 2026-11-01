@@ -34,11 +34,11 @@ function module:OnInitialize()
     for key, name in pairs(frames) do
         local frame = _G[name]
         if frame then
-            app.core:RegisterEditModeSystemOptions(appName .. ":" .. key .. ":scale", {
+            app.core:RegisterEditModeSystemOptions(appName .. ":" .. key, {
                 system = frame.system,
                 systemIndex = frame.systemIndex,
-                name = L["Size"],
-                page = { addon = appName, key = key, path = { "size" } },
+                name = app.optionPages[key].config.name,
+                page = { addon = appName, key = key },
                 enabled = function()
                     return app.addon:IsEnabled()
                 end,

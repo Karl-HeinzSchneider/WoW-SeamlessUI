@@ -181,13 +181,6 @@ function addon:GetEditModePageSections(addonName, pageKey, spec)
     spec = spec or {}
     local root = self:GetPageOption(addonName, pageKey, spec.path)
     local id = spec.id or ("page:" .. addonName .. ":" .. key(root.path))
-    -- A registration may target the Size group directly, rather than its parent page.
-    -- Preserve its shared section and leaf row keys so it replaces the native placeholder.
-    if root:Read("editModeSize") then
-        local rows = GroupRows(root, true)
-        return #rows > 0 and { { id = id .. ":size", name = root:Read("name"), key = "settings:size", options = rows } }
-            or {}
-    end
     local sections = {}
     local current = { id = id, name = spec.name, key = spec.key or SectionKey(root), options = {} }
     sections[1] = current

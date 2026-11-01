@@ -51,6 +51,19 @@ end
 MainStatusTrackingBarContainer = frame()
 SecondaryStatusTrackingBarContainer = frame()
 assert(loadfile("SeamlessActionBars/src/statusbars.lua"))("SeamlessActionBars", app)
+app.optionPages = {
+    statusBar1 = { config = { name = "XP / reputation bar 1" } },
+    statusBar2 = { config = { name = "XP / reputation bar 2" } },
+}
+local registrations = {}
+function app.core:RegisterEditModeSystemOptions(id, spec)
+    assert(not registrations[id])
+    assert(spec.page.path == nil, "Register the full page through the existing section builder")
+    registrations[id] = spec
+end
+module:OnInitialize()
+assert(registrations["SeamlessActionBars:statusBar1"].page.key == "statusBar1")
+assert(registrations["SeamlessActionBars:statusBar2"].page.key == "statusBar2")
 module:OnEnable()
 local slider = app.StatusBarScaleOption("statusBar1")
 slider.set(nil, 1.5)

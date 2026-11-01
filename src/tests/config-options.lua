@@ -366,25 +366,23 @@ for _, pages in pairs(nativePages) do
     end
 end
 local bars = apps.SeamlessActionBars
+local xpSections
 for _, pageKey in ipairs({ "statusBar1", "statusBar2" }) do
-    local sections = core:GetEditModePageSections("SeamlessActionBars", pageKey, { path = { "size" } })
-    assert(#sections == 1 and sections[1].key == "settings:size", "Status bar Size joins the shared header")
-    assert(#sections[1].options == 2 and sections[1].options[1].key == "scale", "Scale replaces the placeholder")
-    assert(sections[1].options[2].key == "width", "Native Width shares the Size header")
+    local sections = core:GetEditModePageSections("SeamlessActionBars", pageKey)
+    local sizes, tooltips = {}, {}
+    for _, section in ipairs(sections) do
+        if section.key == "settings:size" then
+            sizes[#sizes + 1] = section
+        else
+            tooltips[#tooltips + 1] = section
+        end
+    end
+    assert(#sizes == 1, "Status bar page supplies one shared Size section")
+    assert(#sizes[1].options == 2 and sizes[1].options[1].key == "scale", "Scale replaces the placeholder")
+    assert(sizes[1].options[2].key == "width", "Native Width shares the Size header")
+    assert(#tooltips == 1 and #tooltips[1].options == 5, "Each page supplies the shared XP tooltip controls once")
+    xpSections = tooltips
 end
-local xpSection
-local registerSystemOptions = core.RegisterEditModeSystemOptions
-core.RegisterEditModeSystemOptions = function(_, _, spec)
-    xpSection = spec
-end
-Enum.EditModeSystem = Enum.EditModeSystem or {}
-Enum.EditModeSystem.StatusTrackingBar = Enum.EditModeSystem.StatusTrackingBar or 999
-bars.RegisterXPTooltipEditMode()
-core.RegisterEditModeSystemOptions = registerSystemOptions
-assert(xpSection.system == Enum.EditModeSystem.StatusTrackingBar and xpSection.systemIndex == nil)
-local xpSections =
-    core:GetEditModePageSections(xpSection.page.addon, xpSection.page.key, { path = xpSection.page.path })
-assert(#xpSections == 1 and #xpSections[1].options == 5, "Both status bars expose all shared XP tooltip controls")
 local xpRows = {}
 for _, row in ipairs(xpSections[1].options) do
     local key = row.setting.path[#row.setting.path]

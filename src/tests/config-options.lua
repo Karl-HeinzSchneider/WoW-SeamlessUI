@@ -195,6 +195,9 @@ for _, addon in ipairs({
     app.BarHiddenOption = function(_, name, order)
         return { type = "toggle", name = name, order = order, default = false }
     end
+    app.StatusBarScaleOption = function()
+        return { type = "range", name = "Scale", default = 1 }
+    end
     app.EndCapFrame = function() end
     app.MicroMenuOptions = function()
         return { type = "group", name = "Style", args = {} }

@@ -39,3 +39,6 @@
 ---@field xpBarTooltip SeamlessActionBars.XPBarTooltip
 ---@field XPBarTooltipOptions fun(): table
 ---@field RegisterXPTooltipEditMode fun()
+
+---@field RefreshStatusBarScale fun()
+---@field StatusBarScaleOption fun(key: string): table

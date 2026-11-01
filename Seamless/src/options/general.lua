@@ -29,6 +29,7 @@ app.optionPages.general = {
         return defaults[key]
     end,
     defaults = {
+        global = { performanceProfiling = false },
         profile = { logLevel = "INFO", minimap = { hide = false, minimapPos = 200, showInCompartment = false } },
     },
     config = {
@@ -69,6 +70,19 @@ app.optionPages.general = {
                         set = function(_, value)
                             app.db.profile.minimap.showInCompartment = value
                             app.minimapButton:OnProfileRefresh()
+                        end,
+                    },
+                    performanceProfiling = {
+                        type = "toggle",
+                        order = 25,
+                        name = L["Performance profiling"],
+                        desc = L["Time high-level Seamless callbacks and print a startup report to chat. Use /seamless perf to report again. Account-wide; changes require /reload. Adds measurement overhead while enabled."],
+                        default = false,
+                        get = function()
+                            return app.db.global.performanceProfiling
+                        end,
+                        set = function(_, value)
+                            app.db.global.performanceProfiling = value
                         end,
                     },
                     logLevel = {

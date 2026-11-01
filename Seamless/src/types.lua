@@ -71,6 +71,7 @@
 ---@field LibEditMode table Namespaced Edit Mode library instance, extended by `editmodelib.lua` (Header and Button settings, Core's settings window as its dialog).
 ---@field EditModePoints string[] Anchor points in dropdown order.
 ---@field logger SeamlessCore.Logger
+---@field profiler SeamlessCore.Profiler
 ---@field addon SeamlessCore.Addon
 ---@field dbDefaults AceDB.Schema
 ---@field db SeamlessCore.DB

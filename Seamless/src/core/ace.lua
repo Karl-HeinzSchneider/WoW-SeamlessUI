@@ -68,6 +68,8 @@ function addon:OnSlashCommand(input)
         else
             log:chat(L["Log level is %s"], log:getLevelName())
         end
+    elseif cmd == "perf" then
+        app.profiler:Report()
     elseif cmd == "reset" then
         self.db:ResetProfile()
         log:chat(L["Profile reset"])

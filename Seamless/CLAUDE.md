@@ -42,6 +42,32 @@ Core never references a feature by name or loads disabled features; core profile
 feature namespaces. `/seamless [options]`, `/seamless loglevel <level>` and `/seamless reset` act
 on the suite profile.
 
+## Performance profiling (`profiler.lua`)
+
+General's account-wide **Performance profiling** switch defaults off and takes effect after
+`/reload`. The startup trampoline reads SavedVariables from Core's `OnInitialize`, so this also
+works when another addon loaded AceAddon first. With profiling off it installs no hooks, timers
+or per-callback wrappers. With it on, an AceHook pre-hook of AceAddon's initialization dispatcher
+discovers suite addons (`Seamless*` declaring Core as a dependency) and their modules before
+their callbacks run. Vendor sources and Blizzard functions/scripts are untouched.
+
+The central method list covers lifecycle, profile refresh, `Refresh` and `ApplySettings`; the
+service list covers defaults, database and options registration. Extend these lists when another
+shared entry point is useful, rather than inserting timers throughout the addons. Local functions,
+file parsing, SavedVariables loading, arbitrary event handlers and frame scripts are not measured.
+Timings use differences of `debugprofilestop()` without resetting its shared clock. Instrumented
+calls add overhead; results are diagnostic inclusive elapsed milliseconds, not exclusive CPU time.
+Do not sum overlapping entries. Arguments/results (including nils) pass through and errors rethrow.
+
+One second after the first `PLAYER_ENTERING_WORLD`, chat prints the 20 entries with the largest
+cumulative times, including call counts, averages and maxima. `/seamless perf` repeats the report
+for everything collected since reload, independently of log level. No per-call chat output or
+saved timing history. Reload after disabling to remove instrumentation.
+
+Run `lua src/tests/profiler.lua` and `lua src/tests/profiler.lua off`, plus
+`lua src/tests/config-options.lua` and `lua src/tests/locales.lua`. In game verify disabled
+startup, enabled startup reporting, profile changes, `/seamless perf`, and disable/reload.
+
 ## Settings pages
 
 The page contract is in the root `CLAUDE.md`; the window and controls are in `src/config/CLAUDE.md`.

@@ -120,6 +120,7 @@ end
 -- L["XP / reputation bar %d"] = "XP / reputation bar %d"
 
 -- Seamless
+-- L["%s: %.3f ms total, %d calls, %.3f ms average, %.3f ms maximum"] = "%s: %.3f ms total, %d calls, %.3f ms average, %.3f ms maximum"
 -- L["%s = %s"] = "%s = %s"
 -- L["%s = {"] = "%s = {"
 -- L["%s |cff%s[%s]|r %s"] = "%s |cff%s[%s]|r %s"
@@ -151,6 +152,7 @@ end
 -- L["Edit Mode visibility: refresh stage=%s success=%s error=%s"] = "Edit Mode visibility: refresh stage=%s success=%s error=%s"
 -- L["Edit Mode visibility: result setting=%s success=%s error=%s"] = "Edit Mode visibility: result setting=%s success=%s error=%s"
 -- L["Embed"] = "Embed"
+-- L["Enable Performance profiling in General, then /reload."] = "Enable Performance profiling in General, then /reload."
 -- L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = "Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"
 -- L["format error: "] = "format error: "
 -- L["GitHub"] = "GitHub"
@@ -166,6 +168,8 @@ end
 -- L["No Edit Mode visibility binding for setting %s."] = "No Edit Mode visibility binding for setting %s."
 -- L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] = "Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."
 -- L["Open the Seamless settings from the minimap."] = "Open the Seamless settings from the minimap."
+-- L["Performance profiling"] = "Performance profiling"
+-- L["Performance: top %d of %d entries since reload; inclusive times overlap."] = "Performance: top %d of %d entries since reload; inclusive times overlap."
 -- L["Quick anchor to frame"] = "Quick anchor to frame"
 -- L["Right-click: config"] = "Right-click: config"
 -- L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."] = "Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."
@@ -174,6 +178,7 @@ end
 -- L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = "Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."
 -- L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = "The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"
 -- L["The Seamless layout could not be read."] = "The Seamless layout could not be read."
+-- L["Time high-level Seamless callbacks and print a startup report to chat. Use /seamless perf to report again. Account-wide; changes require /reload. Adds measurement overhead while enabled."] = "Time high-level Seamless callbacks and print a startup report to chat. Use /seamless perf to report again. Account-wide; changes require /reload. Adds measurement overhead while enabled."
 -- L["Tweaks"] = "Tweaks"
 -- L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] = "Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."
 -- L["Type /rl in chat to reload the user interface, just like /reload."] = "Type /rl in chat to reload the user interface, just like /reload."

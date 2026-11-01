@@ -117,6 +117,7 @@ L["Vehicle seat indicator"] = true
 L["XP / reputation bar %d"] = true
 
 -- Seamless
+L["%s: %.3f ms total, %d calls, %.3f ms average, %.3f ms maximum"] = true
 L["%s = %s"] = true
 L["%s = {"] = true
 L["%s |cff%s[%s]|r %s"] = true
@@ -148,6 +149,7 @@ L["Edit Mode visibility: read setting=%s source=%s value=%s"] = true
 L["Edit Mode visibility: refresh stage=%s success=%s error=%s"] = true
 L["Edit Mode visibility: result setting=%s success=%s error=%s"] = true
 L["Embed"] = true
+L["Enable Performance profiling in General, then /reload."] = true
 L["Every comment, like or share counts, but if you're feeling very kind, you can buy me a slice of pizza to fuel further development!"] = true
 L["format error: "] = true
 L["GitHub"] = true
@@ -163,6 +165,8 @@ L["Minimap button"] = true
 L["No Edit Mode visibility binding for setting %s."] = true
 L["Open the Seamless settings from Blizzard's addon compartment on the minimap, independently of the minimap button."] = true
 L["Open the Seamless settings from the minimap."] = true
+L["Performance profiling"] = true
+L["Performance: top %d of %d entries since reload; inclusive times overlap."] = true
 L["Quick anchor to frame"] = true
 L["Right-click: config"] = true
 L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."] = true
@@ -171,6 +175,7 @@ L["SeamlessUI"] = true
 L["Switch this character to the Seamless Edit Mode layout, adding it again if it was deleted."] = true
 L["The enabled Seamless addons. Turn them on or off in the game's AddOns list, then reload.\n"] = true
 L["The Seamless layout could not be read."] = true
+L["Time high-level Seamless callbacks and print a startup report to chat. Use /seamless perf to report again. Account-wide; changes require /reload. Adds measurement overhead while enabled."] = true
 L["Tweaks"] = true
 L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."] = true
 L["Type /rl in chat to reload the user interface, just like /reload."] = true

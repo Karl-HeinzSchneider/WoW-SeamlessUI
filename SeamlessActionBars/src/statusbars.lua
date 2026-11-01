@@ -82,3 +82,43 @@ function app.StatusBarScaleOption(key)
         end,
     }
 end
+
+-- Mirror the client's Width (Size) setting in display units, using its layout draft.
+function app.StatusBarWidthOption(getFrame)
+    local service = app.core:GetFramePositionService()
+    local setting = Enum.EditModeStatusTrackingBarSetting and Enum.EditModeStatusTrackingBarSetting.Size
+    return {
+        type = "range",
+        name = L["Width"],
+        order = 1,
+        layoutStored = true,
+        default = function()
+            return setting and service:GetDefaultSetting(getFrame(), setting)
+        end,
+        min = function()
+            local min = service:GetSettingRange(getFrame(), setting)
+            return min
+        end,
+        max = function()
+            local _, max = service:GetSettingRange(getFrame(), setting)
+            return max
+        end,
+        step = function()
+            local _, _, step = service:GetSettingRange(getFrame(), setting)
+            return step
+        end,
+        disabled = function()
+            return not setting or not service:CanEdit(getFrame()) or service:ReadSetting(getFrame(), setting) == nil
+        end,
+        get = function()
+            return setting and service:ReadSetting(getFrame(), setting)
+        end,
+        set = function(_, value)
+            local ok, err = service:ApplySetting(getFrame(), setting, value)
+            if not ok and err then
+                app.core.logger:warn("%s", err)
+            end
+            app.core:RefreshOptions(appName)
+        end,
+    }
+end

@@ -74,3 +74,47 @@ eventFrame.callback()
 assert(MainStatusTrackingBarContainer:GetScale() == 1)
 assert(SecondaryStatusTrackingBarContainer:GetScale() == 1)
 print("Status bar frame scaling, independent values, profiles and combat-deferred restore OK")
+
+Enum = { EditModeStatusTrackingBarSetting = { Size = 7 } }
+local nativeValues = { [MainStatusTrackingBarContainer] = 100, [SecondaryStatusTrackingBarContainer] = 80 }
+local service = {}
+function service:CanEdit()
+    return not combat
+end
+function service:ReadSetting(target, setting)
+    assert(setting == 7)
+    return nativeValues[target]
+end
+function service:GetDefaultSetting(_, setting)
+    assert(setting == 7)
+    return 100
+end
+function service:GetSettingRange(_, setting)
+    assert(setting == 7)
+    return 50, 130, 5
+end
+function service:ApplySetting(target, setting, value)
+    assert(setting == 7)
+    if combat then
+        return false
+    end
+    nativeValues[target] = value
+    return true
+end
+function app.core:GetFramePositionService()
+    return service
+end
+local width = app.StatusBarWidthOption(function()
+    return MainStatusTrackingBarContainer
+end)
+assert(width.layoutStored and width.default() == 100)
+assert(width.min() == 50 and width.max() == 130 and width.step() == 5)
+width.set(nil, 120)
+assert(width.get() == 120 and nativeValues[SecondaryStatusTrackingBarContainer] == 80)
+nativeValues[MainStatusTrackingBarContainer] = 90
+assert(width.get() == 90, "External native draft changes are reflected")
+combat = true
+assert(width.disabled())
+width.set(nil, 130)
+assert(width.get() == 90)
+print("Native status bar Width range, defaults, draft writes and external updates OK")

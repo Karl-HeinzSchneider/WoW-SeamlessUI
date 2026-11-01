@@ -42,3 +42,4 @@
 
 ---@field RefreshStatusBarScale fun()
 ---@field StatusBarScaleOption fun(key: string): table
+---@field StatusBarWidthOption fun(getFrame: fun(): table?): table

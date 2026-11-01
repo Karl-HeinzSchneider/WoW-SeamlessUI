@@ -93,6 +93,7 @@ function core:GetNativePositionOptions(getFrame, scale)
         type = "group",
         name = "Size",
         layoutStored = true,
+        editModeSize = true,
         order = 11,
         args = {},
     }
@@ -197,6 +198,9 @@ for _, addon in ipairs({
     end
     app.StatusBarScaleOption = function()
         return { type = "range", name = "Scale", default = 1 }
+    end
+    app.StatusBarWidthOption = function()
+        return { type = "range", name = "Width", default = function() end }
     end
     app.EndCapFrame = function() end
     app.MicroMenuOptions = function()
@@ -362,6 +366,12 @@ for _, pages in pairs(nativePages) do
     end
 end
 local bars = apps.SeamlessActionBars
+for _, pageKey in ipairs({ "statusBar1", "statusBar2" }) do
+    local sections = core:GetEditModePageSections("SeamlessActionBars", pageKey, { path = { "size" } })
+    assert(#sections == 1 and sections[1].key == "settings:size", "Status bar Size joins the shared header")
+    assert(#sections[1].options == 2 and sections[1].options[1].key == "scale", "Scale replaces the placeholder")
+    assert(sections[1].options[2].key == "width", "Native Width shares the Size header")
+end
 local xpSection
 local registerSystemOptions = core.RegisterEditModeSystemOptions
 core.RegisterEditModeSystemOptions = function(_, _, spec)

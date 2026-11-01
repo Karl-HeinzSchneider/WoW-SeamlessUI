@@ -8,6 +8,7 @@ end
 local position, size = app.core:GetNativePositionOptions(getFrame)
 size.layoutStored = nil
 size.args.scale = app.StatusBarScaleOption("statusBar1")
+size.args.width = app.StatusBarWidthOption(getFrame)
 ---@type SeamlessCore.SettingsPage
 app.optionPages.statusBar1 = {
     tooltip = function(path)

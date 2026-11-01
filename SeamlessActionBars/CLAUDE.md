@@ -84,6 +84,8 @@ labels, endcaps, the micro menu, the bag bar and the XP bar tooltip. Settings li
   (default 1, range 0.5–2) replace the disabled Scale placeholders on both status bar pages
   and selected-frame Edit Mode Size sections. Applies `SetScale` to the containers, refreshes
   with profiles, defers combat writes and restores original scales on disable.
+  The same Size header mirrors the native Width (`EditModeStatusTrackingBarSetting.Size`)
+  through the frame position service, using Blizzard's range/defaults and active layout draft.
   Run `lua src/tests/statusbar-scale.lua`.
 
 ## Rules

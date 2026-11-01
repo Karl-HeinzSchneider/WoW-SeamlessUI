@@ -18,6 +18,7 @@ locales\[TextLocale]\strings.lua
 src\core\logger.lua
 src\core\db.lua
 src\core\ace.lua
+src\core\profiler.lua
 src\core\profiles.lua
 src\config\schema.lua
 src\config\registry.lua

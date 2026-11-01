@@ -33,6 +33,7 @@ function canaccessvalue(value)
 end
 local methods = {}
 local callbacks = {}
+local layoutEvents = {}
 local function Object()
     return setmetatable({ shown = true }, { __index = methods })
 end
@@ -469,8 +470,14 @@ local app = {
     },
     db = { profile = { layout = "current", unitFrames = {} } },
     addon = {
-        NewModule = function(_, _, prototype)
-            return setmetatable({ RegisterEvent = function() end }, { __index = prototype })
+        NewModule = function(_, name, prototype)
+            return setmetatable({
+                RegisterEvent = function(_, event, handler)
+                    if name == "LegacyLayout" then
+                        layoutEvents[event] = handler
+                    end
+                end,
+            }, { __index = prototype })
         end,
     },
 }
@@ -487,6 +494,8 @@ Load("layout/layout.lua")
 Load("layout/geometry.lua")
 local layout = app.legacyLayout
 layout:OnEnable()
+-- UnitIsUnit is intentionally not mocked yet: Default must not start matching units.
+layoutEvents.UNIT_FLAGS("UNIT_FLAGS", "player")
 assert(geometryWrites == 0 and artworkWrites == 0 and hookCount == 0, "default layout must be inert")
 Load("healthcolor/healthcolor.lua")
 app.healthColor:OnInitialize()
@@ -695,6 +704,79 @@ end
 assert(ComboFrame.point == comboPoint, "focus repairs must not reposition the target's combo points")
 layout:Refresh()
 assert(scans > 0 and fullColorRefreshes == 1, "explicit refresh still updates the whole suite")
+-- Unit events repair only matching roots, including aliases and embedded party pets.
+local aliases, secretMatch = {}, false
+UnitIsUnit = function(first, second)
+    assert(canaccessvalue(first) and canaccessvalue(second), "secret unit passed to alias lookup")
+    if secretMatch then
+        return secret
+    end
+    return (aliases[first] or first) == (aliases[second] or second)
+end
+party.PetFrame.unit = "partypet1"
+local function UnitEvent(event, unit, expected)
+    local before, colors = #repaired, fullColorRefreshes
+    layoutEvents[event](event, unit)
+    if #expected == 0 then
+        assert(#repaired == before, "unrelated unit must not cause geometry work")
+    else
+        assert(#repaired == before + 1, event .. ": unit event repair count " .. (#repaired - before))
+        local roots = repaired[#repaired]
+        assert(#roots == #expected, "unit event repaired the wrong number of roots")
+        for i, frame in ipairs(expected) do
+            assert(roots[i] == frame, "unit event repaired the wrong root")
+        end
+    end
+    assert(fullColorRefreshes == colors, "scoped event must not recolor all frames")
+end
+for _, event in ipairs({ "UNIT_FACTION", "UNIT_FLAGS", "PLAYER_FLAGS_CHANGED", "UNIT_DISPLAYPOWER" }) do
+    UnitEvent(event, "party1", { party })
+    UnitEvent(event, "raid40", {})
+end
+aliases.target, aliases.focus = "player", "player"
+UnitEvent("UNIT_FLAGS", "player", { PlayerFrame, TargetFrame, FocusFrame })
+aliases = {}
+PlayerFrame.displayedUnit = "vehicle"
+UnitEvent("UNIT_DISPLAYPOWER", "vehicle", { PlayerFrame })
+PlayerFrame.displayedUnit = nil
+UnitEvent("UNIT_FLAGS", "partypet1", { party })
+UnitEvent("UNIT_DISPLAYPOWER", "targettarget", { TargetFrameToT })
+local boss = Target("boss1")
+Boss1TargetFrame = boss
+UnitEvent("UNIT_FLAGS", "boss1", { boss })
+Boss1TargetFrame = nil
+local function FullEvent(event, unit)
+    local before = fullColorRefreshes
+    layoutEvents[event](event, unit)
+    assert(fullColorRefreshes == before + 1, "unknown state/lifecycle must retain full repair")
+end
+FullEvent("UNIT_FLAGS", secret)
+FullEvent("UNIT_FLAGS", nil)
+TargetFrame.unit = secret
+FullEvent("UNIT_FLAGS", "party1")
+TargetFrame.unit = "target"
+secretMatch = true
+FullEvent("UNIT_FACTION", "party1")
+secretMatch = false
+party.PetFrame.unit = nil
+FullEvent("UNIT_FLAGS", "player")
+party.PetFrame.unit = "partypet1"
+for _, event in ipairs({ "PLAYER_ENTERING_WORLD", "GROUP_ROSTER_UPDATE", "ADDON_LOADED", "PLAYER_REGEN_ENABLED" }) do
+    FullEvent(event)
+end
+local repairTargets, combatRoots = layout.RepairTargets
+layout.RepairTargets = function(self, roots)
+    combatRoots = roots
+    return repairTargets(self, roots)
+end
+local beforeCombatGeometry = #repaired
+combat = true
+layoutEvents.UNIT_FLAGS("UNIT_FLAGS", "target")
+combat = false
+assert(#combatRoots == 1 and combatRoots[1] == TargetFrame, "combat repair must retain event scope")
+assert(#repaired == beforeCombatGeometry, "combat events must use visual repair instead of full geometry")
+layout.RepairTargets = repairTargets
+assert(#pending == 0, "unit events must never defer repair to another frame")
 app.unitFrames.All, layout.ApplyGeometry = allFrames, applyGeometry
 app.healthColor.Refresh, app.healthColor.RefreshFrame = refreshColors, refreshFrameColor
 -- Cache only fixed anchors we wrote ourselves; every native anchor/parent

@@ -323,15 +323,7 @@ function position:Apply(system, values, restoreState)
     -- Other settings on this frame and other frames must remain pending.
     system:SetHasActiveChanges(not equal(info, system.savedSystemInfo))
     manager:CheckForSystemActiveChanges()
-    if manager:IsEditModeActive() then
-        if EditModeSystemSettingsDialog then
-            -- Position changes do not change native setting values. Rebuilding
-            -- their pooled controls from addon code taints setting/checked and
-            -- later native clicks (including PRD Show Bar Text). Only the Revert
-            -- button needs refreshing; leave native settings controls untouched.
-            EditModeSystemSettingsDialog:UpdateButtons(system)
-        end
-    else
+    if not manager:IsEditModeActive() then
         -- Save the current live layout, never the override library's separate cache.
         manager:SaveLayouts()
         system.savedSystemInfo = CopyTable(info)

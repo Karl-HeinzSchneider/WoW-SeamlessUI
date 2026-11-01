@@ -70,8 +70,8 @@ Run `lua src/tests/blizzard-editmode.lua`.
   `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate
   layout copy, and the latter closes Edit Mode); native Save/Revert own persistence. Preset layouts
   are read-only.
-- Position-only edits refresh the native Revert button with `UpdateButtons`, never rebuild native
-  pooled settings through `UpdateDialog`. Do not reassign the native `systemInfo` field: Blizzard
+- Position edits must never access or refresh Blizzard's settings dialog, including its buttons.
+  Do not call `UpdateDialog` or `UpdateButtons`. Do not reassign the native `systemInfo` field: Blizzard
   already binds it to the live draft. Either write can taint later native settings clicks, including
   personal resource display bar text. Native full-system Revert owns its own dialog refresh.
 - The footer Revert button combines Core's custom setting snapshots with a full native system

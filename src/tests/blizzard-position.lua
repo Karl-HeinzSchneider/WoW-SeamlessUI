@@ -237,15 +237,11 @@ end
 function EditModeManagerFrame:SetHasActiveChanges(value)
     self.dirty = value
 end
-local nativeButtonUpdates = 0
-EditModeSystemSettingsDialog = {
-    UpdateDialog = function()
-        error("addon position edits must not rebuild Blizzard's pooled settings controls")
+EditModeSystemSettingsDialog = setmetatable({}, {
+    __index = function()
+        error("addon position edits must not access Blizzard's settings dialog")
     end,
-    UpdateButtons = function()
-        nativeButtonUpdates = nativeButtonUpdates + 1
-    end,
-}
+})
 assert(loadfile("Seamless/lib/LibEditModeOverride/LibEditModeOverride.lua"))()
 dofile("src/tests/locale-support.lua")
 local player = frame("PlayerFrame", UIParent)
@@ -920,4 +916,3 @@ assert(native:RevertSystem(player))
 assert(reverted == 1 and not native:HasSystemChanges(player))
 assert(not native:RevertSystem(player), "no native changes remain")
 print("Native full-system Revert detects changes independently of dirty flags")
-assert(nativeButtonUpdates > 0, "position edits refresh the native Revert button")

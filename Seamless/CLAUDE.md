@@ -244,6 +244,8 @@ Never declare a page's settings a second time for Edit Mode.
   (`AddFrameSettings`): a Header per group, the group marked `editModePosition` as the shared
   Position section (its extra rows included), every control as a `lib.SettingType.Option` row, and
   the page's `buttonSection` last.
+  Real controls in the page's `editModeSize` group replace the shared Size placeholder and use
+  the same option model, defaults, validation, bounds and formatting as the custom panel.
 - `core:GetEditModePageSections(addonName, pageKey, spec?)`: renderer sections for a window that
   draws its own Position section (Blizzard systems): groups become sections keyed
   `"page:<addon>:<path>"`, Position is left out, and the `editModeSize` group's own rows go to a

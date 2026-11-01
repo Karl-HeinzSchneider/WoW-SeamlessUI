@@ -17,6 +17,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 ---@field editModeFrame? SeamlessCore.FrameResolver Native frame whose Edit Mode details consume this config.
 ---@field editModeVisibility? fun(value?: boolean): boolean? Read with no argument; write with a boolean. Standalone full window header only.
 ---@field buttonSection? SeamlessCore.EditModeButtonSection Explicit Edit Mode footer for this frame; never inferred or shown in the settings window.
+---@field navigationParent? string Existing navigation header for this page; option paths stay unchanged.
 
 ---@class SeamlessCore.SettingsPage
 ---@field defaults AceDB.Schema Saved defaults at their existing database paths.
@@ -164,6 +165,10 @@ function app.addon:PrepareSettingsOptions(option)
         end
     end
     assert(option.editModeFrame == nil or type(option.editModeFrame) == "function", "editModeFrame must be a resolver")
+    assert(
+        option.navigationParent == nil or type(option.navigationParent) == "string",
+        "navigationParent must be an ID"
+    )
     assert(
         option.editModeVisibility == nil or type(option.editModeVisibility) == "function",
         "editModeVisibility must be a function"

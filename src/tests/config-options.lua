@@ -52,10 +52,12 @@ assert(coreApp.dbDefaults.profile.tweaks.reloadShortcut)
 assert(coreApp.config.categories["Seamless:tweaks"].parent == "Seamless")
 assert(coreApp.config.categories["Seamless:profiles"])
 if withEmbed then
-    assert(coreApp.config.categories["Seamless:embed"].parent == "Seamless")
+    assert(coreApp.config.categories["Seamless:embedded"].header)
+    assert(coreApp.config.categories["Seamless:embed"].parent == "Seamless:embedded")
     assert(next(coreApp.optionPages.embed.config.args) == nil)
 else
     assert(coreApp.config.categories["Seamless:embed"] == nil)
+    assert(coreApp.config.categories["Seamless:embedded"] == nil)
     assert(coreApp.embed == nil)
 end
 local core = coreApp.addon

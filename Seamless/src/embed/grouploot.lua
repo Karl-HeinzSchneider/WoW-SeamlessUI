@@ -87,61 +87,89 @@ local function RefreshEditMode()
     end
 end
 
-local function EditModeSettings(current, lib)
-    local rows = current:GetEditModeSettings(lib, {
-        defaults = BGL.defaults,
-        strings = {
-            scale = L["Scale"],
-            spacing = L["Spacing"],
-            spacingDescription = L["Gap between two rolls."],
-            growUp = L["Stack upwards"],
-            growUpDescription = L["New rolls appear above the first one. Off: below it."],
-            showUndecided = L["List undecided players"],
-            showUndecidedDescription = L["The roll buttons' tooltips also list who hasn't chosen yet."],
-        },
-    })
-    -- Preserve the embedded rows' defaults, bounds, setters and combat guards.
-    local scale, spacing, growUp, showUndecided = rows[1], rows[2], rows[3], rows[4]
-    scale.formatter = function(value)
-        return ("%.2f"):format(value):gsub("0+$", ""):gsub("%.$", "")
+---@class SeamlessCore.GroupLootOptions
+---@field position SeamlessCore.EditModePosition
+local options = {}
+app.embed.groupLoot = options
+
+function options:GetProfile()
+    return GetDatabase().profile
+end
+
+function options:GetFrame()
+    return controller and controller.anchor
+end
+
+function options:Disabled()
+    return not (controller and controller.active) or InCombatLockdown()
+end
+
+local function RefreshOptions()
+    app.addon:RefreshOptions()
+    if controller and controller.editMode then
+        controller.editMode.library:RefreshFrameSettings(controller.anchor)
     end
-    local settings = {
-        app.addon:GetEditModePositionSetting({
-            get = function(key)
-                local profile = GetDatabase().profile
-                if key == "relativeTo" then
-                    return "UIParent"
-                elseif key == "point" or key == "relativePoint" then
-                    return profile.position[key] or "BOTTOM"
-                end
-                return profile.position[key] / profile.scale
-            end,
-            set = function(key, value)
-                if not current.active or InCombatLockdown() then
-                    return
-                end
-                local profile = GetDatabase().profile
-                if key == "x" or key == "y" then
-                    profile.position[key] = value * profile.scale
-                elseif key == "point" or key == "relativePoint" then
-                    profile.position[key] = value
-                end
-                current:ApplySettings()
-            end,
-            anchorFrames = { { text = L["Screen (UIParent)"], value = "UIParent" } },
-            disabled = function()
-                return not current.active or InCombatLockdown()
-            end,
-        }, nil, { scale, spacing }),
-        { name = L["Style"], kind = lib.SettingType.Header },
-        growUp,
-        showUndecided,
-    }
-    settings[#settings + 1] = app.addon:GetEditModeButtonSection({
-        app.addon:GetEditModePositionButton("revert"),
-        app.addon:GetEditModePositionButton("resetPosition"),
-    })
-    return settings
+end
+
+function options:Changed()
+    if controller and controller.active then
+        controller:ApplySettings()
+    end
+    RefreshOptions()
+end
+
+options.position = {
+    get = function(key)
+        local profile = GetDatabase().profile
+        if key == "relativeTo" then
+            return "UIParent"
+        elseif key == "point" or key == "relativePoint" then
+            return profile.position[key] or "BOTTOM"
+        end
+        return profile.position[key] / profile.scale
+    end,
+    set = function(key, value)
+        if options:Disabled() then
+            return
+        end
+        local profile = GetDatabase().profile
+        if key == "x" or key == "y" then
+            profile.position[key] = value * profile.scale
+        elseif key == "point" or key == "relativePoint" then
+            profile.position[key] = value
+        end
+        options:Changed()
+    end,
+    default = function(key)
+        if key == "relativeTo" then
+            return "UIParent"
+        elseif key == "point" or key == "relativePoint" then
+            return "BOTTOM" -- BetterGroupLoot-1.0/rolls/rolls.lua: ApplySettings.
+        end
+        -- Read the library's registered reset target, never infer a default from saved values.
+        local editMode = controller and controller.editMode
+        local default = editMode and editMode.library:GetFrameDefaultPosition(controller.anchor)
+        return default and default[key] or BGL.defaults.position[key] / BGL.defaults.scale
+    end,
+    reset = function()
+        ResetPosition()
+        options:Changed()
+    end,
+    isDefault = function()
+        local position = GetDatabase().profile.position
+        return (position.point or "BOTTOM") == "BOTTOM"
+            and (position.relativePoint or "BOTTOM") == "BOTTOM"
+            and position.x == BGL.defaults.position.x
+            and position.y == BGL.defaults.position.y
+    end,
+    anchorFrames = { { text = L["Screen (UIParent)"], value = "UIParent" } },
+    disabled = function()
+        return options:Disabled()
+    end,
+}
+
+local function EditModeSettings()
+    return app.addon:GetEditModePageSettings("Seamless", "groupLoot")
 end
 
 -- LibEditMode registration must happen outside combat; it is kept for the session and
@@ -210,6 +238,7 @@ app.embed:Register("groupLoot", {
             applyPosition = ApplyPosition,
             savePosition = SavePosition,
             resetPosition = ResetPosition,
+            changed = RefreshOptions,
             getProfile = function()
                 return GetDatabase().profile
             end,

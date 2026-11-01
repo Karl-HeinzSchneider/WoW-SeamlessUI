@@ -1,5 +1,6 @@
 -- BetterGroupLoot adapter: default on, Start/Stop ownership, namespace, combat-deferred Edit Mode
 -- registration and the Frames checkbox that hides previews and the selection.
+unpack = unpack or table.unpack
 local L = setmetatable({}, {
     __index = function(_, key)
         return key
@@ -26,13 +27,25 @@ function selection:HookScript(event, callback)
     self.onShow = callback
 end
 local callbacks = {}
-local editModeLib = { id = "core", frameSelections = {}, SettingType = { Header = "header" } }
+local editModeLib = {
+    id = "core",
+    frameSelections = {},
+    SettingType = {
+        Header = "header",
+        Position = "position",
+        Option = "option",
+        ButtonSection = "seamless-button-section",
+    },
+}
 function editModeLib:IsInEditMode()
     return editing
 end
 function editModeLib:RegisterCallback(event, callback)
     callbacks[event] = callbacks[event] or {}
     table.insert(callbacks[event], callback)
+end
+function editModeLib:RefreshFrameSettings(frame)
+    assert(frame ~= nil)
 end
 local function trigger(event)
     for _, callback in ipairs(callbacks[event] or {}) do
@@ -41,6 +54,10 @@ local function trigger(event)
 end
 
 local controller = { anchor = {}, previews = false }
+function editModeLib:GetFrameDefaultPosition(frame)
+    assert(frame == controller.anchor)
+    return controller.editMode and controller.editMode.defaultPosition
+end
 editModeLib.frameSelections[controller.anchor] = selection
 function controller:Stop()
     stops = stops + 1
@@ -56,33 +73,27 @@ end
 function controller:HidePreviews()
     self.previews = false
 end
-function controller:GetEditModeSettings(lib, options)
-    assert(lib == editModeLib and options.strings.spacing == "Spacing")
-    return {
-        { key = "scale", default = 1 },
-        { key = "spacing" },
-        { key = "growUp" },
-        { key = "showUndecided" },
-    }
-end
+function controller:RefreshOptions() end
 local frameSettings
 function controller:RegisterEditMode(lib, options)
     assert(not self.editMode and not combat and options.managePreviews == false)
     registrations = registrations + 1
     local settings = options.settings(self, lib)
-    assert(#settings == 5 and settings[5].kind == "buttons" and #settings[5].options == 2)
+    assert(settings[#settings].kind == "seamless-button-section" and #settings[#settings].options == 2)
     assert(settings[1].kind == "position" and #settings[1].sizeOptions == 2)
-    assert(settings[1].sizeOptions[1].key == "scale" and settings[1].sizeOptions[2].key == "spacing")
-    assert(settings[1].sizeOptions[1].formatter(1) == "1")
-    assert(settings[1].sizeOptions[1].formatter(0.55) == "0.55")
+    assert(settings[1].sizeOptions[1].row.setting.path[3] == "scale")
+    assert(settings[1].sizeOptions[2].row.setting.path[3] == "spacing")
+    assert(settings[1].sizeOptions[1].row.format(1) == "1")
+    assert(settings[1].sizeOptions[1].row.format(0.55) == "0.55")
     assert(settings[2].name == "Style" and settings[2].kind == "header")
-    assert(settings[3].key == "growUp" and settings[4].key == "showUndecided")
+    assert(settings[3].row.setting.path[3] == "growUp" and settings[4].row.setting.path[3] == "showUndecided")
     frameSettings = settings
     self.editMode = { library = lib, defaultPosition = {} }
 end
 local owner = { prefix = "Other", reason = "owned" }
 local startResult
-local BGL = { defaults = { scale = 1, position = { x = 600, y = 420 } } }
+local BGL =
+    { defaults = { scale = 1, spacing = 4, growUp = true, showUndecided = true, position = { x = 600, y = 420 } } }
 local host
 function controller:ApplySettings()
     host.applyPosition(self.anchor)
@@ -161,8 +172,11 @@ function CopyTable(source)
     return copy
 end
 local namespaces = 0
+local namespaceDatabase
 local frameOptions
 local app = {
+    LibEditMode = editModeLib,
+    optionPages = {},
     logger = {
         warn = function()
             warnings = warnings + 1
@@ -174,7 +188,8 @@ local app = {
         RegisterNamespace = function(_, name, defaults)
             assert(name == "GroupLoot" and defaults.profile.position.x == 600)
             namespaces = namespaces + 1
-            return { profile = CopyTable(defaults.profile) }
+            namespaceDatabase = { profile = CopyTable(defaults.profile) }
+            return namespaceDatabase
         end,
     },
     addon = {
@@ -182,19 +197,20 @@ local app = {
             return editModeLib
         end,
         GetEditModeButtonSection = function(_, buttons)
-            return { kind = "buttons", options = buttons }
+            return { kind = "seamless-button-section", options = buttons }
         end,
         GetEditModePositionSetting = function(_, spec, options, sizeOptions)
             return { kind = "position", position = spec, options = options, sizeOptions = sizeOptions }
         end,
         GetEditModePositionButton = function(_, action)
-            return { name = action }
+            return { kind = "seamless-button", name = action, click = function() end }
         end,
         RegisterEditModeOptions = function(_, id, spec)
             assert(id == "Seamless.GroupLoot" and spec.section == "frames")
             frameOptions = spec
         end,
         RefreshEditModeOptions = function() end,
+        RefreshOptions = function() end,
     },
 }
 local spec
@@ -203,8 +219,25 @@ app.embed = {
         assert(id == "groupLoot")
         spec = value
     end,
+    RegisterOptions = function(_, id, page)
+        app.optionPages[id] = page
+    end,
 }
+for _, file in ipairs({
+    "config/schema.lua",
+    "config/registry.lua",
+    "config/model.lua",
+    "config/position.lua",
+    "core/editmodepages.lua",
+}) do
+    assert(loadfile("Seamless/src/" .. file))("Seamless", app)
+end
 assert(loadfile("Seamless/src/embed/grouploot.lua"))("Seamless", app)
+assert(loadfile("Seamless/src/embed/options/grouploot.lua"))("Seamless", app)
+app.addon:PrepareSettingsOptions(app.optionPages.groupLoot.config)
+app.options = {
+    panels = { Seamless = { options = { type = "group", args = { groupLoot = app.optionPages.groupLoot.config } } } },
+}
 assert(spec.name == "Group loot" and spec.default == true)
 local row = frameOptions.options[1]
 assert(row.type == "toggle" and row.name == "Group loot" and row.get() == true)
@@ -228,6 +261,47 @@ assert(registrations == 1 and frameOptions.enabled())
 spec.refresh()
 assert(refreshes == 1)
 
+-- Panel and Edit Mode resolve the same declaration and the same current namespace profile.
+local page = app.optionPages.groupLoot.config
+assert(frameSettings[1].position == page.args.position.editModePosition)
+local scaleRow = frameSettings[1].sizeOptions[1].row
+local spacingRow = frameSettings[1].sizeOptions[2].row
+local growUpRow, undecidedRow = frameSettings[3].row, frameSettings[4].row
+for _, current in ipairs({ scaleRow, spacingRow, growUpRow, undecidedRow }) do
+    local option = current.setting
+    assert(option.root == app.options.panels.Seamless.options)
+    assert(current.name == option:Read("name") and current.default() == option:DefaultValue())
+    assert(current.disabled() == option:Read("disabled"))
+end
+assert(scaleRow.min() == 0.5 and scaleRow.max() == 2 and scaleRow.step() == 0.05)
+page.args.size.args.scale.default = 1.25
+page.args.size.args.spacing.max = 30
+assert(scaleRow.default() == 1.25 and spacingRow.max() == 30, "Edit Mode reads the page's metadata")
+page.args.size.args.scale.default = BGL.defaults.scale
+page.args.size.args.spacing.max = 40
+scaleRow.set(1.23)
+assert(scaleRow.get() == 1.25 and scaleRow.setting:Read("get") == 1.25)
+scaleRow.setting:Commit(1)
+spacingRow.set(9)
+growUpRow.set(false)
+undecidedRow.set(false)
+assert(host.getProfile().spacing == 9 and not host.getProfile().growUp and not host.getProfile().showUndecided)
+combat = true
+assert(scaleRow.disabled() and growUpRow.disabled())
+scaleRow.set(1.5)
+growUpRow.set(true)
+assert(host.getProfile().scale == 1 and not host.getProfile().growUp)
+combat = false
+local oldProfile = namespaceDatabase.profile
+namespaceDatabase.profile = CopyTable(BGL.defaults)
+namespaceDatabase.profile.spacing = 11
+assert(spacingRow.get() == 11 and growUpRow.get() == true)
+spacingRow.set(12)
+assert(oldProfile.spacing == 9 and namespaceDatabase.profile.spacing == 12)
+scaleRow.setting:Reset()
+spacingRow.setting:Reset()
+assert(scaleRow.get() == BGL.defaults.scale and spacingRow.get() == BGL.defaults.spacing)
+
 -- Existing offsets keep their screen position; Size and Position share the same live scale.
 local position = frameSettings[1].position
 assert(position.get("point") == "BOTTOM" and position.get("relativeTo") == "UIParent")
@@ -236,6 +310,14 @@ assert(controller.anchor.point[4] == 600 and controller.anchor.point[5] == 420)
 host.getProfile().scale = 2
 host.applyPosition(controller.anchor)
 assert(position.get("x") == 300 and controller.anchor.point[4] == 300)
+assert(position.default("x") == controller.editMode.defaultPosition.x)
+for _, group in ipairs({ "position", "size", "style" }) do
+    for _, option in ipairs(app.addon:GetPageOption("Seamless", "groupLoot", { group }):Children(true)) do
+        if option:Read("type") ~= "execute" then
+            assert(option:DefaultValue() ~= nil, "every embedded setting declares a default")
+        end
+    end
+end
 position.set("point", "TOPLEFT")
 position.set("relativePoint", "TOPRIGHT")
 position.set("x", 125)
@@ -282,6 +364,9 @@ editing = true
 selection:ShowHighlighted()
 spec.disable()
 assert(stops == 1 and not frameOptions.enabled() and next(eventFrame.events) == nil)
+assert(scaleRow.disabled() and growUpRow.disabled())
+scaleRow.set(2)
+assert(host.getProfile().scale == 1)
 selection:ShowHighlighted()
 assert(not selection.shown and not controller.previews)
 editing = false

@@ -42,6 +42,10 @@ expands its ancestors. `create(page)` runs once; `refresh(page)` runs whenever
 the selected page is refreshed. Callbacks own their controls, never reparent
 the supplied page. All categories currently belong to the single Config tab.
 
+A page config may set `navigationParent` to an existing header ID. It changes only its
+navigation parent; its registered page ID, option paths and settings storage stay the same.
+The optional embed module uses this to put its toggle view and per-embed pages under Embedded.
+
 `SeamlessConfigWindow` is the public frame name used by Escape handling.
 `/seamless [options]` and minimap right-click toggle this shell (`core:ToggleConfig()`). Minimap
 left-click opens General in this window. `core:OpenOptions(addonName, tab)` opens the corresponding

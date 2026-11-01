@@ -19,7 +19,6 @@ end
 -- Called once, after ADDON_LOADED for this addon: SavedVariables are available now.
 function addon:OnInitialize()
     app.dbDefaults = self:GetOptionsDefaults(app.optionPages, app.dbDefaults)
-    app.dbDefaults = self:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     local db = LibStub("AceDB-3.0"):New("SeamlessDB", app.dbDefaults, true) --[[@as SeamlessCore.DB]]
     self.db = db
     app.db = db

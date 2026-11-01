@@ -68,8 +68,9 @@ string ID and the addon's existing preview visibility getter/setter. It uses the
 combat guards, entry flush and error handling without native account-setting calls. Frame-list
 controls and header controls must share their underlying getter/setter. All damage-meter window
 pages use the single ID `SeamlessDamageMeter.windows`, matching the shared Frames checkbox.
-Custom preview state remains session-only after application, like the existing Frames controls;
-unapplied choices survive reloads. No visibility binding opens or closes Edit Mode.
+Custom previews listed in the main window's Frames section are persisted by that registry,
+including changes made through these shared getters/setters; unapplied choices survive reloads.
+No visibility binding opens or closes Edit Mode.
 
 ## Shared Edit Mode panel (`editmode.lua`)
 
@@ -98,8 +99,12 @@ core:RegisterEditModeOptions("MyAddon", {
   starts collapsed. Register the movable frame itself through `core:GetEditModeLibrary()`.
 - Options always come before Frames. Groups sort by `order` (default 100), then ID; rows by
   `order`, then array position. IDs are unique; row keys are unique within a group.
-- `hidden`/`disabled` take booleans or functions. Getters always read current state; Core stores
-  nothing. Combat, hidden/disabled features and calls outside Edit Mode are guarded.
+- `hidden`/`disabled` take booleans or functions. Getters always read current state. Frames toggle
+  choices are saved account-wide in `SeamlessDB.global.editModeFrames[groupID][rowKey]`. Core
+  restores each toggle through its setter once per session, when its feature and row are available
+  in Edit Mode outside combat, even with Frames collapsed. Later refreshes save changes from the
+  shared settings-header controls too. New rows retain their existing initial visibility. GLOBAL
+  options keep their own storage. Combat, hidden/disabled features and calls outside Edit Mode are guarded.
 - `type = "header"` with a `name`: a collapsible section title (collapsed state saved like the
   settings window's headers).
 - `type = "custom"`: `create(parent)` returns an addon-owned frame parented to `parent`, with a

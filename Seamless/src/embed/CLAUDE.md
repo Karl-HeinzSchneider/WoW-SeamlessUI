@@ -24,7 +24,7 @@ example checkboxes to the shipped page.
   Position footer; in combat it waits for `PLAYER_REGEN_ENABLED`. Position stays the
   library's bottom-center offset on UIParent in the namespace profile. It registers with
   `managePreviews = false` and adds a "Group loot" row to the Edit Mode window's Frames
-  list (session-only, on by default). Turning it off hides the previews and the
+  list (saved account-wide by Core, on by default). Turning it off hides the previews and the
   selection but never the anchor, because the anchor also parents real rolls.
 
 To add an addon later:

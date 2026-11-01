@@ -189,6 +189,7 @@ local core = {}
 -- header starts collapsed.
 local collapsedSections = {}
 local app = {
+    db = { global = {} },
     IsEditModeSectionCollapsed = function(key)
         if collapsedSections[key] == nil then
             return key == "panel:frames"
@@ -307,6 +308,7 @@ assert(border:GetFrameLevel() < toggle:GetFrameLevel(), "Border must not cover c
 toggle:SetChecked(false)
 toggle.scripts.OnClick(toggle)
 assert(not value and not toggle.checked)
+assert(app.db.global.editModeFrames.meter.preview == false, "Unchecked choices must be saved")
 local otherEnabled = true
 core:RegisterEditModeOptions("other", {
     enabled = function()
@@ -498,4 +500,49 @@ assert(not restore:IsShown(), "The restore button leaves with Edit Mode")
 button.scripts.OnClick(button)
 assert(clicked == 1, "Stale callbacks must not run outside Edit Mode")
 assert(SeamlessEditModeWindow, "the panel is the public frame SeamlessEditModeWindow")
+-- A reload resets runtime flags, but keeps AceDB. Restore even with Frames collapsed;
+-- wait for the addon to be enabled and for combat to end before calling its setter.
+SeamlessEditModeWindow = nil
+assert(loadfile("Seamless/src/core/editmode.lua"))("Seamless", app)
+local restored, restoreCalls, available = true, 0, false
+collapsedSections["panel:frames"] = true
+core:RegisterEditModeOptions("meter", {
+    section = "frames",
+    enabled = function()
+        return available
+    end,
+    options = {
+        {
+            key = "preview",
+            type = "toggle",
+            name = "Meter",
+            get = function()
+                return restored
+            end,
+            set = function(v)
+                assert(editing and not combat and available)
+                restored = v
+                restoreCalls = restoreCalls + 1
+                core:RefreshEditModeOptions() -- Setters may refresh the panel themselves.
+            end,
+        },
+    },
+})
+editing = true
+callbacks.enter()
+assert(restored and restoreCalls == 0 and app.db.global.editModeFrames.meter.preview == false)
+available, combat = true, true
+core:RefreshEditModeOptions()
+assert(restored and restoreCalls == 0)
+combat = false
+core:RefreshEditModeOptions()
+assert(not restored and restoreCalls == 1, "Reload must restore the underlying preview flag")
+restored = true -- A settings-page header changes the same underlying state.
+core:RefreshEditModeOptions()
+assert(app.db.global.editModeFrames.meter.preview == true and restoreCalls == 1)
+editing = false
+callbacks.exit()
+editing = true
+callbacks.enter()
+assert(restored and restoreCalls == 1, "Reentry must preserve subsequent visibility changes")
 print("PASS: shared Edit Mode border, anchoring, groups, callbacks, dynamic height/wrapping, reuse and combat guards")

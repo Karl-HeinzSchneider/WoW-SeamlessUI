@@ -94,9 +94,6 @@ function position:RevertSystem(system)
         return false
     end
     EditModeManagerFrame:RevertSystemChanges(system)
-    if EditModeSystemSettingsDialog then
-        EditModeSystemSettingsDialog:UpdateDialog(system)
-    end
     return true
 end
 
@@ -319,7 +316,8 @@ function position:Apply(system, values, restoreState)
         info.isInDefaultPosition = restoreState.isInDefaultPosition
     end
     system:ClearFrameSnap()
-    system.systemInfo = info
+    -- Blizzard's UpdateSystem already binds systemInfo to this live draft. Even
+    -- assigning the same table here taints the field and later native reads.
     system:ApplySystemAnchor()
     -- Only clear the native dirty flag if the whole frame matches its baseline.
     -- Other settings on this frame and other frames must remain pending.
@@ -327,7 +325,11 @@ function position:Apply(system, values, restoreState)
     manager:CheckForSystemActiveChanges()
     if manager:IsEditModeActive() then
         if EditModeSystemSettingsDialog then
-            EditModeSystemSettingsDialog:UpdateDialog(system)
+            -- Position changes do not change native setting values. Rebuilding
+            -- their pooled controls from addon code taints setting/checked and
+            -- later native clicks (including PRD Show Bar Text). Only the Revert
+            -- button needs refreshing; leave native settings controls untouched.
+            EditModeSystemSettingsDialog:UpdateButtons(system)
         end
     else
         -- Save the current live layout, never the override library's separate cache.

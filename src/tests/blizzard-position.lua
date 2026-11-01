@@ -237,7 +237,15 @@ end
 function EditModeManagerFrame:SetHasActiveChanges(value)
     self.dirty = value
 end
-EditModeSystemSettingsDialog = { UpdateDialog = function() end }
+local nativeButtonUpdates = 0
+EditModeSystemSettingsDialog = {
+    UpdateDialog = function()
+        error("addon position edits must not rebuild Blizzard's pooled settings controls")
+    end,
+    UpdateButtons = function()
+        nativeButtonUpdates = nativeButtonUpdates + 1
+    end,
+}
 assert(loadfile("Seamless/lib/LibEditModeOverride/LibEditModeOverride.lua"))()
 dofile("src/tests/locale-support.lua")
 local player = frame("PlayerFrame", UIParent)
@@ -343,7 +351,18 @@ values.offsetY = 13.25
 values.point, values.relativePoint, values.relativeTo = "BOTTOM", "CENTER", "AnchorTarget"
 local oldBaseline = copy(player.savedSystemInfo)
 draft.systems[1].pendingOtherSetting = 123
+local nativeSystemInfo = player.systemInfo
+player.systemInfo = nil
+setmetatable(player, {
+    __index = { systemInfo = nativeSystemInfo },
+    __newindex = function(target, key, value)
+        assert(key ~= "systemInfo", "position edits must not taint the native systemInfo field")
+        rawset(target, key, value)
+    end,
+})
 assert(position:Apply(player, values))
+setmetatable(player, nil)
+player.systemInfo = nativeSystemInfo
 assert(library:AreLayoutsLoaded() and loads == 1 and saves == 0)
 assert(
     draft.systems[1].pendingOtherSetting == 123
@@ -901,3 +920,4 @@ assert(native:RevertSystem(player))
 assert(reverted == 1 and not native:HasSystemChanges(player))
 assert(not native:RevertSystem(player), "no native changes remain")
 print("Native full-system Revert detects changes independently of dirty flags")
+assert(nativeButtonUpdates > 0, "position edits refresh the native Revert button")

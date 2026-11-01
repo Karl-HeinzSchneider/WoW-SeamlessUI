@@ -30,7 +30,7 @@ example checkboxes to the shipped page.
   UIParent-unit x/y offsets in the namespace profile, with optional point/relativePoint choices
   (both default to BOTTOM); dragging saves the exact drop on UIParent. It registers with
   `managePreviews = false` and adds a "Group loot" row to the Edit Mode window's Frames
-  list (session-only, on by default). Turning it off hides the previews and the
+  list (saved account-wide by Core, on by default). Turning it off hides the previews and the
   selection but never the anchor, because the anchor also parents real rolls.
 
 To add an addon later:

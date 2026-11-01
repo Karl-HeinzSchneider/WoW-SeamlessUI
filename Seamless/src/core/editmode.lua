@@ -30,6 +30,30 @@ local function IsEnabled(spec)
     return spec.enabled == nil or not not Evaluate(spec.enabled)
 end
 
+-- Restore through the registered setter so previews and selection use the saved choice too.
+-- Run before checking collapsed headers: a hidden list must still restore its frames.
+local function RestoreFrameVisibility(id, registration)
+    if registration.spec.section ~= "frames" or not app.db or InCombatLockdown() then
+        return
+    end
+    local global = app.db.global
+    global.editModeFrames = global.editModeFrames or {}
+    global.editModeFrames[id] = global.editModeFrames[id] or {}
+    local saved = global.editModeFrames[id]
+    for _, option in ipairs(registration.spec.options) do
+        if option.type == "toggle" and not Evaluate(option.hidden) and not Evaluate(option.disabled) then
+            if not registration.restored[option.key] then
+                registration.restored[option.key] = true
+                if saved[option.key] ~= nil then
+                    option.set(saved[option.key])
+                end
+            end
+            -- Header visibility controls share these getters/setters. Keep their changes too.
+            saved[option.key] = not not option.get()
+        end
+    end
+end
+
 -- Anchors/font measurements may settle after the first Show. Coalesce that work
 -- on our own frame; never require another click or another Edit Mode entry.
 local function QueueRefresh()
@@ -235,6 +259,9 @@ function addon:RefreshEditModeOptions()
         local registration = group.registration
         local spec = registration.spec
         local visible = IsEnabled(spec)
+        if visible then
+            RestoreFrameVisibility(group.id, registration)
+        end
         local options = {}
         for index, option in ipairs(spec.options) do
             options[#options + 1] = { index = index, option = option }
@@ -401,7 +428,7 @@ function addon:RegisterEditModeOptions(id, spec)
             assert(type(option.name) == "string", "Row label is required")
         end
     end
-    registrations[id] = { spec = spec, rows = {} }
+    registrations[id] = { spec = spec, rows = {}, restored = {} }
     self:RefreshEditModeOptions()
 end
 

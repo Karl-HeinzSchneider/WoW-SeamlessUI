@@ -15,7 +15,15 @@ function selection:IsShown()
     return self.shown
 end
 function selection:ShowHighlighted()
+    local wasShown = self.shown
     self.shown = true
+    if not wasShown and self.onShow then
+        self.onShow(self)
+    end
+end
+function selection:HookScript(event, callback)
+    assert(event == "OnShow" and not self.onShow)
+    self.onShow = callback
 end
 local callbacks = {}
 local editModeLib = { id = "core", frameSelections = {} }
@@ -185,6 +193,11 @@ trigger("enter")
 assert(controller.previews and selection.shown)
 row.set(false)
 assert(not row.get() and not controller.previews and not selection.shown and dialogsHidden == 1)
+-- Selecting a native/suite frame or hiding its dialog re-highlights every library selection.
+for _ = 1, 3 do
+    selection:ShowHighlighted()
+    assert(not selection.shown and not controller.previews)
+end
 trigger("layout")
 assert(not controller.previews and not selection.shown)
 row.set(true)
@@ -199,8 +212,13 @@ editing = false
 trigger("exit")
 assert(not controller.previews)
 
+editing = true
+selection:ShowHighlighted()
 spec.disable()
 assert(stops == 1 and not frameOptions.enabled() and next(eventFrame.events) == nil)
+selection:ShowHighlighted()
+assert(not selection.shown and not controller.previews)
+editing = false
 
 -- Re-enable reuses the session's registration.
 spec.enable()

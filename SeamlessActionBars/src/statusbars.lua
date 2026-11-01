@@ -65,7 +65,7 @@ function app.StatusBarScaleOption(key)
         order = 0,
         min = 0.5,
         max = 2,
-        step = 0.01,
+        step = 0.05,
         -- Blizzard_StatusTrackingBar/Mainline/StatusTrackingBar.xml: containers have no scale override.
         default = 1,
         disabled = InCombatLockdown,

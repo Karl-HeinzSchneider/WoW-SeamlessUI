@@ -59,8 +59,8 @@ function module:OnDisable()
     app.core:RefreshEditModeSystemOptions()
 end
 
--- Native settings go through the same layout service as Position: Save/Revert owns the
--- draft inside Edit Mode, and changes outside Edit Mode save the active custom layout.
+-- Native settings save immediately through the same library-backed service as Position.
+-- Pending native edits block changes; Blizzard's Save/Revert state is never modified.
 function app.MicroMenuOptions()
     local service = app.core:GetFramePositionService()
     local args = {}

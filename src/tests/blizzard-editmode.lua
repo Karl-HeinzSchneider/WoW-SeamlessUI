@@ -340,6 +340,8 @@ assert(positionSystem == EditModeSystemSettingsDialog.attachedToSystem)
 -- Attached below the native dialog, titled after the frame.
 assert(panel.spec.anchor == EditModeSystemSettingsDialog and panel.spec.key == positionSystem)
 assert(panel.spec.title == "SeamlessUI - Focus frame", panel.spec.title)
+assert(not panel.spec.buttonBinding.hasChanges(), "our footer never tracks native draft changes")
+assert(panel.spec.buttonBinding.revert() == false, "our footer never invokes Blizzard Revert")
 -- Position header and one row, then the separate Size header.
 assert(panel.height == 104, panel.height)
 positionHeader.onClick()

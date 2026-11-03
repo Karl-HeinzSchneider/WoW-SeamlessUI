@@ -149,8 +149,11 @@ relativeTo, x and y. No position is stored by the controls.
 For native Edit Mode frames, use `core:GetNativePositionOptions(function()
 return PlayerFrame end)`. The frame is resolved on every access, and the shared
 `core:GetFramePositionService()` reads and applies the active native layout.
-Inside Edit Mode it preserves the live draft and native Save/Revert ownership;
-outside Edit Mode it saves through the manager's current live layout. Presets,
+Changes save immediately through LibEditModeOverride `LoadLayouts`/`ReanchorFrame`/`SaveOnly`,
+without closing Edit Mode or participating in native Save/Revert. Pending native edits on any
+frame disable changes to avoid overwriting them. Never write the manager's live layout or
+call its mutators. Reset/default-position metadata and secondary-anchor removal use a fresh
+C API layout copy because the library has no setters for them. Presets,
 override layouts, unavailable systems and combat disable editing. Anchor choices
 exclude self, descendants and cycles. This works without SeamlessUI enabled;
 SeamlessUI's Edit Mode extension uses the same core backend with its own selection

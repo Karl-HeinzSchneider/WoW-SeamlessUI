@@ -197,6 +197,9 @@ local saved = {
 local draft = copy(saved.layouts[1])
 local combat, preset, enabled = false, false, true
 local saves, loads = 0, 0
+local player
+local otherFrameDirty = false
+local refreshSaved = true
 function InCombatLockdown()
     return combat
 end
@@ -205,8 +208,18 @@ C_EditMode = {
         loads = loads + 1
         return copy(saved)
     end,
-    SaveLayouts = function()
+    SaveLayouts = function(info)
         saves = saves + 1
+        saved = copy(info)
+        table.remove(saved.layouts, 1) -- C stores custom layouts without the preset prefix.
+        if refreshSaved then
+            -- Simulate the client delivering EDIT_MODE_LAYOUTS_UPDATED. Addon code
+            -- must not call the manager or mutate the old draft to refresh it.
+            draft = copy(saved.layouts[1])
+            player.systemInfo = draft.systems[1]
+            local a = player.systemInfo.anchorInfo
+            player:SetPoint(a.point, _G[a.relativeTo], a.relativePoint, a.offsetX / 0.75, a.offsetY / 0.75)
+        end
     end,
 }
 EditModePresetLayoutManager = {
@@ -234,6 +247,9 @@ end
 function EditModeManagerFrame:IsActiveLayoutPreset()
     return preset
 end
+function EditModeManagerFrame:HasActiveChanges()
+    return self.dirty or player and player.dirty or otherFrameDirty
+end
 function EditModeManagerFrame:SetHasActiveChanges(value)
     self.dirty = value
 end
@@ -244,7 +260,7 @@ EditModeSystemSettingsDialog = setmetatable({}, {
 })
 assert(loadfile("Seamless/lib/LibEditModeOverride/LibEditModeOverride.lua"))()
 dofile("src/tests/locale-support.lua")
-local player = frame("PlayerFrame", UIParent)
+player = frame("PlayerFrame", UIParent)
 player.system, player.systemIndex = 1, 1
 player.systemInfo = draft.systems[1]
 player.savedSystemInfo = copy(player.systemInfo)
@@ -258,10 +274,23 @@ end
 function player:SetHasActiveChanges(value)
     self.dirty = value
 end
-local otherFrameDirty = false
 function EditModeManagerFrame:CheckForSystemActiveChanges()
     self.dirty = player.dirty or otherFrameDirty
 end
+local function forbidden()
+    error("addon must not mutate Blizzard Edit Mode state or toggle panels")
+end
+for _, key in ipairs({
+    "SaveLayouts",
+    "OnSystemSettingChange",
+    "RevertSystemChanges",
+    "CheckForSystemActiveChanges",
+    "SetHasActiveChanges",
+}) do
+    EditModeManagerFrame[key] = forbidden
+end
+player.ClearFrameSnap, player.ApplySystemAnchor, player.SetHasActiveChanges = forbidden, forbidden, forbidden
+ShowUIPanel, HideUIPanel = forbidden, forbidden
 local selected = player
 local app = {
     db = { profile = { blizzardEditMode = { frames = { player = { addPosition = true } } } } },
@@ -347,24 +376,12 @@ values.offsetY = 13.25
 values.point, values.relativePoint, values.relativeTo = "BOTTOM", "CENTER", "AnchorTarget"
 local oldBaseline = copy(player.savedSystemInfo)
 draft.systems[1].pendingOtherSetting = 123
-local nativeSystemInfo = player.systemInfo
-player.systemInfo = nil
-setmetatable(player, {
-    __index = { systemInfo = nativeSystemInfo },
-    __newindex = function(target, key, value)
-        assert(key ~= "systemInfo", "position edits must not taint the native systemInfo field")
-        rawset(target, key, value)
-    end,
-})
+saved.layouts[1].systems[1].pendingOtherSetting = 123
 assert(position:Apply(player, values))
-setmetatable(player, nil)
-player.systemInfo = nativeSystemInfo
-assert(library:AreLayoutsLoaded() and loads == 1 and saves == 0)
-assert(
-    draft.systems[1].pendingOtherSetting == 123
-        and player.savedSystemInfo.anchorInfo.offsetX == oldBaseline.anchorInfo.offsetX
-)
-assert(player.points[1][4] == -42.5 / 0.75 and player.dirty and EditModeManagerFrame.dirty)
+assert(library:AreLayoutsLoaded() and loads == 1 and saves == 1)
+assert(draft.systems[1].pendingOtherSetting == 123)
+assert(player.savedSystemInfo.anchorInfo.offsetX == oldBaseline.anchorInfo.offsetX)
+assert(not player.dirty and not EditModeManagerFrame.dirty)
 assert(position:Read(player).offsetY == 13.25 and not draft.systems[1].isInDefaultPosition)
 local function reject(changes)
     local value = position:Read(player)
@@ -372,8 +389,9 @@ local function reject(changes)
         value[key] = item
     end
     local before = position:Read(player)
+    local beforeSaves = saves
     assert(not position:Apply(player, value))
-    assert(position:Read(player).offsetX == before.offsetX and saves == 0)
+    assert(position:Read(player).offsetX == before.offsetX and saves == beforeSaves)
 end
 reject({ offsetX = "nonsense" })
 reject({ offsetY = math.huge })
@@ -474,7 +492,7 @@ draft.systems[1].anchorInfo.offsetY = 150
 view:Refresh(player)
 assert(x.EditBox:GetText() == "-17.125" and y.Slider.value == 150)
 x.EditBox.scripts.OnEnterPressed(x.EditBox)
-assert(position:Read(player).offsetX == -17.125 and position:Read(player).offsetY == 150 and saves == 0)
+assert(position:Read(player).offsetX == -17.125 and position:Read(player).offsetY == 150)
 x.EditBox:SetFocus()
 x.EditBox:SetText("junk")
 x.EditBox.scripts.OnEscapePressed(x.EditBox)
@@ -499,50 +517,10 @@ preset = true
 view:Refresh(player)
 assert(not x.Slider.enabled and not x.EditBox.shown)
 preset = false
--- The live draft can be reverted without the override cache having saved anything.
-draft = copy(saved.layouts[1])
-player.systemInfo = draft.systems[1]
-view:Refresh(player)
-assert(x.Slider.value == 120 and saves == 0)
-assert(view.RevertButton.template == "EditModeSystemSettingsDialogButtonTemplate")
-assert(view.RevertButton.width == view.controls.revert:GetWidth() / 2)
-assert(not view.RevertButton.enabled)
--- Detect watched fields changed by native dragging, and preserve unrelated data.
-draft.systems[1].anchorInfo.offsetX = 350
-draft.systems[1].pendingOtherSetting = 123
-player.dirty = true
-view:Refresh(player)
-assert(view.RevertButton.enabled)
-view.RevertButton.click()
-assert(position:Read(player).offsetX == 120 and not view.RevertButton.enabled)
-assert(draft.systems[1].pendingOtherSetting == 123 and player.dirty and EditModeManagerFrame.dirty)
-draft.systems[1].pendingOtherSetting = nil
-otherFrameDirty = true
-local moved = position:Read(player)
-moved.offsetY = 50
-assert(position:Apply(player, moved))
-view:Refresh(player)
-view.RevertButton.click()
-assert(not player.dirty and EditModeManagerFrame.dirty and not view.RevertButton.enabled)
-otherFrameDirty = false
--- Restoring position alone clears the global dirty state when nothing else differs.
-moved = position:Read(player)
-moved.offsetX = 500
-assert(position:Apply(player, moved))
-view:Refresh(player)
-view.RevertButton.click()
-assert(not player.dirty and not EditModeManagerFrame.dirty and not view.RevertButton.enabled)
--- A new saved baseline replaces the before version, rather than restoring defaults.
-draft.systems[1].anchorInfo.offsetX = 777
-player.savedSystemInfo = copy(draft.systems[1])
+-- Our Revert never restores Blizzard's saved system or native draft.
 view:Refresh(player)
 assert(not view.RevertButton.enabled)
-moved = position:Read(player)
-moved.offsetX = 800
-assert(position:Apply(player, moved))
-view:Refresh(player)
-view.RevertButton.click()
-assert(position:Read(player).offsetX == 777)
+local moved
 -- Follow every point through multiple frames, including a secondary anchor.
 AnchorTarget:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 AnchorTarget.points[2] = { "TOP", player, "BOTTOM", 0, 0 }
@@ -558,37 +536,6 @@ moved.offsetX = 820
 assert(position:Apply(player, moved))
 assert(FocusFrame.points[1][2] == player)
 FocusFrame:ClearAllPoints()
--- Revert validates old targets again: relationships may have changed since edit.
-player.savedSystemInfo = copy(draft.systems[1])
-player.savedSystemInfo.anchorInfo.relativeTo = "TargetFrame"
-TargetFrame:SetPoint("TOP", player, "BOTTOM", 0, 0)
-view:Refresh(player)
-assert(view.RevertButton.enabled)
-view.RevertButton.click()
-assert(view.section.error and position:Read(player).relativeTo == "UIParent" and view.RevertButton.enabled)
-TargetFrame:ClearAllPoints()
-view.RevertButton.click()
-assert(not view.section.error and position:Read(player).relativeTo == "TargetFrame" and not view.RevertButton.enabled)
--- Restore the secondary anchor and default-position metadata as one position state.
-player.savedSystemInfo.anchorInfo2 =
-    { point = "BOTTOM", relativeTo = "Minimap", relativePoint = "TOP", offsetX = 0, offsetY = 10 }
-player.savedSystemInfo.isInDefaultPosition = true
-Minimap:SetPoint("CENTER", player, "CENTER", 0, 0)
-view:Refresh(player)
-view.RevertButton.click()
-assert(view.section.error and draft.systems[1].anchorInfo2 == nil)
-Minimap:ClearAllPoints()
-view.RevertButton.click()
-assert(draft.systems[1].anchorInfo2.relativeTo == "Minimap" and draft.systems[1].isInDefaultPosition)
-assert(not view.RevertButton.enabled and not player.dirty and saves == 0)
--- Read-only/disabled windows cannot revert, even through a stale button callback.
-draft.systems[1].anchorInfo.offsetX = 999
-preset = true
-view:Refresh(player)
-assert(not view.RevertButton.enabled)
-view.RevertButton.click()
-assert(position:Read(player).offsetX == 999)
-preset = false
 -- A translated catalogue changes labels/order, but never the frame IDs or native anchor names.
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 L["Focus frame"], L["Target frame"] = "Z Focus", "A Target"
@@ -726,11 +673,11 @@ end
 view:Refresh(player)
 assert(not scaleRow.Slider.enabled and scaleRow.Slider.value == 1 and scaleRow.Slider.max == 2)
 scaleRow.Slider:SetValue(1.35)
-assert(saves == 0, "the placeholder writes nothing")
+assert(not scaleRow.Slider.enabled, "the placeholder writes nothing")
 player.settingDisplayInfoMap, player.HasSetting, player.GetSettingValue = nil, nil, nil
 selectedSpec.system = nil
 assert(app.core.RegisterEditModeSystemScale == nil and app.core.GetNativeSettingScale == nil)
-print("Blizzard position controls OK (real override library, validation, draft preservation, scale, focus and Revert)")
+print("Blizzard position controls OK (real override library, validation, immediate library saves, scale and focus)")
 
 -- The config view uses the shared core service without requiring SeamlessUI or a selection.
 assert(loadfile("Seamless/src/config/position.lua"))("Seamless", coreApp)
@@ -748,7 +695,10 @@ assert(config.x.get() == 5 and config.y.get() == -5)
 assert(not config.x.disabled(), "config editing needs no selected Edit Mode extension")
 local beforeConfigSave = saves
 config.x.set(nil, 42)
-assert(position:Read(player).offsetX == 42 and saves == beforeConfigSave, "active Edit Mode keeps edits in its draft")
+assert(
+    position:Read(player).offsetX == 42 and saves == beforeConfigSave + 1,
+    "active Edit Mode saves through the library"
+)
 assert(config.y.get() == -5, "editing one field preserves the other four")
 local nativeValues = native:Read(player)
 nativeValues.offsetY = -28
@@ -771,22 +721,15 @@ local cyclic = copy(beforeCycle)
 cyclic.relativeTo = "PetFrame"
 assert(not native:Apply(player, cyclic))
 assert(native:Read(player).relativeTo == beforeCycle.relativeTo)
--- Outside Edit Mode, persist through the live manager, preserving other system data.
+-- Outside Edit Mode uses the same library path, without manager writes.
 function EditModeManagerFrame:IsEditModeActive()
     return false
 end
-local liveSaves = 0
-function EditModeManagerFrame:SaveLayouts()
-    liveSaves = liveSaves + 1
-    assert(draft.systems[1].anchorInfo.offsetX == 73)
-    assert(draft.systems[1].settings[1].value == 1234, "unrelated settings must survive")
-    saved.layouts[1] = copy(draft)
-    player.dirty = false
-end
-draft.systems[1].settings = { { setting = 7, value = 1234 } }
+saved.layouts[1].systems[1].settings = { { setting = 7, value = 1234 } }
 config.x.set(nil, 73)
-assert(liveSaves == 1 and saved.layouts[1].systems[1].anchorInfo.offsetX == 73)
-assert(player.savedSystemInfo.anchorInfo.offsetX == 73)
+assert(saved.layouts[1].systems[1].anchorInfo.offsetX == 73)
+assert(saved.layouts[1].systems[1].settings[1].value == 1234)
+assert(player.savedSystemInfo.anchorInfo.offsetX == oldBaseline.anchorInfo.offsetX)
 assert(config.x.get() == 73)
 -- A new layout must be read on every access, rather than captured by the option factory.
 draft = copy(draft)
@@ -796,7 +739,7 @@ local missing = app.core:GetNativePositionOptions(function()
     return nil
 end)
 assert(missing.args.x.disabled() and missing.args.x.get() == 0)
-print("Config position options OK (shared draft, native persistence, layout switches and combat guards)")
+print("Config position options OK (library persistence, layout switches and combat guards)")
 
 -- Scale is a dead placeholder: always disabled at 100%, writing nothing.
 function player:GetScale()
@@ -902,17 +845,58 @@ assert(defaults.x.default() == nil, "clients without the preset API show Not app
 assert(not native:ResetToDefault(player) and #warnings == 0)
 print("Native position defaults and Reset To Default OK")
 
--- The footer restores the whole native system even when its dirty flag was missed.
-player.savedSystemInfo = copy(draft.systems[1])
-draft.systems[1].pendingOtherSetting = 987
-player.dirty = false
-assert(native:HasSystemChanges(player) and not native:HasChanges(player))
-local reverted = 0
-function EditModeManagerFrame:RevertSystemChanges(system)
-    reverted = reverted + 1
-    draft.systems[1] = copy(system.savedSystemInfo)
+-- Native pending edits on any frame block every library save, including stale callbacks.
+local beforeSaves = saves
+local beforeDraft = draft
+otherFrameDirty = true
+assert(not native:CanEdit(player))
+assert(not native:Apply(player, native:Read(player)))
+assert(not native:ResetToDefault(player))
+assert(not native:ApplySetting(player, FRAME_SIZE, 150))
+assert(saves == beforeSaves and draft == beforeDraft)
+otherFrameDirty = false
+
+-- Convert display units before passing settings to the real library.
+Enum.EditModeSettingDisplayType = { Slider = 1, Checkbox = 2, Dropdown = 3 }
+EditModeSettingDisplayInfoManager = { systemSettingDisplayInfo = { [1] = {} } }
+function player:ConvertSettingDisplayValueToRawValue(setting, value)
+    assert(setting == FRAME_SIZE)
+    return (value - 100) / 5
 end
-assert(native:RevertSystem(player))
-assert(reverted == 1 and not native:HasSystemChanges(player))
-assert(not native:RevertSystem(player), "no native changes remain")
-print("Native full-system Revert detects changes independently of dirty flags")
+saved.layouts[1].systems[1].settings = { { setting = FRAME_SIZE, value = 4 } }
+assert(native:ApplySetting(player, FRAME_SIZE, 150))
+assert(saved.layouts[1].systems[1].settings[1].value == 10)
+-- Library failures return an error rather than escaping into the options callback.
+local originalSave = library.SaveOnly
+library.SaveOnly = function()
+    error("save failed")
+end
+local ok, err = native:ApplySetting(player, FRAME_SIZE, 150)
+assert(not ok and err:find("save failed", 1, true))
+library.SaveOnly = originalSave
+
+-- A moved snapped frame loses its secondary anchor on the saved copy only.
+local second = { point = "BOTTOM", relativeTo = "Minimap", relativePoint = "TOP", offsetX = 0, offsetY = 10 }
+saved.layouts[1].systems[1].anchorInfo2 = copy(second)
+draft.systems[1].anchorInfo2 = copy(second)
+local snappedDraft = draft
+local snapped = native:Read(player)
+snapped.offsetX = 333
+assert(native:Apply(player, snapped))
+assert(saved.layouts[1].systems[1].anchorInfo2 == nil)
+assert(not saved.layouts[1].systems[1].isInDefaultPosition)
+assert(snappedDraft.systems[1].anchorInfo2.relativeTo == "Minimap", "old live draft is untouched")
+
+-- Without a client event, the service must leave the live draft and baseline alone.
+refreshSaved = false
+beforeDraft = draft
+local baseline = player.savedSystemInfo
+local beforeAnchor = copy(draft.systems[1].anchorInfo)
+local v = native:Read(player)
+v.offsetX = 444
+assert(native:Apply(player, v))
+assert(saved.layouts[1].systems[1].anchorInfo.offsetX == 444)
+assert(draft == beforeDraft and draft.systems[1].anchorInfo.offsetX == beforeAnchor.offsetX)
+assert(player.savedSystemInfo == baseline)
+assert(native.HasChanges == nil and native.Revert == nil and native.RevertSystem == nil)
+print("Library saves, display conversion, native pending-edit guards and no live-state writes OK")

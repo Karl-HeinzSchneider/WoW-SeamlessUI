@@ -798,6 +798,7 @@ end
 -- L["Blizzard Editmode"] = "Blizzard Editmode"
 -- L["Choose a valid anchor point."] = "Choose a valid anchor point."
 -- L["Commands: /seamlessui [options], /seamlessui loglevel <level>, /seamlessui reset"] = "Commands: /seamlessui [options], /seamlessui loglevel <level>, /seamlessui reset"
+-- L["Could not save the Edit Mode setting: %s"] = "Could not save the Edit Mode setting: %s"
 -- L["Could not set the anchor: %s"] = "Could not set the anchor: %s"
 -- L["Enable Blizzard Edit Mode extensions"] = "Enable Blizzard Edit Mode extensions"
 -- L["FPS:"] = "FPS:"

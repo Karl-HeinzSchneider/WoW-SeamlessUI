@@ -183,7 +183,7 @@ so it returns this window. The vendored file stays untouched.
   when it is absent, and the Position section never inserts Revert itself. Revert restores the
   frame's custom setting values and its position from first selection in the Edit Mode session
   (baselines clear on a new session, layout or profile; returning to the baseline disables it).
-  Native bindings also compare and restore the whole saved Blizzard system. Reset Position uses
+  Native bindings never read or restore Blizzard's saved system; native edits save immediately. Reset Position uses
   the registered default and movement callback, or the native layout baseline/preset anchor.
 - `core:SetEditModeFrameFixed(frame)`: keeps a frame selectable with its settings but removes
   dragging, arrow-key nudges and Reset Position (previews of frames the client places).

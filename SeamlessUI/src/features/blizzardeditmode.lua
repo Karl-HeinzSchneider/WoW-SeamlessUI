@@ -307,10 +307,11 @@ function module:RefreshPanel()
                 return module:GetSelectedFrame() == system and app.core:GetFramePositionService():CanEdit(system)
             end,
             hasChanges = function()
-                return app.core:GetFramePositionService():HasSystemChanges(system)
+                -- Native layout edits save immediately and are not part of our Revert.
+                return false
             end,
             revert = function()
-                return app.core:GetFramePositionService():RevertSystem(system)
+                return false
             end,
             isDefault = function()
                 return not frameOption(spec, "addPosition") or app.blizzardPosition:IsDefault(system)

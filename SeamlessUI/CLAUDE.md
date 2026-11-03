@@ -65,19 +65,18 @@ Run `lua src/tests/blizzard-editmode.lua`.
   (click to type, Enter commits, Escape discards).
 - A separate Size header holds Core's dead Scale placeholder (always disabled at 100%). Native
   size settings stay in Blizzard's own dialog; never reroute them into it.
-- Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`/
-  `ReanchorFrame`, mirrors the anchor into the live draft and calls the frame's
-  `ApplySystemAnchor`. Never call `SaveOnly` or `ApplyChanges` while editing (they save a separate
-  layout copy, and the latter closes Edit Mode); native Save/Revert own persistence. Preset layouts
-  are read-only.
-- Position edits must never access or refresh Blizzard's settings dialog, including its buttons.
-  Do not call `UpdateDialog` or `UpdateButtons`. Do not reassign the native `systemInfo` field: Blizzard
-  already binds it to the live draft. Either write can taint later native settings clicks, including
-  personal resource display bar text. Native full-system Revert owns its own dialog refresh.
-- The footer Revert button combines Core's custom setting snapshots with a full native system
-  comparison against `savedSystemInfo`. It restores custom values and the saved native system,
-  revalidates changed anchors first, and keeps other frames' pending edits. The Position binding's
-  own Revert remains limited to position state.
+- Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`,
+  `ReanchorFrame` and `SaveOnly`. Changes save immediately, inside and outside Edit Mode. Never
+  use `ApplyChanges`, which closes Edit Mode. The client refreshes from its native layout event;
+  in-game verification is required on clients where SaveOnly might not emit that event.
+- Never mutate Blizzard's live layout, systemInfo, savedSystemInfo, dirty flags or Save/Revert
+  state, or call native settings/layout mutators. The service refuses edits while Blizzard has
+  pending changes on any frame, so a saved-layout copy cannot overwrite them.
+- Reset Position and breaking a secondary anchor use a fresh `C_EditMode.GetLayouts()` copy,
+  because the library has no API for default-position metadata or secondary anchors. Save through
+  C only; never mirror that copy into the manager or refresh Blizzard's settings dialog manually.
+- Our footer Revert restores only Seamless's custom setting snapshots. It never reads or restores
+  Blizzard's saved system or position baseline. Native positions save immediately.
 - "Quick anchor to frame" starts Core's anchor picker with the AnchorFrame targets and applies the
   result through the same validated path.
 
@@ -124,9 +123,8 @@ updates the Edit Mode outline in combat. Run `lua src/tests/combined-bags.lua`.
 `minimap.lua` owns minimap visibility and shape. `options/minimap.lua` declares the page and Style
 controls; Edit Mode derives its Style rows from that declaration. Style starts with Square minimap,
 then the native Edit Mode Rotate Minimap setting. Read it through
-`GetFramePositionService():ReadSetting` and write through `ApplySetting`, so Blizzard's checkbox,
-layout draft and Save/Revert stay synchronized. Outside Edit Mode it saves to the active custom
-layout. Its default comes from `GetDefaultSetting`; preset/combat guards stay native.
+`GetFramePositionService():ReadSetting` and write through `ApplySetting`, which saves immediately through LibEditModeOverride without writing Blizzard's draft or
+participating in native Save/Revert. Pending native edits block changes. Its default comes from `GetDefaultSetting`; preset/combat guards stay native.
 
 New visibility settings live in profile `minimap`; the existing `hideMinimapDayNight` key stays at
 its original path. Individual switches combine independently. `hideHeader` overrides the header

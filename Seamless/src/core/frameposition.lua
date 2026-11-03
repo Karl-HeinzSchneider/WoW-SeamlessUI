@@ -43,60 +43,6 @@ local function finite(value)
     return value and value == value and value > -math.huge and value < math.huge
 end
 
-local function equal(a, b)
-    if type(a) ~= type(b) then
-        return false
-    end
-    if type(a) ~= "table" then
-        return a == b
-    end
-    for key, value in pairs(a) do
-        if not equal(value, b[key]) then
-            return false
-        end
-    end
-    for key in pairs(b) do
-        if a[key] == nil then
-            return false
-        end
-    end
-    return true
-end
-
-local function positionState(info)
-    return info
-        and {
-            anchorInfo = info.anchorInfo and CopyTable(info.anchorInfo),
-            anchorInfo2 = info.anchorInfo2 and CopyTable(info.anchorInfo2),
-            isInDefaultPosition = info.isInDefaultPosition,
-        }
-end
-
-function position:HasChanges(system)
-    local info = EditModeManagerFrame:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
-    return info ~= nil
-        and system.savedSystemInfo ~= nil
-        and not equal(positionState(info), positionState(system.savedSystemInfo))
-end
-
--- Compare the actual draft as native dirty flags can miss addon-driven edits.
-function position:HasSystemChanges(system)
-    local info = EditModeManagerFrame:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
-    return info ~= nil and system.savedSystemInfo ~= nil and not equal(info, system.savedSystemInfo)
-end
-
-function position:RevertSystem(system)
-    if not self:CanEdit(system) or not self:HasSystemChanges(system) then
-        return false
-    end
-    -- Reuse position validation before restoring native settings and dirty flags.
-    if self:HasChanges(system) and not self:Revert(system) then
-        return false
-    end
-    EditModeManagerFrame:RevertSystemChanges(system)
-    return true
-end
-
 -- Check anchors and ownership: anchoring to a descendant or to a frame whose
 -- anchors lead back here would create a layout cycle.
 local function dependsOn(frame, target, seen)
@@ -250,11 +196,12 @@ function position:CanEdit(system)
         and not system.isLocked
         and not manager:IsActiveLayoutPreset()
         and not manager.overrideLayoutInfo
+        and not manager:HasActiveChanges()
         and override:IsReady()
         and self:Read(system) ~= nil
 end
 
-function position:Apply(system, values, restoreState)
+function position:Apply(system, values, reset)
     if not self:CanEdit(system) then
         return false, L["Position editing is unavailable. Select an enabled frame in a custom layout."]
     end
@@ -277,56 +224,44 @@ function position:Apply(system, values, restoreState)
     if dependsOn(relativeTo, system, {}) then
         return false, L["AnchorFrame would create an anchor cycle."]
     end
-    if restoreState and restoreState.anchorInfo2 then
-        local second = restoreState.anchorInfo2
-        local target = _G[second.relativeTo]
-        if not target or dependsOn(target, system, {}) then
-            return false, L["The previous secondary anchor is unavailable or would create a cycle."]
-        end
-    end
-    local manager = EditModeManagerFrame
-    local info = manager:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
-    if not info or not info.anchorInfo then
-        return false, L["This frame has no anchor in the active layout."]
-    end
     local override = LibStub("LibEditModeOverride-1.0")
     local ok, err = pcall(function()
-        -- Reload before every edit: another addon or a layout switch can change
-        -- the override's shared cache. Never save that cache over the live draft.
+        -- The library owns a saved-layout copy. Never mirror it into Blizzard's draft,
+        -- call native mutators or use ApplyChanges (which closes Edit Mode).
         override:LoadLayouts()
-        override:ReanchorFrame(system, values.point, relativeTo, values.relativePoint, x, y)
+        if reset or system.systemInfo and system.systemInfo.anchorInfo2 then
+            -- The library has no API for default-position metadata or secondary anchors.
+            -- Edit only the C API's copy for these cases, like defaultlayout.lua.
+            local layouts = C_EditMode.GetLayouts()
+            local presets = EditModePresetLayoutManager:GetCopyOfPresetLayouts()
+            tAppendAll(presets, layouts.layouts)
+            layouts.layouts = presets
+            local layout = layouts.layouts[layouts.activeLayout]
+            local found
+            for _, info in ipairs(layout.systems) do
+                if info.system == system.system and info.systemIndex == system.systemIndex then
+                    info.anchorInfo = {
+                        point = values.point,
+                        relativeTo = relativeTo:GetName(),
+                        relativePoint = values.relativePoint,
+                        offsetX = x,
+                        offsetY = y,
+                    }
+                    info.anchorInfo2 = nil
+                    info.isInDefaultPosition = reset == true
+                    found = true
+                    break
+                end
+            end
+            assert(found, L["This frame has no anchor in the active layout."])
+            C_EditMode.SaveLayouts(layouts)
+        else
+            override:ReanchorFrame(system, values.point, relativeTo, values.relativePoint, x, y)
+            override:SaveOnly()
+        end
     end)
     if not ok then
         return false, string.format(L["Could not set the anchor: %s"], tostring(err))
-    end
-    -- ReanchorFrame operates on the library's saved-layout copy. Mirror the same
-    -- anchor into the live draft so native Save/Revert include all pending edits.
-    -- ApplySystemAnchor handles the frame's scale; UpdateSystem would replace its
-    -- savedSystemInfo and break the native per-frame Revert button.
-    info.anchorInfo = {
-        point = values.point,
-        relativeTo = relativeTo:GetName(),
-        relativePoint = values.relativePoint,
-        offsetX = x,
-        offsetY = y,
-    }
-    info.anchorInfo2 = restoreState and restoreState.anchorInfo2 and CopyTable(restoreState.anchorInfo2) or nil
-    info.isInDefaultPosition = false
-    if restoreState then
-        info.isInDefaultPosition = restoreState.isInDefaultPosition
-    end
-    system:ClearFrameSnap()
-    -- Blizzard's UpdateSystem already binds systemInfo to this live draft. Even
-    -- assigning the same table here taints the field and later native reads.
-    system:ApplySystemAnchor()
-    -- Only clear the native dirty flag if the whole frame matches its baseline.
-    -- Other settings on this frame and other frames must remain pending.
-    system:SetHasActiveChanges(not equal(info, system.savedSystemInfo))
-    manager:CheckForSystemActiveChanges()
-    if not manager:IsEditModeActive() then
-        -- Save the current live layout, never the override library's separate cache.
-        manager:SaveLayouts()
-        system.savedSystemInfo = CopyTable(info)
     end
     return true
 end
@@ -338,7 +273,7 @@ function position:ResetToDefault(system)
     if not default then
         return false, L["This frame has no default position."]
     end
-    return self:Apply(system, default, { isInDefaultPosition = true })
+    return self:Apply(system, default, true)
 end
 
 local function settingDisplayInfo(system, setting)
@@ -383,29 +318,20 @@ function position:GetDefaultSetting(system, setting)
     return info and info.ConvertValueForDisplay and info:ConvertValueForDisplay(raw) or raw
 end
 
--- Change a setting like the native settings dialog does: inside Edit Mode it
--- stays in the draft for native Save/Revert, outside it is saved at once.
+-- Save through the library; Blizzard refreshes from its native layout event.
 function position:ApplySetting(system, setting, value)
     if not self:CanEdit(system) or self:ReadSetting(system, setting) == nil then
         return false, L["Position editing is unavailable. Select an enabled frame in a custom layout."]
     end
-    local manager = EditModeManagerFrame
-    manager:OnSystemSettingChange(system, setting, value)
-    if not manager:IsEditModeActive() then
-        manager:SaveLayouts()
-        local info = manager:GetActiveLayoutSystemInfo(system.system, system.systemIndex)
-        system.savedSystemInfo = info and CopyTable(info)
+    local override = LibStub("LibEditModeOverride-1.0")
+    local ok, err = pcall(function()
+        local raw = system:ConvertSettingDisplayValueToRawValue(setting, value)
+        override:LoadLayouts()
+        override:SetFrameSetting(system, setting, raw)
+        override:SaveOnly()
+    end)
+    if not ok then
+        return false, string.format(L["Could not save the Edit Mode setting: %s"], tostring(err))
     end
     return true
-end
-
-function position:Revert(system)
-    if not self:CanEdit(system) or not self:HasChanges(system) then
-        return false
-    end
-    local before = positionState(system.savedSystemInfo)
-    if not before or not before.anchorInfo then
-        return false
-    end
-    return self:Apply(system, before.anchorInfo, before)
 end

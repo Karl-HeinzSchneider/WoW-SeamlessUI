@@ -103,10 +103,11 @@ function position:GetSection(system)
             return base:IsValidAnchorTarget(target, system)
         end,
         hasChanges = function()
-            return position:HasChanges(system)
+            -- Native layout edits save immediately and are not part of our Revert.
+            return false
         end,
         revert = function()
-            return position:Revert(system)
+            return false
         end,
         -- The preset position native Reset To Default Position applies.
         default = function(key)

@@ -11,6 +11,10 @@ labels, endcaps, the micro menu, the bag bar and the XP bar tooltip. Settings li
   bars), hooks and restoration. Filter the global range hook because pet buttons call it too.
 - `src/icons.lua`: `range` and `mana` (`enabled`, `color`, on by default); range tint before mana
   tint; restore the client's white/light-blue/grey usability colors. Leave secret values alone.
+  Core repaints usability colors on the next frame after native action events, coalescing event
+  bursts. Never hook `UpdateUsable`; the reload error was reported at that hooked call. The range
+  indicator post-hook still filters out pet buttons. Run `lua src/tests/actionbars-lifecycle.lua`
+  for event ordering, cancellation and re-enable behavior.
 - `src/hotkeys.lua`: `keybinds.enabled` (default on); `ShortKeyLabel`, `UpdateHotkey`,
   `RestoreHotkey`; skip range dots and gamepad bindings and retain original text for restoration.
 - `src/endcaps.lua`: the main action bar's gryphons (`MainActionBar.EndCaps.LeftEndCap`/

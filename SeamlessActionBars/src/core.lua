@@ -19,6 +19,29 @@ local bars = {
 
 ---@type table<CheckButton, true>
 local watched = {}
+local pendingIconRefresh
+
+-- Blizzard_ActionBar/Shared/ActionButton.lua updates usability from these events and
+-- ACTION_USABLE_CHANGED. Paint on the next frame, after the native event handlers,
+-- without hooking or calling the buttons' UpdateUsable methods.
+function app.addon:QueueIconRefresh()
+    if pendingIconRefresh then
+        return
+    end
+    local pending = {}
+    pendingIconRefresh = pending
+    C_Timer.After(0, function()
+        if pendingIconRefresh ~= pending then
+            return
+        end
+        pendingIconRefresh = nil
+        if self:IsEnabled() then
+            for button in pairs(watched) do
+                app.PaintIcon(button)
+            end
+        end
+    end)
+end
 
 ---@return CheckButton[]
 function app.Buttons()
@@ -44,8 +67,20 @@ end
 function app.addon:OnEnable()
     for _, button in ipairs(app.Buttons()) do
         watched[button] = true
-        self:SecureHook(button, "UpdateUsable", app.PaintIcon)
         self:SecureHook(button, "UpdateHotkeys", app.UpdateHotkey)
+    end
+    for _, event in ipairs({
+        "PLAYER_ENTERING_WORLD",
+        "ACTION_USABLE_CHANGED",
+        "ACTIONBAR_SLOT_CHANGED",
+        "ACTIONBAR_PAGE_CHANGED",
+        "UPDATE_BONUS_ACTIONBAR",
+        "UPDATE_SHAPESHIFT_FORM",
+        "PLAYER_MOUNT_DISPLAY_CHANGED",
+        "UPDATE_VEHICLE_ACTIONBAR",
+        "SPELL_UPDATE_ICON",
+    }) do
+        self:RegisterEvent(event, "QueueIconRefresh")
     end
     -- A global shared with the pet bar, called on every ACTION_RANGE_CHECK_UPDATE.
     self:SecureHook("ActionButton_UpdateRangeIndicator", function(button)
@@ -54,10 +89,12 @@ function app.addon:OnEnable()
         end
     end)
     self:Refresh()
+    self:QueueIconRefresh()
     app.core:RefreshEditModeSystemOptions()
 end
 
 function app.addon:OnDisable()
+    pendingIconRefresh = nil
     self:UnhookAll()
     self:UnregisterAllEvents()
     app.RefreshBagStyle()

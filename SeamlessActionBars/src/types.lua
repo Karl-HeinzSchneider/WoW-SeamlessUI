@@ -31,6 +31,7 @@
 
 ---@class SeamlessActionBars.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessActionBars.Addon)
+---@field QueueIconRefresh fun(self: SeamlessActionBars.Addon)
 
 ---@class SeamlessActionBars
 ---@field optionFrameGetters (fun(): table?)[]

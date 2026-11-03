@@ -6,7 +6,15 @@ local position, size = app.core:GetPositionOptions(app.fpsDisplay:GetPositionBin
 ---@type SeamlessCore.SettingsPage
 app.optionPages.fpsDisplay = {
     defaults = {
-        profile = { fpsDisplay = { layouts = {}, showLatency = false, whiteLatency = false, roundFramerate = false } },
+        profile = {
+            fpsDisplay = {
+                layouts = {},
+                showLatency = false,
+                whiteLatency = false,
+                roundFramerate = false,
+                hideBlizzard = false,
+            },
+        },
     },
     config = {
         editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessUI.fpsDisplay", function()
@@ -22,6 +30,30 @@ app.optionPages.fpsDisplay = {
         name = L["FPS display"],
         order = 30,
         args = {
+            visible = {
+                type = "toggle",
+                order = 0,
+                name = L["Show FPS"],
+                default = false,
+                get = function()
+                    return app.fpsDisplay:IsDisplayShown()
+                end,
+                set = function(_, value)
+                    app.fpsDisplay:SetOption("visible", value)
+                end,
+            },
+            hideBlizzard = {
+                type = "toggle",
+                order = 5,
+                name = L["Hide Blizzard FPS counter"],
+                default = false,
+                get = function()
+                    return app.db.profile.fpsDisplay.hideBlizzard
+                end,
+                set = function(_, value)
+                    app.fpsDisplay:SetOption("hideBlizzard", value)
+                end,
+            },
             startup = {
                 type = "toggle",
                 order = 1,

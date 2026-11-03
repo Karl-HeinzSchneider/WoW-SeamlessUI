@@ -9,7 +9,9 @@ app.fpsDisplay = module
 
 local lib = app.core:GetEditModeLibrary()
 local anchor
-local originalPoints
+local keyboard
+local visible = false
+local nativeFrame, nativeAlpha
 local showAnchor = true
 
 function module:EditModeVisibility(value)
@@ -20,7 +22,6 @@ function module:EditModeVisibility(value)
     end
     return showAnchor
 end
-local visibilityBeforeEditMode
 -- FramerateFrame's anchor in Blizzard_FramerateFrame/Mainline/FramerateFrame.xml (the client skips
 -- the micro menu override): BOTTOMRIGHT, 2 pixels in from the corner.
 local defaults = { point = "BOTTOMRIGHT", x = -2, y = 2 }
@@ -50,38 +51,48 @@ local function UpdateDisplay()
     end
 end
 
--- The native counter formats "%.1f" itself (Blizzard_FramerateFrame); rewrite it right after.
--- Its Layout() runs after this hook, so the counter still resizes to the rounded text.
-local function HookNativeFramerate()
-    local text = FramerateFrame.FramerateText or FramerateText
-    if not text then
-        return
-    end
-    hooksecurefunc(text, "SetFormattedText", function(self)
-        if module:IsEnabled() and app.db.profile.fpsDisplay.roundFramerate then
-            local rounded = (self:GetText() or ""):gsub("%d+%.%d+", function(value)
-                return tostring(math.floor(tonumber(value) + 0.5))
-            end, 1)
-            self:SetText(rounded)
+-- Opt-in suppression owns only alpha. Native Toggle/benchmark visibility and scripts keep
+-- running (Blizzard_FramerateFrame/Mainline/FramerateFrame.lua). Restore only our own value,
+-- so an intervening alpha change from another addon is not overwritten.
+local function RestoreNativeDisplay()
+    if nativeFrame then
+        if nativeAlpha ~= 0 and nativeFrame:GetAlpha() == 0 then
+            nativeFrame:SetAlpha(nativeAlpha)
         end
-    end)
+        nativeFrame, nativeAlpha = nil, nil
+    end
 end
 
--- With latency on, the native counter is faded out and this two-row display takes its place:
--- labels left, values right-aligned, sized once for "999.9" so it never resizes. Kept out of
--- the counter's children, since the counter sizes itself to fit them. Follows the counter's
--- visibility (Ctrl+R) through script hooks; OnUpdate only runs while shown.
-local function RefreshDisplay()
-    local shown = module:IsEnabled() and app.db.profile.fpsDisplay.showLatency and FramerateFrame:IsShown()
-    display:SetShown(shown)
-    FramerateFrame:SetAlpha(shown and 0 or 1)
-    if shown then
-        -- The anchor lives in UIParent's scale, the display in WorldFrame's.
-        local scale = display:GetEffectiveScale() / anchor:GetEffectiveScale()
-        anchor:SetSize(display:GetWidth() * scale, display:GetHeight() * scale)
-    else
-        anchor:SetSize(120, 24)
+local function RefreshNativeDisplay()
+    if not module:IsEnabled() or not app.db.profile.fpsDisplay.hideBlizzard then
+        RestoreNativeDisplay()
+        display:UnregisterEvent("ADDON_LOADED")
+        return
     end
+    if nativeFrame then
+        return
+    end
+    if FramerateFrame then
+        nativeFrame, nativeAlpha = FramerateFrame, FramerateFrame:GetAlpha()
+        if nativeAlpha ~= 0 then
+            nativeFrame:SetAlpha(0)
+        end
+        display:UnregisterEvent("ADDON_LOADED")
+    else
+        display:RegisterEvent("ADDON_LOADED")
+    end
+end
+
+local function RefreshDisplay()
+    local latency = app.db.profile.fpsDisplay.showLatency
+    display.LatencyLabel:SetShown(latency)
+    display.LatencyText:SetShown(latency)
+    display:SetHeight(display.rowHeight * (latency and 2 or 1) + (latency and ROW_GAP or 0))
+    local scale = display:GetEffectiveScale() / anchor:GetEffectiveScale()
+    anchor:SetSize(display:GetWidth() * scale, display:GetHeight() * scale)
+    display:SetShown(module:IsEnabled() and (visible or (lib:IsInEditMode() and showAnchor)))
+    UpdateDisplay()
+    RefreshNativeDisplay()
 end
 
 local function CreateDisplay()
@@ -105,7 +116,8 @@ local function CreateDisplay()
     local labelWidth = math.max(display.FramerateLabel:GetStringWidth(), display.LatencyLabel:GetStringWidth())
     local valueWidth = display.FramerateText:GetStringWidth()
     local rowHeight = display.FramerateText:GetStringHeight()
-    display:SetSize(math.ceil(labelWidth + 4 + valueWidth), math.ceil(rowHeight * 2 + ROW_GAP))
+    display.rowHeight = math.ceil(rowHeight)
+    display:SetSize(math.ceil(labelWidth + 4 + valueWidth), display.rowHeight)
     display.FramerateLabel:SetPoint("TOPLEFT")
     display.LatencyLabel:SetPoint("BOTTOMLEFT")
     display.FramerateText:SetPoint("TOPRIGHT")
@@ -119,8 +131,7 @@ local function CreateDisplay()
         end
     end)
     display:SetScript("OnShow", UpdateDisplay)
-    FramerateFrame:HookScript("OnShow", RefreshDisplay)
-    FramerateFrame:HookScript("OnHide", RefreshDisplay)
+    display:SetScript("OnEvent", RefreshNativeDisplay)
 end
 
 -- The active layout's position; dragging stores only point, x and y relative to UIParent.
@@ -156,27 +167,11 @@ function module:Refresh()
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, RelativeFrame(position.relativeTo), position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
-    if lib:IsInEditMode() then
-        if visibilityBeforeEditMode == nil then
-            visibilityBeforeEditMode = FramerateFrame:IsShown()
-        end
-        FramerateFrame:SetShown(showAnchor or visibilityBeforeEditMode)
-    elseif visibilityBeforeEditMode ~= nil then
-        FramerateFrame:SetShown(visibilityBeforeEditMode)
-        visibilityBeforeEditMode = nil
-    end
     RefreshDisplay()
     app.core:RefreshEditModeOptions()
 end
 
 function module:OnEnable()
-    if not FramerateFrame then
-        return
-    end
-    originalPoints = {}
-    for index = 1, FramerateFrame:GetNumPoints() do
-        originalPoints[index] = { FramerateFrame:GetPoint(index) }
-    end
     if not anchor then
         anchor = CreateFrame("Frame", nil, UIParent)
         anchor:SetSize(120, 24)
@@ -190,30 +185,41 @@ function module:OnEnable()
         end, defaults, L["FPS display"])
         lib:AddFrameSettings(anchor, app.core:GetEditModePageSettings(appName, "fpsDisplay"))
         CreateDisplay()
-        HookNativeFramerate()
     end
-    FramerateFrame:ClearAllPoints()
-    FramerateFrame:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
+    if not keyboard then
+        -- Bindings_Camelot.xml invokes the native frame directly for TOGGLEFPS. Observe the
+        -- assigned keyboard input instead of hooking that frame or replacing its binding.
+        -- WorldFrame keeps this listener independent of the counter and UIParent visibility.
+        keyboard = CreateFrame("Frame", nil, WorldFrame)
+        keyboard:EnableKeyboard(true)
+        keyboard:SetPropagateKeyboardInput(true)
+        keyboard:SetScript("OnKeyDown", function(_, key)
+            if
+                module:IsEnabled()
+                and not GetCurrentKeyBoardFocus()
+                and GetBindingAction(GetBindingFullInput(key), true) == "TOGGLEFPS"
+            then
+                -- A keypress only changes this frame's runtime visibility. Do not route it
+                -- through options/Refresh: those also reposition frames and refresh Edit Mode.
+                visible = not display:IsShown()
+                display:SetShown(visible)
+            end
+        end)
+    end
+    keyboard:Show()
+    visible = app.core.db.profile.tweaks.showFramerateOnStartup
     self:Refresh()
 end
 
 function module:OnDisable()
-    if visibilityBeforeEditMode ~= nil then
-        FramerateFrame:SetShown(visibilityBeforeEditMode)
-        visibilityBeforeEditMode = nil
+    if keyboard then
+        keyboard:Hide()
     end
+    RestoreNativeDisplay()
     if anchor then
         anchor:Hide()
-        anchor:SetSize(120, 24)
         display:Hide()
-        FramerateFrame:SetAlpha(1)
-    end
-    if originalPoints then
-        FramerateFrame:ClearAllPoints()
-        for _, point in ipairs(originalPoints) do
-            FramerateFrame:SetPoint(unpack(point))
-        end
-        originalPoints = nil
+        display:UnregisterEvent("ADDON_LOADED")
     end
     app.core:RefreshEditModeOptions()
 end
@@ -287,19 +293,20 @@ lib:RegisterCallback("delete", function(name)
     end)
 end)
 
+function module:IsDisplayShown()
+    return visible
+end
+
 function module:SetOption(key, value)
     if key == "startup" then
         app.core.db.profile.tweaks.showFramerateOnStartup = value
-        visibilityBeforeEditMode = value
-        self:Refresh()
+        visible = value
+    elseif key == "visible" then
+        visible = value
     else
         app.db.profile.fpsDisplay[key] = value
-        if key == "showLatency" then
-            self:Refresh()
-        else
-            UpdateDisplay()
-        end
     end
+    self:Refresh()
     app.core:RefreshOptions("SeamlessUI")
 end
 

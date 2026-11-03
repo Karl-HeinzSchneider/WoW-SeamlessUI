@@ -85,17 +85,23 @@ Run `lua src/tests/blizzard-position.lua`.
 
 ## FPS display (`fpsdisplay.lua`)
 
-- A Frames checkbox "FPS display" selects the anchor and previews the counter in Edit Mode. Its
-  settings: "Show FPS on startup" (Core's preference), "Show latency", "White latency text",
-  "Round FPS" (profile `fpsDisplay`), then Core's Position section. Positions are saved per native
-  layout in the profile, including layout copy/rename/delete.
-- With latency on, the native counter is faded to alpha 0 (it still drives Ctrl+R visibility) and an
-  addon-owned two-row display replaces it, following its visibility. Round FPS also rounds the
-  native counter through a `hooksecurefunc` on its `SetFormattedText`.
-- Like the native counter it is parented to WorldFrame (unaffected by UI scale), so the UIParent
-  anchor is sized by the effective-scale ratio. Never parent it to the counter, which sizes itself
-  to its children.
-- Disabling restores the counter's original anchors.
+- An addon-owned WorldFrame counter updates every 0.25 seconds, with independent "Show FPS"
+  visibility and the existing Core "Show FPS on startup" preference. An addon-owned keyboard
+  listener observes the current `TOGGLEFPS` assignment (normally Ctrl+R) with input propagation,
+  toggling only our visibility without native frame hooks or binding overrides. Ignore typing
+  focus; disable the listener with the module. Do not latch input waiting for a key-up. The key only toggles the
+  custom frame directly: never call option setters, Refresh, positioning or Edit Mode updates
+  from it. The startup preference seeds visibility on enable. Blizzard still receives its key.
+  "Show latency", "White latency text" and "Round FPS" affect only the custom text.
+- A Frames checkbox "FPS display" selects the anchor and previews the counter in Edit Mode.
+  Preview does not change normal visibility. Core's Position section saves positions per native
+  layout in the profile, including layout copy/rename/delete. The UIParent anchor is sized by the
+  effective-scale ratio so it matches the WorldFrame display.
+- Never hook, reposition or read native counter state for custom display behavior. The explicit
+  "Hide Blizzard FPS counter" option defaults off; only it may access the native frame. It sets
+  alpha to zero, retaining native visibility, formatting, scripts and methods. Disabling it,
+  changing profiles or disabling the addon restores the captured alpha only if still zero;
+  intervening changes by another owner are preserved. Late native loading is handled by an event.
 
 Run `lua src/tests/fps-display.lua`.
 

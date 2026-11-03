@@ -798,6 +798,7 @@ L["Commands: /seamlessui [options], /seamlessui loglevel <level>, /seamlessui re
 L["Could not set the anchor: %s"] = true
 L["Enable Blizzard Edit Mode extensions"] = true
 L["FPS:"] = true
+L["Hide Blizzard FPS counter"] = true
 L["Hide addon compartment button"] = true
 L["Hide calendar button"] = true
 L["Hide clock"] = true
@@ -816,6 +817,7 @@ L["Reserved for future frame options. This setting has no effect yet."] = true
 L["Rotate minimap"] = true
 L["Round FPS"] = true
 L["SeamlessUI - %s"] = true
+L["Show FPS"] = true
 L["Show FPS on startup"] = true
 L["Show latency"] = true
 L["Show the SeamlessUI extension when this frame is selected in Edit Mode. Turn off if this frame causes issues."] = true

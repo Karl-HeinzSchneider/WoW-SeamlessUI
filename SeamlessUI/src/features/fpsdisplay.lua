@@ -9,6 +9,7 @@ app.fpsDisplay = module
 
 local lib = app.core:GetEditModeLibrary()
 local anchor
+local keyboard
 local visible = false
 local nativeFrame, nativeAlpha
 local showAnchor = true
@@ -185,11 +186,43 @@ function module:OnEnable()
         lib:AddFrameSettings(anchor, app.core:GetEditModePageSettings(appName, "fpsDisplay"))
         CreateDisplay()
     end
+    if not keyboard then
+        -- Bindings_Camelot.xml invokes the native frame directly for TOGGLEFPS. Observe the
+        -- assigned keyboard input instead of hooking that frame or replacing its binding.
+        -- WorldFrame keeps this listener independent of the counter and UIParent visibility.
+        keyboard = CreateFrame("Frame", nil, WorldFrame)
+        keyboard:EnableKeyboard(true)
+        keyboard:SetPropagateKeyboardInput(true)
+        local held = {}
+        keyboard:SetScript("OnKeyDown", function(_, key)
+            if held[key] then
+                return
+            end
+            held[key] = true
+            if
+                module:IsEnabled()
+                and not GetCurrentKeyBoardFocus()
+                and GetBindingAction(GetBindingFullInput(key), true) == "TOGGLEFPS"
+            then
+                module:SetOption("visible", not visible)
+            end
+        end)
+        keyboard:SetScript("OnKeyUp", function(_, key)
+            held[key] = nil
+        end)
+        keyboard:SetScript("OnHide", function()
+            wipe(held)
+        end)
+    end
+    keyboard:Show()
     visible = app.core.db.profile.tweaks.showFramerateOnStartup
     self:Refresh()
 end
 
 function module:OnDisable()
+    if keyboard then
+        keyboard:Hide()
+    end
     RestoreNativeDisplay()
     if anchor then
         anchor:Hide()

@@ -86,7 +86,10 @@ Run `lua src/tests/blizzard-position.lua`.
 ## FPS display (`fpsdisplay.lua`)
 
 - An addon-owned WorldFrame counter updates every 0.25 seconds, with independent "Show FPS"
-  visibility and the existing Core "Show FPS on startup" preference. Native Ctrl+R remains native.
+  visibility and the existing Core "Show FPS on startup" preference. An addon-owned keyboard
+  listener observes the current `TOGGLEFPS` assignment (normally Ctrl+R) with input propagation,
+  toggling only our visibility without native frame hooks or binding overrides. Ignore held-key
+  repeats and typing focus; disable the listener with the module. Blizzard still receives its key.
   "Show latency", "White latency text" and "Round FPS" affect only the custom text.
 - A Frames checkbox "FPS display" selects the anchor and previews the counter in Edit Mode.
   Preview does not change normal visibility. Core's Position section saves positions per native

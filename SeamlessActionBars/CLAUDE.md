@@ -40,8 +40,10 @@ labels, endcaps, the micro menu, the bag bar and the XP bar tooltip. Settings li
   position and Size, with explicit Revert and Reset Position footer actions. Orientation, direction
   (left/right horizontally, up/down vertically) use the native layout service as well; unavailable
   settings and read-only layouts disable editing. `src/bags.lua` adapts the same Style controls into
-  the selected frame's extended Edit Mode window. Native Size is exposed only as the disabled Size
-  slider. These native settings stay in Edit Mode layouts. Show free bag slots binds Blizzard's
+  the selected frame's extended Edit Mode window. The Size section's Scale slider maps 0.75–2.0
+  to native Size (75–200%, step 5), including with the retail skin enabled. Its default comes
+  from the native preset; the shared layout service owns Save/Revert and editing guards.
+  These native settings stay in Edit Mode layouts. Show free bag slots binds Blizzard's
   `displayFreeBagSlots` CVar directly and works with either skin; the native backpack handles the
   count and its visibility. It is shared with Edit Mode's Style section, and the config page
   refreshes on external CVar changes.

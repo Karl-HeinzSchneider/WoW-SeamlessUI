@@ -647,7 +647,8 @@ local function UpdateDetailRow(bar, spell, index, config, details, source, targe
     if details.deathEvents and spell.event == "SWING_DAMAGE" then
         spellID = 88163
     end
-    if unitDetails.specIconID and unitDetails.specIconID ~= 0 then
+    -- Newer clients can restrict specialization icons in combat; only inspect public IDs.
+    if not IsPublic(unitDetails.specIconID) or (unitDetails.specIconID and unitDetails.specIconID ~= 0) then
         bar.icon:SetTexture(unitDetails.specIconID)
         bar.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
     elseif unitDetails.unitClassFilename and unitDetails.unitClassFilename ~= "" then
@@ -930,7 +931,7 @@ local function UpdateRow(row, source, sourceIndex, session, statistic, config)
     row.name:SetFormattedText(L["%d. %s"], sourceIndex, source.name)
     if statistic.key == "Threat" and source.isPet then
         row.icon:SetTexture(nil)
-    elseif source.specIconID and source.specIconID ~= 0 then
+    elseif not IsPublic(source.specIconID) or (source.specIconID and source.specIconID ~= 0) then
         row.icon:SetTexture(source.specIconID)
         row.icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
     elseif source.classFilename and source.classFilename ~= "" then

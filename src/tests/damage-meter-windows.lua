@@ -353,6 +353,12 @@ assert(frame.rows[1]:GetHeight() == 24 and frame.rows[1].entry:GetHeight() == 24
 assert(frame.rows[1].icon:GetWidth() == 24 and frame.rows[1].icon:GetHeight() == 24)
 assert(frame:IsShown() and frame.scrollbar:IsShown())
 assert(frame.rows[1].name.args[2] == secret)
+session.combatSources[1].specIconID = secret
+app:RefreshWindows()
+assert(frame.rows[1].icon.texture == secret, "Restricted specialization icons go directly to textures")
+session.combatSources[1].specIconID = 0
+app:RefreshWindows()
+assert(frame.rows[1].icon.atlas == "MAGE", "Public zero specialization icons fall back to class icons")
 assert(frame.rows[1].value.args[1] == secret)
 assert(frame.rows[1].secondaryValue.args[1] == secret, "Restricted rates must go directly to their column")
 assert(frame.rows[1].points.TOPLEFT[2] == 24, "Bar must start immediately after its icon inside the list inset")
@@ -476,6 +482,9 @@ details.combatSpells[1].combatSpellDetails = { specIconID = 777, unitClassFilena
 app:RefreshWindows()
 assert(detailBar.icon.texture == 777, "API specialization icon takes precedence")
 assert(detailBar.name.args[2] == secret, "Restricted detail names go directly to labels")
+details.combatSpells[1].combatSpellDetails.specIconID = secret
+app:RefreshWindows()
+assert(detailBar.icon.texture == secret, "Restricted breakdown specialization icons go directly to textures")
 details.combatSpells[1].combatSpellDetails.specIconID = 0
 app:RefreshWindows()
 assert(detailBar.icon.atlas == "MAGE", "API unit class supplies an icon when there is no specialization")

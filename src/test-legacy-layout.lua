@@ -1026,6 +1026,31 @@ app.db.profile.unitFrames.targettarget.healthBarColor = "default"
 app.healthColor:ApplyPreview(preview, "targettarget")
 assert(preview.healthbar.color[1] == 1 and preview.healthbar.color[2] == 1)
 
+-- Switching either custom layout back restores Forever geometry, including previews.
+party.state, party.frameType = "player", "Party"
+for _, style in ipairs({ "legacy", "legacyRounded" }) do
+    Mode(style)
+    assert(PetFrameHealthBar.height == 10 and PetFrameManaBar.width == 74)
+    assert(TargetFrameToT.HealthBar.height == 10 and TargetFrameToT.ManaBar.width == 74)
+    Mode("current")
+    assert(PetFrameHealthBar.height == 11 and PetFrameHealthBar.point[5] == -5)
+    assert(PetFrameHealthBarMask.point[4] == -28 and PetFrameManaBar.width == 77)
+    for _, frame in ipairs({ TargetFrameToT, FocusFrameToT, preview }) do
+        if frame == preview then
+            layout:ApplyToTPreview(frame)
+        end
+        assert(frame.HealthBar.height == 11 and frame.HealthBar.point[5] == -4)
+        assert(frame.HealthBar.HealthBarMask.point[4] == -28)
+        assert(frame.ManaBar.width == 78 and frame.ManaBar.point[4] == -3 and frame.ManaBar.point[5] == -1)
+    end
+    assert(party.HealthBarContainer.HealthBarMask.point[4] == -30)
+    for _, frame in ipairs({ TargetFrame, FocusFrame }) do
+        local main = frame.TargetFrameContent.TargetFrameContentMain
+        assert(main.ManaBar.RightText.point[4] == -7)
+        assert(main.HealthBarsContainer.RightText.point[4] == -3)
+    end
+end
+
 local saved = PlayerFrame.PlayerFrameContainer
 PlayerFrame.PlayerFrameContainer = nil
 Mode("legacy")

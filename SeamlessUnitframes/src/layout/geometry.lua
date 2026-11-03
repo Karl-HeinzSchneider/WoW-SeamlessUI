@@ -519,7 +519,7 @@ local function TargetVisual(frame, main, old)
                 side,
                 main.HealthBarsContainer,
                 side,
-                key == "LeftText" and 2 or (key == "RightText" and -5 or 0),
+                key == "LeftText" and 2 or (key == "RightText" and -3 or 0),
                 0
             )
         end
@@ -669,7 +669,7 @@ local function Target(frame, old)
     else
         Point(main.ManaBar, "TOPRIGHT", container, "BOTTOMRIGHT", 4, -1, 134, 10)
     end
-    Point(main.ManaBar.RightText, "RIGHT", main.ManaBar, "RIGHT", old and -13 or -3, 0)
+    Point(main.ManaBar.RightText, "RIGHT", main.ManaBar, "RIGHT", old and -13 or -7, 0)
     local flashParent = art
     if not old and module:CheckPaths(TargetFrame, "native target flash anchor", { "TargetFrameContainer" }) then
         flashParent = TargetFrame.TargetFrameContainer
@@ -702,6 +702,8 @@ local function Target(frame, old)
     end
 end
 
+-- Native restoration: wowf Blizzard_UnitFrame/Camelot/PetFrame.lua and TargetFrame.lua.
+-- Beta geometry remains fixed independently of the native layout.
 local function Small(frame, pet, old, previewPowerType)
     local name, portrait = pet and PetName or frame.Name, pet and PetPortrait or frame.Portrait
     local health, mana = pet and PetFrameHealthBar or frame.HealthBar, pet and PetFrameManaBar or frame.ManaBar
@@ -717,14 +719,14 @@ local function Small(frame, pet, old, previewPowerType)
     if pet then
         module:Art(PetFrameFlash, P .. "TargetofTarget-PortraitOn-InCombat", true)
         module:Art(PetAttackModeTexture, P .. "TargetofTarget-PortraitOn-Status", true)
-        Point(health, "BOTTOMLEFT", portrait, "RIGHT", old and 2 or 3, old and -3.5 or -4, 70, 10)
+        Point(health, "BOTTOMLEFT", portrait, "RIGHT", old and 2 or 3, old and -3.5 or -5, 70, old and 10 or 11)
         Point(PetAttackModeTexture, "TOPLEFT", frame, "TOPLEFT", 0, old and 1 or 0)
         Point(PetFrameFlash, "TOPLEFT", frame, "TOPLEFT", old and 1 or 0, 0)
     else
-        Point(health, "BOTTOMRIGHT", frame, "RIGHT", old and -6 or -5, old and -2.5 or -3, 70, 10)
+        Point(health, "BOTTOMRIGHT", frame, "RIGHT", old and -6 or -5, old and -2.5 or -4, 70, old and 10 or 11)
     end
-    Point(pet and PetFrameHealthBarMask or health.HealthBarMask, "TOPLEFT", health, "TOPLEFT", old and -29 or -26, 3)
-    Point(mana, "TOPLEFT", health, "BOTTOMLEFT", old and -4 or -2, old and -1 or -2, 74, 7)
+    Point(pet and PetFrameHealthBarMask or health.HealthBarMask, "TOPLEFT", health, "TOPLEFT", old and -29 or -28, 3)
+    Point(mana, "TOPLEFT", health, "BOTTOMLEFT", old and -4 or -3, -1, old and 74 or (pet and 77 or 78), 7)
 end
 
 -- The Edit Mode stand-ins use the same fixed ToT geometry and artwork.
@@ -822,7 +824,7 @@ local function Party(frame, old)
         "TOPLEFT",
         container,
         "TOPLEFT",
-        vehicle and (old and -30 or 16) or (healthOnly and -27 or (old and -29 or (character and -25 or -28))),
+        vehicle and (old and -30 or 16) or (healthOnly and -27 or (old and -29 or (character and -25 or -30))),
         vehicle and not old and -25 or (healthOnly and 4 or 3)
     )
     Point(

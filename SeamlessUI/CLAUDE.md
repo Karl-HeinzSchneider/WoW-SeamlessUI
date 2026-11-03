@@ -70,8 +70,10 @@ Run `lua src/tests/blizzard-editmode.lua`.
   use `ApplyChanges`, which closes Edit Mode. The client refreshes from its native layout event;
   in-game verification is required on clients where SaveOnly might not emit that event.
 - Never mutate Blizzard's live layout, systemInfo, savedSystemInfo, dirty flags or Save/Revert
-  state, or call native settings/layout mutators. The service refuses edits while Blizzard has
-  pending changes on any frame, so a saved-layout copy cannot overwrite them.
+  state, or call native settings/layout mutators. Dragging must never disable our controls.
+  When native edits are pending, save from an isolated copy of the current draft's systems;
+  preserve the other frames and untouched settings. Using our controls immediately saves those
+  pending native edits too. Do not overwrite them with the library's last-saved layout.
 - Reset Position and breaking a secondary anchor use a fresh `C_EditMode.GetLayouts()` copy,
   because the library has no API for default-position metadata or secondary anchors. Save through
   C only; never mirror that copy into the manager or refresh Blizzard's settings dialog manually.
@@ -124,7 +126,7 @@ updates the Edit Mode outline in combat. Run `lua src/tests/combined-bags.lua`.
 controls; Edit Mode derives its Style rows from that declaration. Style starts with Square minimap,
 then the native Edit Mode Rotate Minimap setting. Read it through
 `GetFramePositionService():ReadSetting` and write through `ApplySetting`, which saves immediately through LibEditModeOverride without writing Blizzard's draft or
-participating in native Save/Revert. Pending native edits block changes. Its default comes from `GetDefaultSetting`; preset/combat guards stay native.
+participating in native Save/Revert. Pending native edits are included in the immediate save. Its default comes from `GetDefaultSetting`; preset/combat guards stay native.
 
 New visibility settings live in profile `minimap`; the existing `hideMinimapDayNight` key stays at
 its original path. Individual switches combine independently. `hideHeader` overrides the header

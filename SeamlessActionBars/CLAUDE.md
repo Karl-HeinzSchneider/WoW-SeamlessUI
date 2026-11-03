@@ -87,7 +87,7 @@ labels, endcaps, the micro menu, the bag bar and the XP bar tooltip. Settings li
   and selected-frame Edit Mode Size sections. Applies `SetScale` to the containers, refreshes
   with profiles, defers combat writes and restores original scales on disable.
   The same Size header mirrors the native Width (`EditModeStatusTrackingBarSetting.Size`)
-  through the frame position service, using Blizzard's range/defaults and immediate library saves; pending native edits block changes.
+  through the frame position service, using Blizzard's range/defaults and immediate saves that retain native pending edits.
   Registers each complete status bar page for its native system, so the existing page builder
   merges Size controls and includes the shared XP tooltip group once.
   Run `lua src/tests/statusbar-scale.lua`.

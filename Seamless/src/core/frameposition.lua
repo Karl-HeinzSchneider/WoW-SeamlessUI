@@ -196,9 +196,34 @@ function position:CanEdit(system)
         and not system.isLocked
         and not manager:IsActiveLayoutPreset()
         and not manager.overrideLayoutInfo
-        and not manager:HasActiveChanges()
         and override:IsReady()
         and self:Read(system) ~= nil
+end
+
+-- Build an isolated save payload. When the player has dragged or changed native
+-- frames, retain the current draft's systems instead of overwriting them with
+-- the library's last-saved copy. This is an immediate save of the current layout;
+-- it never writes back into Blizzard's draft, baseline or dirty flags.
+local function layoutForSave(system)
+    local layouts = C_EditMode.GetLayouts()
+    local presets = EditModePresetLayoutManager:GetCopyOfPresetLayouts()
+    tAppendAll(presets, layouts.layouts)
+    layouts.layouts = presets
+    local layout = layouts.layouts[layouts.activeLayout]
+    local manager = EditModeManagerFrame
+    if manager:IsEditModeActive() and manager:HasActiveChanges() then
+        layout.systems = CopyTable(manager:GetActiveLayoutInfo().systems)
+    end
+    for _, info in ipairs(layout.systems) do
+        if info.system == system.system and info.systemIndex == system.systemIndex then
+            return layouts, info
+        end
+    end
+    error(L["This frame has no anchor in the active layout."])
+end
+
+local function hasPendingEdits()
+    return EditModeManagerFrame:IsEditModeActive() and EditModeManagerFrame:HasActiveChanges()
 end
 
 function position:Apply(system, values, reset)
@@ -229,31 +254,19 @@ function position:Apply(system, values, reset)
         -- The library owns a saved-layout copy. Never mirror it into Blizzard's draft,
         -- call native mutators or use ApplyChanges (which closes Edit Mode).
         override:LoadLayouts()
-        if reset or system.systemInfo and system.systemInfo.anchorInfo2 then
-            -- The library has no API for default-position metadata or secondary anchors.
-            -- Edit only the C API's copy for these cases, like defaultlayout.lua.
-            local layouts = C_EditMode.GetLayouts()
-            local presets = EditModePresetLayoutManager:GetCopyOfPresetLayouts()
-            tAppendAll(presets, layouts.layouts)
-            layouts.layouts = presets
-            local layout = layouts.layouts[layouts.activeLayout]
-            local found
-            for _, info in ipairs(layout.systems) do
-                if info.system == system.system and info.systemIndex == system.systemIndex then
-                    info.anchorInfo = {
-                        point = values.point,
-                        relativeTo = relativeTo:GetName(),
-                        relativePoint = values.relativePoint,
-                        offsetX = x,
-                        offsetY = y,
-                    }
-                    info.anchorInfo2 = nil
-                    info.isInDefaultPosition = reset == true
-                    found = true
-                    break
-                end
-            end
-            assert(found, L["This frame has no anchor in the active layout."])
+        if hasPendingEdits() or reset or system.systemInfo and system.systemInfo.anchorInfo2 then
+            -- The library cannot load a draft or set default/secondary-anchor metadata.
+            -- Edit only an isolated C save payload for these cases, like defaultlayout.lua.
+            local layouts, info = layoutForSave(system)
+            info.anchorInfo = {
+                point = values.point,
+                relativeTo = relativeTo:GetName(),
+                relativePoint = values.relativePoint,
+                offsetX = x,
+                offsetY = y,
+            }
+            info.anchorInfo2 = nil
+            info.isInDefaultPosition = reset == true
             C_EditMode.SaveLayouts(layouts)
         else
             override:ReanchorFrame(system, values.point, relativeTo, values.relativePoint, x, y)
@@ -328,7 +341,21 @@ function position:ApplySetting(system, setting, value)
         local raw = system:ConvertSettingDisplayValueToRawValue(setting, value)
         override:LoadLayouts()
         override:SetFrameSetting(system, setting, raw)
-        override:SaveOnly()
+        if hasPendingEdits() then
+            local layouts, info = layoutForSave(system)
+            local found
+            for _, entry in ipairs(info.settings) do
+                if entry.setting == setting then
+                    entry.value = override:GetFrameSetting(system, setting)
+                    found = true
+                    break
+                end
+            end
+            assert(found, L["Position editing is unavailable. Select an enabled frame in a custom layout."])
+            C_EditMode.SaveLayouts(layouts)
+        else
+            override:SaveOnly()
+        end
     end)
     if not ok then
         return false, string.format(L["Could not save the Edit Mode setting: %s"], tostring(err))

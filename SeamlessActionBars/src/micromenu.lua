@@ -60,7 +60,7 @@ function module:OnDisable()
 end
 
 -- Native settings save immediately through the same library-backed service as Position.
--- Pending native edits block changes; Blizzard's Save/Revert state is never modified.
+-- Pending native edits are included in the save; never write Blizzard's live state.
 function app.MicroMenuOptions()
     local service = app.core:GetFramePositionService()
     local args = {}

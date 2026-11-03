@@ -238,6 +238,9 @@ EditModeManagerFrame = {
         return false
     end,
 }
+function EditModeManagerFrame:GetActiveLayoutInfo()
+    return draft
+end
 function EditModeManagerFrame:GetActiveLayoutSystemInfo()
     return draft.systems[1]
 end
@@ -845,17 +848,6 @@ assert(defaults.x.default() == nil, "clients without the preset API show Not app
 assert(not native:ResetToDefault(player) and #warnings == 0)
 print("Native position defaults and Reset To Default OK")
 
--- Native pending edits on any frame block every library save, including stale callbacks.
-local beforeSaves = saves
-local beforeDraft = draft
-otherFrameDirty = true
-assert(not native:CanEdit(player))
-assert(not native:Apply(player, native:Read(player)))
-assert(not native:ResetToDefault(player))
-assert(not native:ApplySetting(player, FRAME_SIZE, 150))
-assert(saves == beforeSaves and draft == beforeDraft)
-otherFrameDirty = false
-
 -- Convert display units before passing settings to the real library.
 Enum.EditModeSettingDisplayType = { Slider = 1, Checkbox = 2, Dropdown = 3 }
 EditModeSettingDisplayInfoManager = { systemSettingDisplayInfo = { [1] = {} } }
@@ -887,9 +879,51 @@ assert(saved.layouts[1].systems[1].anchorInfo2 == nil)
 assert(not saved.layouts[1].systems[1].isInDefaultPosition)
 assert(snappedDraft.systems[1].anchorInfo2.relativeTo == "Minimap", "old live draft is untouched")
 
+-- Dragging leaves controls enabled. The immediate save includes the current
+-- draft's other frames/settings, not just the selected frame's requested field.
+function EditModeManagerFrame:IsEditModeActive()
+    return true
+end
+otherFrameDirty = true
+draft.systems[1].anchorInfo.offsetY = 271
+draft.systems[1].settings = { { setting = FRAME_SIZE, value = 4 }, { setting = 88, value = 19 } }
+draft.systems[2] = {
+    system = 1,
+    systemIndex = 99,
+    anchorInfo = { point = "CENTER", relativeTo = "UIParent", relativePoint = "CENTER", offsetX = 321, offsetY = 654 },
+    settings = { { setting = 7, value = 123 } },
+}
+assert(native:CanEdit(player) and not config.x.disabled(), "native dragging must not disable our controls")
+local pendingDraft = draft
+local moved = native:Read(player)
+moved.offsetX = 777
+assert(native:Apply(player, moved))
+assert(saved.layouts[1].systems[1].anchorInfo.offsetX == 777)
+assert(saved.layouts[1].systems[1].anchorInfo.offsetY == 271)
+assert(saved.layouts[1].systems[1].settings[2].value == 19)
+assert(saved.layouts[1].systems[2].anchorInfo.offsetX == 321)
+assert(pendingDraft.systems[1].anchorInfo.offsetX ~= 777, "do not mutate the live draft")
+-- Setting changes after dragging also retain unrelated draft settings/positions.
+draft.systems[2].anchorInfo.offsetX = 888
+draft.systems[1].settings[2].value = 29
+assert(native:ApplySetting(player, FRAME_SIZE, 175))
+assert(saved.layouts[1].systems[1].settings[1].value == 15)
+assert(saved.layouts[1].systems[1].settings[2].value == 29)
+assert(saved.layouts[1].systems[2].anchorInfo.offsetX == 888)
+-- Reset Position preserves the other dragged frame too.
+EditModePresetLayoutManager.GetDefaultSystemAnchorInfo = function()
+    return copy(presetAnchor)
+end
+draft.systems[2].anchorInfo.offsetY = 999
+assert(native:ResetToDefault(player))
+assert(saved.layouts[1].systems[1].isInDefaultPosition)
+assert(saved.layouts[1].systems[2].anchorInfo.offsetY == 999)
+EditModePresetLayoutManager.GetDefaultSystemAnchorInfo = nil
+otherFrameDirty = false
+
 -- Without a client event, the service must leave the live draft and baseline alone.
 refreshSaved = false
-beforeDraft = draft
+local beforeDraft = draft
 local baseline = player.savedSystemInfo
 local beforeAnchor = copy(draft.systems[1].anchorInfo)
 local v = native:Read(player)
@@ -899,4 +933,4 @@ assert(saved.layouts[1].systems[1].anchorInfo.offsetX == 444)
 assert(draft == beforeDraft and draft.systems[1].anchorInfo.offsetX == beforeAnchor.offsetX)
 assert(player.savedSystemInfo == baseline)
 assert(native.HasChanges == nil and native.Revert == nil and native.RevertSystem == nil)
-print("Library saves, display conversion, native pending-edit guards and no live-state writes OK")
+print("Library saves, display conversion, controls after dragging and no live-state writes OK")

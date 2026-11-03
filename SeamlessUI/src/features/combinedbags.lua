@@ -75,14 +75,18 @@ function module:Refresh()
         return
     end
     local frame = ContainerFrameCombinedBags
+    local scale = app.db.profile.combinedBags.scale
+    if scale then
+        frame:SetScale(scale)
+    end
     local ratio = frame:GetEffectiveScale() / anchor:GetEffectiveScale()
     local width, height = frame:GetWidth(), frame:GetHeight()
     anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, relative, position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
-    if SavedPosition() then
-        -- Keep the native parent, scale, visibility and item buttons. Offsets are in
+    if SavedPosition() or scale then
+        -- Keep the native parent, visibility and item buttons. Offsets are in
         -- UIParent units, so convert them to the bag's effective scale.
         ApplyPosition(position, relative)
     end

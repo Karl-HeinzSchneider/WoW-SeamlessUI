@@ -229,6 +229,9 @@ for _, addon in ipairs({
         end,
     }
     app.combinedBags = {
+        IsEnabled = function()
+            return true
+        end,
         GetPositionBinding = function()
             return { default = function() end }
         end,

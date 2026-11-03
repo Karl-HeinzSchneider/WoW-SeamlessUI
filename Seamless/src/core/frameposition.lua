@@ -252,7 +252,7 @@ function position:Apply(system, values, reset)
     local override = LibStub("LibEditModeOverride-1.0")
     local ok, err = pcall(function()
         -- The library owns a saved-layout copy. Never mirror it into Blizzard's draft,
-        -- call native mutators or use ApplyChanges (which closes Edit Mode).
+        -- or call native mutators. ApplyChanges owns the required client refresh.
         override:LoadLayouts()
         if hasPendingEdits() or reset or system.systemInfo and system.systemInfo.anchorInfo2 then
             -- The library cannot load a draft or set default/secondary-anchor metadata.
@@ -268,10 +268,11 @@ function position:Apply(system, values, reset)
             info.anchorInfo2 = nil
             info.isInDefaultPosition = reset == true
             C_EditMode.SaveLayouts(layouts)
+            override:LoadLayouts()
         else
             override:ReanchorFrame(system, values.point, relativeTo, values.relativePoint, x, y)
-            override:SaveOnly()
         end
+        override:ApplyChanges()
     end)
     if not ok then
         return false, string.format(L["Could not set the anchor: %s"], tostring(err))
@@ -331,7 +332,8 @@ function position:GetDefaultSetting(system, setting)
     return info and info.ConvertValueForDisplay and info:ConvertValueForDisplay(raw) or raw
 end
 
--- Save through the library; Blizzard refreshes from its native layout event.
+-- Apply through the library, including its native panel refresh; saving alone
+-- does not update visible frames on this client.
 function position:ApplySetting(system, setting, value)
     if not self:CanEdit(system) or self:ReadSetting(system, setting) == nil then
         return false, L["Position editing is unavailable. Select an enabled frame in a custom layout."]
@@ -353,9 +355,9 @@ function position:ApplySetting(system, setting, value)
             end
             assert(found, L["Position editing is unavailable. Select an enabled frame in a custom layout."])
             C_EditMode.SaveLayouts(layouts)
-        else
-            override:SaveOnly()
+            override:LoadLayouts()
         end
+        override:ApplyChanges()
     end)
     if not ok then
         return false, string.format(L["Could not save the Edit Mode setting: %s"], tostring(err))

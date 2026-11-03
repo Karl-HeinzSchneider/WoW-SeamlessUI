@@ -199,7 +199,7 @@ local combat, preset, enabled = false, false, true
 local saves, loads = 0, 0
 local player
 local otherFrameDirty = false
-local refreshSaved = true
+local applied = 0
 function InCombatLockdown()
     return combat
 end
@@ -212,14 +212,6 @@ C_EditMode = {
         saves = saves + 1
         saved = copy(info)
         table.remove(saved.layouts, 1) -- C stores custom layouts without the preset prefix.
-        if refreshSaved then
-            -- Simulate the client delivering EDIT_MODE_LAYOUTS_UPDATED. Addon code
-            -- must not call the manager or mutate the old draft to refresh it.
-            draft = copy(saved.layouts[1])
-            player.systemInfo = draft.systems[1]
-            local a = player.systemInfo.anchorInfo
-            player:SetPoint(a.point, _G[a.relativeTo], a.relativePoint, a.offsetX / 0.75, a.offsetY / 0.75)
-        end
     end,
 }
 EditModePresetLayoutManager = {
@@ -293,7 +285,27 @@ for _, key in ipairs({
     EditModeManagerFrame[key] = forbidden
 end
 player.ClearFrameSnap, player.ApplySystemAnchor, player.SetHasActiveChanges = forbidden, forbidden, forbidden
-ShowUIPanel, HideUIPanel = forbidden, forbidden
+DropDownList1 = {}
+function issecurevariable()
+    return true
+end
+local panelShown = false
+function ShowUIPanel(panel)
+    assert(panel == EditModeManagerFrame)
+    panelShown = true
+end
+function HideUIPanel(panel)
+    assert(panel == EditModeManagerFrame and panelShown)
+    panelShown = false
+    applied = applied + 1
+    -- The real library's hide invokes native ExitEditMode/RevertAllChanges:
+    -- reload the saved layout and update the visible frame. SaveLayouts itself
+    -- deliberately does not refresh anything, matching the reported client.
+    draft = copy(saved.layouts[1])
+    player.systemInfo = draft.systems[1]
+    local a = player.systemInfo.anchorInfo
+    player:SetPoint(a.point, _G[a.relativeTo], a.relativePoint, a.offsetX / 0.75, a.offsetY / 0.75)
+end
 local selected = player
 local app = {
     db = { profile = { blizzardEditMode = { frames = { player = { addPosition = true } } } } },
@@ -859,13 +871,13 @@ saved.layouts[1].systems[1].settings = { { setting = FRAME_SIZE, value = 4 } }
 assert(native:ApplySetting(player, FRAME_SIZE, 150))
 assert(saved.layouts[1].systems[1].settings[1].value == 10)
 -- Library failures return an error rather than escaping into the options callback.
-local originalSave = library.SaveOnly
-library.SaveOnly = function()
+local originalApply = library.ApplyChanges
+library.ApplyChanges = function()
     error("save failed")
 end
 local ok, err = native:ApplySetting(player, FRAME_SIZE, 150)
 assert(not ok and err:find("save failed", 1, true))
-library.SaveOnly = originalSave
+library.ApplyChanges = originalApply
 
 -- A moved snapped frame loses its secondary anchor on the saved copy only.
 local second = { point = "BOTTOM", relativeTo = "Minimap", relativePoint = "TOP", offsetX = 0, offsetY = 10 }
@@ -921,16 +933,17 @@ assert(saved.layouts[1].systems[2].anchorInfo.offsetY == 999)
 EditModePresetLayoutManager.GetDefaultSystemAnchorInfo = nil
 otherFrameDirty = false
 
--- Without a client event, the service must leave the live draft and baseline alone.
-refreshSaved = false
-local beforeDraft = draft
+-- No save event is synthesized: the library's real ApplyChanges must reload and
+-- apply visible anchors through its panel refresh. A SaveOnly regression fails here.
+local beforeApply = applied
 local baseline = player.savedSystemInfo
-local beforeAnchor = copy(draft.systems[1].anchorInfo)
 local v = native:Read(player)
 v.offsetX = 444
 assert(native:Apply(player, v))
+assert(applied == beforeApply + 1 and not panelShown)
 assert(saved.layouts[1].systems[1].anchorInfo.offsetX == 444)
-assert(draft == beforeDraft and draft.systems[1].anchorInfo.offsetX == beforeAnchor.offsetX)
+assert(player:GetPoint(1) == v.point and player.points[1][4] == 444 / 0.75)
+assert(native:Read(player).offsetX == 444)
 assert(player.savedSystemInfo == baseline)
 assert(native.HasChanges == nil and native.Revert == nil and native.RevertSystem == nil)
-print("Library saves, display conversion, controls after dragging and no live-state writes OK")
+print("Real library apply refresh, display conversion, controls after dragging and no live-state writes OK")

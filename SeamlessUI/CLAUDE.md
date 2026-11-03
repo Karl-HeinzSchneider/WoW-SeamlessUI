@@ -66,9 +66,9 @@ Run `lua src/tests/blizzard-editmode.lua`.
 - A separate Size header holds Core's dead Scale placeholder (always disabled at 100%). Native
   size settings stay in Blizzard's own dialog; never reroute them into it.
 - Validates names, numbers and anchor cycles, then uses LibEditModeOverride's `LoadLayouts`,
-  `ReanchorFrame` and `SaveOnly`. Changes save immediately, inside and outside Edit Mode. Never
-  use `ApplyChanges`, which closes Edit Mode. The client refreshes from its native layout event;
-  in-game verification is required on clients where SaveOnly might not emit that event.
+  `ReanchorFrame` and `ApplyChanges`. Changes save and apply immediately. `SaveOnly` does not
+  refresh visible frames on this client. Use the library's full apply path, including its panel
+  refresh (which closes Edit Mode); never assume saving emits a layout-refresh event.
 - Never mutate Blizzard's live layout, systemInfo, savedSystemInfo, dirty flags or Save/Revert
   state, or call native settings/layout mutators. Dragging must never disable our controls.
   When native edits are pending, save from an isolated copy of the current draft's systems;
@@ -76,7 +76,8 @@ Run `lua src/tests/blizzard-editmode.lua`.
   pending native edits too. Do not overwrite them with the library's last-saved layout.
 - Reset Position and breaking a secondary anchor use a fresh `C_EditMode.GetLayouts()` copy,
   because the library has no API for default-position metadata or secondary anchors. Save through
-  C only; never mirror that copy into the manager or refresh Blizzard's settings dialog manually.
+  C, then reload the library and call `ApplyChanges` to refresh the visible frames. Never mirror
+  the copy into the manager or refresh Blizzard's settings dialog manually.
 - Our footer Revert restores only Seamless's custom setting snapshots. It never reads or restores
   Blizzard's saved system or position baseline. Native positions save immediately.
 - "Quick anchor to frame" starts Core's anchor picker with the AnchorFrame targets and applies the

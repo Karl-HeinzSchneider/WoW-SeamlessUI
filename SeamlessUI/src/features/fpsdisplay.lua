@@ -204,7 +204,10 @@ function module:OnEnable()
                 and not GetCurrentKeyBoardFocus()
                 and GetBindingAction(GetBindingFullInput(key), true) == "TOGGLEFPS"
             then
-                module:SetOption("visible", not visible)
+                -- A keypress only changes this frame's runtime visibility. Do not route it
+                -- through options/Refresh: those also reposition frames and refresh Edit Mode.
+                visible = not display:IsShown()
+                display:SetShown(visible)
             end
         end)
         keyboard:SetScript("OnKeyUp", function(_, key)

@@ -231,6 +231,22 @@ end
 module:OnEnable()
 local keyboard = frames[3]
 assert(keyboard.keyboardEnabled and keyboard.propagate and keyboard.shown)
+-- A keyboard toggle must remain independent of settings and Edit Mode, including in combat.
+local function pressKey(key)
+    local oldSet, oldRefresh = module.SetOption, module.Refresh
+    local oldOptions, oldEditMode = app.core.RefreshOptions, app.core.RefreshEditModeOptions
+    local oldClear, oldPoint = frame.ClearAllPoints, frame.SetPoint
+    local function forbidden()
+        error("keybind must only toggle display visibility")
+    end
+    module.SetOption, module.Refresh = forbidden, forbidden
+    app.core.RefreshOptions, app.core.RefreshEditModeOptions = forbidden, forbidden
+    frame.ClearAllPoints, frame.SetPoint = forbidden, forbidden
+    keyboard.OnKeyDown(keyboard, key)
+    module.SetOption, module.Refresh = oldSet, oldRefresh
+    app.core.RefreshOptions, app.core.RefreshEditModeOptions = oldOptions, oldEditMode
+    frame.ClearAllPoints, frame.SetPoint = oldClear, oldPoint
+end
 local rows = support.pageRows(frameSettings)
 assert(not frame.shown and not display.shown, "startup defaults to hidden")
 assert(display.parent == WorldFrame and display.points[1][2] == frame)
@@ -240,31 +256,38 @@ rows.visible.set(true)
 assert(display.shown and not frame.shown, "custom visibility works outside Edit Mode")
 assert(display.FramerateText.text == "999.9")
 rows.visible.set(false)
-keyboard.OnKeyDown(keyboard, "R")
+pressKey("R")
 assert(display.shown and rows.visible.get(), "Ctrl+R shows custom FPS while native access is forbidden")
-keyboard.OnKeyDown(keyboard, "R")
+pressKey("R")
 assert(display.shown, "held-key repeats do not toggle again")
 keyboard.OnKeyUp(keyboard, "R")
-keyboard.OnKeyDown(keyboard, "R")
+pressKey("R")
 assert(not display.shown, "next press hides custom FPS")
 keyboard.OnKeyUp(keyboard, "R")
 bindingKey = "ALT-F"
-keyboard.OnKeyDown(keyboard, "R")
+pressKey("R")
 assert(not display.shown, "old key stops working after reassignment")
 keyboard.OnKeyUp(keyboard, "R")
 inputPrefix = "ALT-"
 focus = {}
-keyboard.OnKeyDown(keyboard, "F")
+pressKey("F")
 assert(not display.shown, "typing focus does not toggle FPS")
 keyboard.OnKeyUp(keyboard, "F")
 focus = nil
-keyboard.OnKeyDown(keyboard, "F")
+pressKey("F")
 assert(display.shown, "remapped TOGGLEFPS key works immediately")
 keyboard.OnKeyUp(keyboard, "F")
 rows.visible.set(false)
 editing = true
 callbacks.enter()
 assert(frame.shown and display.shown and spec.options[1].name == "FPS display")
+pressKey("F")
+assert(not display.shown and frame.shown, "key hides the counter directly even during preview")
+keyboard.OnKeyUp(keyboard, "F")
+pressKey("F")
+assert(display.shown and frame.shown, "key shows the counter without touching preview selection")
+keyboard.OnKeyUp(keyboard, "F")
+rows.visible.set(false)
 assert(rows.startup.default() == false and not rows.startup.get())
 assert(rows.showLatency.default() == false and not rows.showLatency.get())
 rows.showLatency.set(true)
@@ -342,7 +365,7 @@ assert(frame.points[1][1] == "BOTTOMRIGHT")
 enabled = false
 module:OnDisable()
 assert(not display.shown and not frame.shown and not keyboard.shown)
-keyboard.OnKeyDown(keyboard, "F")
+pressKey("F")
 assert(not display.shown, "disabled module ignores key input")
 keyboard.OnKeyUp(keyboard, "F")
 -- No native frame at all is required for custom startup, updates or preview.
@@ -350,6 +373,12 @@ FramerateFrame = nil
 enabled = true
 module:OnEnable()
 assert(display.shown and rows.visible.get(), "startup preference shows custom FPS before any keypress")
+pressKey("F")
+assert(not display.shown and rows.startup.get(), "key can hide startup FPS without changing the saved option")
+keyboard.OnKeyUp(keyboard, "F")
+pressKey("F")
+assert(display.shown and rows.startup.get())
+keyboard.OnKeyUp(keyboard, "F")
 assert(rows.hideBlizzard.default() == false)
 rows.hideBlizzard.set(true)
 assert(display.events.ADDON_LOADED, "suppression waits for a late native addon")

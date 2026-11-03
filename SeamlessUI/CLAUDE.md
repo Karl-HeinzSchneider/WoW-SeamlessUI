@@ -89,7 +89,9 @@ Run `lua src/tests/blizzard-position.lua`.
   visibility and the existing Core "Show FPS on startup" preference. An addon-owned keyboard
   listener observes the current `TOGGLEFPS` assignment (normally Ctrl+R) with input propagation,
   toggling only our visibility without native frame hooks or binding overrides. Ignore held-key
-  repeats and typing focus; disable the listener with the module. Blizzard still receives its key.
+  repeats and typing focus; disable the listener with the module. The key only toggles the
+  custom frame directly: never call option setters, Refresh, positioning or Edit Mode updates
+  from it. The startup preference seeds visibility on enable. Blizzard still receives its key.
   "Show latency", "White latency text" and "Round FPS" affect only the custom text.
 - A Frames checkbox "FPS display" selects the anchor and previews the counter in Edit Mode.
   Preview does not change normal visibility. Core's Position section saves positions per native

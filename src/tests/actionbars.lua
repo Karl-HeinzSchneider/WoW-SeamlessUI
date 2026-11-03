@@ -432,7 +432,7 @@ microModule:OnInitialize()
 local bagSpec = menuSpec
 assert(bagSpec.page.key == "bags" and bagSpec.system == 21)
 bagSpec.options = pageRows("bags")
-assert(#bagSpec.options == 7)
+assert(#bagSpec.options == 8, "Bag scale joins the shared page controls")
 local showFreeSlots = false
 GetCVarBool = function(name)
     assert(name == "displayFreeBagSlots")

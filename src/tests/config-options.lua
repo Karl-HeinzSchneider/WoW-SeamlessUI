@@ -100,10 +100,23 @@ function core:GetNativePositionOptions(getFrame, scale)
         args = {},
     }
 end
+local bagSize, bagEditable = 100, true
 function core:GetFramePositionService()
     return {
-        ReadSetting = function()
-            return 0
+        ReadSetting = function(_, frame, setting)
+            return setting == 99 and bagSize or 0
+        end,
+        GetDefaultSetting = function(_, frame, setting)
+            assert(frame == BagsBar and setting == 99)
+            return 100
+        end,
+        CanEdit = function()
+            return bagEditable
+        end,
+        ApplySetting = function(_, frame, setting, value)
+            assert(frame == BagsBar and setting == 99)
+            bagSize = value
+            return true
         end,
     }
 end
@@ -120,6 +133,7 @@ function time()
 end
 Enum = { EditModeUnitFrameSetting = { FrameSize = 1 }, EditModeCastBarSetting = { BarSize = 1, LockToPlayerFrame = 2 } }
 Enum.EditModeAccountSetting = { ShowPetFrame = 24 }
+Enum.EditModeBagsSetting = { Size = 99 }
 Settings = {}
 C_CVar = {
     GetCVar = function()
@@ -229,9 +243,6 @@ for _, addon in ipairs({
         end,
     }
     app.combinedBags = {
-        IsEnabled = function()
-            return true
-        end,
         GetPositionBinding = function()
             return { default = function() end }
         end,
@@ -371,6 +382,18 @@ for _, pages in pairs(nativePages) do
     end
 end
 local bars = apps.SeamlessActionBars
+local bagScale = bars.optionPages.bags.config.args.size.args.scale
+assert(bagScale.min == 0.75 and bagScale.max == 2 and bagScale.step == 0.05)
+assert(bagScale.get() == 1 and bagScale.default() == 1 and bagScale.layoutStored)
+bagScale.set(nil, 0.75)
+assert(bagSize == 75 and bagScale.get() == 0.75, "Scale writes the native Bags Size setting in percent")
+bagScale.set(nil, 2)
+assert(bagSize == 200 and bagScale.get() == 2)
+bagSize = 125
+assert(bagScale.get() == 1.25, "Scale reads external native Edit Mode changes")
+bagEditable = false
+assert(bagScale.disabled(), "Scale respects native layout editing guards")
+bagEditable, bagSize = true, 100
 local xpSections
 for _, pageKey in ipairs({ "statusBar1", "statusBar2" }) do
     local sections = core:GetEditModePageSections("SeamlessActionBars", pageKey)

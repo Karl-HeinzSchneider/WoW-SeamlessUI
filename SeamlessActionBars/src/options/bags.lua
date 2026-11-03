@@ -125,6 +125,24 @@ if direction.Left and direction.Right and direction.Up and direction.Down then
 end
 
 local position, size = app.core:GetNativePositionOptions(getFrame)
+local scale = nativeOption("Size", L["Scale"], 0)
+scale.type = "range"
+-- Blizzard_EditMode/Shared/EditModeSettingDisplayInfo.lua: Bags Size is 75–200%, step 5.
+-- EditModeBagsSystemMixin:UpdateSystemSettingSize applies that value divided by 100.
+scale.min, scale.max, scale.step = 0.75, 2, 0.05
+local nativeGet, nativeSet, nativeDefault = scale.get, scale.set, scale.default
+scale.get = function()
+    local value = nativeGet()
+    return value and value / 100
+end
+scale.default = function()
+    local value = nativeDefault()
+    return value and value / 100
+end
+scale.set = function(info, value)
+    nativeSet(info, value * 100)
+end
+size.args.scale = scale
 ---@type SeamlessCore.SettingsPage
 app.optionPages.bags = {
     defaults = {

@@ -102,11 +102,8 @@ Run `lua src/tests/fps-display.lua`.
 ## Combined bags (`combinedbags.lua`)
 
 It registers an addon-owned selection outline for the native combined bags window in Edit Mode. The
-Frames checkbox defaults off and controls only that outline; inventory visibility, parenting
-and item logic remain native. The Size slider overrides native bag scaling with profile
-`combinedBags.scale` (0.75–2.0, default 1), reapplied after native relayout outside combat.
-The outline follows the scaled dimensions, while position offsets stay in UIParent units.
-Positions live in profile `combinedBags.layouts`, with layout
+Frames checkbox defaults off and controls only that outline; inventory visibility, parenting, scale
+and item logic remain native. Positions live in profile `combinedBags.layouts`, with layout
 copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors` reapplies only saved
 positions, converting offsets for the native bag scale; other bags keep their native anchors. Reset
 removes the override and restores Blizzard placement. The default position is the client's own

@@ -43,9 +43,6 @@ local function frame(scale)
         GetEffectiveScale = function()
             return scale
         end,
-        SetScale = function(_, value)
-            scale = value
-        end,
         GetRight = function()
             return 990
         end,
@@ -83,7 +80,6 @@ UIParent.width = 1200
 ContainerFrameCombinedBags = frame(0.8)
 local bags = ContainerFrameCombinedBags
 local function nativeLayout()
-    bags:SetScale(0.8)
     bags:ClearAllPoints()
     bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -10, 100)
     if postHook then
@@ -153,7 +149,7 @@ app.core.GetCustomEditModeVisibility = support.customVisibility
 app.core.GetEditModeButtonSection = support.buttonSection
 app.core.GetEditModePositionButton = support.positionButton
 app.core.GetPositionOptions = function()
-    return {}, { args = {} }
+    return {}
 end
 app.core.RefreshOptions = function() end
 assert(loadfile("SeamlessUI/src/options/combinedBags.lua"))("SeamlessUI", app)
@@ -225,30 +221,6 @@ callbacks.layout()
 assert(bags.point[4] == 250)
 module:ResetPosition()
 assert(profile.combinedBags.layouts.Modern == nil and bags.point[4] == -10, "reset restores native placement")
-local scaleOption = app.optionPages.combinedBags.config.args.size.args.scale
-assert(scaleOption.min == 0.75 and scaleOption.max == 2 and scaleOption.default == 1)
-scaleOption.set(nil, 2)
-assert(scaleOption.get() == 2 and bags:GetEffectiveScale() == 2, "slider scales the native combined bag")
-assert(anchor.width == 800 and anchor.height == 1000, "selection outline follows scale")
-assert(bags.point[4] == -25 and bags.point[5] == 42.5, "default placement stays in UIParent units")
-nativeLayout()
-assert(bags:GetEffectiveScale() == 2 and bags.point[4] == -25, "native relayout preserves scale and position")
-combat = true
-assert(scaleOption.disabled(), "scale is disabled in combat")
-scaleOption.set(nil, 0.75)
-assert(scaleOption.get() == 2, "combat refuses scale edits")
-combat = false
-scaleOption.set(nil, 0.75)
-assert(bags:GetEffectiveScale() == 0.75, "minimum scale is supported")
-local otherProfile = { combinedBags = { layouts = {}, scale = 1.5 } }
-app.db.profile = otherProfile
-module:OnProfileRefresh()
-assert(bags:GetEffectiveScale() == 1.5, "profile changes resolve the current scale")
-app.db.profile = profile
-module:OnProfileRefresh()
-assert(bags:GetEffectiveScale() == 0.75, "returning to a profile restores its scale")
-profile.combinedBags.scale = nil
-bags:SetScale(0.8)
 move(anchor, layout, "CENTER", 80, 40)
 enabled = false
 module:OnDisable()

@@ -193,12 +193,7 @@ function module:OnEnable()
         keyboard = CreateFrame("Frame", nil, WorldFrame)
         keyboard:EnableKeyboard(true)
         keyboard:SetPropagateKeyboardInput(true)
-        local held = {}
         keyboard:SetScript("OnKeyDown", function(_, key)
-            if held[key] then
-                return
-            end
-            held[key] = true
             if
                 module:IsEnabled()
                 and not GetCurrentKeyBoardFocus()
@@ -209,12 +204,6 @@ function module:OnEnable()
                 visible = not display:IsShown()
                 display:SetShown(visible)
             end
-        end)
-        keyboard:SetScript("OnKeyUp", function(_, key)
-            held[key] = nil
-        end)
-        keyboard:SetScript("OnHide", function()
-            wipe(held)
         end)
     end
     keyboard:Show()

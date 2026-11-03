@@ -88,8 +88,8 @@ Run `lua src/tests/blizzard-position.lua`.
 - An addon-owned WorldFrame counter updates every 0.25 seconds, with independent "Show FPS"
   visibility and the existing Core "Show FPS on startup" preference. An addon-owned keyboard
   listener observes the current `TOGGLEFPS` assignment (normally Ctrl+R) with input propagation,
-  toggling only our visibility without native frame hooks or binding overrides. Ignore held-key
-  repeats and typing focus; disable the listener with the module. The key only toggles the
+  toggling only our visibility without native frame hooks or binding overrides. Ignore typing
+  focus; disable the listener with the module. Do not latch input waiting for a key-up. The key only toggles the
   custom frame directly: never call option setters, Refresh, positioning or Edit Mode updates
   from it. The startup preference seeds visibility on enable. Blizzard still receives its key.
   "Show latency", "White latency text" and "Round FPS" affect only the custom text.

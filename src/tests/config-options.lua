@@ -655,4 +655,51 @@ assert(customVisibilityIDs["SeamlessDamageMeter.windows"] == 6, "Every meter pag
 for id in pairs(customVisibilityIDs) do
     assert(not id:match("^SeamlessDamageMeter%.window%d"), "No per-window meter visibility settings")
 end
-print("All addon page declarations, defaults, profile bindings, metadata and deferred refresh OK")
+-- Exercise the real category lookup: shortcuts and General's addon buttons must
+-- open an existing page even when the addon has no General page.
+function coreApp.config:CreateWindow()
+    self.frame = { Show = function() end, Raise = function() end }
+end
+function coreApp.config:Refresh() end
+for _, addon in ipairs({ "SeamlessUnitframes", "SeamlessCastbar" }) do
+    coreApp.options:Open(addon)
+    assert(coreApp.config.selected == addon .. ":player", addon .. " shortcut opens Player")
+    coreApp.options.addonButtons[addon].func()
+    assert(coreApp.config.selected == addon .. ":player", addon .. " button opens Player")
+    coreApp.options:Open(addon, "target")
+    assert(coreApp.config.selected == addon .. ":target", "Explicit tabs remain selected")
+end
+-- General takes precedence over earlier pages; hidden pages are skipped and
+-- equal-order pages use the same key ordering as the navigation tree.
+local hidden = false
+coreApp.options:RegisterAddon("Routing", {
+    title = "Routing",
+    pages = {
+        general = {
+            defaults = {},
+            config = {
+                type = "group",
+                name = "General",
+                order = 100,
+                hidden = function()
+                    return hidden
+                end,
+                args = {},
+            },
+        },
+        first = { defaults = {}, config = { type = "group", name = "First", order = 10, args = {} } },
+        tied = { defaults = {}, config = { type = "group", name = "Tied", order = 10, args = {} } },
+        unavailable = {
+            defaults = {},
+            config = { type = "group", name = "Hidden", order = 0, hidden = true, args = {} },
+        },
+    },
+})
+coreApp.options:Open("Routing")
+assert(coreApp.config.selected == "Routing:general")
+hidden = true
+coreApp.options:Open("Routing")
+assert(coreApp.config.selected == "Routing:first", "Fallback follows visible navigation order")
+coreApp.options:Open()
+assert(coreApp.config.selected == "Seamless:general", "Core still defaults to General")
+print("All addon page declarations, defaults, profile bindings, metadata, deferred refresh and shortcuts OK")

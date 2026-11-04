@@ -113,7 +113,7 @@ function module:Register(name, spec)
     RegisterConfigPages(name, spec.title, args, spec, root)
 end
 
--- Opens the shared config window on the addon's General page or requested tab.
+-- Opens the requested tab, or General/first visible page in navigation order.
 ---@param name? string
 ---@param tab? string
 function module:Open(name, tab)
@@ -122,7 +122,20 @@ function module:Open(name, tab)
     if not panel then
         return
     end
-    app.addon:OpenConfig(name .. ":" .. (tab or "general"))
+    if not tab then
+        local pages = app.addon:GetSettingsOption(panel.options, {}, name):Children()
+        for _, page in ipairs(pages) do
+            local key = page.path[1]
+            tab = tab or key
+            if key == "general" then
+                tab = key
+                break
+            end
+        end
+    end
+    if tab then
+        app.addon:OpenConfig(name .. ":" .. tab)
+    end
 end
 
 -- Redraws `name`'s panel (Core's when nil) after a change made outside of it.

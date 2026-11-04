@@ -1068,6 +1068,18 @@ editModeCallbacks.enter()
 assert(geometryWrites == writesAfterDisable, "disabled entry work must not repaint restored frames")
 editModeActive, libraryEditing = false, false
 editModeCallbacks.exit()
+do
+    local restricted = setmetatable({}, {
+        __index = function()
+            error("indexed restricted region contents")
+        end,
+    })
+    canaccesstable = function(value)
+        return not rawequal(value, restricted)
+    end
+    assert(not layout:CheckRegion(restricted, "restricted test region"))
+    canaccesstable = nil
+end
 print(
     "Fixed layout contracts passed: no render snapshots, both modes, colors, styles, secret inputs, combat deferral, diagnostics"
 )

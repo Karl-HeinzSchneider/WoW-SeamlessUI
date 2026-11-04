@@ -8,6 +8,9 @@ local module = {}
 app.previewCharacters = app.addon:NewModule("PreviewCharacters", module)
 
 function module:Get(frame, key)
+    if canaccessvalue and not canaccessvalue(frame) then
+        return nil
+    end
     local native = nativeFrames[key]
     if native then
         if frame == nil or frame ~= _G[native] then

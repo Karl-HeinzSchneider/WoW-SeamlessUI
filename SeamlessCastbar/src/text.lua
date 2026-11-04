@@ -9,7 +9,7 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 ---@param value any
 local function known(value)
-    return value ~= nil and not (issecretvalue and issecretvalue(value))
+    return not (issecretvalue and issecretvalue(value)) and value ~= nil
 end
 app.Known = known
 
@@ -64,7 +64,9 @@ function app.UpdateCastTime(bar)
         return
     end
     -- After a cast ends the bar keeps showing its last time while it fades.
-    if not (bar.casting or bar.channeling) then
+    local casting = known(bar.casting) and bar.casting
+    local channeling = known(bar.channeling) and bar.channeling
+    if not (casting or channeling) then
         return
     end
     local value = bar:GetValue()
@@ -76,7 +78,7 @@ function app.UpdateCastTime(bar)
         return
     end
     -- A channel's bar runs down: its value is the time left.
-    local elapsed = bar.channeling and total - value or value
+    local elapsed = channeling and total - value or value
     local label = app.FormatCastTime(elapsed, total, settings.format, settings.decimals)
     if own then
         local text = timeText(bar)
@@ -102,8 +104,11 @@ local names = {}
 function app.RestoreName(bar)
     local changed = names[bar]
     names[bar] = nil
-    if changed and bar.Text and bar.Text:GetText() == changed.label then
-        bar.Text:SetText(changed.name)
+    if changed and bar.Text then
+        local text = bar.Text:GetText()
+        if known(text) and text == changed.label then
+            bar.Text:SetText(changed.name)
+        end
     end
 end
 
@@ -114,7 +119,9 @@ function app.UpdateName(bar)
         return
     end
     local fontString = bar.Text
-    if not fontString or not (bar.casting or bar.channeling) then
+    local casting = known(bar.casting) and bar.casting
+    local channeling = known(bar.channeling) and bar.channeling
+    if not fontString or not (casting or channeling) then
         return
     end
     local name, spellID = fontString:GetText(), bar.spellID

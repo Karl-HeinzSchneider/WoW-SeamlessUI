@@ -2,6 +2,24 @@
 local root = "SeamlessCastbar/src/"
 unpack = unpack or table.unpack
 
+local secret = setmetatable({}, {
+    __index = function()
+        error("indexed a secret")
+    end,
+    __concat = function()
+        error("concatenated a secret")
+    end,
+    __lt = function()
+        error("compared a secret")
+    end,
+    __sub = function()
+        error("calculated with a secret")
+    end,
+})
+issecretvalue = function(value)
+    return rawequal(value, secret)
+end
+
 -- Locale: the English baseline through the real AceLocale.
 GetLocale = function()
     return "enUS"
@@ -22,6 +40,7 @@ C_Spell = {
         return spellNames[spellID]
     end,
     GetSpellSubtext = function(spellID)
+        assert(not issecretvalue(spellID), "secret spell ID passed to the client")
         return subtexts[spellID]
     end,
 }
@@ -262,6 +281,60 @@ app.ApplyHold(focus)
 app.db.profile.focus.hold.enabled = false
 app.ApplyHold(focus)
 assert(fade.startDelay == 0.2 and hold.duration == 1, "hold restored")
+
+-- Restricted cast values never enter arithmetic, rank formatting or channel lookups.
+local restricted = Bar("target")
+keys[restricted] = "target"
+restricted.casting = true
+restricted:SetMinMaxValues(0, 5)
+restricted:SetValue(secret)
+app.UpdateCastTime(restricted)
+assert(not restricted.ownText)
+restricted:SetValue(1)
+restricted:SetMinMaxValues(0, secret)
+app.UpdateCastTime(restricted)
+assert(not restricted.ownText)
+restricted:SetMinMaxValues(0, 5)
+restricted.casting = secret
+restricted.GetValue = function()
+    error("read time for an unknown cast state")
+end
+app.UpdateCastTime(restricted)
+restricted.Text.GetText = function()
+    error("read name for an unknown cast state")
+end
+app.UpdateName(restricted)
+restricted.Text = FontString("Frostbolt")
+restricted.casting, restricted.spellID = true, secret
+app.UpdateName(restricted)
+assert(restricted.Text:GetText() == "Frostbolt")
+restricted.spellID = 116
+app.UpdateName(restricted)
+assert(restricted.Text:GetText() == "Frostbolt (Rank 3)")
+restricted.Text:SetText(secret)
+app.RestoreName(restricted)
+assert(rawequal(restricted.Text:GetText(), secret), "restoration leaves restricted native text alone")
+restricted.Text:SetText("Frostbolt")
+subtexts[116] = secret
+app.UpdateName(restricted)
+assert(restricted.Text:GetText() == "Frostbolt")
+subtexts[116] = "Rank 3"
+local nativeChannelInfo, channelReads = UnitChannelInfo, 0
+UnitChannelInfo = function(unit)
+    assert(not issecretvalue(unit), "secret unit passed to UnitChannelInfo")
+    channelReads = channelReads + 1
+    return secret
+end
+restricted.channeling, restricted.unit = true, secret
+app.UpdateTicks(restricted)
+assert(channelReads == 0)
+restricted.unit, restricted.channeling = "target", secret
+app.UpdateTicks(restricted)
+assert(channelReads == 0)
+restricted.channeling = true
+app.UpdateTicks(restricted)
+assert(channelReads == 1 and #restricted.textures == 0)
+UnitChannelInfo = nativeChannelInfo
 
 print("PASS: cast time formats, rank, icon, channel ticks and hold time")
 
@@ -529,10 +602,6 @@ assert(not registered.enabled(), "the section leaves while the addon is disabled
 print("PASS: player cast bar Style section in Edit Mode")
 
 -- Target and focus previews: Edit Mode stand-ins that move the real bars, with their Style settings.
-local secret = {}
-issecretvalue = function(value)
-    return value == secret
-end
 local function Frame(name)
     local frame = { shown = false, level = 1, name = name, scale = 1 }
     setmetatable(frame, {

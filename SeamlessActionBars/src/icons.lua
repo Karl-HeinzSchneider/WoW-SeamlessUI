@@ -10,7 +10,7 @@ local tinted = setmetatable({}, { __mode = "k" })
 
 ---@param value any
 local function known(value)
-    return value ~= nil and not (issecretvalue and issecretvalue(value))
+    return not (issecretvalue and issecretvalue(value)) and value ~= nil
 end
 
 -- The colors `ActionBarActionButtonMixin:UpdateUsable` gives the icon, restored when a tint ends.
@@ -30,7 +30,16 @@ end
 ---@param button CheckButton
 function app.PaintIcon(button)
     local icon, action = button.icon, button.action
-    if not icon or not action or not C_ActionBar.HasAction(action) then
+    -- ActionBarFrameDocumentation.lua allows secret slot arguments only in
+    -- untainted code. Check before calling any action API from our hook.
+    if not known(icon) or not known(action) then
+        return
+    end
+    local hasAction = C_ActionBar.HasAction(action)
+    if not known(hasAction) then
+        return
+    end
+    if not hasAction then
         tinted[button] = nil
         return
     end
@@ -64,12 +73,19 @@ function app.RestoreIcon(button)
     if not tinted[button] then
         return
     end
+    local icon, action = button.icon, button.action
+    if not known(icon) or not known(action) then
+        return
+    end
+    local hasAction = C_ActionBar.HasAction(action)
+    if not known(hasAction) then
+        return
+    end
     tinted[button] = nil
-    local action = button.action
-    if action and C_ActionBar.HasAction(action) then
+    if hasAction then
         local isUsable, notEnoughMana = C_ActionBar.IsUsableAction(action)
         if known(isUsable) and known(notEnoughMana) then
-            nativeColor(button.icon, isUsable, notEnoughMana)
+            nativeColor(icon, isUsable, notEnoughMana)
         end
     end
 end

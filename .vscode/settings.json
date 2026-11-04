@@ -129,7 +129,7 @@
   "xml.fileAssociations": [
     {
       "pattern": "**/*.xml",
-      "systemId": "E:/Projects/InterfaceExport/_files/wow_classic_beta/Interface/AddOns/Blizzard_SharedXML/UI.xsd"
+      "systemId": "${workspaceFolder}/../_data/wow_forever/Interface/AddOns/Blizzard_SharedXML/UI.xsd"
     }
   ]
 }

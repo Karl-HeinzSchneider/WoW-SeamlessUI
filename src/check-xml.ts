@@ -2,17 +2,11 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { requireAddons } from "./addons.js";
-import { ROOT } from "./config.js";
+import { BLIZZARD_CODE_DIR, BLIZZARD_EXPORT } from "./config.js";
 
-// Match the editor's XML association; override when the export lives elsewhere.
-const configuredSchema = process.env.WOW_UI_SCHEMA;
-const schema = resolve(
-  ROOT,
-  configuredSchema ?? "E:/Projects/InterfaceExport/_files/wow_classic_beta/Interface/AddOns/Blizzard_SharedXML/UI.xsd",
-);
+const schema = resolve(BLIZZARD_CODE_DIR, "Interface", "AddOns", "Blizzard_SharedXML", "UI.xsd");
 if (!existsSync(schema)) {
-  if (configuredSchema !== undefined) throw new Error(`WOW_UI_SCHEMA does not point to an existing file: ${schema}`);
-  console.log(`XML validation skipped: schema not found at ${schema}. Set WOW_UI_SCHEMA to the exported UI.xsd path.`);
+  console.log(`XML validation skipped: ../_data/${BLIZZARD_EXPORT} is not installed`);
   process.exit(0);
 }
 

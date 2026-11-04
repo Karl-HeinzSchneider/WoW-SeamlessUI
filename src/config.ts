@@ -6,6 +6,14 @@ import { fileURLToPath } from "node:url";
 export const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
+ * Optional Blizzard UI export (https://github.com/Karl-HeinzSchneider/InterfaceExport) next to the
+ * repo: `../_data/<folder>/Interface/...`, folders named like the exporter's output. `wow_forever`
+ * matches the TOCs' `## Interface: 16001`; change it with the client (also in .vscode/settings.json).
+ */
+export const BLIZZARD_EXPORT = "wow_forever";
+export const BLIZZARD_CODE_DIR = resolve(ROOT, "..", "_data", BLIZZARD_EXPORT);
+
+/**
  * Every value of the client's [TextLocale] TOC path variable. The client loads a
  * `locales\[TextLocale]\<file>` entry for its own language only and warns when that file is
  * missing, so check:addons requires it for all of them.

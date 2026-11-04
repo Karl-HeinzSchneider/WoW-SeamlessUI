@@ -25,7 +25,7 @@ checks.
 
 ## Combat data
 
-- Use the exported client API under `../_data/wow_classic_beta` when adding statistics.
+- Use the exported client API under `../_data/wow_forever` when adding statistics.
 - Names and amounts can be secret: pass them straight to FontString/StatusBar setters; never
   compare, sort, concatenate or calculate with them. Only public amounts are abbreviated;
   percentages with a secret input are left blank. Keep the client's order and never modify

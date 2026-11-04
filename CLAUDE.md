@@ -35,7 +35,7 @@ options, `/seamless loglevel debug` shows the debug log.
 | `npm run format`                   | Prettier on TS/JSON/Markdown/YAML, then StyLua on Lua. XML is left to the editor. `format:check` only reports.                                                              |
 | `npm run check:addons`             | Every TOC entry exists (for every client language of `[TextLocale]`), features depend on `Seamless`, no dependency cycles.                                                  |
 | `npm run check:lua`                | Batched `luac -p` on every addon Lua file, retrying failed batches per file (needs Lua 5.1 `luac` on PATH).                                                                 |
-| `npm run check:xml`                | Validates addon XML against Blizzard's `UI.xsd` (python + lxml); uses the exported schema described below; `lib/` skipped.                                                  |
+| `npm run check:xml`                | Validates addon XML against Blizzard's `UI.xsd` (python + lxml); skipped when `../_data/wow_forever` is absent; `lib/` skipped.                                             |
 | `npm run typecheck`                | `tsc --noEmit` on `src/`.                                                                                                                                                   |
 | `npm run locales:sync`             | Synchronizes the client locale files with the English catalogue (see Localization).                                                                                         |
 | `npm run dev:link -- <AddOns dir>` | Symlinks (junctions on Windows) every addon into a client; never replaces a path that isn't already our link.                                                               |
@@ -91,7 +91,7 @@ position, scale and window inheritance, rather than factories for entire pages.
 **Every setting has an explicit default, taken from game code.** Declare it as a literal in the
 page's `defaults` or the control's `default`. When the setting changes something the game also has
 (a CVar, an Edit Mode setting, a frame size or anchor, a color, a timing, a line count), the default
-is the game's own value: look it up in the exported `wow_classic_beta/Interface` tree described below (XML attributes, `UI.xsd`
+is the game's own value: look it up in the exported `../_data/wow_forever/Interface` tree described below (XML attributes, `UI.xsd`
 attribute defaults, Lua constants, `EditModePresetLayouts.lua`, Settings definitions) and cite the
 file in a comment. Where the game value only exists at run time, read it from the game's own default
 API (`EditModePresetLayoutManager` through the frame position service, `C_CVar.GetCVarInfo`'s default
@@ -190,22 +190,28 @@ mixin files are listed in the TOC _before_ the XML that uses them.
 
 ## Blizzard's UI source and art (optional, read-only)
 
-The local exports are stored outside the repository:
+A developer may place Blizzard's exported interface files in `_data/` one level above the repo
+root (`../_data/`, a sibling of the repo, so nothing needs gitignoring). They are made with
+[InterfaceExport](https://github.com/Karl-HeinzSchneider/InterfaceExport) and keep the exporter's
+folder names:
 
-- `E:/Projects/InterfaceExport/_files/wow_classic_beta/Interface/`: `/run ExportInterfaceFiles("code")` of the WoW Forever client.
-- `E:/Projects/InterfaceExport/_files/wow_classic_beta_art/`: `/run ExportInterfaceFiles("art")`, every texture as `.blp`.
+- `../_data/wow_forever/Interface/`: the WoW Forever client's Lua/XML, including `UI.xsd`.
+- `../_data/wow_forever_art/Interface/`: every WoW Forever texture as `.blp`.
 
-`npm run check:xml` and `.vscode/settings.json` use
-`E:/Projects/InterfaceExport/_files/wow_classic_beta/Interface/AddOns/Blizzard_SharedXML/UI.xsd`.
-This absolute location works from both the original checkout and linked worktrees. On another
-machine, set `WOW_UI_SCHEMA` to the exported `UI.xsd` for the command-line check and update the
-editor's XML association. Relative overrides resolve from the repository root. A missing default
-schema is reported as skipped; an explicitly configured missing schema fails the check.
+`npm run check:xml` (`BLIZZARD_EXPORT` in `src/config.ts`) and the `xml.fileAssociations` path in
+`.vscode/settings.json` validate against
+`../_data/wow_forever/Interface/AddOns/Blizzard_SharedXML/UI.xsd`; change both if the TOCs ever
+target another client. Without the export the check is reported as skipped.
+
+`../_data/` also holds exports of other clients (`wow` for retail, `wow_classic`,
+`wow_classic_era`, `wow_anniversary`, their PTR/beta variants, each with an `_art` twin). Use them
+only when reference code from another client version is needed, e.g. for comparison; WoW Forever
+is the authority.
 
 If present, **read them, never edit them**. Use the code for exact API signatures, event
 payloads, templates and global strings (this client differs from retail and Classic), and the art
 file list to verify texture paths (case-insensitive). Atlas names are not in the art export; find
-them in XML under `wow_classic_beta`. Never list these files in a TOC or copy them into the repo.
+them in XML under `wow_forever`. Never list these files in a TOC or copy them into the repo.
 
 ## Textures and Blizzard frames: reuse art, remake code
 

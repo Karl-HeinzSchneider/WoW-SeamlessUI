@@ -36,6 +36,28 @@ local function ClassAtlas(unit)
     return GetClassAtlas(class)
 end
 
+-- Mainline/UnitFrame.lua: UnitFrame_ShouldReplacePortrait branches on identity
+-- queries before returning. Mirror its policy with access checks at each branch.
+-- The second return distinguishes a native portrait from restricted identity.
+local function NativeClassAtlas(unit)
+    local human = UnitIsHumanPlayer(unit)
+    if not Readable(human) then
+        return nil, false
+    end
+    if not human then
+        return nil, true
+    end
+    local mine = UnitIsUnit(unit, "player")
+    if not Readable(mine) then
+        return nil, false
+    end
+    if not GetCVarBool(mine and "ReplaceMyPlayerPortrait" or "ReplaceOtherPlayerPortraits") then
+        return nil, true
+    end
+    local atlas = ClassAtlas(unit)
+    return atlas, atlas ~= nil
+end
+
 ---@param frame Frame
 ---@param key string
 local function Apply(frame, key)
@@ -62,12 +84,13 @@ local function Apply(frame, key)
         return
     end
     if previewed[frame] then
+        local nativeAtlas, readable = NativeClassAtlas(unit)
+        if not readable then
+            return
+        end
         previewed[frame] = nil
         replaced[frame] = nil
         portrait:SetTexCoord(0, 1, 0, 1)
-        local nativeAtlas = UnitFrame_ShouldReplacePortrait
-            and UnitFrame_ShouldReplacePortrait(frame)
-            and ClassAtlas(unit)
         if nativeAtlas then
             portrait:SetAtlas(nativeAtlas)
         else
@@ -79,9 +102,13 @@ local function Apply(frame, key)
         portrait:SetAtlas(atlas)
         replaced[frame] = true
     elseif replaced[frame] then
+        local nativeAtlas, readable = NativeClassAtlas(unit)
+        if not readable then
+            return
+        end
         replaced[frame] = nil
         -- Leave the class icon when the client's own setting shows one here.
-        if not (UnitFrame_ShouldReplacePortrait and UnitFrame_ShouldReplacePortrait(frame) and ClassAtlas(unit)) then
+        if not nativeAtlas then
             SetPortraitTexture(portrait, unit, frame.disablePortraitMask)
         end
     end

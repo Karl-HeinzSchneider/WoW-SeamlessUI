@@ -6,15 +6,27 @@ local secret = setmetatable({}, {
     end,
 })
 canaccessvalue = function(value)
-    return value ~= secret
+    return not rawequal(value, secret)
+end
+local restrictedTables = {}
+canaccesstable = function(value)
+    return not restrictedTables[value]
 end
 Enum = { TooltipDataLineType = { QuestObjective = 8 } }
-local lines, scans = {}, 0
-UnitExists = function()
-    return true
+local lines, scans, exists = {}, 0, true
+UnitExists = function(unit)
+    assert(not canaccessvalue or canaccessvalue(unit), "secret token passed to UnitExists")
+    return exists
 end
+local queryError, secretData = false, false
 C_TooltipInfo = {
     GetUnit = function()
+        if queryError then
+            error("unit tooltip access restricted")
+        end
+        if secretData then
+            return secret
+        end
         return { lines = lines }
     end,
 }
@@ -47,6 +59,22 @@ check("loot", { type = 8, completed = false, leftText = secret })
 check("loot", { type = 8, completed = false, leftText = "Unknown objective" })
 check("loot", { type = 8, completed = false })
 check(nil)
+exists = secret
+check(nil, slay)
+exists = true
+assert(app.questIcons:ForUnit(secret) == nil)
+queryError = true
+check(nil, slay)
+queryError, secretData = false, true
+check(nil, slay)
+secretData = false
+check(nil, secret)
+restrictedTables[slay] = true
+check(nil, slay)
+restrictedTables[slay] = nil
+check("slay", slay)
+restrictedTables[lines] = true
+assert(app.questIcons:ForUnit("target") == nil, "a restricted line list must not be iterated")
 canaccessvalue = nil
 check("slay", slay)
 print("unitframes-questicons: OK")

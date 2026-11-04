@@ -61,6 +61,14 @@ assert(module:Get(native, "targettarget") == nil, "native ToT cannot impersonate
 assert(module:Get(native, "focustarget") == nil)
 assert(module:Get(nil, "targettarget") == nil)
 assert(requests == 0, "unrecognized frames never request catalogue data")
+local secret = {}
+canaccessvalue = function(value)
+    return not rawequal(value, secret)
+end
+assert(module:Get(secret, "player") == nil)
+assert(module:Get(secret, "targettarget") == nil)
+assert(requests == 0, "restricted frame fields never request catalogue data")
+canaccessvalue = nil
 for key, frame in pairs({ player = PlayerFrame, target = TargetFrame, focus = FocusFrame, pet = PetFrame }) do
     assert(module:Get(frame, key).name == "unitframes:" .. key)
     assert(module:Get(frame, "party") == nil)

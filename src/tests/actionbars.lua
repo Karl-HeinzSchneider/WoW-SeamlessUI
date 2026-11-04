@@ -1,6 +1,18 @@
 -- Run from the repository root: lua src/tests/actionbars.lua
 local root = "SeamlessActionBars/src/"
 
+local secret = setmetatable({}, {
+    __index = function()
+        error("indexed a secret")
+    end,
+    __concat = function()
+        error("concatenated a secret")
+    end,
+})
+issecretvalue = function(value)
+    return rawequal(value, secret)
+end
+
 -- Locale: the English baseline through the real AceLocale.
 GetLocale = function()
     return "enUS"
@@ -52,7 +64,10 @@ GetBindingText = function(key)
     return "game:" .. key
 end
 local bindings = {}
+local bindingReads = 0
 GetBindingKey = function(action)
+    assert(not issecretvalue(action), "secret binding action passed to the client")
+    bindingReads = bindingReads + 1
     return bindings[action]
 end
 IsBindingForGamePad = function(key)
@@ -61,14 +76,22 @@ end
 
 -- Action slots: usable, lacking mana, range (nil = no range).
 local slots = {}
+local actionReads, secretHasAction = 0, false
 C_ActionBar = {
     HasAction = function(action)
+        assert(not issecretvalue(action), "secret slot passed to HasAction")
+        actionReads = actionReads + 1
+        if secretHasAction then
+            return secret
+        end
         return slots[action] ~= nil
     end,
     IsUsableAction = function(action)
+        assert(not issecretvalue(action), "secret slot passed to IsUsableAction")
         return slots[action].usable, slots[action].noMana
     end,
     IsActionInRange = function(action)
+        assert(not issecretvalue(action), "secret slot passed to IsActionInRange")
         return slots[action].inRange
     end,
 }
@@ -182,6 +205,54 @@ clicked.bindingAction = "MULTIACTIONBAR5BUTTON1"
 bindings["CLICK MultiBar5Button1:LeftButton"] = "CTRL-E"
 app.UpdateHotkey(clicked)
 assert(clicked.HotKey:GetText() == "Cgame:E", "click binding")
+
+-- Unknown slots and restricted results must leave the native icon alone.
+button.icon:SetVertexColor(0.2, 0.3, 0.4)
+local reads = actionReads
+button.action = secret
+app.PaintIcon(button)
+assert(actionReads == reads and same(0.2, 0.3, 0.4, button.icon.color()))
+button.action = 1
+secretHasAction = true
+app.PaintIcon(button)
+secretHasAction = false
+for _, slot in ipairs({
+    { usable = secret, noMana = false, inRange = false },
+    { usable = true, noMana = secret, inRange = false },
+    { usable = true, noMana = false, inRange = secret },
+}) do
+    slots[1] = slot
+    app.PaintIcon(button)
+    assert(same(0.2, 0.3, 0.4, button.icon.color()), "restricted results do not replace native colors")
+end
+slots[1] = { usable = true, noMana = false, inRange = false }
+app.PaintIcon(button)
+button.action = secret
+reads = actionReads
+app.RestoreIcon(button)
+assert(actionReads == reads and same(0.85, 0.4, 0.4, button.icon.color()))
+button.action = 1
+app.RestoreIcon(button)
+assert(same(1, 1, 1, button.icon.color()), "restoration resumes when the slot is public")
+
+-- Do not compare, cache, format or look up bindings from restricted hotkey data.
+local restricted = Button("ACTIONBUTTON1", 1, secret)
+reads = bindingReads
+app.UpdateHotkey(restricted)
+assert(bindingReads == reads and rawequal(restricted.HotKey:GetText(), secret))
+restricted.HotKey:SetText("native")
+restricted.bindingAction = secret
+app.UpdateHotkey(restricted)
+assert(bindingReads == reads and restricted.HotKey:GetText() == "native")
+restricted.bindingAction = "ACTIONBUTTON1"
+bindings.ACTIONBUTTON1 = secret
+app.UpdateHotkey(restricted)
+assert(restricted.HotKey:GetText() == "native")
+bindings.ACTIONBUTTON1 = "SHIFT-BUTTON4"
+app.UpdateHotkey(restricted)
+assert(restricted.HotKey:GetText() == "SM4", "public bindings resume normally")
+app.RestoreHotkey(restricted)
+assert(restricted.HotKey:GetText() == "native", "secret text was never cached as a restore value")
 
 -- Endcaps: profile scale through the frame's own SetScale, native Hidden through Core's service.
 local combat = false

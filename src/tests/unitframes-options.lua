@@ -446,6 +446,9 @@ names.player = { "secret" }
 app.db.profile.unitFrames.player.nameDisplay = "first"
 hooked(PlayerFrame)
 assert(PlayerFrame.name:GetText() == "Anna Weber", "secret names are left alone")
+names.player = { "Anna", "secret" }
+hooked(PlayerFrame)
+assert(PlayerFrame.name:GetText() == "Anna Weber", "secret surnames are left alone too")
 canaccessvalue = nil
 enabled = false
 nameDisplay:OnDisable()
@@ -491,9 +494,12 @@ SetPortraitTexture = function(portrait)
     portraitResets = portraitResets + 1
     portrait.atlas = nil
 end
-local replaceCVar = false
+UnitIsHumanPlayer = UnitIsPlayer
+UnitIsUnit = function(unit, other)
+    return unit == other
+end
 UnitFrame_ShouldReplacePortrait = function()
-    return replaceCVar
+    error("native portrait policy must not branch on restricted identity in addon code")
 end
 enabled = true
 PlayerFrame.portrait, TargetFrame.portrait = Portrait(), Portrait()
@@ -516,10 +522,30 @@ modules.ClassIcon:Refresh()
 assert(portraitResets == 1, "only portraits we changed")
 app.db.profile.unitFrames.player.classIcon = true
 modules.ClassIcon:Refresh()
-replaceCVar = true
+cvars.ReplaceMyPlayerPortrait = "1"
 app.db.profile.unitFrames.player.classIcon = false
 modules.ClassIcon:Refresh()
 assert(portraitResets == 1, "the client's own class icon setting stays")
+-- The native helper's UnitIsUnit query can be secret. Retain ownership while
+-- identity is unavailable, then restore once a later refresh can decide safely.
+local portraitSecret = {}
+canaccessvalue = function(value)
+    return not rawequal(value, portraitSecret)
+end
+local publicSameUnit = UnitIsUnit
+app.db.profile.unitFrames.player.classIcon = true
+modules.ClassIcon:Refresh()
+app.db.profile.unitFrames.player.classIcon = false
+UnitIsUnit = function()
+    return portraitSecret
+end
+modules.ClassIcon:Refresh()
+assert(portraitResets == 1 and PlayerFrame.portrait.atlas == "classicon-mage")
+UnitIsUnit = publicSameUnit
+cvars.ReplaceMyPlayerPortrait = "0"
+modules.ClassIcon:Refresh()
+assert(portraitResets == 2 and PlayerFrame.portrait.atlas == nil, "public identity permits deferred restoration")
+canaccessvalue = nil
 print("PASS: class icon portraits")
 
 -- VIP identity is painted only through the custom-preview entry points.
@@ -570,7 +596,7 @@ preview.portrait = Portrait()
 app.db.profile.unitFrames.targettarget.classIcon = true
 modules.ClassIcon:ApplyPreview(preview, "targettarget")
 assert(preview.portrait.atlas == "classicon-mage")
-replaceCVar = false
+cvars.ReplaceMyPlayerPortrait = "0"
 app.db.profile.unitFrames.targettarget.classIcon = false
 modules.ClassIcon:ApplyPreview(preview, "targettarget")
 assert(preview.portrait.atlas == nil, "preview restores the portrait when its class icon is disabled")

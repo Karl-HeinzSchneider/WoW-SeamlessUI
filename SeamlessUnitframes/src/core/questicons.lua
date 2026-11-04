@@ -15,6 +15,10 @@ local function accessible(value)
     return not canaccessvalue or canaccessvalue(value)
 end
 
+local function readableTable(value)
+    return accessible(value) and type(value) == "table" and (not canaccesstable or canaccesstable(value))
+end
+
 ---@alias SeamlessUnitframes.QuestIconKey "slay"|"loot"
 
 ---@class SeamlessUnitframes.QuestIconDef
@@ -64,11 +68,17 @@ end
 ---@param unit string  # unit token, e.g. "target" or "nameplate3"
 ---@return SeamlessUnitframes.QuestIconKey|nil
 function questIcons:ForUnit(unit)
-    if not UnitExists(unit) then
+    if not accessible(unit) then
         return nil
     end
-    local data = C_TooltipInfo.GetUnit(unit)
-    if not data or not data.lines then
+    local exists = UnitExists(unit)
+    if not accessible(exists) or not exists then
+        return nil
+    end
+    -- TooltipInfoDocumentation.lua takes a UnitTokenPvPRestrictedForAddOns;
+    -- a public token can still be rejected while the client's access is restricted.
+    local ok, data = pcall(C_TooltipInfo.GetUnit, unit)
+    if not ok or not readableTable(data) or not readableTable(data.lines) then
         return nil
     end
 
@@ -77,7 +87,8 @@ function questIcons:ForUnit(unit)
         -- Restricted tooltip fields cannot be used for branching or text matching.
         -- Skip objectives whose completion is unknown rather than guessing they are needed.
         if
-            accessible(line.type)
+            readableTable(line)
+            and accessible(line.type)
             and line.type == Enum.TooltipDataLineType.QuestObjective
             and accessible(line.completed)
             and not line.completed

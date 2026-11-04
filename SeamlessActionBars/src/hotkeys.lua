@@ -3,6 +3,10 @@ local _, app = ...
 
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
+local function accessible(value)
+    return not (issecretvalue and issecretvalue(value))
+end
+
 -- Short keybind labels, built from the binding key itself ("SHIFT-BUTTON4" -> "SM4") so they do
 -- not depend on the client's language. Keys without a short form use the game's own
 -- abbreviated key name. Gamepad bindings keep the client's label.
@@ -96,15 +100,25 @@ function app.UpdateHotkey(button)
         return
     end
     local text = hotkey:GetText()
+    if not accessible(text) then
+        return
+    end
     -- Unbound buttons show the range dot instead of a label.
     if not text or text == RANGE_INDICATOR then
         originals[hotkey] = nil
         return
     end
     -- The same lookup as `ActionBarActionButtonMixin:UpdateHotkeys`.
-    local key = (button.bindingAction and GetBindingKey(button.bindingAction))
-        or GetBindingKey("CLICK " .. button:GetName() .. ":LeftButton")
-    if not key or (IsBindingForGamePad and IsBindingForGamePad(key)) then
+    local action = button.bindingAction
+    if not accessible(action) then
+        return
+    end
+    local key = action and GetBindingKey(action)
+    if not accessible(key) then
+        return
+    end
+    key = key or GetBindingKey("CLICK " .. button:GetName() .. ":LeftButton")
+    if not accessible(key) or not key or (IsBindingForGamePad and IsBindingForGamePad(key)) then
         return
     end
     local label = app.ShortKeyLabel(key)

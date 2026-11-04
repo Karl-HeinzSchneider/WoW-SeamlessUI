@@ -43,6 +43,13 @@ UnitIsConnected = function()
 end
 UnitExists = UnitIsPlayer
 UnitFrame_ShouldReplacePortrait = function()
+    error("must use the guarded portrait policy")
+end
+UnitIsHumanPlayer = UnitIsPlayer
+UnitIsUnit = function(unit, other)
+    return unit == other
+end
+GetCVarBool = function()
     return false
 end
 SetPortraitTexture = function(portrait, unit)

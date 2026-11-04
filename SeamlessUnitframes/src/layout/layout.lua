@@ -45,6 +45,10 @@ function module:CheckRegion(region, context, methods)
         self:Warn(context, "missing region")
         return false
     end
+    if type(region) == "table" and canaccesstable and not canaccesstable(region) then
+        self:Warn(context, "inaccessible region contents")
+        return false
+    end
     local forbiddenMethod = region.IsForbidden
     if not self:Readable(forbiddenMethod) then
         self:Warn(context, "inaccessible forbidden check")

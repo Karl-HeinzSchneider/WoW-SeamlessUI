@@ -32,7 +32,7 @@ end
 ---@return string?, string?
 local function NameParts(unit)
     local name, surname = UnitName(unit)
-    if not Readable(name) or (surname ~= nil and not Readable(surname)) then
+    if not Readable(name) or (canaccessvalue and not canaccessvalue(surname)) then
         return nil
     end
     if surname == nil or surname == "" then

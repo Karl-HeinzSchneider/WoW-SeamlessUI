@@ -280,8 +280,8 @@ end
 
 -- A native target status bar explicitly inherits SecureFrameTemplate. Its
 -- Camelot update can resize it in combat, but an addon cannot undo that resize.
--- Mirror setters into an ordinary visual bar instead; values may be secret and
--- are forwarded verbatim, never inspected or used in layout arithmetic.
+-- Mirror setters into an ordinary visual bar. Forward secret values only to
+-- setters that accept them from addon code.
 function module:MirrorBar(source, visual, health, unit)
     visualBars[source] = visual
     hooksecurefunc(source, "SetMinMaxValues", function(_, ...)
@@ -294,9 +294,12 @@ function module:MirrorBar(source, visual, health, unit)
         visual:SetStatusBarColor(...)
     end)
     if health then
-        -- Max-health-loss updates shrink the live bar through this setter.
-        hooksecurefunc(source, "SetWidth", function(_, ...)
-            visual:SetWidth(...)
+        -- Max-health-loss updates can pass a secret width to the native bar.
+        -- Keep the visual's current width when its setter cannot accept it.
+        hooksecurefunc(source, "SetWidth", function(_, width)
+            if self:Readable(width) then
+                visual:SetWidth(width)
+            end
         end)
     end
     hooksecurefunc(source, "SetAlpha", function(_, ...)

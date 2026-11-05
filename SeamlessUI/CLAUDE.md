@@ -110,9 +110,11 @@ Run `lua src/tests/fps-display.lua`.
 It registers an addon-owned selection outline for the native combined bags window in Edit Mode. The
 Frames checkbox defaults off and controls only that outline; inventory visibility, parenting, scale
 and item logic remain native. Positions live in profile `combinedBags.layouts`, with layout
-copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors` reapplies only saved
-positions, converting offsets for the native bag scale; other bags keep their native anchors. Reset
-removes the override and restores Blizzard placement. The default position is the client's own
+copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors` reapplies saved
+positions to the shown combined bag, converting offsets for its native scale. Never call the native
+layout routine from addon code because it can populate shared Blizzard bag caches with tainted data.
+Reset, disable and switching to a layout without an override restore the native anchor captured
+before the last override. The default position is the client's own
 formula from `UpdateContainerFrameAnchors` (BOTTOMRIGHT on UIParent, the right action bars' width
 plus 10 to the left, `CONTAINER_OFFSET_Y` up), never the bag's measured position. Combat defers position writes, including
 restoration when disabled. The per-frame "Keep position in combat" option (`positionInCombat`,

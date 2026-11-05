@@ -828,6 +828,13 @@ targetContainer.HealthBar:SetValue(secret, secret)
 assert(rawequal(targetVisual.HealthBar.range[2], secret))
 assert(rawequal(targetVisual.HealthBar.values[1], secret))
 assert(rawequal(targetVisual.HealthBar.values[2], secret))
+-- Blizzard can resize its secure bar with an unreadable max-health-loss width.
+local mirrorWidth = callbacks[targetContainer.HealthBar].SetWidth
+local previousWidth = targetVisual.HealthBar.width
+mirrorWidth(targetContainer.HealthBar, secret)
+assert(targetVisual.HealthBar.width == previousWidth, "secret widths must leave the visual width intact")
+mirrorWidth(targetContainer.HealthBar, 90)
+assert(targetVisual.HealthBar.width == 90, "readable width changes must still reach the visual bar")
 classification = "minus"
 TargetFrame:CheckClassification()
 assert(targetVisual.height == 12 and targetVisual.width == 125)

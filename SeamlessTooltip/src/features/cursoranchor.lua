@@ -15,14 +15,16 @@ end
 
 -- Blizzard's unit frames (player, target, party, raid, ...) carry their unit in `.unit`, secure unit
 -- buttons (unit frame addons) in the "unit" attribute. Units in the world come with UIParent.
----@param frame Frame
+-- Owners can also be textures (Blizzard DamageMeter spell icons), which have no GetAttribute.
+---@param frame Frame|Texture|FontString
 ---@return boolean
 local function isUnitFrame(frame)
-    return frame ~= UIParent and (frame.unit ~= nil or frame:GetAttribute("unit") ~= nil)
+    return frame ~= UIParent
+        and (frame.unit ~= nil or (frame.GetAttribute ~= nil and frame:GetAttribute("unit") ~= nil))
 end
 
 ---@param tooltip GameTooltip
----@param parent Frame
+---@param parent Frame|Texture|FontString
 function feature:AnchorToCursor(tooltip, parent)
     -- A forbidden parent can't be touched from addon code; unit frames keep the default anchor.
     if not parent or parent:IsForbidden() or isUnitFrame(parent) then

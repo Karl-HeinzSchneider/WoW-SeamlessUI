@@ -102,4 +102,60 @@ C_Item.GetItemQualityByID = function()
 end
 app.features:GetModule("QualityBorder"):OnItemTooltip({}, {})
 assert(painted[1] == 3 / 7 and painted[2] == 0.5 and painted[3] == 1)
-print("Tooltip runtime feature loading, page quality choices and border behavior OK")
+
+-- Blizzard's damage meter anchors spell tooltips to a Texture, not a Frame. Such owners have
+-- no GetAttribute; ordinary owners still follow the cursor and unit frames keep their anchor.
+local cursorAnchor = app.features:GetModule("CursorAnchor")
+local cursorSettings = { position = "ANCHOR_CURSOR_RIGHT", offsetX = 12, offsetY = -8 }
+app.db.profile.features.CursorAnchor = cursorSettings
+local calls = {}
+local tooltip = {
+    ClearAllPoints = function()
+        calls[#calls + 1] = "clear"
+    end,
+    SetOwner = function(_, owner, position, x, y)
+        calls[#calls + 1] = { owner, position, x, y }
+    end,
+}
+local function isNotForbidden()
+    return false
+end
+UIParent = { IsForbidden = isNotForbidden }
+local texture = { IsForbidden = isNotForbidden }
+local frame = {
+    IsForbidden = isNotForbidden,
+    GetAttribute = function(_, key)
+        assert(key == "unit")
+    end,
+}
+for _, owner in ipairs({ texture, frame, UIParent }) do
+    calls = {}
+    cursorAnchor:AnchorToCursor(tooltip, owner)
+    assert(#calls == 2 and calls[1] == "clear")
+    assert(calls[2][1] == owner and calls[2][2] == "ANCHOR_CURSOR_RIGHT")
+    assert(calls[2][3] == 12 and calls[2][4] == -8)
+end
+local function unexpectedAttribute()
+    error("Unit fields and forbidden owners must be checked before attributes")
+end
+local unitFrame = { IsForbidden = isNotForbidden, unit = "player", GetAttribute = unexpectedAttribute }
+local secureUnitFrame = {
+    IsForbidden = isNotForbidden,
+    GetAttribute = function(_, key)
+        assert(key == "unit")
+        return "target"
+    end,
+}
+local forbiddenOwner = {
+    IsForbidden = function()
+        return true
+    end,
+    GetAttribute = unexpectedAttribute,
+}
+calls = {}
+cursorAnchor:AnchorToCursor(tooltip, nil)
+for _, owner in ipairs({ unitFrame, secureUnitFrame, forbiddenOwner }) do
+    cursorAnchor:AnchorToCursor(tooltip, owner)
+end
+assert(#calls == 0, "Unit frames, forbidden owners and absent owners keep the default anchor")
+print("Tooltip runtime feature loading, page quality choices, border behavior and cursor anchoring OK")

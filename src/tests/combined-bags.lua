@@ -1,12 +1,16 @@
 -- Run from the repository root: lua src/tests/combined-bags.lua
 unpack = unpack or table.unpack
-local callbacks, move, panel, anchor, postHook
+local callbacks, move, panel, anchor, postHook, onRegen
 local layout, editing, combat, enabled = "Modern", false, false, true
 local module = {
     IsEnabled = function()
         return enabled
     end,
-    RegisterEvent = function() end,
+    RegisterEvent = function(_, event, callback)
+        if event == "PLAYER_REGEN_ENABLED" then
+            onRegen = callback
+        end
+    end,
 }
 local lib = {
     SettingType = { Checkbox = 1 },
@@ -42,6 +46,11 @@ local function frame(scale)
         end,
         GetEffectiveScale = function()
             return scale
+        end,
+        GetPoint = function(self)
+            if self.point then
+                return unpack(self.point)
+            end
         end,
         GetRight = function()
             return 990
@@ -79,14 +88,17 @@ UIParent = frame(1)
 UIParent.width = 1200
 ContainerFrameCombinedBags = frame(0.8)
 local bags = ContainerFrameCombinedBags
+local nativeOffsetX = -10
 local function nativeLayout()
     bags:ClearAllPoints()
-    bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -10, 100)
+    bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", nativeOffsetX, 100)
     if postHook then
         postHook()
     end
 end
-UpdateContainerFrameAnchors = nativeLayout
+function UpdateContainerFrameAnchors()
+    error("the addon must leave bag layout calls to Blizzard")
+end
 function CreateFrame()
     anchor = frame(1)
     return anchor
@@ -160,6 +172,7 @@ EditModeUtil = {
     end,
 }
 CONTAINER_OFFSET_Y = 85
+nativeLayout()
 module:OnEnable()
 assert(bags.point[4] == -10, "unsaved layouts retain Blizzard's position")
 -- The declared default is the client's own placement formula, never the bag's live position.
@@ -204,7 +217,7 @@ combatOption.set(nil, false)
 nativeLayout()
 assert(bags.point[4] == -10, "turning the option off restores the existing combat behavior")
 combat = false
-module:OnProfileRefresh()
+onRegen()
 assert(bags.point[4] == 250, "position reapplies after combat")
 callbacks.create("Copy", nil, "Modern")
 assert(profile.combinedBags.layouts.Copy.x == 200)
@@ -219,8 +232,16 @@ assert(bags.point[4] == -10, "a different layout retains its own native position
 layout = "Modern"
 callbacks.layout()
 assert(bags.point[4] == 250)
+nativeOffsetX = -42
+nativeLayout()
+assert(bags.point[4] == 250, "a changed native position still gets the saved override")
 module:ResetPosition()
-assert(profile.combinedBags.layouts.Modern == nil and bags.point[4] == -10, "reset restores native placement")
+assert(
+    profile.combinedBags.layouts.Modern == nil and bags.point[4] == -42,
+    "reset restores the latest native placement"
+)
+nativeOffsetX = -10
+nativeLayout()
 move(anchor, layout, "CENTER", 80, 40)
 enabled = false
 module:OnDisable()

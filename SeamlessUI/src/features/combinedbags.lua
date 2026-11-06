@@ -10,6 +10,7 @@ local lib = app.core:GetEditModeLibrary()
 local anchor
 local hooked = false
 local showAnchor = false
+local nativePoint
 -- The client's placement of the first bag (UpdateContainerFrameAnchors in ContainerFrame.lua):
 -- BOTTOMRIGHT on UIParent, GetInitialContainerFrameOffsetX() to the left (the right action bars'
 -- width plus 10, or 20 with the gamepad UI) and CONTAINER_OFFSET_Y (85) up, in UIParent units.
@@ -52,14 +53,30 @@ end
 
 local function ApplyPosition(position, relative)
     local frame = ContainerFrameCombinedBags
+    if not frame:IsShown() then
+        return
+    end
     if InCombatLockdown() then
         if not app.db.profile.combinedBags.positionInCombat or frame:IsProtected() then
             return
         end
     end
+    nativePoint = nativePoint or { frame:GetPoint(1) }
     local scale = UIParent:GetEffectiveScale() / frame:GetEffectiveScale()
     frame:ClearAllPoints()
     frame:SetPoint(position.point, relative, position.relativePoint, position.x * scale, position.y * scale)
+end
+
+local function RestorePosition()
+    if not nativePoint or InCombatLockdown() then
+        return
+    end
+    local frame = ContainerFrameCombinedBags
+    frame:ClearAllPoints()
+    if nativePoint[1] then
+        frame:SetPoint(unpack(nativePoint))
+    end
+    nativePoint = nil
 end
 
 function module:Refresh()
@@ -85,6 +102,8 @@ function module:Refresh()
         -- Keep the native parent, scale, visibility and item buttons. Offsets are in
         -- UIParent units, so convert them to the bag's effective scale.
         ApplyPosition(position, relative)
+    else
+        RestorePosition()
     end
 end
 
@@ -101,7 +120,6 @@ function module:ResetPosition()
     local name = lib:GetActiveLayoutName()
     if name and self:IsEnabled() and not InCombatLockdown() then
         app.db.profile.combinedBags.layouts[name] = nil
-        UpdateContainerFrameAnchors()
         self:Refresh()
         lib:RefreshFrameSettings(anchor)
     end
@@ -153,6 +171,11 @@ function module:TryInitialize()
     lib:AddFrameSettings(anchor, app.core:GetEditModePageSettings(appName, "combinedBags"))
     if not hooked then
         hooksecurefunc("UpdateContainerFrameAnchors", function()
+            -- Blizzard just placed every shown bag. Leave its layout routine to the client:
+            -- calling it from addon code can taint the container manager's shared caches.
+            if ContainerFrameCombinedBags:IsShown() then
+                nativePoint = nil
+            end
             if not module:IsEnabled() then
                 return
             end
@@ -165,7 +188,6 @@ function module:TryInitialize()
         end)
         hooked = true
     end
-    UpdateContainerFrameAnchors()
     self:Refresh()
     app.core:RefreshEditModeOptions()
 end
@@ -174,9 +196,6 @@ function module:OnEnable()
     self:RegisterEvent("ADDON_LOADED", "TryInitialize")
     self:RegisterEvent("PLAYER_REGEN_ENABLED", function()
         self:TryInitialize()
-        if UpdateContainerFrameAnchors then
-            UpdateContainerFrameAnchors()
-        end
         self:Refresh()
     end)
     self:TryInitialize()
@@ -186,24 +205,23 @@ end
 function module:OnDisable()
     if anchor then
         anchor:Hide()
-        if InCombatLockdown() then
+        if nativePoint and InCombatLockdown() then
             -- Ace removes module events on disable; defer native restoration on our own frame.
             anchor:RegisterEvent("PLAYER_REGEN_ENABLED")
             anchor:SetScript("OnEvent", function(self)
                 self:UnregisterEvent("PLAYER_REGEN_ENABLED")
-                UpdateContainerFrameAnchors()
+                if not module:IsEnabled() then
+                    RestorePosition()
+                end
             end)
         end
     end
-    if UpdateContainerFrameAnchors and not InCombatLockdown() then
-        UpdateContainerFrameAnchors()
-    end
+    RestorePosition()
     app.core:RefreshEditModeOptions()
 end
 
 function module:OnProfileRefresh()
-    if self:IsEnabled() and UpdateContainerFrameAnchors and not InCombatLockdown() then
-        UpdateContainerFrameAnchors()
+    if self:IsEnabled() and not InCombatLockdown() then
         self:Refresh()
     end
 end

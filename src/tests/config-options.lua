@@ -228,7 +228,6 @@ for _, addon in ipairs({
         end,
     }
     app.totPosition = app.position
-    app.groups = { { key = "unitFrames", name = "Unit frames" } }
     app.media = {
         LSM = { MediaType = {} },
         Values = function()
@@ -263,6 +262,9 @@ for _, addon in ipairs({
     assert(loadfile(addon .. "/src/" .. file))(addon, app)
     if addon == "SeamlessUnitframes" then
         assert(loadfile(addon .. "/src/core/unitframes.lua"))(addon, app)
+    end
+    if addon == "SeamlessDarkmode" then
+        assert(loadfile(addon .. "/src/frames.lua"))(addon, app)
     end
     support.pages(addon, app)
     app.dbDefaults = core:GetOptionsDefaults(app.optionPages, app.dbDefaults)

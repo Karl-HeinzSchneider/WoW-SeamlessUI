@@ -4,12 +4,13 @@ local appName, app = ...
 app.core = LibStub("AceAddon-3.0"):GetAddon("Seamless")
 app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEvent-3.0", "AceHook-3.0")
 
--- A texture's color before it was first tinted, restored when its group is switched off.
+-- A texture's color before it was first tinted, restored when its part is switched off.
 ---@type table<Texture, number[]>
 local originals = setmetatable({}, { __mode = "k" })
 
 ---@param texture Texture?
-local function tint(texture)
+---@param color SeamlessDarkmode.Color
+local function tint(texture, color)
     if not texture then
         return
     end
@@ -18,7 +19,6 @@ local function tint(texture)
         original = { texture:GetVertexColor() }
         originals[texture] = original
     end
-    local color = app.db.profile.color
     texture:SetVertexColor(color.r, color.g, color.b, original[4])
 end
 
@@ -29,6 +29,40 @@ local function restore(texture)
         texture:SetVertexColor(original[1], original[2], original[3], original[4])
         originals[texture] = nil
     end
+end
+
+-- An unset part of a split group still follows the old group setting in existing profiles.
+function app.IsPartEnabled(category, part)
+    local groups = app.db.profile.groups
+    local enabled = groups[part.key]
+    if enabled == nil and category.legacyGroup then
+        return groups[category.legacyGroup]
+    end
+    return enabled
+end
+
+local function ApplyTint(enabled)
+    local profile = app.db.profile
+    local statusPainters = {}
+    for _, category in ipairs(app.categories) do
+        local paintTint = restore
+        if enabled then
+            local override = profile.colors[category.key]
+            local color = (override.enabled and override.color) or profile.color
+            paintTint = function(texture)
+                tint(texture, color)
+            end
+        end
+        for _, part in ipairs(category.parts) do
+            local paint = enabled and app.IsPartEnabled(category, part) and paintTint or restore
+            if part.frame then
+                part.frame(paint)
+            else
+                statusPainters[part.key] = paint
+            end
+        end
+    end
+    app.StatusTrackingBars(statusPainters.experience, statusPainters.reputation, restore)
 end
 
 function app.addon:OnInitialize()
@@ -67,29 +101,11 @@ function app.addon:OnDisable()
     if icons then
         icons.UnregisterCallback(self, "LibDBIcon_IconCreated")
     end
-    for _, group in ipairs(app.groups) do
-        for _, frame in ipairs(group.frames) do
-            frame(restore)
-        end
-    end
-    app.StatusTrackingBars(restore, restore, restore)
+    ApplyTint(false)
 end
 
--- Runs every frame function of every group, tinting or restoring by the current profile.
 function app.addon:Refresh()
-    if not self:IsEnabled() then
-        return
-    end
-    local profile = app.db.profile
-    app.StatusTrackingBars(
-        (profile.enabled and profile.groups.experience) and tint or restore,
-        (profile.enabled and profile.groups.reputation) and tint or restore,
-        restore
-    )
-    for _, group in ipairs(app.groups) do
-        local paint = (profile.enabled and profile.groups[group.key]) and tint or restore
-        for _, frame in ipairs(group.frames) do
-            frame(paint)
-        end
+    if self:IsEnabled() then
+        ApplyTint(app.db.profile.enabled)
     end
 end

@@ -5,6 +5,29 @@ local app = {}
 local enabled = true
 local addon = {}
 local hooks = {}
+function securecallfunction(fn, ...)
+    return fn(...)
+end
+local function constant(...)
+    local values = { ... }
+    return function()
+        return unpack(values)
+    end
+end
+GetRealmName = constant("Realm")
+UnitName = constant("Player")
+UnitClass = constant("Mage", "MAGE")
+UnitRace = constant("Human", "Human")
+UnitFactionGroup = constant("Alliance")
+GetLocale = constant("enUS")
+GetCurrentRegion = constant(3)
+CreateFrame = constant({ RegisterEvent = function() end, SetScript = function() end })
+geterrorhandler = constant(error)
+dofile("Seamless/lib/LibStub/LibStub.lua")
+dofile("Seamless/lib/CallbackHandler-1.0/CallbackHandler-1.0.lua")
+dofile("Seamless/lib/AceDB-3.0/AceDB-3.0.lua")
+local AceDB = LibStub("AceDB-3.0")
+
 function addon:RegisterEvent() end
 function addon:UnregisterAllEvents() end
 function addon:IsHooked(object, method)
@@ -45,19 +68,8 @@ local icons = {
         iconCallbacks[event] = nil
     end,
 }
-function LibStub(major)
-    if major == "LibDBIcon-1.0" then
-        return icons
-    end
-    return {
-        GetAddon = function()
-            return {}
-        end,
-        NewAddon = function()
-            return addon
-        end,
-    }
-end
+LibStub.libs["LibDBIcon-1.0"] = icons
+LibStub.libs["AceAddon-3.0"] = { GetAddon = constant({}), NewAddon = constant(addon) }
 local function texture(alpha)
     local t = { color = { 1, 1, 1, alpha or 1 } }
     function t:GetVertexColor()
@@ -120,24 +132,15 @@ StatusTrackingBarInfo = { BarsEnum = { Experience = 1, Reputation = 2, Honor = 3
 MainStatusTrackingBarContainer = { shownBarIndex = 1, BarFrameTexture = texture(0.8) }
 SecondaryStatusTrackingBarContainer = { shownBarIndex = 2, BarFrameTexture = texture() }
 
-dofile("src/tests/locale-support.lua")
+dofile("Seamless/lib/AceLocale-3.0/AceLocale-3.0.lua")
+dofile("Seamless/locales/enUS.lua")
 assert(loadfile(root .. "frames.lua"))("SeamlessDarkmode", app)
-dofile("src/tests/locale-support.lua")
 assert(loadfile(root .. "core.lua"))("SeamlessDarkmode", app)
-app.db = {
-    profile = {
-        enabled = true,
-        color = { r = 0.2, g = 0.3, b = 0.4 },
-        groups = {
-            unitframes = true,
-            minimap = true,
-            actionbars = true,
-            endcaps = true,
-            experience = true,
-            reputation = true,
-        },
-    },
-}
+assert(loadfile(root .. "db.lua"))("SeamlessDarkmode", app)
+assert(loadfile(root .. "options/general.lua"))("SeamlessDarkmode", app)
+local page = app.optionPages.general
+local saved = { profiles = { Default = { color = { r = 0.2, g = 0.3, b = 0.4 } } } }
+app.db = AceDB:New(saved, page.defaults, true)
 
 addon:OnEnable()
 equal(slot.color, { 0.2, 0.3, 0.4, 0.6 }, "action slot tinted with alpha preserved")
@@ -213,8 +216,54 @@ equal(focusTotPreview.color, { 1, 1, 1, 1 }, "unit frames off restores the focus
 equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "other groups stay tinted")
 app.db.profile.groups.unitframes = true
 
+local minimap = page.config.args.minimap.args
+assert(not minimap.customColor.get() and minimap.color.disabled(), "overrides start off with the picker disabled")
+assert(not minimap.color.hidden, "the picker stays visible when the override is off")
+minimap.customColor.set(nil, true)
+assert(not minimap.color.disabled(), "enabling an override activates the picker")
+equal({ minimap.color.get() }, { 0.1, 0.1, 0.1 }, "first override starts from the current shared color")
+minimap.color.set(nil, 0.6, 0.3, 0.9)
+equal(MinimapCompassTexture.color, { 0.6, 0.3, 0.9, 1 }, "override tints the minimap")
+equal(ring.color, { 0.6, 0.3, 0.9, 1 }, "override is shared by minimap parts")
+equal(frame.color, { 0.1, 0.1, 0.1, 0.5 }, "unit frames still follow the shared color")
+minimap.minimapButtons.set(nil, false)
+equal(ring.color, { 1, 1, 1, 1 }, "disabling a part restores its original color")
+equal(MinimapCompassTexture.color, { 0.6, 0.3, 0.9, 1 }, "sibling parts stay tinted")
+minimap.minimapButtons.set(nil, true)
+minimap.customColor.set(nil, false)
+assert(minimap.color.disabled(), "turning the override off disables the picker again")
+equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "disabling the override restores the shared color")
+minimap.customColor.set(nil, true)
+equal(ring.color, { 0.6, 0.3, 0.9, 1 }, "re-enabling the override recalls the picked color")
+page.config.args.color.set(nil, 0.4, 0.4, 0.4)
+equal(frame.color, { 0.4, 0.4, 0.4, 0.5 }, "global color changes still reach other categories")
+equal(ring.color, { 0.6, 0.3, 0.9, 1 }, "global color changes leave the override in place")
+
+saved.profiles.Legacy = { groups = { minimap = false, unitframes = false } }
+app.db:SetProfile("Legacy")
+addon:Refresh()
+assert(not minimap.minimapButtons.get() and not minimap.minimapBorder.get(), "old disabled group applies to its parts")
+equal(ring.color, { 1, 1, 1, 1 }, "legacy profile disables tint")
+minimap.minimapButtons.set(nil, true)
+equal(ring.color, { 0.22, 0.22, 0.22, 1 }, "a part can opt in when its old group was disabled")
+equal(MinimapCompassTexture.color, { 1, 1, 1, 1 }, "untouched parts still follow the legacy group")
+app.db:SetProfile("Default")
+addon:Refresh()
+equal(ring.color, { 0.6, 0.3, 0.9, 1 }, "overrides survive switching profiles")
+
+local status = page.config.args.statusbars.args
+status.customColor.set(nil, true)
+status.color.set(nil, 0.8, 0.3, 0.2)
+MainStatusTrackingBarContainer.shownBarIndex = 1
+hooks[MainStatusTrackingBarContainer].ApplyPendingBarToShow()
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 0.8, 0.3, 0.2, 0.8 }, "XP uses status color")
+MainStatusTrackingBarContainer.shownBarIndex = 2
+hooks[MainStatusTrackingBarContainer].ApplyPendingBarToShow()
+equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 0.8, 0.3, 0.2, 0.8 }, "reputation shares status color")
+
 app.db.profile.enabled = false
 addon:Refresh()
+assert(minimap.customColor.get() and minimap.color.disabled(), "master switch disables an active override picker")
 equal(slot.color, { 1, 1, 1, 0.6 }, "master switch restores slots")
 equal(rightGryphon.color, { 1, 1, 1, 1 }, "master switch restores gryphons")
 equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "master switch restores reputation")
@@ -247,4 +296,6 @@ SecondaryStatusTrackingBarContainer = nil
 enabled = true
 addon:Refresh()
 
-print("PASS: unit frames, minimap, action slots, gryphons, XP/reputation border swaps, group/master toggles, disable")
+print(
+    "PASS: frame tints, status bar swaps, part/master toggles, category color overrides, legacy and switched profiles"
+)

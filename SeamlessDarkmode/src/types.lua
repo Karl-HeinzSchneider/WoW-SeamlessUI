@@ -5,13 +5,25 @@
 ---@field addon SeamlessDarkmode.Addon
 ---@field dbDefaults AceDB.Schema
 ---@field db AceDBObject-3.0
----@field groups SeamlessDarkmode.Group[]
+---@field categories SeamlessDarkmode.Category[]
+---@field IsPartEnabled fun(category: SeamlessDarkmode.Category, part: SeamlessDarkmode.Part): boolean
 ---@field StatusTrackingBars fun(experience: SeamlessDarkmode.Paint, reputation: SeamlessDarkmode.Paint, restore: SeamlessDarkmode.Paint)
 
----@class SeamlessDarkmode.Group
+---@class SeamlessDarkmode.Color
+---@field r number
+---@field g number
+---@field b number
+
+---@class SeamlessDarkmode.Category
 ---@field key string
 ---@field name string
----@field frames fun(paint: SeamlessDarkmode.Paint)[]
+---@field legacyGroup? string
+---@field parts SeamlessDarkmode.Part[]
+
+---@class SeamlessDarkmode.Part
+---@field key string
+---@field name string
+---@field frame? fun(paint: SeamlessDarkmode.Paint)
 
 ---@class SeamlessDarkmode.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessDarkmode.Addon)

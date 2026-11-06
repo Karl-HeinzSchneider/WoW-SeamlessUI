@@ -5,9 +5,32 @@ local _, app = ...
 local module = {}
 app.levelDisplay = app.addon:NewModule("LevelDisplay", module, "AceEvent-3.0")
 
--- Both layouts retain the client's level regions. Alpha preserves native visibility
--- (including the skull replacing the number), without showing anything the game hid.
+-- All layouts retain the client's level regions. The size setting uses alpha
+-- to hide them while preserving the client's choice of number or skull.
 local changed = {}
+local hooked = {}
+
+local function RestoreCircle(frame)
+    local content = frame.TargetFrameContent
+    local main = content.TargetFrameContentMain
+    local circle = main.LevelBackgroundCircle
+    local circleShown = circle:IsShown()
+    if (canaccessvalue and not canaccessvalue(circleShown)) or circleShown then
+        return
+    end
+
+    -- Camelot shows the circle on load. CheckBattlePet can hide it, but a
+    -- subsequent update only restores the number or skull. Check after the
+    -- pet update so a pet with neither indicator still has no circle.
+    local levelShown = main.LevelText:IsShown()
+    local skullShown = content.TargetFrameContentContextual.HighLevelTexture:IsShown()
+    if
+        (not canaccessvalue or (canaccessvalue(levelShown) and canaccessvalue(skullShown)))
+        and (levelShown or skullShown)
+    then
+        circle:Show()
+    end
+end
 
 local function Apply(region, mode, parent, side)
     if (canaccessvalue and not canaccessvalue(region)) or not region then
@@ -58,6 +81,17 @@ function module:Refresh()
 end
 
 function module:OnEnable()
+    for _, key in ipairs({ "target", "focus" }) do
+        local frame = _G[app.unitFrames:Get(key).frameName]
+        if frame and not hooked[frame] and frame.CheckBattlePet then
+            hooksecurefunc(frame, "CheckBattlePet", function()
+                if self:IsEnabled() and app.addon:IsEnabled() then
+                    RestoreCircle(frame)
+                end
+            end)
+            hooked[frame] = true
+        end
+    end
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "Refresh")
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "Refresh")
     self:Refresh()

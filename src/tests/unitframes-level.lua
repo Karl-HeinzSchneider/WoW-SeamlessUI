@@ -3,11 +3,24 @@ local enabled, combat = true, false
 InCombatLockdown = function()
     return combat
 end
+hooksecurefunc = function(object, method, hook)
+    local original = object[method]
+    object[method] = function(self, ...)
+        original(self, ...)
+        hook(self, ...)
+    end
+end
 local function region()
     return {
         alpha = 1,
         scale = 1,
         shown = true,
+        IsShown = function(self)
+            return self.shown
+        end,
+        Show = function(self)
+            self.shown = true
+        end,
         SetAlpha = function(self, value)
             self.alpha = value
         end,
@@ -24,6 +37,13 @@ local function region()
 end
 local function target()
     return {
+        CheckBattlePet = function(self, isPet)
+            if isPet then
+                local main = self.TargetFrameContent.TargetFrameContentMain
+                main.LevelBackgroundCircle.shown = false
+                main.LevelText.shown = false
+            end
+        end,
         TargetFrameContent = {
             TargetFrameContentMain = { LevelText = region(), LevelBackgroundCircle = region() },
             TargetFrameContentContextual = { HighLevelTexture = region() },
@@ -64,7 +84,7 @@ local app = {
 }
 assert(loadfile("SeamlessUnitframes/src/level/level.lua"))("SeamlessUnitframes", app)
 local module = app.levelDisplay
-for _, layout in ipairs({ "current", "legacy" }) do
+for _, layout in ipairs({ "current", "legacy", "legacyRounded" }) do
     app.db.profile.layout = layout
     module:OnEnable()
     assert(PlayerLevelText.alpha == 0)
@@ -73,10 +93,29 @@ for _, layout in ipairs({ "current", "legacy" }) do
     local skull = TargetFrame.TargetFrameContent.TargetFrameContentContextual.HighLevelTexture
     assert(main.LevelText.scale == 0.7 and main.LevelBackgroundCircle.scale == 0.7 and skull.scale == 0.7)
     local circle = main.LevelBackgroundCircle
+    skull.shown = false
+    TargetFrame:CheckBattlePet(true)
+    assert(not circle.shown and not main.LevelText.shown)
+    combat = true
+    main.LevelText.shown = true
+    TargetFrame:CheckBattlePet(false)
+    assert(circle.shown and circle.scale == 0.7)
+    combat = false
+    TargetFrame:CheckBattlePet(true)
+    skull.shown = true
+    TargetFrame:CheckBattlePet(false)
+    assert(circle.shown and skull.shown and not main.LevelText.shown)
     assert(circle.point[1] == "CENTER" and circle.point[2] == main and circle.point[3] == "BOTTOMRIGHT")
     assert(math.abs(circle.point[4] * circle.scale + 32.5) < 0.0001)
     assert(math.abs(circle.point[5] * circle.scale - 26.5) < 0.0001)
     assert(FocusFrame.TargetFrameContent.TargetFrameContentMain.LevelText.scale == 1)
+    local focusMain = FocusFrame.TargetFrameContent.TargetFrameContentMain
+    FocusFrame.TargetFrameContent.TargetFrameContentContextual.HighLevelTexture.shown = false
+    FocusFrame:CheckBattlePet(true)
+    assert(not focusMain.LevelBackgroundCircle.shown)
+    focusMain.LevelText.shown = true
+    FocusFrame:CheckBattlePet(false)
+    assert(focusMain.LevelBackgroundCircle.shown)
     main.LevelText.shown = false -- native skull mode must remain intact
     combat = true
     app.db.profile.unitFrames.target.levelDisplay = "hidden"
@@ -85,6 +124,9 @@ for _, layout in ipairs({ "current", "legacy" }) do
     combat = false
     module:Refresh()
     assert(main.LevelText.alpha == 0 and main.LevelBackgroundCircle.alpha == 0 and skull.alpha == 0)
+    circle.shown = false
+    TargetFrame:CheckBattlePet(false)
+    assert(circle.shown and circle.alpha == 0)
     app.db.profile.unitFrames.target = { levelDisplay = "default" }
     module:OnProfileRefresh()
     assert(main.LevelText.alpha == 1 and main.LevelText.scale == 1 and not main.LevelText.shown)
@@ -93,6 +135,9 @@ for _, layout in ipairs({ "current", "legacy" }) do
     enabled = false
     module:OnDisable()
     assert(PlayerLevelText.alpha == 1)
+    circle.shown = false
+    TargetFrame:CheckBattlePet(false)
+    assert(not circle.shown)
     enabled = true
     app.db.profile.unitFrames.target.levelDisplay = "smaller"
 end

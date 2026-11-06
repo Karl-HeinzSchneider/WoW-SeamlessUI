@@ -624,12 +624,17 @@ L["Window value"] = true
 -- SeamlessDarkmode
 L["Action bar gryphons"] = true
 L["Action bar slot borders"] = true
+L["Addon compartment button"] = true
 L["Darkmode color"] = true
 L["Darkmode"] = true
 L["Enable darkmode"] = true
+L["Minimap addon buttons"] = true
+L["Minimap border"] = true
 L["Reputation bar border"] = true
-L["Tint for the frame borders of every group switched on below."] = true
-L["Tint unit frame and minimap borders, action bar slot borders and gryphons, and XP and reputation bar borders. Each group can be switched independently. Icons, portraits, text and bar fills keep their colors."] = true
+L["Set a separate tint for all enabled parts in this section."] = true
+L["Status tracking bars"] = true
+L["Tint for enabled parts in sections that use the shared color."] = true
+L["Use custom color"] = true
 L["XP bar border"] = true
 
 -- SeamlessTooltip

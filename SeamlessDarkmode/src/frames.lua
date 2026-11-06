@@ -164,21 +164,46 @@ function app.StatusTrackingBars(experience, reputation, restore)
     end
 end
 
--- Every option group with the frame functions it switches. Order is the options order.
----@type SeamlessDarkmode.Group[]
-app.groups = {
+-- Categories share a tint. Each part can be switched independently.
+---@type SeamlessDarkmode.Category[]
+app.categories = {
     {
         key = "unitframes",
         name = L["Unit frames"],
-        frames = { PlayerFrame, TargetFrame, FocusFrame, PetFrame, PartyFrame, BossFrames },
+        legacyGroup = "unitframes",
+        parts = {
+            { key = "player", name = L["Player frame"], frame = PlayerFrame },
+            { key = "target", name = L["Target frame"], frame = TargetFrame },
+            { key = "focus", name = L["Focus frame"], frame = FocusFrame },
+            { key = "pet", name = L["Pet frame"], frame = PetFrame },
+            { key = "party", name = L["Party frames"], frame = PartyFrame },
+            { key = "boss", name = L["Boss frames"], frame = BossFrames },
+        },
     },
     {
         key = "minimap",
         name = L["Minimap"],
-        frames = { Minimap, AddonCompartmentButton, MinimapButtons },
+        legacyGroup = "minimap",
+        parts = {
+            { key = "minimapBorder", name = L["Minimap border"], frame = Minimap },
+            { key = "addonCompartment", name = L["Addon compartment button"], frame = AddonCompartmentButton },
+            { key = "minimapButtons", name = L["Minimap addon buttons"], frame = MinimapButtons },
+        },
     },
-    { key = "actionbars", name = L["Action bar slot borders"], frames = { ActionBars } },
-    { key = "endcaps", name = L["Action bar gryphons"], frames = { EndCaps } },
-    { key = "experience", name = L["XP bar border"], frames = {} },
-    { key = "reputation", name = L["Reputation bar border"], frames = {} },
+    {
+        key = "actionbars",
+        name = L["Action bars"],
+        parts = {
+            { key = "actionbars", name = L["Action bar slot borders"], frame = ActionBars },
+            { key = "endcaps", name = L["Action bar gryphons"], frame = EndCaps },
+        },
+    },
+    {
+        key = "statusbars",
+        name = L["Status tracking bars"],
+        parts = {
+            { key = "experience", name = L["XP bar border"] },
+            { key = "reputation", name = L["Reputation bar border"] },
+        },
+    },
 }

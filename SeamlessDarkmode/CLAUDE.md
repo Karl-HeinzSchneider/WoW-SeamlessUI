@@ -1,11 +1,11 @@
 # SeamlessDarkmode
 
-Optional addon requiring Seamless that tints the borders of specific game frames with one shared
-color, switchable per group (unit frames, minimap, action bar slots, gryphons, XP border,
-reputation border).
+Optional addon requiring Seamless that tints the borders of specific game frames. Each part can
+be switched independently. Unit frames, minimap, action bars and status tracking bars each use
+the shared tint by default and can have a category color override.
 
 - `src/frames.lua`: one function per frame naming the exact textures of that frame and its
-  subframes, and `app.groups`, the option groups listing those functions:
+  subframes, and `app.categories`, the option sections listing those parts:
   - Unit frames: `PlayerFrame`, `TargetFrame`, `FocusFrame`, `PetFrame`, `PartyFrame`,
     `BossFrames` (frame texture, level background circle). Target and focus also paint their
     ToT frames and SeamlessUnitframes' public Edit Mode stand-ins for them
@@ -20,13 +20,14 @@ reputation border).
     bars. Leave `SlotArt` and `SlotBackground` unchanged. Gryphons: `MainActionBar.EndCaps`
     left and right `Texture`.
   - XP and reputation: `StatusTrackingBars` selects the painter for each container's shared
-    `BarFrameTexture` from `shownBarIndex`, restoring it for unrelated bars. These groups have
+    `BarFrameTexture` from `shownBarIndex`, restoring it for unrelated bars. These parts have
     no individual frame functions because the same texture belongs to different bars over time.
 - `src/core.lua`: AceAddon/AceDB lifecycle, shared suite profiles and the
   `tint`/`restore` painters passed to the frame functions. Hooks `ApplyPendingBarToShow` on
   both status containers; retries hook installation on addon load and entering the world.
-- `src/options/`: master switch, shared color, one toggle per group. Also
-  registers the master switch as a GLOBAL option in the shared Edit Mode window.
+- `src/options/`: master switch, shared color, and collapsible category sections with part toggles
+  and an optional color picker. New part toggles inherit existing unit-frame and minimap group
+  values until changed. The master switch is also a GLOBAL option in the shared Edit Mode window.
 
 ## Rules
 
@@ -38,11 +39,12 @@ reputation border).
   textures.
 - Take texture keys from the client's export (`Blizzard_UnitFrame`, `Blizzard_Minimap`; Camelot
   overrides Mainline), including `Blizzard_ActionBar` and `Blizzard_StatusTrackingBar`.
-- To support a frame: add a function to `frames.lua` and put it in a group in `app.groups`.
+- To support a frame: add a function to `frames.lua` and list it in a category in `app.categories`.
 
 `lua src/tests/darkmode.lua` from the repository root checks tint, alpha, restore and toggles.
 
-Manual validation: toggle each group and the master switch, change the color, switch profiles,
-rotate the minimap, and check the frames in a vehicle, in a party and in boss fights. Check
-occupied and empty action slots, pet/stance bars, gryphons, and XP/reputation swapping between
-the main and secondary containers (including a switch to honor with its original border).
+Manual validation: collapse the category headers, toggle parts and the master switch, change the
+shared and category colors, and switch profiles. Rotate the minimap and check the frames in a
+vehicle, in a party and in boss fights. Check occupied and empty action slots, pet/stance bars,
+gryphons, and XP/reputation swapping between the main and secondary containers (including a
+switch to honor with its original border).

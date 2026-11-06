@@ -22,6 +22,7 @@ app.core:RegisterEditModeOptions(appName, {
             set = function(value)
                 app.db.profile.enabled = value
                 app.addon:Refresh()
+                app.core:RefreshOptions(appName)
             end,
         },
     },

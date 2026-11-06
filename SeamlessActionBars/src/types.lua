@@ -41,5 +41,6 @@
 
 ---@class SeamlessActionBars
 ---@field RefreshStatusBarScale fun()
+---@field StatusBarTextOptions fun(): table
 ---@field StatusBarScaleOption fun(key: string): table
 ---@field StatusBarWidthOption fun(getFrame: fun(): table?): table

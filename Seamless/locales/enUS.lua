@@ -191,6 +191,7 @@ L["%s XP"] = true
 L["Action Bars"] = true
 L["Adds the number of completed quests in your log and their total XP reward."] = true
 L["Alliance (Gryphon)"] = true
+L["Always show status bar text"] = true
 L["Alt (short)"] = "A"
 L["Backspace (short)"] = "BS"
 L["Bag button spacing"] = true

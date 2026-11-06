@@ -28,6 +28,7 @@ app.optionPages.statusBar2 = {
             return getFrame() == nil
         end,
         args = {
+            style = app.StatusBarTextOptions(),
             xpBarTooltip = app.XPBarTooltipOptions(),
             position = position,
             size = size,

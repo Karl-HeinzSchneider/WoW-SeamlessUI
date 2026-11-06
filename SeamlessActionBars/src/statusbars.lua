@@ -1,9 +1,10 @@
 ---@type string, SeamlessActionBars
 local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
-local module = app.addon:NewModule("StatusBarScale", "AceEvent-3.0")
+local module = app.addon:NewModule("StatusBarScale", "AceEvent-3.0", "AceHook-3.0")
 local frames = { statusBar1 = "MainStatusTrackingBarContainer", statusBar2 = "SecondaryStatusTrackingBarContainer" }
 local original = {}
+local xpBars = {}
 local events = CreateFrame("Frame")
 events:SetScript("OnEvent", function()
     app.RefreshStatusBarScale()
@@ -49,13 +50,81 @@ end
 
 function module:OnEnable()
     events:RegisterEvent("PLAYER_REGEN_ENABLED")
-    self:RegisterEvent("PLAYER_ENTERING_WORLD", app.RefreshStatusBarScale)
+    self:RegisterEvent("PLAYER_ENTERING_WORLD", function()
+        app.RefreshStatusBarScale()
+        self:HookXPText()
+    end)
     self:RegisterEvent("PLAYER_REGEN_ENABLED", app.RefreshStatusBarScale)
+    self:RegisterEvent("ADDON_LOADED", "HookXPText")
     app.RefreshStatusBarScale()
+    self:HookXPText()
+end
+
+local function updateXPText(bar, showPercent)
+    local xp, maxXP = bar.currXP, bar.maxBar
+    if not xp or not maxXP then
+        return
+    end
+
+    local text = XP_STATUS_BAR_TEXT:format(xp, maxXP)
+    if showPercent and maxXP > 0 then
+        text = L["%s (%.2f%%)"]:format(text, xp / maxXP * 100)
+    end
+    bar.OverlayFrame.Text:SetText(text)
+end
+
+local function showXPPercent(bar)
+    updateXPText(bar, true)
+end
+
+function module:HookXPText()
+    local info = StatusTrackingBarInfo
+    if not info then
+        return
+    end
+    for _, name in pairs(frames) do
+        local container = _G[name]
+        local bar = container and container.bars and container.bars[info.BarsEnum.Experience]
+        if bar and not xpBars[bar] then
+            xpBars[bar] = true
+            self:SecureHook(bar, "UpdateCurrentText", showXPPercent)
+            showXPPercent(bar)
+        end
+    end
 end
 
 function module:OnDisable()
+    self:UnhookAll()
+    for bar in pairs(xpBars) do
+        updateXPText(bar, false)
+        xpBars[bar] = nil
+    end
     app.RefreshStatusBarScale()
+end
+
+function app.StatusBarTextOptions()
+    return {
+        type = "group",
+        inline = true,
+        name = L["Style"],
+        order = 15,
+        args = {
+            alwaysShowText = {
+                type = "toggle",
+                name = L["Always show status bar text"],
+                order = 10,
+                default = function()
+                    return app.core:GetCVarOptionInfo("xpBarText")
+                end,
+                get = function()
+                    return GetCVarBool("xpBarText")
+                end,
+                set = function(_, value)
+                    SetCVar("xpBarText", value)
+                end,
+            },
+        },
+    }
 end
 
 function app.StatusBarScaleOption(key)

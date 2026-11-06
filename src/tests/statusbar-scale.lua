@@ -24,10 +24,18 @@ CreateFrame = function()
     return eventFrame
 end
 local module = { enabled = true }
+local hooks = {}
 function module:IsEnabled()
     return self.enabled
 end
 function module:RegisterEvent() end
+function module:SecureHook(bar, method, callback)
+    assert(method == "UpdateCurrentText" and not hooks[bar])
+    hooks[bar] = callback
+end
+function module:UnhookAll()
+    hooks = {}
+end
 local app = { addon = {}, core = {}, db = { profile = { statusBar1 = { scale = 1 }, statusBar2 = { scale = 1 } } } }
 function app.addon:NewModule()
     return module
@@ -50,6 +58,21 @@ local function frame()
 end
 MainStatusTrackingBarContainer = frame()
 SecondaryStatusTrackingBarContainer = frame()
+StatusTrackingBarInfo = { BarsEnum = { Experience = 1, Reputation = 2 } }
+XP_STATUS_BAR_TEXT = "XP: %d / %d"
+local function xpBar(xp, maxXP)
+    local label = {
+        SetText = function(self, value)
+            self.value = value
+        end,
+    }
+    return { currXP = xp, maxBar = maxXP, OverlayFrame = { Text = label } }, label
+end
+local mainXP, mainText = xpBar(25, 100)
+local secondaryXP, secondaryText = xpBar(0, 0)
+local reputation = {}
+MainStatusTrackingBarContainer.bars = { mainXP, reputation }
+SecondaryStatusTrackingBarContainer.bars = { secondaryXP }
 assert(loadfile("SeamlessActionBars/src/statusbars.lua"))("SeamlessActionBars", app)
 app.optionPages = {
     statusBar1 = { config = { name = "XP / reputation bar 1" } },
@@ -65,6 +88,13 @@ module:OnInitialize()
 assert(registrations["SeamlessActionBars:statusBar1"].page.key == "statusBar1")
 assert(registrations["SeamlessActionBars:statusBar2"].page.key == "statusBar2")
 module:OnEnable()
+assert(mainText.value == "XP: 25 / 100 (25.00%)")
+assert(secondaryText.value == "XP: 0 / 0")
+assert(not hooks[reputation])
+module:HookXPText()
+secondaryXP.currXP, secondaryXP.maxBar = 15, 200
+hooks[secondaryXP](secondaryXP)
+assert(secondaryText.value == "XP: 15 / 200 (7.50%)")
 local slider = app.StatusBarScaleOption("statusBar1")
 slider.set(nil, 1.5)
 assert(MainStatusTrackingBarContainer:GetScale() == 1.5)
@@ -82,6 +112,8 @@ assert(SecondaryStatusTrackingBarContainer:GetScale() == 1.25)
 combat = true
 module.enabled = false
 module:OnDisable()
+assert(not next(hooks))
+assert(mainText.value == "XP: 25 / 100" and secondaryText.value == "XP: 15 / 200")
 combat = false
 eventFrame.callback()
 assert(MainStatusTrackingBarContainer:GetScale() == 1)

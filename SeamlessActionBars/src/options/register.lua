@@ -65,7 +65,7 @@ function options:OnEnable()
     self:RegisterEvent("PLAYER_REGEN_ENABLED", refreshPosition)
     self:RegisterEvent("EDIT_MODE_LAYOUTS_UPDATED", refreshPosition)
     self:RegisterEvent("CVAR_UPDATE", function(_, name)
-        if name == "displayFreeBagSlots" then
+        if name == "displayFreeBagSlots" or name == "xpBarText" then
             refreshPosition()
         end
     end)

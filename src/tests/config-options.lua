@@ -218,6 +218,14 @@ for _, addon in ipairs({
     app.StatusBarWidthOption = function()
         return { type = "range", name = "Width", default = function() end }
     end
+    app.StatusBarTextOptions = function()
+        return {
+            type = "group",
+            inline = true,
+            name = "Style",
+            args = { alwaysShowText = { type = "toggle", name = "Always show status bar text", default = false } },
+        }
+    end
     app.EndCapFrame = function() end
     app.MicroMenuOptions = function()
         return { type = "group", name = "Style", args = {} }
@@ -400,9 +408,12 @@ local xpSections
 for _, pageKey in ipairs({ "statusBar1", "statusBar2" }) do
     local sections = core:GetEditModePageSections("SeamlessActionBars", pageKey)
     local sizes, tooltips = {}, {}
+    local style
     for _, section in ipairs(sections) do
         if section.key == "settings:size" then
             sizes[#sizes + 1] = section
+        elseif section.name == "Style" then
+            style = section
         else
             tooltips[#tooltips + 1] = section
         end
@@ -410,6 +421,7 @@ for _, pageKey in ipairs({ "statusBar1", "statusBar2" }) do
     assert(#sizes == 1, "Status bar page supplies one shared Size section")
     assert(#sizes[1].options == 2 and sizes[1].options[1].key == "scale", "Scale replaces the placeholder")
     assert(sizes[1].options[2].key == "width", "Native Width shares the Size header")
+    assert(style and #style.options == 1 and style.options[1].setting.path[3] == "alwaysShowText")
     assert(#tooltips == 1 and #tooltips[1].options == 5, "Each page supplies the shared XP tooltip controls once")
     xpSections = tooltips
 end

@@ -96,8 +96,8 @@ for index, category in ipairs(app.categories) do
             name = L["Color"],
             hasAlpha = false,
             default = defaultColor,
-            hidden = function()
-                return not app.db.profile.colors[key].enabled
+            disabled = function()
+                return masterOff() or not app.db.profile.colors[key].enabled
             end,
             get = function()
                 local profile = app.db.profile

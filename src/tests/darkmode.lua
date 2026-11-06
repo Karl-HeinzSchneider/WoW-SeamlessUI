@@ -217,9 +217,10 @@ equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "other groups stay tinted")
 app.db.profile.groups.unitframes = true
 
 local minimap = page.config.args.minimap.args
-assert(not minimap.customColor.get() and minimap.color.hidden(), "overrides start off with the picker hidden")
+assert(not minimap.customColor.get() and minimap.color.disabled(), "overrides start off with the picker disabled")
+assert(not minimap.color.hidden, "the picker stays visible when the override is off")
 minimap.customColor.set(nil, true)
-assert(not minimap.color.hidden(), "enabling an override reveals the picker")
+assert(not minimap.color.disabled(), "enabling an override activates the picker")
 equal({ minimap.color.get() }, { 0.1, 0.1, 0.1 }, "first override starts from the current shared color")
 minimap.color.set(nil, 0.6, 0.3, 0.9)
 equal(MinimapCompassTexture.color, { 0.6, 0.3, 0.9, 1 }, "override tints the minimap")
@@ -230,6 +231,7 @@ equal(ring.color, { 1, 1, 1, 1 }, "disabling a part restores its original color"
 equal(MinimapCompassTexture.color, { 0.6, 0.3, 0.9, 1 }, "sibling parts stay tinted")
 minimap.minimapButtons.set(nil, true)
 minimap.customColor.set(nil, false)
+assert(minimap.color.disabled(), "turning the override off disables the picker again")
 equal(ring.color, { 0.1, 0.1, 0.1, 1 }, "disabling the override restores the shared color")
 minimap.customColor.set(nil, true)
 equal(ring.color, { 0.6, 0.3, 0.9, 1 }, "re-enabling the override recalls the picked color")
@@ -261,6 +263,7 @@ equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 0.8, 0.3, 0.2, 0.8
 
 app.db.profile.enabled = false
 addon:Refresh()
+assert(minimap.customColor.get() and minimap.color.disabled(), "master switch disables an active override picker")
 equal(slot.color, { 1, 1, 1, 0.6 }, "master switch restores slots")
 equal(rightGryphon.color, { 1, 1, 1, 1 }, "master switch restores gryphons")
 equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "master switch restores reputation")

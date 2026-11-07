@@ -12,8 +12,8 @@ local feature = app.features:NewFeature("TargetLine")
 local LABEL = NORMAL_FONT_COLOR:WrapTextInColorCode(L["T:"])
 local YOU_COLOR = CreateColor(1, 0.25, 0.25)
 local NO_TARGET = GRAY_FONT_COLOR:WrapTextInColorCode("-")
--- How often the shown line is checked for a new target, in seconds.
-local UPDATE_INTERVAL = 0.05
+-- Events handle target changes immediately; poll twice a second for units without reliable events.
+local UPDATE_INTERVAL = 0.5
 
 -- The target line of the unit GameTooltip shows: the unit, the line's number (nil until the unit
 -- had a target) and its text.
@@ -27,12 +27,17 @@ end
 
 -- Hooks drop when the feature is switched off (AceHook).
 function feature:OnEnable()
+    self:RegisterEvent("UNIT_TARGET", "OnTargetChanged")
+    self:RegisterEvent("UPDATE_MOUSEOVER_UNIT", "OnTargetChanged")
+    self:RegisterEvent("PLAYER_TARGET_CHANGED", "OnTargetChanged")
+    self:RegisterEvent("PLAYER_FOCUS_CHANGED", "OnTargetChanged")
     self:SecureHookScript(GameTooltip, "OnUpdate", "OnTooltipUpdate")
     self:SecureHookScript(GameTooltip, "OnHide", "OnTooltipHide")
 end
 
 function feature:OnDisable()
     shown = nil
+    elapsedSinceUpdate = 0
 end
 
 -- "T: Name" for `unit`'s target, nil without one. Nil too when the game keeps the target secret
@@ -81,6 +86,7 @@ function feature:OnUnitTooltip(tooltip)
     if tooltip ~= GameTooltip then
         return
     end
+    elapsedSinceUpdate = 0
     local _, unit = tooltip:GetUnit()
     if not unit or anySecret(unit) then
         shown = nil
@@ -97,8 +103,22 @@ end
 -- Units in the world keep their tooltip while hovered, so a new target is written into the line
 -- (or added as one); "T: -" once the target is gone.
 function feature:OnTooltipUpdate(tooltip, elapsed)
+    if not shown then
+        return
+    end
     elapsedSinceUpdate = elapsedSinceUpdate + elapsed
-    if not shown or elapsedSinceUpdate < UPDATE_INTERVAL then
+    if elapsedSinceUpdate < UPDATE_INTERVAL then
+        return
+    end
+    self:RefreshTargetLine(tooltip)
+end
+
+function feature:OnTargetChanged()
+    self:RefreshTargetLine(GameTooltip)
+end
+
+function feature:RefreshTargetLine(tooltip)
+    if not shown or tooltip:IsForbidden() or not tooltip:IsShown() then
         return
     end
     elapsedSinceUpdate = 0
@@ -126,4 +146,5 @@ end
 
 function feature:OnTooltipHide()
     shown = nil
+    elapsedSinceUpdate = 0
 end

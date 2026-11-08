@@ -2,6 +2,7 @@
 local _, app = ...
 local module = app.legacyLayout
 local backgrounds = {}
+local activeBackgrounds = {}
 local targetVisuals = {}
 local predictionEvents
 local P = "UI-HUD-UnitFrame-"
@@ -47,11 +48,23 @@ local function PvP(icon, parent, side, x, legacy)
         background:SetAtlas(P .. "SmallCircle", true)
         background:SetScale(0.8)
         backgrounds[icon] = background
+        -- Visibility is cosmetic and must follow native PvP updates even when
+        -- combat defers the fixed layout's geometry pass.
+        local function SyncVisibility()
+            local shown = icon:IsShown()
+            if activeBackgrounds[icon] and module:Readable(shown) then
+                background:SetShown(shown)
+            end
+        end
+        for _, method in ipairs({ "Show", "Hide", "SetShown" }) do
+            hooksecurefunc(icon, method, SyncVisibility)
+        end
         -- A new circle follows the frame's Hide PvP icon setting.
         if app.pvpIcon then
             app.pvpIcon:Refresh()
         end
     end
+    activeBackgrounds[icon] = true
     Point(background, "TOP", parent, side, x, -50)
     local shown = icon:IsShown()
     if module:Readable(shown) then
@@ -906,7 +919,8 @@ function module:PvPBackground(icon)
 end
 
 function module:HideLegacyBackgrounds()
-    for _, background in pairs(backgrounds) do
+    for icon, background in pairs(backgrounds) do
+        activeBackgrounds[icon] = nil
         background:Hide()
     end
 end

@@ -999,6 +999,31 @@ layout:Refresh()
 Drain()
 assert(geometryWrites == count)
 combat = false
+-- PvP circles follow native visibility immediately, independently of combat
+-- geometry and without reappearing after the Beta layout is restored.
+for _, mode in ipairs({ "legacy", "legacyRounded" }) do
+    Mode(mode)
+    for _, root in ipairs({ PlayerFrame, TargetFrame, FocusFrame }) do
+        local content = root.PlayerFrameContent or root.TargetFrameContent
+        local icon = root == PlayerFrame and content.PlayerFrameContentMain.PvpBackgroundIcon
+            or content.TargetFrameContentContextual.PvpBackgroundIcon
+        local background = assert(layout:PvPBackground(icon))
+        combat = true
+        icon:Show()
+        assert(background.shown, "PvP circle must appear during combat")
+        icon:Hide()
+        assert(not background.shown, "PvP circle must clear during combat")
+        icon:SetShown(true)
+        assert(background.shown, "SetShown must update the PvP circle during combat")
+        icon:SetShown(false)
+        assert(not background.shown)
+        combat = false
+    end
+    Mode("current")
+    local icon = TargetFrame.TargetFrameContent.TargetFrameContentContextual.PvpBackgroundIcon
+    icon:Show()
+    assert(not layout:PvPBackground(icon).shown, "Default must keep the Beta circle hidden")
+end
 Mode("legacy")
 Mode("current")
 -- Missing known fields fail with a diagnostic, not a nil call; later refresh retries.

@@ -56,7 +56,7 @@ function app.PlayerSizeDefault(axis)
 end
 
 function app.ApplyPlayerSize()
-    local bar = PlayerCastingBarFrame
+    local bar = app.GetPlayerBar()
     if not bar then
         return
     end

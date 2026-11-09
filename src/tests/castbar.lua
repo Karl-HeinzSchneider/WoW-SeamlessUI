@@ -423,6 +423,9 @@ PlayerCastingBarFrame.Text = {
 }
 app.dbDefaults = {}
 dofile("src/tests/settings-support.lua").defaults("SeamlessCastbar", app)
+app.GetPlayerBar = function()
+    return PlayerCastingBarFrame
+end
 load("size.lua")
 dimensions.width, dimensions.height = 207.99998474121, 11.00000095367
 assert(

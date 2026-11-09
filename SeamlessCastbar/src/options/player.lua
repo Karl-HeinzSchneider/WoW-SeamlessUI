@@ -153,7 +153,6 @@ app.optionPages.player = {
 
                 order = 40,
                 name = L["Spell icon"],
-                desc = L["Show the spell icon beside the player cast bar when it is not locked to the player frame."],
             },
 
             castTime = {
@@ -167,7 +166,6 @@ app.optionPages.player = {
 
                 order = 10,
                 name = L["Cast time"],
-                desc = L["Change how the player cast bar's cast time reads. Show it with Show Cast Time in the cast bar's Edit Mode settings."],
                 args = {
                     format = {
                         type = "select",

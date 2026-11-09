@@ -7,7 +7,6 @@ app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEven
 -- The game's own cast bars, by profile key. They all use the client's casting bar mixin; target
 -- and focus bars are created by their unit frames.
 local barNames = {
-    player = "PlayerCastingBarFrame",
     target = "TargetFrameSpellBar",
     focus = "FocusFrameSpellBar",
 }
@@ -18,14 +17,14 @@ local keys = {}
 ---@param bar StatusBar
 ---@return string?
 function app.BarKey(bar)
-    return keys[bar]
+    return bar == app.GetPlayerBar() and "player" or keys[bar]
 end
 
 -- The bar's feature settings in the current profile.
 ---@param bar StatusBar
 ---@return table?
 function app.Settings(bar)
-    local key = keys[bar]
+    local key = app.BarKey(bar)
     return key and app.db.profile[key]
 end
 
@@ -54,27 +53,19 @@ function app.addon:OnEnable()
             -- A delayed cast that was not shown as casting turns the bar into a cast.
             self:SecureHook(bar, "HandleCastDelayed", app.UpdateTicks)
             self:SecureHook(bar, "UpdateIconShown", app.UpdateIcon)
-            if key == "player" then
-                self:SecureHook(bar, "SetLook", app.PlayerSizeLookChanged)
-                self:SecureHook(bar, "UpdateSystemSettingBarSize", app.PlayerScaleChanged)
-            end
         end
     end
     app.RegisterEditMode()
     app.RegisterPreviews()
     app.position:Enable()
-    app.EnablePlayerComparison()
-    self:SecureHook(PlayerCastingBarFrame, "SetLook", app.RefreshPlayerComparison)
-    self:SecureHook(PlayerCastingBarFrame, "SetScale", app.RefreshPlayerComparison)
-    self:SecureHook(PlayerCastingBarFrame, "SetCastTimeTextShown", app.RefreshPlayerComparison)
-    self:SecureHookScript(PlayerCastingBarFrame, "OnSizeChanged", app.RefreshPlayerComparison)
+    app.EnablePlayerBar()
+    keys[app.GetPlayerBar()] = "player"
     self:Refresh()
 end
 
 function app.addon:OnDisable()
-    app.DisablePlayerComparison()
+    app.DisablePlayerBar()
     self:UnhookAll()
-    app.ApplyPlayerSize()
     for bar in pairs(keys) do
         app.RestoreCastTime(bar)
         app.RestoreName(bar)
@@ -93,7 +84,7 @@ function app.addon:Refresh()
     if not self:IsEnabled() then
         return
     end
-    app.ApplyPlayerSize()
+    app.RefreshPlayerBar()
     for bar in pairs(keys) do
         app.UpdateName(bar)
         app.UpdateTicks(bar)
@@ -103,5 +94,4 @@ function app.addon:Refresh()
     end
     app.position:Refresh()
     app.UpdatePreviews()
-    app.RefreshPlayerComparison()
 end

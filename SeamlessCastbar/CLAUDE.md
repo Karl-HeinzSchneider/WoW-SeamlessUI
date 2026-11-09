@@ -19,7 +19,7 @@ system, so they are not part of this addon.
 
 - `src/player.lua`: independent `SeamlessCastbarPlayer` player bar using the client's
   `CastingBarFrameTemplate` and unmodified cast lifecycle. Anchored 32 units above the native
-  bar; independently subscribes through SetUnit and uses profile.player visual settings. Does not register with Edit Mode
+  bar; independently subscribes through SetUnit and uses profile.player visual settings. Reads shared active-layout data for Lock To Player Frame style and Show Cast Time, never the original bar state. Does not register with Edit Mode
   or hide the original. Batch crafting is not implemented yet.
 
 - `src/options/`: per-bar feature defaults and the Player, Target and Focus pages (`shared.lua`
@@ -28,7 +28,7 @@ system, so they are not part of this addon.
   hooks and `app.Settings(bar)`. All three bars follow the addon lifecycle; there are no per-bar
   Enable switches. Individual feature switches remain independent.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
-  text when disabled. The player uses inherited cast-time text and its profile toggle for visibility; target/focus get
+  text when disabled. Both player bars use inherited cast-time text and the shared layout Show Cast Time for visibility; target/focus get
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.

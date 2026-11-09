@@ -4,7 +4,7 @@
 ---@field GetPlayerBar fun(): StatusBar?
 ---@field EnablePlayerBar fun()
 ---@field DisablePlayerBar fun()
----@field RefreshPlayerBar fun()
+---@field RefreshPlayerBar fun(force?: boolean)
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessCastbar.Addon
 ---@field dbDefaults AceDB.Schema

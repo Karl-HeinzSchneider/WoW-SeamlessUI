@@ -90,7 +90,7 @@ function app.addon:Refresh()
     if not self:IsEnabled() then
         return
     end
-    app.RefreshPlayerBar()
+    app.RefreshPlayerBar(true)
     app.ApplyPlayerSize()
     for bar in pairs(keys) do
         app.UpdateName(bar)

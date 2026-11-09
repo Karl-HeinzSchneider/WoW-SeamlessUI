@@ -14,12 +14,34 @@ for _, method in ipairs({
     "UpdateIcon",
     "HideTicks",
     "PlayerSizeLookChanged",
+    "ApplyPlayerSize",
 }) do
     app[method] = function()
         calls[method] = (calls[method] or 0) + 1
     end
 end
-UIParent = {}
+UIParent = {
+    GetEffectiveScale = function()
+        return 0.8
+    end,
+}
+PlayerFrame = {
+    GetEffectiveScale = function()
+        return 1.2
+    end,
+}
+app.PlayerSizeDefault = function()
+    return 1
+end
+Enum = { EditModeSystem = { CastBar = 4 }, EditModeCastBarSetting = { LockToPlayerFrame = 1, ShowCastTime = 2 } }
+local lock = { setting = 1, value = 0 }
+local time = { setting = 2, value = 1 }
+local layout = { systems = { { system = 4, settings = { lock, time } } } }
+EditModeManagerFrame = {
+    GetActiveLayoutInfo = function()
+        return layout
+    end,
+}
 -- Reading any native cast state or method is an error; only the anchor may reference it.
 PlayerCastingBarFrame = setmetatable({}, {
     __index = function()
@@ -38,6 +60,18 @@ CreateFrame = function(kind, name, parent, template)
     end
     function frame:SetFrameStrata(value)
         assert(value == "HIGH")
+    end
+    function frame:SetScale(value)
+        self.scale = value
+    end
+    function frame:GetScript(script)
+        assert(script == "OnEvent")
+        return function(self, event)
+            self.lastEvent = event
+        end
+    end
+    function frame:SetScript(script, callback)
+        self[script] = callback
     end
     function frame:SetPoint(point, anchor, relative, x, y)
         assert(point == "BOTTOM" and anchor == PlayerCastingBarFrame and relative == "TOP" and x == 0 and y == 32)
@@ -86,7 +120,21 @@ bar:UpdateCastTimeText()
 assert(calls.UpdateCastTime == 2)
 app.db.profile = { player = { castTime = { enabled = false } } }
 app.RefreshPlayerBar()
-assert(not bar.timeShown, "refresh reads the current profile")
+assert(bar.timeShown, "formatting toggle must not override shared Show Cast Time visibility")
+lock.value = 1
+time.value = 0
+bar:OnEvent("UNIT_SPELLCAST_START")
+assert(bar.look == "UNITFRAME" and not bar.timeShown and bar.iconShown)
+assert(math.abs(bar.scale - 1.5) < 0.0001, "locked appearance uses PlayerFrame's inherited scale rule")
+assert(bar.lastEvent == "UNIT_SPELLCAST_START", "own inherited event handler still runs")
+lock.value = 0
+time.value = 1
+bar:OnUpdate()
+assert(bar.look == "CLASSIC" and bar.timeShown and bar.scale == 1)
+assert(bar.iconShown, "native icon eligibility stays enabled for both looks")
+app.db.profile.player.scale = 1.7
+app.RefreshPlayerBar(true)
+assert(bar.scale == 1.7, "profile changes apply independently")
 app.DisablePlayerBar()
 assert(bar.unit == nil and bar.hidden)
 app.EnablePlayerBar()

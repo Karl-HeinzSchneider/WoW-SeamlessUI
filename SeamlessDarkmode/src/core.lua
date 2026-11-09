@@ -8,6 +8,40 @@ app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEven
 ---@type table<Texture, number[]>
 local originals = setmetatable({}, { __mode = "k" })
 
+local restingStatusTinted = false
+
+-- Mainline/PlayerFrame.lua (also loaded by Camelot) draws a gold overlay while
+-- resting. Tint that overlay only; native combat/status updates keep their colors.
+local function PaintPlayerStatus(enabled)
+    local frame = _G.PlayerFrame
+    if not frame then
+        return
+    end
+    if frame.inCombat or frame.onHateList or not IsResting() then
+        restingStatusTinted = false
+        return
+    end
+    local status = frame.PlayerFrameContent.PlayerFrameContentMain.StatusTexture
+    if not status then
+        return
+    end
+    local profile = app.db.profile
+    local playerEnabled = profile.groups.player
+    if playerEnabled == nil then
+        playerEnabled = profile.groups.unitframes
+    end
+    if enabled and playerEnabled then
+        local override = profile.colors.unitframes
+        local color = (override.enabled and override.color) or profile.color
+        status:SetVertexColor(color.r, color.g, color.b, 1)
+        restingStatusTinted = true
+    elseif restingStatusTinted then
+        -- Native IsResting branch in Blizzard_UnitFrame/Mainline/PlayerFrame.lua.
+        status:SetVertexColor(1, 0.88, 0.25, 1)
+        restingStatusTinted = false
+    end
+end
+
 ---@param texture Texture?
 ---@param color SeamlessDarkmode.Color
 local function tint(texture, color)
@@ -63,6 +97,7 @@ local function ApplyTint(enabled)
         end
     end
     app.StatusTrackingBars(statusPainters.experience, statusPainters.reputation, restore)
+    PaintPlayerStatus(enabled)
 end
 
 function app.addon:OnInitialize()
@@ -85,6 +120,9 @@ end
 
 -- Containers can change from XP to reputation (or another bar) after login and during fades.
 function app.addon:InstallHooks()
+    if _G.PlayerFrame_UpdateStatus and not self:IsHooked("PlayerFrame_UpdateStatus") then
+        self:SecureHook("PlayerFrame_UpdateStatus", "RefreshPlayerStatus")
+    end
     for _, name in ipairs({ "MainStatusTrackingBarContainer", "SecondaryStatusTrackingBarContainer" }) do
         local container = _G[name]
         if container and not self:IsHooked(container, "ApplyPendingBarToShow") then
@@ -92,6 +130,10 @@ function app.addon:InstallHooks()
         end
     end
     self:Refresh()
+end
+
+function app.addon:RefreshPlayerStatus()
+    PaintPlayerStatus(self:IsEnabled() and app.db.profile.enabled)
 end
 
 function app.addon:OnDisable()

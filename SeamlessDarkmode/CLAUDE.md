@@ -25,6 +25,8 @@ the shared tint by default and can have a category color override.
 - `src/core.lua`: AceAddon/AceDB lifecycle, shared suite profiles and the
   `tint`/`restore` painters passed to the frame functions. Hooks `ApplyPendingBarToShow` on
   both status containers; retries hook installation on addon load and entering the world.
+  A scoped `PlayerFrame_UpdateStatus` post-hook tints the resting status overlay with the
+  player border color. Combat indicators retain native colors; disabling restores resting gold.
 - `src/options/`: master switch, shared color, and collapsible category sections with part toggles
   and an optional color picker. New part toggles inherit existing unit-frame and minimap group
   values until changed. The master switch is also a GLOBAL option in the shared Edit Mode window.
@@ -36,7 +38,8 @@ the shared tint by default and can have a category color override.
 - Each frame function takes `paint` and calls it on every texture it owns. The same function
   applies darkmode (`tint`) and removes it (`restore`), so a texture listed once is undone too.
 - Only decoration: never pass portraits, icons, bar fills, text or flash/status/highlight
-  textures.
+  textures to the generic painter. The resting player status overlay is handled separately
+  because it covers the border; its native combat color must remain untouched.
 - Take texture keys from the client's export (`Blizzard_UnitFrame`, `Blizzard_Minimap`; Camelot
   overrides Mainline), including `Blizzard_ActionBar` and `Blizzard_StatusTrackingBar`.
 - To support a frame: add a function to `frames.lua` and list it in a category in `app.categories`.

@@ -17,6 +17,11 @@ system, so they are not part of this addon.
 
 ## Ownership
 
+- `src/player.lua`: independent `SeamlessCastbarPlayerComparison` player bar using the client's
+  `CastingBarFrameTemplate` and unmodified cast lifecycle. Anchored 32 units above the native
+  bar; mirrors native size, scale, look and Show Cast Time. Does not register with Edit Mode
+  or hide the original. Batch crafting is not implemented yet.
+
 - `src/options/`: per-bar feature defaults and the Player, Target and Focus pages (`shared.lua`
   holds their common controls). `src/editmode.lua` registers the player's Style and Size rows as
   system options for SeamlessUI's Blizzard Edit Mode extension. `src/core.lua`: lifecycle,
@@ -53,7 +58,8 @@ system, so they are not part of this addon.
 
 - Never call the bars' own methods (`UpdateCastTimeText`, `UpdateIconShown`, `SetLook`); only
   post-hook them and set text, textures and animation timings. Nothing is stored on the bars:
-  our regions and saved values live in local tables keyed by bar.
+  our regions and saved values live in local tables keyed by bar. This restriction applies to
+  Blizzard-owned bars; the addon-owned comparison bar calls its inherited methods normally.
 - Target and focus casts and the bars' geometry can be secret: skip any value `issecretvalue`
   reports (`app.Known`); ticks use the bar's last known width. This is why the real bars are
   only anchored, never dragged or measured (the approach EditModeExpanded uses too): once the

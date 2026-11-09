@@ -12,6 +12,7 @@
 
 src\db.lua
 src\core.lua
+src\player.lua
 src\text.lua
 src\ticks.lua
 src\hold.lua

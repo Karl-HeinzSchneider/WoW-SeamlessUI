@@ -63,10 +63,16 @@ function app.addon:OnEnable()
     app.RegisterEditMode()
     app.RegisterPreviews()
     app.position:Enable()
+    app.EnablePlayerComparison()
+    self:SecureHook(PlayerCastingBarFrame, "SetLook", app.RefreshPlayerComparison)
+    self:SecureHook(PlayerCastingBarFrame, "SetScale", app.RefreshPlayerComparison)
+    self:SecureHook(PlayerCastingBarFrame, "SetCastTimeTextShown", app.RefreshPlayerComparison)
+    self:SecureHookScript(PlayerCastingBarFrame, "OnSizeChanged", app.RefreshPlayerComparison)
     self:Refresh()
 end
 
 function app.addon:OnDisable()
+    app.DisablePlayerComparison()
     self:UnhookAll()
     app.ApplyPlayerSize()
     for bar in pairs(keys) do
@@ -97,4 +103,5 @@ function app.addon:Refresh()
     end
     app.position:Refresh()
     app.UpdatePreviews()
+    app.RefreshPlayerComparison()
 end

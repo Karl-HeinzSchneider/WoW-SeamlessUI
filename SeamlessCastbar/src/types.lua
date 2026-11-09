@@ -1,6 +1,9 @@
 -- Annotations only; not loaded by the TOC.
 ---@class SeamlessCastbar
 ---@field optionPages table<string, SeamlessCore.SettingsPage>
+---@field EnablePlayerComparison fun()
+---@field DisablePlayerComparison fun()
+---@field RefreshPlayerComparison fun()
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessCastbar.Addon
 ---@field dbDefaults AceDB.Schema

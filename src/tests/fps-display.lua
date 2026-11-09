@@ -97,8 +97,11 @@ local function newFrame()
         SetAlpha = function(self, alpha)
             self.alpha = alpha
         end,
+        SetIgnoreParentScale = function(self, value)
+            self.ignoreParentScale = value
+        end,
         GetEffectiveScale = function(self)
-            return self.parent == WorldFrame and 1.5 or 1
+            return (self.parent == WorldFrame or self.ignoreParentScale) and 1.5 or 1
         end,
         GetWidth = function(self)
             return self.width or 0
@@ -249,7 +252,8 @@ local function pressKey(key)
 end
 local rows = support.pageRows(frameSettings)
 assert(not frame.shown and not display.shown, "startup defaults to hidden")
-assert(display.parent == WorldFrame and display.points[1][2] == frame)
+assert(display.parent == UIParent and display.points[1][2] == frame)
+assert(display.ignoreParentScale, "retain the native counter size independently of UI scale")
 assert(display.height == 12 and not display.LatencyText.shown, "FPS alone uses one row")
 assert(rows.visible.default() == false and not rows.visible.get())
 rows.visible.set(true)

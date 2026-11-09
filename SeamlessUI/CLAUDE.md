@@ -85,7 +85,8 @@ Run `lua src/tests/blizzard-position.lua`.
 
 ## FPS display (`fpsdisplay.lua`)
 
-- An addon-owned WorldFrame counter updates every 0.25 seconds, with independent "Show FPS"
+- An addon-owned UIParent counter ignores parent scale and hides with the UI (Alt+Z). It
+  updates every 0.25 seconds, with independent "Show FPS"
   visibility and the existing Core "Show FPS on startup" preference. An addon-owned keyboard
   listener observes the current `TOGGLEFPS` assignment (normally Ctrl+R) with input propagation,
   toggling only our visibility without native frame hooks or binding overrides. Ignore typing
@@ -96,7 +97,7 @@ Run `lua src/tests/blizzard-position.lua`.
 - A Frames checkbox "FPS display" selects the anchor and previews the counter in Edit Mode.
   Preview does not change normal visibility. Core's Position section saves positions per native
   layout in the profile, including layout copy/rename/delete. The UIParent anchor is sized by the
-  effective-scale ratio so it matches the WorldFrame display.
+  effective-scale ratio so it matches the unscaled display.
 - Never hook, reposition or read native counter state for custom display behavior. The explicit
   "Hide Blizzard FPS counter" option defaults off; only it may access the native frame. It sets
   alpha to zero, retaining native visibility, formatting, scripts and methods. Disabling it,

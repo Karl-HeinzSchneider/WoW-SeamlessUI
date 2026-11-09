@@ -27,4 +27,5 @@
 
 ---@class SeamlessDarkmode.Addon : AceAddon, AceConsole-3.0, AceEvent-3.0, AceHook-3.0
 ---@field Refresh fun(self: SeamlessDarkmode.Addon)
+---@field RefreshPlayerStatus fun(self: SeamlessDarkmode.Addon)
 ---@field InstallHooks fun(self: SeamlessDarkmode.Addon)

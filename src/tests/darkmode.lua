@@ -31,9 +31,13 @@ local AceDB = LibStub("AceDB-3.0")
 function addon:RegisterEvent() end
 function addon:UnregisterAllEvents() end
 function addon:IsHooked(object, method)
+    method = method or object
     return hooks[object] and hooks[object][method]
 end
 function addon:SecureHook(object, method, callback)
+    if type(object) == "string" then
+        callback, method = method, object
+    end
     hooks[object] = hooks[object] or {}
     hooks[object][method] = function()
         self[callback](self)
@@ -94,6 +98,23 @@ PlayerFrame = {
     PlayerFrameContainer = { FrameTexture = frame, Portrait = portrait },
     PlayerFrameContent = { PlayerFrameContentMain = { LevelBackgroundCircle = circle } },
 }
+local resting = false
+IsResting = function()
+    return resting
+end
+local statusTexture = texture()
+PlayerFrame.PlayerFrameContent.PlayerFrameContentMain.StatusTexture = statusTexture
+function PlayerFrame_UpdateStatus()
+    if PlayerFrame.inCombat then
+        statusTexture:SetVertexColor(1, 0, 0, 1)
+    elseif resting then
+        statusTexture:SetVertexColor(1, 0.88, 0.25, 1)
+    end
+end
+local function updatePlayerStatus()
+    PlayerFrame_UpdateStatus()
+    hooks.PlayerFrame_UpdateStatus.PlayerFrame_UpdateStatus()
+end
 local targetFrame = texture()
 local targetCircle = texture()
 TargetFrame = {
@@ -143,6 +164,25 @@ local saved = { profiles = { Default = { color = { r = 0.2, g = 0.3, b = 0.4 } }
 app.db = AceDB:New(saved, page.defaults, true)
 
 addon:OnEnable()
+resting = true
+updatePlayerStatus()
+equal(statusTexture.color, { 0.2, 0.3, 0.4, 1 }, "resting overlay follows player tint")
+PlayerFrame.inCombat = true
+updatePlayerStatus()
+equal(statusTexture.color, { 1, 0, 0, 1 }, "combat indicator keeps native red")
+PlayerFrame.inCombat = false
+updatePlayerStatus()
+app.db.profile.groups.player = false
+addon:Refresh()
+equal(statusTexture.color, { 1, 0.88, 0.25, 1 }, "player toggle restores native resting gold")
+app.db.profile.groups.player = true
+app.db.profile.colors.unitframes.enabled = true
+app.db.profile.colors.unitframes.color = { r = 0.5, g = 0.4, b = 0.3 }
+addon:Refresh()
+equal(statusTexture.color, { 0.5, 0.4, 0.3, 1 }, "resting overlay uses category override")
+app.db.profile.colors.unitframes.enabled = false
+app.db.profile.groups.player = nil
+addon:Refresh()
 equal(slot.color, { 0.2, 0.3, 0.4, 0.6 }, "action slot tinted with alpha preserved")
 equal(slotArt.color, { 1, 1, 1, 1 }, "slot backing untouched")
 equal(extraSlot.color, { 0.2, 0.3, 0.4, 1 }, "additional action bar tinted")
@@ -268,6 +308,7 @@ equal(slot.color, { 1, 1, 1, 0.6 }, "master switch restores slots")
 equal(rightGryphon.color, { 1, 1, 1, 1 }, "master switch restores gryphons")
 equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "master switch restores reputation")
 equal(frame.color, { 1, 1, 1, 0.5 }, "master switch restores")
+equal(statusTexture.color, { 1, 0.88, 0.25, 1 }, "master switch restores resting overlay")
 equal(MinimapCompassTexture.color, { 1, 1, 1, 1 }, "master switch restores minimap")
 equal(targetCircle.color, { 1, 1, 1, 1 }, "master switch restores target")
 checkControls(1, "master switch restores controls")
@@ -275,6 +316,7 @@ checkControls(1, "master switch restores controls")
 app.db.profile.enabled = true
 addon:Refresh()
 addon:OnDisable()
+equal(statusTexture.color, { 1, 0.88, 0.25, 1 }, "disable restores resting overlay")
 equal(slot.color, { 1, 1, 1, 0.6 }, "disable restores slots")
 equal(leftGryphon.color, { 1, 1, 1, 1 }, "disable restores gryphons")
 equal(MainStatusTrackingBarContainer.BarFrameTexture.color, { 1, 1, 1, 0.8 }, "disable restores status border")

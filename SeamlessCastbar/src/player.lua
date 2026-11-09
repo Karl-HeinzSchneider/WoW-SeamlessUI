@@ -23,7 +23,7 @@ function app.RefreshPlayerBar()
     end
     -- Detached player appearance from CastingBarMixin:SetLook in the client source.
     bar:SetLook("CLASSIC")
-    app.PlayerSizeLookChanged()
+    app.PlayerSizeLookChanged(bar)
     bar:SetCastTimeTextShown(app.db.profile.player.castTime.enabled)
     bar:SetIconShown(false)
     app.UpdateIcon(bar)

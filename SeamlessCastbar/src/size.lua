@@ -2,42 +2,46 @@
 local _, app = ...
 
 -- Capture native values only for restoration when overrides are inactive, never as defaults.
-local nativeWidth, nativeHeight
-local nativeScale
-local nativeTextPoints
-local nativeIconWidth, nativeIconHeight
+local states = {}
+
+local function stateFor(bar)
+    states[bar] = states[bar] or {}
+    return states[bar]
+end
 
 local function resizePlayerIcon(bar, size)
+    local state = stateFor(bar)
     local icon = bar.Icon
     if not icon then
         return
     end
     if size then
-        nativeIconWidth = nativeIconWidth or icon:GetWidth()
-        nativeIconHeight = nativeIconHeight or icon:GetHeight()
+        state.nativeIconWidth = state.nativeIconWidth or icon:GetWidth()
+        state.nativeIconHeight = state.nativeIconHeight or icon:GetHeight()
         icon:SetSize(size, size)
-    elseif nativeIconWidth then
-        icon:SetSize(nativeIconWidth, nativeIconHeight)
-        nativeIconWidth, nativeIconHeight = nil, nil
+    elseif state.nativeIconWidth then
+        icon:SetSize(state.nativeIconWidth, state.nativeIconHeight)
+        state.nativeIconWidth, state.nativeIconHeight = nil, nil
     end
 end
 
 local function anchorPlayerText(bar, resize, height)
+    local state = stateFor(bar)
     local text = bar.Text
     if not text then
         return
     end
-    if resize and not nativeTextPoints then
-        nativeTextPoints = {}
+    if resize and not state.nativeTextPoints then
+        state.nativeTextPoints = {}
         for index = 1, text:GetNumPoints() do
-            nativeTextPoints[index] = { text:GetPoint(index) }
+            state.nativeTextPoints[index] = { text:GetPoint(index) }
         end
     end
-    if not nativeTextPoints then
+    if not state.nativeTextPoints then
         return
     end
     text:ClearAllPoints()
-    for _, point in ipairs(nativeTextPoints) do
+    for _, point in ipairs(state.nativeTextPoints) do
         local anchor, relativeTo, relativePoint, x, y = unpack(point)
         if resize and relativeTo == bar and relativePoint:find("TOP", 1, true) then
             -- At native height this is the identical position, measured from the bottom.
@@ -47,7 +51,7 @@ local function anchorPlayerText(bar, resize, height)
         text:SetPoint(anchor, relativeTo, relativePoint, x, y)
     end
     if not resize then
-        nativeTextPoints = nil
+        state.nativeTextPoints = nil
     end
 end
 
@@ -55,43 +59,48 @@ function app.PlayerSizeDefault(axis)
     return app.dbDefaults.profile.player[axis]
 end
 
-function app.ApplyPlayerSize()
-    local bar = app.GetPlayerBar()
+function app.ApplyPlayerSize(bar)
+    bar = bar or PlayerCastingBarFrame
     if not bar then
         return
     end
+    local state = stateFor(bar)
     local settings = app.db.profile.player
     local active = app.addon:IsEnabled()
     resizePlayerIcon(bar, active and settings.iconSize)
-    anchorPlayerText(bar, active and settings.height ~= nil, nativeHeight or bar:GetHeight())
+    anchorPlayerText(bar, active and settings.height ~= nil, state.nativeHeight or bar:GetHeight())
     if active and settings.scale then
-        nativeScale = nativeScale or bar:GetScale()
+        state.nativeScale = state.nativeScale or bar:GetScale()
         bar:SetScale(settings.scale)
-    elseif nativeScale then
-        bar:SetScale(nativeScale)
-        nativeScale = nil
+    elseif state.nativeScale then
+        bar:SetScale(state.nativeScale)
+        state.nativeScale = nil
     end
     if active and (settings.width or settings.height) then
-        nativeWidth = nativeWidth or bar:GetWidth()
-        nativeHeight = nativeHeight or bar:GetHeight()
-        bar:SetWidth(settings.width or nativeWidth)
-        bar:SetHeight(settings.height or nativeHeight)
-    elseif nativeWidth then
-        bar:SetWidth(nativeWidth)
-        bar:SetHeight(nativeHeight)
-        nativeWidth, nativeHeight = nil, nil
+        state.nativeWidth = state.nativeWidth or bar:GetWidth()
+        state.nativeHeight = state.nativeHeight or bar:GetHeight()
+        bar:SetWidth(settings.width or state.nativeWidth)
+        bar:SetHeight(settings.height or state.nativeHeight)
+    elseif state.nativeWidth then
+        bar:SetWidth(state.nativeWidth)
+        bar:SetHeight(state.nativeHeight)
+        state.nativeWidth, state.nativeHeight = nil, nil
     end
 end
 
 -- The native Bar Size update also runs when locking the bar or changing layouts.
-function app.PlayerScaleChanged()
-    nativeScale = nil
-    app.ApplyPlayerSize()
+function app.PlayerScaleChanged(bar)
+    bar = bar or PlayerCastingBarFrame
+    local state = stateFor(bar)
+    state.nativeScale = nil
+    app.ApplyPlayerSize(bar)
 end
 
 -- SetLook has already restored both native dimensions when this post-hook runs.
-function app.PlayerSizeLookChanged()
-    nativeWidth, nativeHeight = nil, nil
-    nativeTextPoints = nil
-    app.ApplyPlayerSize()
+function app.PlayerSizeLookChanged(bar)
+    bar = bar or PlayerCastingBarFrame
+    local state = stateFor(bar)
+    state.nativeWidth, state.nativeHeight = nil, nil
+    state.nativeTextPoints = nil
+    app.ApplyPlayerSize(bar)
 end

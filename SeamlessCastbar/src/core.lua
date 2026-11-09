@@ -7,6 +7,7 @@ app.addon = LibStub("AceAddon-3.0"):NewAddon(appName, "AceConsole-3.0", "AceEven
 -- The game's own cast bars, by profile key. They all use the client's casting bar mixin; target
 -- and focus bars are created by their unit frames.
 local barNames = {
+    player = "PlayerCastingBarFrame",
     target = "TargetFrameSpellBar",
     focus = "FocusFrameSpellBar",
 }
@@ -53,6 +54,10 @@ function app.addon:OnEnable()
             -- A delayed cast that was not shown as casting turns the bar into a cast.
             self:SecureHook(bar, "HandleCastDelayed", app.UpdateTicks)
             self:SecureHook(bar, "UpdateIconShown", app.UpdateIcon)
+            if key == "player" then
+                self:SecureHook(bar, "SetLook", app.PlayerSizeLookChanged)
+                self:SecureHook(bar, "UpdateSystemSettingBarSize", app.PlayerScaleChanged)
+            end
         end
     end
     app.RegisterEditMode()
@@ -66,6 +71,7 @@ end
 function app.addon:OnDisable()
     app.DisablePlayerBar()
     self:UnhookAll()
+    app.ApplyPlayerSize()
     for bar in pairs(keys) do
         app.RestoreCastTime(bar)
         app.RestoreName(bar)
@@ -85,6 +91,7 @@ function app.addon:Refresh()
         return
     end
     app.RefreshPlayerBar()
+    app.ApplyPlayerSize()
     for bar in pairs(keys) do
         app.UpdateName(bar)
         app.UpdateTicks(bar)

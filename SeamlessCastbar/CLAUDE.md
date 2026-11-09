@@ -20,7 +20,9 @@ system, so they are not part of this addon.
 - `src/player.lua`: independent `SeamlessCastbarPlayer` player bar using the client's
   `CastingBarFrameTemplate` and unmodified cast lifecycle. Anchored 32 units above the native
   bar; independently subscribes through SetUnit and uses profile.player visual settings. Reads shared active-layout data for Lock To Player Frame style and Show Cast Time, never the original bar state. Does not register with Edit Mode
-  or hide the original. Batch crafting is not implemented yet.
+  or hide the original.
+
+- `src/crafting.lua`: automatic batch crafting on the custom player bar only. Secure post-hooks on DoTradeSkill and C_TradeSkillUI.CraftRecipe capture quantity; the custom frame tracks successful cast IDs. The range is rebased from each actual cast end plus unfinished casts, retaining elapsed gaps. Intermediate stops keep the bar alive; final completion, interruption, queue cancellation and disabling clear the batch.
 
 - `src/options/`: per-bar feature defaults and the Player, Target and Focus pages (`shared.lua`
   holds their common controls). `src/editmode.lua` registers the player's Style and Size rows as
@@ -73,7 +75,9 @@ Edit Mode rows, target/focus previews and positions.
 method dispatch and current-profile refresh. Player visual settings affect both player bars;
 the native player's Edit Mode controls still place the temporary anchor underneath it.
 
-Manual validation: player cast bar locked/unlocked, native Show Cast Time on/off, target/focus
+`lua src/tests/crafting-castbar.lua` checks batch timing, gaps, changed durations, duplicate and reordered events, synchronous first casts, interruption and cancellation.
+
+Manual validation: multi-craft batches with gaps, stop/movement cancellation, insufficient reagents, final completion and ordinary casts afterward. Player cast bar locked/unlocked, native Show Cast Time on/off, target/focus
 casts and interruptions, channel pushback, spell ranks, profile changes and Edit Mode previews.
 Moved target/focus bars: drag, Position rows, Reset Position, layout switch, target with aura
 rows and a ToT, casts in combat.

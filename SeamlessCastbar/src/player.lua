@@ -102,13 +102,16 @@ function app.EnablePlayerBar()
         bar:HookScript("OnUpdate", function()
             app.RefreshPlayerBar()
         end)
+        app.InstallCraftingBar(bar)
     end
     app.RefreshPlayerBar(true)
     bar:SetUnit("player", true, false)
+    app.EnableCraftingBar(bar)
 end
 
 function app.DisablePlayerBar()
     if bar then
+        app.DisableCraftingBar(bar)
         bar:SetUnit(nil, true, false)
         bar:Hide()
     end

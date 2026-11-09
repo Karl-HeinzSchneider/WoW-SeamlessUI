@@ -2,6 +2,9 @@
 ---@class SeamlessCastbar
 ---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field GetPlayerBar fun(): StatusBar?
+---@field InstallCraftingBar fun(bar: StatusBar)
+---@field EnableCraftingBar fun(bar: StatusBar)
+---@field DisableCraftingBar fun(bar: StatusBar)
 ---@field EnablePlayerBar fun()
 ---@field DisablePlayerBar fun()
 ---@field RefreshPlayerBar fun(force?: boolean)

@@ -1,6 +1,9 @@
 -- lua src/tests/player-castbar.lua
 local app = { db = { profile = { player = { castTime = { enabled = true } } } } }
 local active = true
+app.InstallCraftingBar = function() end
+app.EnableCraftingBar = function() end
+app.DisableCraftingBar = function() end
 app.addon = {
     IsEnabled = function()
         return active

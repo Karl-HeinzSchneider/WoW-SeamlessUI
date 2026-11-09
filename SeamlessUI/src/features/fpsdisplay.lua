@@ -96,9 +96,9 @@ local function RefreshDisplay()
 end
 
 local function CreateDisplay()
-    -- Same parent and font as the native counter (Blizzard_FramerateFrame): WorldFrame is not
-    -- affected by the UI scale, so a UIParent child would look smaller than the counter.
-    display = CreateFrame("Frame", nil, WorldFrame)
+    -- Hide with UIParent (Alt+Z), while retaining the native counter's unscaled font size.
+    display = CreateFrame("Frame", nil, UIParent)
+    display:SetIgnoreParentScale(true)
     display:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT")
     local function Text(justify)
         local text = display:CreateFontString(nil, "ARTWORK", "SystemFont_Shadow_Med1")

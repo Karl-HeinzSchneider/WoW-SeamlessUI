@@ -32,10 +32,27 @@ local function anchorPlayerText(bar, resize, height)
         return
     end
     if resize and not state.nativeTextPoints then
-        state.nativeTextPoints = {}
-        for index = 1, text:GetNumPoints() do
-            state.nativeTextPoints[index] = { text:GetPoint(index) }
+        local count = text:GetNumPoints()
+        if not app.Known(count) or not app.Known(height) then
+            return
         end
+        local points = {}
+        for index = 1, count do
+            local anchor, relativeTo, relativePoint, x, y = text:GetPoint(index)
+            -- Native layout updates can expose secret anchors. Capture all points before
+            -- changing any of them, and retry on a later refresh when they are readable.
+            if
+                not app.Known(anchor)
+                or not app.Known(relativeTo)
+                or not app.Known(relativePoint)
+                or not app.Known(x)
+                or not app.Known(y)
+            then
+                return
+            end
+            points[index] = { anchor, relativeTo, relativePoint, x, y }
+        end
+        state.nativeTextPoints = points
     end
     if not state.nativeTextPoints then
         return
@@ -43,7 +60,7 @@ local function anchorPlayerText(bar, resize, height)
     text:ClearAllPoints()
     for _, point in ipairs(state.nativeTextPoints) do
         local anchor, relativeTo, relativePoint, x, y = unpack(point)
-        if resize and relativeTo == bar and relativePoint:find("TOP", 1, true) then
+        if resize and app.Known(height) and relativeTo == bar and relativePoint:find("TOP", 1, true) then
             -- At native height this is the identical position, measured from the bottom.
             relativePoint = relativePoint:gsub("TOP", "BOTTOM")
             y = y + height

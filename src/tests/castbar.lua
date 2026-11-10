@@ -491,6 +491,25 @@ assert(dimensions.scale == 1.5, "addon disable restores native scale")
 assert(iconSize.width == 20 and iconSize.height == 20, "disabling restores native icon size")
 assert(textPoints[2][3] == "TOPRIGHT" and textPoints[2][5] == 3, "disabling restores native text anchors")
 enabled = true
+-- A native SetLook can expose secret text geometry. Never partially capture or
+-- clear anchors; a subsequent readable refresh must capture the complete layout.
+for field = 1, 5 do
+    local first = { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 }
+    local restrictedPoint = { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 }
+    restrictedPoint[field] = secret
+    textPoints = { first, restrictedPoint }
+    app.PlayerSizeLookChanged()
+    assert(textPoints[1] == first and textPoints[2] == restrictedPoint, "secret anchors stay untouched")
+    textPoints = {
+        { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 },
+        { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 },
+    }
+    app.ApplyPlayerSize()
+    assert(#textPoints == 2 and textPoints[2][3] == "BOTTOMRIGHT", "readable anchors are retried in full")
+end
+enabled = false
+app.ApplyPlayerSize()
+enabled = true
 app.db.profile.player.width, app.db.profile.player.height = nil, nil
 app.db.profile.player.scale = nil
 app.db.profile.player.iconSize = nil

@@ -17,21 +17,26 @@ system, so they are not part of this addon.
 
 ## Ownership
 
+- `src/player.lua`: independent `SeamlessCastbarPlayer`, using the native template and its own cast subscriptions. Always uses the detached appearance and direct profile scale, with no Lock To Player Frame behavior. The original player display is suppressed while enabled and restored on disable.
+
+- `src/playerposition.lua`: UIParent-only position per layout in `profile.positions.player`, independent of native frames. Imports a saved UIParent layout anchor once; otherwise snapshots Blizzard's default managed-slot calculation per layout (bottom action-bar height, game-rule overlay, native margins, castbar padding and lower managed children). It anchors that snapshot directly to UIParent without following the native bar or later action-bar movement. Reset uses this same default; user scale is accounted for in screen coordinates. A separate LibEditMode preview owns selection, dragging and the Player page. Show Cast Time is imported once per profile and then controlled by the independent Show cast time option. Existing position layout-copy/rename/delete callbacks include player entries.
+
+- `src/crafting.lua`: automatic batch crafting on the custom player bar only. Secure post-hooks on DoTradeSkill and C_TradeSkillUI.CraftRecipe capture quantity; the custom frame tracks successful cast IDs. The range is rebased from each actual cast end plus unfinished casts, retaining elapsed gaps. The spell label shows the current craft and total (for example, Copper Bar (3/10)); refreshes preserve rank without duplicating the suffix. Intermediate stops keep the bar alive; final completion, interruption, queue cancellation and disabling clear the batch.
+
 - `src/options/`: per-bar feature defaults and the Player, Target and Focus pages (`shared.lua`
   holds their common controls). `src/editmode.lua` registers the player's Style and Size rows as
   system options for SeamlessUI's Blizzard Edit Mode extension. `src/core.lua`: lifecycle,
   hooks and `app.Settings(bar)`. All three bars follow the addon lifecycle; there are no per-bar
   Enable switches. Individual feature switches remain independent.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
-  text when disabled. The player reuses native cast-time text and visibility; target/focus get
+  text when disabled. Both player bars use inherited cast-time text; our player uses profile.player.showCastTime for visibility; target/focus get
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/size.lua`: player bar size. The Player tab's Position and Size groups are Core's native group
-  for the cast bar system (`GetNativePositionOptions`); position is stored in the Edit Mode layout
-  and unavailable while Lock to Player Frame is on. The player's Size controls override that group's
+  for the custom preview; position is stored per layout with UIParent as its only anchor. The player's Size controls override that group's
   Scale placeholder: Scale (0.5–3), Width and Height use `profile.player` and apply directly to the
-  native frame. It retains native values for restoration and reapplies overrides after native
+  native and addon-owned frames. It retains per-frame values for restoration and reapplies overrides after style
   updates. Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size
   16, from the client's player/base casting bar templates and default Bar Size. Tooltips and Reset
   To Default Size use that schema; captured live frame values are only for disabling overrides.
@@ -53,7 +58,8 @@ system, so they are not part of this addon.
 
 - Never call the bars' own methods (`UpdateCastTimeText`, `UpdateIconShown`, `SetLook`); only
   post-hook them and set text, textures and animation timings. Nothing is stored on the bars:
-  our regions and saved values live in local tables keyed by bar.
+  our regions and saved values live in local tables keyed by bar. This restriction applies to
+  Blizzard-owned bars; the addon-owned comparison bar calls its inherited methods normally.
 - Target and focus casts and the bars' geometry can be secret: skip any value `issecretvalue`
   reports (`app.Known`); ticks use the bar's last known width. This is why the real bars are
   only anchored, never dragged or measured (the approach EditModeExpanded uses too): once the
@@ -63,9 +69,16 @@ system, so they are not part of this addon.
 
 `lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks, hold and the
 Edit Mode rows, target/focus previews and positions.
+`lua src/tests/player-castbar.lua` checks the custom player's independent lifecycle, inherited
+method dispatch and current-profile refresh. Player visual settings affect both player bars;
+the player preview supplies independent positioning.
 
-Manual validation: player cast bar locked/unlocked, native Show Cast Time on/off, target/focus
+`lua src/tests/crafting-castbar.lua` checks batch timing, gaps, changed durations, duplicate and reordered events, synchronous first casts, interruption and cancellation.
+
+Manual validation: multi-craft batches with gaps, stop/movement cancellation, insufficient reagents, final completion and ordinary casts afterward. Player cast bar locked/unlocked, native Show Cast Time on/off, target/focus
 casts and interruptions, channel pushback, spell ranks, profile changes and Edit Mode previews.
 Moved target/focus bars: drag, Position rows, Reset Position, layout switch, target with aura
 rows and a ToT, casts in combat.
 Check `/console taintLog 1` stays clean.
+
+`lua src/tests/player-castbar-position.lua` checks one-time import, UIParent-only anchors, dragging, layout changes and reset.

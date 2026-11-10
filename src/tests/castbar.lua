@@ -423,6 +423,9 @@ PlayerCastingBarFrame.Text = {
 }
 app.dbDefaults = {}
 dofile("src/tests/settings-support.lua").defaults("SeamlessCastbar", app)
+app.GetPlayerBar = function()
+    return PlayerCastingBarFrame
+end
 load("size.lua")
 dimensions.width, dimensions.height = 207.99998474121, 11.00000095367
 assert(
@@ -500,6 +503,9 @@ app.dbDefaults = {}
 app.position = { GetOptions = function() end }
 app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
 app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
+app.PlayerCastbarPosition = function()
+    return nil
+end
 load("options/shared.lua")
 load("options/player.lua")
 load("options/target.lua")

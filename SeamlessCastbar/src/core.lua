@@ -14,18 +14,19 @@ local barNames = {
 
 ---@type table<StatusBar, string>
 local keys = {}
+local nativePlayerShown
 
 ---@param bar StatusBar
 ---@return string?
 function app.BarKey(bar)
-    return keys[bar]
+    return bar == app.GetPlayerBar() and "player" or keys[bar]
 end
 
 -- The bar's feature settings in the current profile.
 ---@param bar StatusBar
 ---@return table?
 function app.Settings(bar)
-    local key = keys[bar]
+    local key = app.BarKey(bar)
     return key and app.db.profile[key]
 end
 
@@ -60,14 +61,32 @@ function app.addon:OnEnable()
             end
         end
     end
-    app.RegisterEditMode()
     app.RegisterPreviews()
     app.position:Enable()
+    app.EnablePlayerBar()
+    keys[app.GetPlayerBar()] = "player"
+    app.RegisterPlayerEditMode()
+    nativePlayerShown = PlayerCastingBarFrame.showCastbar
+    PlayerCastingBarFrame:SetAndUpdateShowCastbar(false)
+    self:SecureHook(PlayerCastingBarFrame, "SetAndUpdateShowCastbar", function(bar, shown)
+        if shown then
+            bar:SetAndUpdateShowCastbar(false)
+        end
+    end)
+    -- Native UpdateShownState deliberately ignores showCastbar during Edit Mode.
+    -- Suppress that preview too; our own registered preview handles selection and drag.
+    self:SecureHookScript(PlayerCastingBarFrame, "OnShow", function(bar)
+        bar:Hide()
+    end)
+    PlayerCastingBarFrame:Hide()
     self:Refresh()
 end
 
 function app.addon:OnDisable()
+    app.DisablePlayerBar()
     self:UnhookAll()
+    PlayerCastingBarFrame:SetAndUpdateShowCastbar(nativePlayerShown)
+    app.UpdatePlayerPreview()
     app.ApplyPlayerSize()
     for bar in pairs(keys) do
         app.RestoreCastTime(bar)
@@ -87,9 +106,14 @@ function app.addon:Refresh()
     if not self:IsEnabled() then
         return
     end
+    app.RefreshPlayerBar(true)
+    app.ApplyPlayerPosition()
+    app.UpdatePlayerPreview()
     app.ApplyPlayerSize()
     for bar in pairs(keys) do
+        app.RestoreCraftingName(bar)
         app.UpdateName(bar)
+        app.UpdateCraftingName(bar)
         app.UpdateTicks(bar)
         app.UpdateCastTime(bar)
         app.UpdateIcon(bar)

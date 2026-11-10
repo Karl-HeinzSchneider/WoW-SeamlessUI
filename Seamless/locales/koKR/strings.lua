@@ -98,6 +98,7 @@ end
 -- L["Pet action bar"] = "Pet action bar"
 -- L["Pet frame"] = "Pet frame"
 -- L["Pet"] = "Pet"
+-- L["Player cast bar"] = "Player cast bar"
 -- L["Player frame"] = "Player frame"
 -- L["Player"] = "Player"
 -- L["Possess action bar"] = "Possess action bar"
@@ -266,6 +267,7 @@ end
 -- L["XP:"] = "XP:"
 
 -- SeamlessCastbar
+-- L["%s (%d/%d) (crafting progress)"] = "%s (%d/%d)"
 -- L["%s (%s) (spell and rank)"] = "%s (%s)"
 -- L["%s / %s (cast time)"] = "%s / %s"
 -- L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."] = "Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."
@@ -288,6 +290,7 @@ end
 -- L["Remaining / total (1.3 / 2.5)"] = "Remaining / total (1.3 / 2.5)"
 -- L["Seconds. The game uses 0.2."] = "Seconds. The game uses 0.2."
 -- L["Seconds. The game uses 1."] = "Seconds. The game uses 1."
+-- L["Show cast time"] = "Show cast time"
 -- L["Show the cast time to the right of the cast bar."] = "Show the cast time to the right of the cast bar."
 -- L["Show the spell icon beside the player cast bar when it is not locked to the player frame."] = "Show the spell icon beside the player cast bar when it is not locked to the player frame."
 -- L["Spell icon"] = "Spell icon"

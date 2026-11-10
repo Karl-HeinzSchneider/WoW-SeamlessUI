@@ -2,4 +2,4 @@
 local appName, app = ...
 
 app.optionPages = {}
-app.dbDefaults = { profile = { positions = { target = {}, focus = {} } } }
+app.dbDefaults = { profile = { standalonePlayer = false, positions = { player = {}, target = {}, focus = {} } } }

@@ -1,6 +1,23 @@
 -- Annotations only; not loaded by the TOC.
 ---@class SeamlessCastbar
 ---@field optionPages table<string, SeamlessCore.SettingsPage>
+---@field GetPlayerBar fun(): StatusBar?
+---@field GetPlayerPreview fun(): StatusBar?
+---@field IsPlayerEditMode fun(): boolean
+---@field GetPlayerPosition fun(): table
+---@field RefreshPlayerDefault fun()
+---@field InitializePlayerSettings fun()
+---@field ApplyPlayerPosition fun()
+---@field RegisterPlayerEditMode fun()
+---@field UpdatePlayerPreview fun()
+---@field InstallCraftingBar fun(bar: StatusBar)
+---@field UpdateCraftingName fun(bar: StatusBar)
+---@field RestoreCraftingName fun(bar: StatusBar)
+---@field EnableCraftingBar fun(bar: StatusBar)
+---@field DisableCraftingBar fun(bar: StatusBar)
+---@field EnablePlayerBar fun()
+---@field DisablePlayerBar fun()
+---@field RefreshPlayerBar fun(force?: boolean)
 ---@field core SeamlessCore.Addon
 ---@field addon SeamlessCastbar.Addon
 ---@field dbDefaults AceDB.Schema
@@ -8,9 +25,9 @@
 ---@field BarKey fun(bar: StatusBar): string?
 ---@field Settings fun(bar: StatusBar): table?
 ---@field PlayerSizeDefault fun(axis: string): number?
----@field ApplyPlayerSize fun()
----@field PlayerSizeLookChanged fun()
----@field PlayerScaleChanged fun()
+---@field ApplyPlayerSize fun(bar?: StatusBar)
+---@field PlayerSizeLookChanged fun(bar?: StatusBar)
+---@field PlayerScaleChanged fun(bar?: StatusBar)
 ---@field castTimeFormats table<string, string>
 ---@field castTimeFormatOrder string[]
 ---@field Known fun(value: any): boolean

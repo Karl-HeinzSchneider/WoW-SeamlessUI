@@ -274,6 +274,9 @@ for _, addon in ipairs({
     if addon == "SeamlessDarkmode" then
         assert(loadfile(addon .. "/src/frames.lua"))(addon, app)
     end
+    if addon == "SeamlessCastbar" then
+        assert(loadfile(addon .. "/src/playerposition.lua"))(addon, app)
+    end
     support.pages(addon, app)
     app.dbDefaults = core:GetOptionsDefaults(app.optionPages, app.dbDefaults)
     app.db = { profile = app.dbDefaults.profile }
@@ -384,7 +387,7 @@ local nativePages = {
         focus = "FocusFrame",
         party = "PartyFrame",
     },
-    SeamlessCastbar = { player = "PlayerCastingBarFrame" },
+    SeamlessCastbar = { player = "SeamlessCastbarPlayerPreview" },
 }
 for _, pages in pairs(nativePages) do
     for _, name in pairs(pages) do
@@ -453,6 +456,9 @@ for _, page in ipairs({ "statusBar1", "statusBar2" }) do
 end
 bars.EndCapFrame = function(entry)
     return entry.key == "left" and TestLeftEndcap or TestRightEndcap
+end
+apps.SeamlessCastbar.GetPlayerPreview = function()
+    return SeamlessCastbarPlayerPreview
 end
 local nativeCount = 0
 for addon, pages in pairs(nativePages) do
@@ -548,7 +554,7 @@ for _, key in ipairs({ "width", "height", "scale", "iconSize" }) do
 end
 assert(
     core:GetSettingsOption(castOptions, { "player", "position" }, "SeamlessCastbar"):InEditModeLayout(),
-    "native player position retains its layout storage tooltip"
+    "custom player position retains its layout storage tooltip"
 )
 -- The actual shared position builder must load before a feature's database exists.
 -- Its bounds are resolved later and follow the current profile, including off-screen offsets.

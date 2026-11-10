@@ -607,14 +607,17 @@ local function Target(frame, old)
     if module:Readable(boss) and (boss or rare or classification == "elite") then
         -- The client anchors the decoration with Camelot offsets after setting
         -- its atlas; the old art is smaller and needs the 70374 offsets instead.
+        local oldDragons = old and app.db.profile.useOldDragons
         local decoration, x, y
         if boss then
-            decoration, x, y = "Boss-Gold-Winged", old and 8 or 11, old and -8 or -4
+            decoration, x, y = "Boss-Gold-Winged", oldDragons and 8 or 11, oldDragons and -8 or -4
         elseif rare then
             decoration, x, y =
-                old and "Boss-Rare-Silver" or "Boss-Rare-Silver-Winged", old and -11 or 8, old and -8 or -7
+                oldDragons and "Boss-Rare-Silver" or "Boss-Rare-Silver-Winged",
+                oldDragons and -11 or 8,
+                oldDragons and -8 or -7
         else
-            decoration, x, y = "Boss-Gold", old and -11 or 0, old and -8 or 1
+            decoration, x, y = "Boss-Gold", oldDragons and -11 or 0, oldDragons and -8 or 1
         end
         module:Art(art.BossPortraitFrameTexture, P .. "Target-PortraitOn-" .. decoration, true)
         Point(art.BossPortraitFrameTexture, "TOPRIGHT", art, "TOPRIGHT", x, y)

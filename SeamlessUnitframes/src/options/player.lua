@@ -36,6 +36,7 @@ app.optionPages.player = {
         char = { nameOverride = "" },
         profile = {
             layout = "current",
+            useOldDragons = false,
             unitFrames = {
                 player = {
                     healthBarColor = "class",
@@ -72,6 +73,7 @@ app.optionPages.player = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    useOldDragons = app.UnitFrameOldDragonsOption(),
                     statusText = app.UnitFrameStatusTextOption(),
                     player_portraitDragon = {
                         order = 25,

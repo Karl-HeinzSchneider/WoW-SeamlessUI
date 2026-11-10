@@ -1,5 +1,11 @@
 -- lua src/tests/crafting-castbar.lua
 local app = {}
+GetLocale = function()
+    return "enUS"
+end
+dofile("Seamless/lib/LibStub/LibStub.lua")
+dofile("Seamless/lib/AceLocale-3.0/AceLocale-3.0.lua")
+dofile("Seamless/locales/enUS.lua")
 local hooks = {}
 local active = true
 app.addon = {
@@ -36,6 +42,15 @@ UnitCastingInfo = function()
 end
 local finishes, stops, failures = 0, 0, 0
 local bar = { scripts = {}, events = {} }
+local label = "Craft"
+bar.Text = {
+    GetText = function()
+        return label
+    end,
+    SetText = function(_, text)
+        label = text
+    end,
+}
 function bar:SetMinMaxValues(_, max)
     self.range = max
 end
@@ -58,6 +73,7 @@ function bar:SetScript(event, handler)
     self.scripts[event] = handler
 end
 function bar:HandleCastStart()
+    label = "Craft"
     self.casting, self.castID = true, current.id
     self.value, self.maxValue = now - current.start, current.finish - current.start
 end
@@ -115,6 +131,13 @@ local function near(value, expected)
 end
 hooks.DoTradeSkill(1, 3)
 cast("a", 0, 2)
+assert(label == "Craft (1/3)")
+app.RestoreCraftingName(bar)
+assert(label == "Craft")
+bar.Text:SetText("Craft (Rank 2)")
+app.UpdateCraftingName(bar)
+app.UpdateCraftingName(bar)
+assert(label == "Craft (Rank 2) (1/3)", "refresh preserves rank without duplicating progress")
 near(bar.maxValue, 6)
 now = 2
 -- STOP may precede SUCCEEDED; never play the intermediate finish animation.
@@ -126,6 +149,7 @@ now = 2.3
 bar.scripts.OnUpdate(bar, 0.3)
 near(bar.remaining, 4)
 cast("b", 2.3, 2)
+assert(label == "Craft (2/3)")
 near(bar.maxValue, 6.3)
 near(bar.value, 2.3)
 -- A late notification for another cast must not advance the batch.
@@ -134,6 +158,7 @@ now = 4.3
 event("UNIT_SPELLCAST_SUCCEEDED", "b")
 event("UNIT_SPELLCAST_STOP", "b")
 cast("c", 4.8, 1.5) -- duration may change, not just the gap
+assert(label == "Craft (3/3)")
 near(bar.maxValue, 6.3)
 near(bar.remaining, 1.5)
 now = 6.3
@@ -141,6 +166,7 @@ event("UNIT_SPELLCAST_SUCCEEDED", "c")
 event("UNIT_SPELLCAST_STOP", "c")
 assert(not bar.casting and stops == 1)
 cast("normal", 7, 2, false)
+assert(label == "Craft", "ordinary casts have no batch suffix")
 near(bar.maxValue, 2)
 -- Synchronous START before the secure post-hook still attaches to the current craft.
 cast("sync", 10, 2)
@@ -154,6 +180,7 @@ near(bar.maxValue, 2)
 hooks.CraftRecipe(42, 3)
 cast("cancel", 15, 2)
 hooks.StopTradeSkillRepeat()
+assert(label == "Craft", "queue cancellation removes batch progress")
 near(bar.maxValue, 2)
 -- Single crafts never become batch casts.
 hooks.DoTradeSkill(1, 1)

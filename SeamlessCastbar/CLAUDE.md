@@ -22,7 +22,7 @@ system, so they are not part of this addon.
   bar; independently subscribes through SetUnit and uses profile.player visual settings. Reads shared active-layout data for Lock To Player Frame style and Show Cast Time, never the original bar state. Does not register with Edit Mode
   or hide the original.
 
-- `src/crafting.lua`: automatic batch crafting on the custom player bar only. Secure post-hooks on DoTradeSkill and C_TradeSkillUI.CraftRecipe capture quantity; the custom frame tracks successful cast IDs. The range is rebased from each actual cast end plus unfinished casts, retaining elapsed gaps. Intermediate stops keep the bar alive; final completion, interruption, queue cancellation and disabling clear the batch.
+- `src/crafting.lua`: automatic batch crafting on the custom player bar only. Secure post-hooks on DoTradeSkill and C_TradeSkillUI.CraftRecipe capture quantity; the custom frame tracks successful cast IDs. The range is rebased from each actual cast end plus unfinished casts, retaining elapsed gaps. The spell label shows the current craft and total (for example, Copper Bar (3/10)); refreshes preserve rank without duplicating the suffix. Intermediate stops keep the bar alive; final completion, interruption, queue cancellation and disabling clear the batch.
 
 - `src/options/`: per-bar feature defaults and the Player, Target and Focus pages (`shared.lua`
   holds their common controls). `src/editmode.lua` registers the player's Style and Size rows as

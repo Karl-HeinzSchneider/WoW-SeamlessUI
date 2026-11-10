@@ -263,6 +263,7 @@ L["XP left:"] = true
 L["XP:"] = true
 
 -- SeamlessCastbar
+L["%s (%d/%d) (crafting progress)"] = "%s (%d/%d)"
 L["%s (%s) (spell and rank)"] = "%s (%s)"
 L["%s / %s (cast time)"] = "%s / %s"
 L["Add the spell's rank to its name on the cast bar, such as Frostbolt (Rank 3)."] = true

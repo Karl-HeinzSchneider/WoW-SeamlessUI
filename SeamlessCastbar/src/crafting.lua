@@ -1,11 +1,32 @@
 ---@type string, SeamlessCastbar
 local _, app = ...
+local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 local batch
 local player
 
 local function known(value)
     return value ~= nil and not (issecretvalue and issecretvalue(value))
+end
+
+function app.RestoreCraftingName(bar)
+    if batch and bar == player and batch.label and bar.Text:GetText() == batch.label then
+        bar.Text:SetText(batch.name)
+    end
+end
+
+function app.UpdateCraftingName(bar)
+    if not batch or not batch.started or bar ~= player or not bar.Text then
+        return
+    end
+    app.RestoreCraftingName(bar)
+    local name = bar.Text:GetText()
+    if not known(name) then
+        return
+    end
+    batch.name = name
+    batch.label = L["%s (%d/%d) (crafting progress)"]:format(name, batch.index, batch.count)
+    bar.Text:SetText(batch.label)
 end
 
 -- Rebase against the actual current cast, retaining elapsed gaps in the total.
@@ -55,9 +76,11 @@ local function start(bar)
     batch.index = batch.completed + 1
     batch.waiting = false
     update(bar, false)
+    app.UpdateCraftingName(bar)
 end
 
 local function requested(_, count, spellID)
+    app.RestoreCraftingName(player)
     batch = nil
     if not app.addon:IsEnabled() or not known(count) or type(count) ~= "number" or count <= 1 then
         return
@@ -115,6 +138,7 @@ function app.InstallCraftingBar(bar)
     local interrupt = bar.HandleInterruptOrSpellFailed
     bar.HandleInterruptOrSpellFailed = function(self, empowered, event, castID, ...)
         if batch and (not batch.started or (known(castID) and castID == batch.castID)) then
+            app.RestoreCraftingName(self)
             batch = nil
         end
         interrupt(self, empowered, event, castID, ...)
@@ -159,6 +183,7 @@ function app.EnableCraftingBar(bar)
             if not batch then
                 return
             end
+            app.RestoreCraftingName(bar)
             batch = nil
             if UnitCastingInfo("player") then
                 bar:HandleCastDelayed()
@@ -170,6 +195,7 @@ function app.EnableCraftingBar(bar)
 end
 
 function app.DisableCraftingBar(bar)
+    app.RestoreCraftingName(bar)
     batch = nil
     bar:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 end

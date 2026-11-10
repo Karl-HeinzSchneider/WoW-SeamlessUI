@@ -237,6 +237,21 @@ for key, tab in pairs(tabs) do
 end
 -- Writes from Edit Mode also refresh the settings pages, like the settings window's own (6 rows).
 assert(layoutRefreshes == 14 and counts.optionRefreshes == 20 and counts.systemRefreshes == 14)
+for key, tab in pairs(tabs) do
+    local option = tab.args.style.args.useOldDragons
+    assert(option and option.default == false and option.order == 2, key .. " has old dragons beside layout")
+    app.db.profile.layout = "current"
+    assert(option.disabled(), "default skin cannot select old dragons")
+    for _, mode in ipairs({ "legacy", "legacyRounded" }) do
+        app.db.profile.layout = mode
+        assert(not option.disabled(), "both beta skins support old dragons")
+        option.set(nil, true)
+        assert(option.get(), "old dragons setting is shared")
+        option.set(nil, false)
+        assert(not option.get())
+    end
+end
+app.db.profile.layout = "current"
 local levelRefreshes = 0
 app.levelDisplay = {
     Refresh = function()

@@ -226,17 +226,20 @@ local function Paint(texture, atlas, useSize, bar, mirror)
         Paint(visual:GetStatusBarTexture(), atlas, false, visual)
         texture:SetAlpha(0)
     end
+    local oldDragons = app.db.profile.useOldDragons == true
     local last = painted[texture]
     if
         last
         and last.atlas == atlas
         and last.legacy == legacyMode
+        and last.oldDragons == oldDragons
         and last.mirror == mirror
         and last.useSize == useSize
     then
         return true
     end
-    local data = legacyMode and app.legacyAtlases[atlas:lower()] or nil
+    local dragon = atlas:lower():find("target-portraiton-boss-", 1, true) ~= nil
+    local data = legacyMode and (not dragon or oldDragons) and app.legacyAtlases[atlas:lower()] or nil
     artwork[texture] = { atlas = atlas, useSize = useSize, bar = bar, mirror = mirror }
     local previous = writing
     writing = true
@@ -273,7 +276,8 @@ local function Paint(texture, atlas, useSize, bar, mirror)
     else
         texture:SetAtlas(atlas, useSize or false, nil, true)
     end
-    painted[texture] = { atlas = atlas, legacy = legacyMode, mirror = mirror, useSize = useSize }
+    painted[texture] =
+        { atlas = atlas, legacy = legacyMode, oldDragons = oldDragons, mirror = mirror, useSize = useSize }
     writing = previous
     return true
 end

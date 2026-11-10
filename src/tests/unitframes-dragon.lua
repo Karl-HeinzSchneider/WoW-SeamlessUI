@@ -82,6 +82,18 @@ for _, style in ipairs({ "elite", "rare", "boss" }) do
     end
 end
 assert(created == 1, "reuse our texture")
+for _, mode in ipairs({ "legacy", "legacyRounded" }) do
+    app.db.profile.layout = mode
+    module:Refresh()
+    assert(texture.path == "Interface/HUD/UIUnitFrameBossC602x", "beta defaults to modern dragons")
+    app.db.profile.useOldDragons = true
+    module:Refresh()
+    assert(texture.path == "Interface/HUD/UIUnitFrameBoss2x", "beta can use old dragons")
+    app.db.profile.useOldDragons = false
+end
+app.db.profile.layout = "current"
+module:Refresh()
+app.db.profile.useOldDragons = true
 combat = true
 app.db.profile.layout = "legacy"
 module:Refresh()

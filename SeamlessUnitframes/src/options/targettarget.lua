@@ -67,6 +67,7 @@ app.optionPages.targettarget = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    useOldDragons = app.UnitFrameOldDragonsOption(),
                     statusText = app.UnitFrameStatusTextOption(),
                     targettarget_nameDisplay = {
                         order = 10,

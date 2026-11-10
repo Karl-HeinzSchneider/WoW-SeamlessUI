@@ -891,6 +891,7 @@ L["Surname only"] = true
 L["Threat percentage"] = true
 L["Unit frame layout"] = true
 L["Unit Frames"] = true
+L["Use old dragons"] = true
 
 -- Embed: BetterGroupLoot
 L["Gap between two rolls."] = true

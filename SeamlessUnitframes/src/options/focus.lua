@@ -67,6 +67,7 @@ app.optionPages.focus = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    useOldDragons = app.UnitFrameOldDragonsOption(),
                     statusText = app.UnitFrameStatusTextOption(),
                     focus_nameDisplay = {
                         order = 10,

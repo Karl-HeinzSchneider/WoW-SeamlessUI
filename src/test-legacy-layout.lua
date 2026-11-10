@@ -468,7 +468,7 @@ local app = {
         end,
         debug = function() end,
     },
-    db = { profile = { layout = "current", unitFrames = {} } },
+    db = { profile = { layout = "current", useOldDragons = true, unitFrames = {} } },
     addon = {
         NewModule = function(_, name, prototype)
             return setmetatable({
@@ -849,6 +849,18 @@ assert(
         and dragon.point[5] == -8,
     "legacy elite dragon uses the old art's offsets"
 )
+for _, mode in ipairs({ "legacy", "legacyRounded" }) do
+    app.db.profile.layout = mode
+    app.db.profile.useOldDragons = false
+    layout:Refresh()
+    assert(dragon.point[4] == 0 and dragon.point[5] == 1, "beta modern elite offsets")
+    assert(dragon.atlas == "UI-HUD-UnitFrame-Target-PortraitOn-Boss-Gold", "beta uses native modern atlas")
+    app.db.profile.useOldDragons = true
+    layout:Refresh()
+    assert(dragon.point[4] == -11 and dragon.point[5] == -8, "toggle restores old offsets")
+end
+app.db.profile.layout = "legacy"
+layout:Refresh()
 classification = secret
 TargetFrame:CheckClassification()
 FocusFrame:CheckClassification()

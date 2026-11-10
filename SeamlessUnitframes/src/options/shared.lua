@@ -41,6 +41,29 @@ function app.UnitFrameLayoutOption()
     }
 end
 
+---The shared beta dragon artwork setting, beside the layout selector.
+---@return table
+function app.UnitFrameOldDragonsOption()
+    return {
+        type = "toggle",
+        order = 2,
+        default = false,
+        name = L["Use old dragons"],
+        disabled = function()
+            return app.db.profile.layout ~= "legacy" and app.db.profile.layout ~= "legacyRounded"
+        end,
+        get = function()
+            return app.db.profile.useOldDragons
+        end,
+        set = function(_, value)
+            app.db.profile.useOldDragons = value
+            app.legacyLayout:Refresh()
+            app.core:RefreshOptions(appName)
+            app.core:RefreshEditModeSystemOptions()
+        end,
+    }
+end
+
 ---The client-wide status text proxy, matching Blizzard's Interface dropdown.
 ---@return table
 function app.UnitFrameStatusTextOption()

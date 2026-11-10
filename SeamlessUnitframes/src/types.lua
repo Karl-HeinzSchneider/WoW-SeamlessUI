@@ -38,6 +38,7 @@
 ---@field global SeamlessUnitframes.DB.Global
 
 ---@class SeamlessUnitframes
+---@field UnitFrameOldDragonsOption fun(): table
 ---@field UnitFrameLayoutOption fun(): table
 ---@field UnitFrameStatusTextOption fun(): table
 ---@field UnitFramePositionOptions fun(entry: SeamlessUnitframes.UnitFrame): table?, table?

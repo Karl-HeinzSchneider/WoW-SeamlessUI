@@ -894,6 +894,7 @@ end
 -- L["Threat percentage"] = "Threat percentage"
 -- L["Unit frame layout"] = "Unit frame layout"
 -- L["Unit Frames"] = "Unit Frames"
+-- L["Use old dragons"] = "Use old dragons"
 
 -- Embed: BetterGroupLoot
 -- L["Gap between two rolls."] = "Gap between two rolls."

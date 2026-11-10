@@ -65,6 +65,7 @@ app.optionPages.pet = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    useOldDragons = app.UnitFrameOldDragonsOption(),
                     statusText = app.UnitFrameStatusTextOption(),
                     pet_healthBarColor = {
                         order = 30,

@@ -57,6 +57,7 @@ app.optionPages.party = {
                 name = L["Style"],
                 args = {
                     layout = app.UnitFrameLayoutOption(),
+                    useOldDragons = app.UnitFrameOldDragonsOption(),
                     statusText = app.UnitFrameStatusTextOption(),
                     party_nameDisplay = {
                         order = 10,

@@ -13,11 +13,52 @@ CopyTable = function(value)
     return copy
 end
 UIParent = {}
-Enum = { EditModeSystem = { CastBar = 4 }, EditModeCastBarSetting = { ShowCastTime = 2 } }
+Enum = {
+    EditModeSystem = { CastBar = 4 },
+    EditModeCastBarSetting = { ShowCastTime = 2 },
+    GameRule = { CustomActionbarOverlayHeightOffset = 1 },
+}
+local actionHeight = 100
+EditModeUtil = {
+    GetBottomActionBarHeight = function()
+        return actionHeight
+    end,
+}
+C_GameRules = {
+    GetGameRuleAsFloat = function()
+        return 0
+    end,
+}
+BOTTOM_FRAME_CONTAINER_MARGIN, MAIN_ACTION_BAR_OFFSET_Y = 15, -4
+local lower = {
+    layoutIndex = 3,
+    GetScale = function()
+        return 2
+    end,
+}
+GetBottomManagedFrameContainer = function()
+    return {
+        respectChildScale = true,
+        spacing = 10,
+        GetPadding = function()
+            return 0, 0, 0, 0
+        end,
+        GetLayoutChildren = function()
+            return { lower }
+        end,
+        GetChildSize = function()
+            return 100, 12
+        end,
+        GetChildPadding = function()
+            return 0, 0, 1, 2
+        end,
+    }
+end
 local shared = {
     systems = {
         {
             system = 4,
+            isInDefaultPosition = false,
             settings = { { setting = 2, value = 1 } },
             anchorInfo = {
                 point = "BOTTOM",
@@ -170,10 +211,40 @@ assert(app.GetPlayerPosition().relativeTo == "UIParent")
 layout = "Classic"
 shared = { systems = {} }
 callbacks.layout()
-assert(real.position.point == "CENTER" and real.position.x == 0)
+assert(real.position.point == "BOTTOM" and real.position.x == 0)
+assert(real.position.y == (100 + 15 + 8 + 24 + 1 + 2 + 10) / 1.5)
+actionHeight = 500
+app.ApplyPlayerPosition()
+assert(real.position.y == 160 / 1.5, "default snapshots shared layout without following other frames")
 layout = "Modern"
 callbacks.layout()
 assert(real.position.x == -50 and real.position.y == -70)
 spec.reset()
-assert(spec.isDefault() and real.position.point == "CENTER")
+assert(spec.isDefault() and real.position.point == "BOTTOM")
+app.db.profile.player.scale = 2
+app.ApplyPlayerPosition()
+assert(real.position.y == 160 / 2, "default screen location remains stable across scale changes")
+layout = "No action bars"
+actionHeight = 0
+callbacks.layout()
+assert(real.position.y == (-4 + 8 + 24 + 1 + 2 + 10) / 2)
 print("PASS: UIParent-only player placement, independent migration, dragging, layout changes and reset")
+layout = "Previously default"
+shared = { systems = { { system = 4, isInDefaultPosition = true } } }
+app.db.profile.positions.player[layout] =
+    { point = "CENTER", relativePoint = "CENTER", relativeTo = "UIParent", x = 0, y = 0 }
+callbacks.layout()
+assert(real.position.point == "CENTER", "existing saved positions are preserved")
+spec.reset()
+assert(real.position.point == "BOTTOM", "Reset Position switches an existing layout to the native default")
+shared.systems[1].isInDefaultPosition = false
+app.db.profile.positions.player[layout] =
+    { point = "CENTER", relativePoint = "CENTER", relativeTo = "UIParent", x = 0, y = 0 }
+callbacks.layout()
+assert(real.position.point == "CENTER", "an explicitly moved center position is preserved")
+
+actionHeight = 200
+app.RefreshPlayerDefault()
+assert(real.position.point == "CENTER", "deferred default initialization must not move a saved bar")
+spec.reset()
+assert(real.position.y == (200 + 15 + 8 + 24 + 1 + 2 + 10) / 2)

@@ -5,6 +5,7 @@
 ---@field GetPlayerPreview fun(): StatusBar?
 ---@field IsPlayerEditMode fun(): boolean
 ---@field GetPlayerPosition fun(): table
+---@field RefreshPlayerDefault fun()
 ---@field InitializePlayerSettings fun()
 ---@field ApplyPlayerPosition fun()
 ---@field RegisterPlayerEditMode fun()

@@ -77,6 +77,9 @@ function app.EnablePlayerBar()
         -- before processing our own events, including the first cast after a layout change.
         local onEvent = bar:GetScript("OnEvent")
         bar:SetScript("OnEvent", function(self, ...)
+            if (...) == "PLAYER_ENTERING_WORLD" then
+                C_Timer.After(0, app.RefreshPlayerDefault)
+            end
             app.RefreshPlayerBar()
             onEvent(self, ...)
         end)

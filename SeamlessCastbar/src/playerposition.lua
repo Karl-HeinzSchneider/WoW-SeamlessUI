@@ -10,9 +10,41 @@ end
 function app.IsPlayerEditMode()
     return lib:IsInEditMode()
 end
--- Client EditModePresetLayouts.lua: the cast bar's declared free-position anchor.
--- Unlike the native managed bar, ours deliberately stays fixed on UIParent.
-local DEFAULT = { point = "CENTER", relativePoint = "CENTER", relativeTo = "UIParent", x = 0, y = 0 }
+-- Keep the registered default table current for the active layout and user scale.
+-- LibEditMode retains this table; no internal library state needs changing.
+local DEFAULT = { point = "BOTTOM", relativePoint = "BOTTOM", relativeTo = "UIParent", x = 0, y = 0 }
+local defaultHeights = {}
+
+local function defaultPosition()
+    local layout = lib:GetActiveLayoutName() or ""
+    local height = defaultHeights[layout]
+    if not height then
+        -- UIParentPanelManager.lua:FramePositionDelegate:ManageBottomFrameContainer.
+        height = EditModeUtil:GetBottomActionBarHeight()
+            + C_GameRules.GetGameRuleAsFloat(Enum.GameRule.CustomActionbarOverlayHeightOffset)
+        height = height > 0 and height + BOTTOM_FRAME_CONTAINER_MARGIN or MAIN_ACTION_BAR_OFFSET_Y
+        -- PlayerCastingBarFrameTemplate: layoutIndex=2, bottomPadding=8.
+        -- LayoutFrame.lua:VerticalLayoutMixin:LayoutChildren places later children
+        -- underneath it. Evaluate the same shared layout inputs without reading the
+        -- native castbar, and snapshot the result so ours remains independent.
+        local container = GetBottomManagedFrameContainer()
+        local _, _, _, bottom = container:GetPadding()
+        height = height + bottom + 8
+        for _, child in ipairs(container:GetLayoutChildren()) do
+            if child.layoutIndex > 2 then
+                local _, childHeight = container:GetChildSize(child)
+                if container.respectChildScale then
+                    childHeight = childHeight * child:GetScale()
+                end
+                local _, _, topPadding, bottomPadding = container:GetChildPadding(child)
+                height = height + childHeight + topPadding + bottomPadding + (container.spacing or 0)
+            end
+        end
+        defaultHeights[layout] = height
+    end
+    DEFAULT.y = height / app.db.profile.player.scale
+    return DEFAULT
+end
 
 function app.InitializePlayerSettings()
     local profile = app.db.profile
@@ -44,7 +76,12 @@ function app.GetPlayerPosition()
         local info = EditModeManagerFrame:GetActiveLayoutInfo()
         for _, system in ipairs(info and info.systems or {}) do
             local anchor = system.anchorInfo
-            if system.system == Enum.EditModeSystem.CastBar and anchor and anchor.relativeTo == "UIParent" then
+            if
+                system.system == Enum.EditModeSystem.CastBar
+                and system.isInDefaultPosition == false
+                and anchor
+                and anchor.relativeTo == "UIParent"
+            then
                 stored = {
                     point = anchor.point,
                     relativePoint = anchor.relativePoint,
@@ -57,7 +94,7 @@ function app.GetPlayerPosition()
             end
         end
     end
-    return stored or DEFAULT
+    return stored and not stored.default and stored or defaultPosition()
 end
 
 function app.ApplyPlayerPosition()
@@ -65,9 +102,21 @@ function app.ApplyPlayerPosition()
     if not bar then
         return
     end
+    defaultPosition() -- Also updates the registered Reset Position target after layout/scale changes.
     local position = app.GetPlayerPosition()
     bar:ClearAllPoints()
     bar:SetPoint(position.point, UIParent, position.relativePoint, position.x, position.y)
+end
+
+-- The first addon enable can precede action-bar layout initialization. Re-evaluate
+-- once the client has finished its entering-world layout work; moved bars stay put.
+function app.RefreshPlayerDefault()
+    if not app.addon:IsEnabled() then
+        return
+    end
+    defaultHeights[lib:GetActiveLayoutName() or ""] = nil
+    app.ApplyPlayerPosition()
+    app.UpdatePlayerPreview()
 end
 
 local function changed()
@@ -99,14 +148,15 @@ function app.PlayerCastbarPosition()
             store(position)
         end,
         default = function(key)
-            return DEFAULT[key]
+            return defaultPosition()[key]
         end,
         reset = function()
-            store(CopyTable(DEFAULT))
+            store({ default = true })
         end,
         isDefault = function()
             local layout = lib:GetActiveLayoutName()
             local position = app.GetPlayerPosition()
+            local DEFAULT = defaultPosition()
             return position.point == DEFAULT.point
                 and position.relativePoint == DEFAULT.relativePoint
                 and position.x == DEFAULT.x
@@ -157,8 +207,13 @@ function app.RegisterPlayerEditMode()
     preview:Hide()
     preview:SetClampedToScreen(true)
     lib:AddFrame(preview, function(_, _, point, x, y)
+        local default = defaultPosition()
+        if point == default.point and x == default.x and y == default.y then
+            store({ default = true })
+            return
+        end
         store({ point = point, relativePoint = point, relativeTo = "UIParent", x = x, y = y })
-    end, DEFAULT, L["Player cast bar"])
+    end, defaultPosition(), L["Player cast bar"])
     lib:AddFrameSettings(preview, app.core:GetEditModePageSettings(appName, "player"))
     app.core:RegisterEditModeOptions(appName .. ".Player", {
         section = "frames",

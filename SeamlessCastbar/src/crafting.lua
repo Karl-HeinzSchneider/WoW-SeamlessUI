@@ -4,6 +4,27 @@ local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 local batch
 local player
+local craftSpark
+
+local function hideCraftSpark()
+    if craftSpark then
+        craftSpark:Hide()
+    end
+end
+
+local function updateCraftSpark(bar, waiting)
+    if not batch or not batch.started or batch.duration <= 0 then
+        hideCraftSpark()
+        return
+    end
+    local progress = waiting and 1 or math.min(1, math.max(0, (GetTime() - batch.castStart) / batch.duration))
+    -- Same pip dimensions as CastingBarFrameBaseTemplate (8 x 20 at height 11),
+    -- with a deliberately fainter additive glow for the individual craft.
+    craftSpark:SetSize(8, bar:GetHeight() + 9)
+    craftSpark:ClearAllPoints()
+    craftSpark:SetPoint("CENTER", bar, "LEFT", progress * bar:GetWidth(), 0)
+    craftSpark:Show()
+end
 
 local function known(value)
     return value ~= nil and not (issecretvalue and issecretvalue(value))
@@ -47,6 +68,7 @@ local function update(bar, waiting)
     bar:SetMinMaxValues(0, bar.maxValue)
     bar:SetValue(bar.value)
     bar:UpdateCastTimeText()
+    updateCraftSpark(bar, waiting)
 end
 
 local function start(bar)
@@ -62,15 +84,18 @@ local function start(bar)
         or not known(spellID)
     then
         batch = nil
+        hideCraftSpark()
         return
     end
     if batch.spellID and (not known(spellID) or batch.spellID ~= spellID) then
         batch = nil
+        hideCraftSpark()
         return
     end
     batch.spellID = spellID
     batch.started = batch.started or startTime / 1000
     batch.duration = (endTime - startTime) / 1000
+    batch.castStart = startTime / 1000
     batch.castEnd = endTime / 1000
     batch.castID = castID
     batch.index = batch.completed + 1
@@ -82,6 +107,7 @@ end
 local function requested(_, count, spellID)
     app.RestoreCraftingName(player)
     batch = nil
+    hideCraftSpark()
     if not app.addon:IsEnabled() or not known(count) or type(count) ~= "number" or count <= 1 then
         return
     end
@@ -95,6 +121,11 @@ end
 
 function app.InstallCraftingBar(bar)
     player = bar
+    craftSpark = bar:CreateTexture(nil, "OVERLAY", nil, 7)
+    craftSpark:SetAtlas("ui-castingbar-pip")
+    craftSpark:SetBlendMode("ADD")
+    craftSpark:SetAlpha(0.3)
+    craftSpark:Hide()
     local castStart = bar.HandleCastStart
     bar.HandleCastStart = function(self, event)
         castStart(self, event)
@@ -102,6 +133,7 @@ function app.InstallCraftingBar(bar)
             start(self)
         else
             batch = nil
+            hideCraftSpark()
         end
     end
     local delayed = bar.HandleCastDelayed
@@ -121,6 +153,7 @@ function app.InstallCraftingBar(bar)
             end
             stop(self, event, castID, ...)
             batch = nil
+            hideCraftSpark()
             return
         end
         stop(self, event, castID, ...)
@@ -134,12 +167,14 @@ function app.InstallCraftingBar(bar)
         end
         finish(self, ...)
         batch = nil
+        hideCraftSpark()
     end
     local interrupt = bar.HandleInterruptOrSpellFailed
     bar.HandleInterruptOrSpellFailed = function(self, empowered, event, castID, ...)
         if batch and (not batch.started or (known(castID) and castID == batch.castID)) then
             app.RestoreCraftingName(self)
             batch = nil
+            hideCraftSpark()
         end
         interrupt(self, empowered, event, castID, ...)
     end
@@ -147,6 +182,7 @@ function app.InstallCraftingBar(bar)
     bar:SetScript("OnEvent", function(self, event, unit, castID, ...)
         if event == "PLAYER_ENTERING_WORLD" then
             batch = nil
+            hideCraftSpark()
         elseif event == "UNIT_SPELLCAST_SUCCEEDED" and unit == "player" and batch and batch.started then
             if known(castID) and castID == batch.castID and batch.succeeded ~= castID then
                 batch.succeeded = castID
@@ -185,6 +221,7 @@ function app.EnableCraftingBar(bar)
             end
             app.RestoreCraftingName(bar)
             batch = nil
+            hideCraftSpark()
             if UnitCastingInfo("player") then
                 bar:HandleCastDelayed()
             else
@@ -197,5 +234,6 @@ end
 function app.DisableCraftingBar(bar)
     app.RestoreCraftingName(bar)
     batch = nil
+    hideCraftSpark()
     bar:UnregisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 end

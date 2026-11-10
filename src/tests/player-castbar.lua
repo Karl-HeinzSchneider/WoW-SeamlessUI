@@ -1,6 +1,11 @@
 -- lua src/tests/player-castbar.lua
-local app = { db = { profile = { player = { castTime = { enabled = true } } } } }
+local app = { db = { profile = { player = { castTime = { enabled = true }, showCastTime = true } } } }
 local active = true
+app.ApplyPlayerPosition = function() end
+app.InitializePlayerSettings = function() end
+app.IsPlayerEditMode = function()
+    return false
+end
 app.InstallCraftingBar = function() end
 app.EnableCraftingBar = function() end
 app.DisableCraftingBar = function() end
@@ -121,14 +126,14 @@ bar:HandleChannelUpdateDelayed()
 assert(calls.UpdateTicks == 2)
 bar:UpdateCastTimeText()
 assert(calls.UpdateCastTime == 2)
-app.db.profile = { player = { castTime = { enabled = false } } }
+app.db.profile = { player = { castTime = { enabled = false }, showCastTime = true } }
 app.RefreshPlayerBar()
 assert(bar.timeShown, "formatting toggle must not override shared Show Cast Time visibility")
 lock.value = 1
 time.value = 0
 bar:OnEvent("UNIT_SPELLCAST_START")
-assert(bar.look == "UNITFRAME" and not bar.timeShown and bar.iconShown)
-assert(math.abs(bar.scale - 1.5) < 0.0001, "locked appearance uses PlayerFrame's inherited scale rule")
+assert(bar.look == "CLASSIC" and bar.timeShown and bar.iconShown)
+assert(bar.scale == 1, "native lock setting cannot change our scale")
 assert(bar.lastEvent == "UNIT_SPELLCAST_START", "own inherited event handler still runs")
 lock.value = 0
 time.value = 1

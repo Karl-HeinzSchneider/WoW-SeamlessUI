@@ -119,6 +119,8 @@ app.optionPages.player = {
                 height = 11,
                 scale = 1,
                 iconSize = 16,
+                -- EditModePresetLayouts.lua: native ShowCastTime checkbox defaults to 0.
+                showCastTime = false,
                 castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
                 rank = { enabled = true },
                 ticks = { enabled = true },
@@ -129,7 +131,7 @@ app.optionPages.player = {
     },
     config = {
         editModeFrame = function()
-            return PlayerCastingBarFrame
+            return app.GetPlayerPreview()
         end,
         buttonSection = app.core:GetEditModeButtonSection({
             app.core:GetEditModePositionButton("revert"),
@@ -140,6 +142,18 @@ app.optionPages.player = {
         name = L["Player"],
         order = 10,
         args = {
+            showCastTime = {
+                type = "toggle",
+                name = L["Show cast time"],
+                order = 9,
+                get = function()
+                    return app.db.profile.player.showCastTime
+                end,
+                set = function(_, value)
+                    app.db.profile.player.showCastTime = value
+                    refresh()
+                end,
+            },
             position = position,
             size = size,
             icon = {

@@ -17,10 +17,9 @@ system, so they are not part of this addon.
 
 ## Ownership
 
-- `src/player.lua`: independent `SeamlessCastbarPlayer` player bar using the client's
-  `CastingBarFrameTemplate` and unmodified cast lifecycle. Anchored 32 units above the native
-  bar; independently subscribes through SetUnit and uses profile.player visual settings. Reads shared active-layout data for Lock To Player Frame style and Show Cast Time, never the original bar state. Does not register with Edit Mode
-  or hide the original.
+- `src/player.lua`: independent `SeamlessCastbarPlayer`, using the native template and its own cast subscriptions. Always uses the detached appearance and direct profile scale, with no Lock To Player Frame behavior. The original player display is suppressed while enabled and restored on disable.
+
+- `src/playerposition.lua`: UIParent-only position per layout in `profile.positions.player`, independent of native frames. Imports a saved UIParent layout anchor once; otherwise uses the client preset free-position CENTER anchor (the native managed position is intentionally not followed). A separate LibEditMode preview owns selection, dragging and the Player page. Show Cast Time is imported once per profile and then controlled by the independent Show cast time option. Existing position layout-copy/rename/delete callbacks include player entries.
 
 - `src/crafting.lua`: automatic batch crafting on the custom player bar only. Secure post-hooks on DoTradeSkill and C_TradeSkillUI.CraftRecipe capture quantity; the custom frame tracks successful cast IDs. The range is rebased from each actual cast end plus unfinished casts, retaining elapsed gaps. The spell label shows the current craft and total (for example, Copper Bar (3/10)); refreshes preserve rank without duplicating the suffix. Intermediate stops keep the bar alive; final completion, interruption, queue cancellation and disabling clear the batch.
 
@@ -30,13 +29,12 @@ system, so they are not part of this addon.
   hooks and `app.Settings(bar)`. All three bars follow the addon lifecycle; there are no per-bar
   Enable switches. Individual feature switches remain independent.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
-  text when disabled. Both player bars use inherited cast-time text and the shared layout Show Cast Time for visibility; target/focus get
+  text when disabled. Both player bars use inherited cast-time text; our player uses profile.player.showCastTime for visibility; target/focus get
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/size.lua`: player bar size. The Player tab's Position and Size groups are Core's native group
-  for the cast bar system (`GetNativePositionOptions`); position is stored in the Edit Mode layout
-  and unavailable while Lock to Player Frame is on. The player's Size controls override that group's
+  for the custom preview; position is stored per layout with UIParent as its only anchor. The player's Size controls override that group's
   Scale placeholder: Scale (0.5–3), Width and Height use `profile.player` and apply directly to the
   native and addon-owned frames. It retains per-frame values for restoration and reapplies overrides after style
   updates. Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size
@@ -73,7 +71,7 @@ system, so they are not part of this addon.
 Edit Mode rows, target/focus previews and positions.
 `lua src/tests/player-castbar.lua` checks the custom player's independent lifecycle, inherited
 method dispatch and current-profile refresh. Player visual settings affect both player bars;
-the native player's Edit Mode controls still place the temporary anchor underneath it.
+the player preview supplies independent positioning.
 
 `lua src/tests/crafting-castbar.lua` checks batch timing, gaps, changed durations, duplicate and reordered events, synchronous first casts, interruption and cancellation.
 
@@ -82,3 +80,5 @@ casts and interruptions, channel pushback, spell ranks, profile changes and Edit
 Moved target/focus bars: drag, Position rows, Reset Position, layout switch, target with aura
 rows and a ToT, casts in combat.
 Check `/console taintLog 1` stays clean.
+
+`lua src/tests/player-castbar-position.lua` checks one-time import, UIParent-only anchors, dragging, layout changes and reset.

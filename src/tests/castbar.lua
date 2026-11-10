@@ -503,6 +503,9 @@ app.dbDefaults = {}
 app.position = { GetOptions = function() end }
 app.core.GetEditModeButtonSection = dofile("src/tests/settings-support.lua").buttonSection
 app.core.GetEditModePositionButton = dofile("src/tests/settings-support.lua").positionButton
+app.PlayerCastbarPosition = function()
+    return nil
+end
 load("options/shared.lua")
 load("options/player.lua")
 load("options/target.lua")

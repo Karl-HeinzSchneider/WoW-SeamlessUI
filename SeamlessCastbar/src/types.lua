@@ -2,6 +2,13 @@
 ---@class SeamlessCastbar
 ---@field optionPages table<string, SeamlessCore.SettingsPage>
 ---@field GetPlayerBar fun(): StatusBar?
+---@field GetPlayerPreview fun(): StatusBar?
+---@field IsPlayerEditMode fun(): boolean
+---@field GetPlayerPosition fun(): table
+---@field InitializePlayerSettings fun()
+---@field ApplyPlayerPosition fun()
+---@field RegisterPlayerEditMode fun()
+---@field UpdatePlayerPreview fun()
 ---@field InstallCraftingBar fun(bar: StatusBar)
 ---@field UpdateCraftingName fun(bar: StatusBar)
 ---@field RestoreCraftingName fun(bar: StatusBar)

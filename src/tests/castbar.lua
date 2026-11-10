@@ -372,7 +372,7 @@ app.addon = {
         return enabled
     end,
 }
--- Player dimensions: exact frame sizes, native look changes and profile restoration.
+-- Custom player dimensions use profile settings and declared defaults only.
 local dimensions = { width = 208, height = 11, scale = 1 }
 local iconSize = { width = 20, height = 20 }
 PlayerCastingBarFrame = {
@@ -406,7 +406,8 @@ PlayerCastingBarFrame = {
         dimensions.height = value
     end,
 }
-local textPoints = { { "TOP", PlayerCastingBarFrame, "TOP", 0, -10 } }
+local customPlayerBar = PlayerCastingBarFrame
+local textPoints = {}
 PlayerCastingBarFrame.Text = {
     GetNumPoints = function()
         return #textPoints
@@ -424,8 +425,16 @@ PlayerCastingBarFrame.Text = {
 app.dbDefaults = {}
 dofile("src/tests/settings-support.lua").defaults("SeamlessCastbar", app)
 app.GetPlayerBar = function()
-    return PlayerCastingBarFrame
+    return customPlayerBar
 end
+PlayerCastingBarFrame = setmetatable({}, {
+    __index = function()
+        error("sizing read the native player castbar")
+    end,
+    __newindex = function()
+        error("sizing changed the native player castbar")
+    end,
+})
 load("size.lua")
 dimensions.width, dimensions.height = 207.99998474121, 11.00000095367
 assert(
@@ -435,7 +444,7 @@ assert(
 dimensions.width, dimensions.height = 208, 11
 app.db.profile.player.height = 22
 app.ApplyPlayerSize()
-assert(iconSize.width == 20 and iconSize.height == 20, "bar height does not resize the icon")
+assert(iconSize.width == 16 and iconSize.height == 16, "missing icon size uses declared default")
 app.db.profile.player.iconSize = 40
 app.ApplyPlayerSize()
 assert(iconSize.width == 40 and iconSize.height == 40, "manual icon size sets both dimensions")
@@ -454,61 +463,35 @@ assert(
 app.ApplyPlayerSize()
 assert(textPoints[1][5] == 1, "repeated refreshes do not shift the text")
 assert(dimensions.scale == 3)
-dimensions.scale = 1.5
-app.PlayerScaleChanged()
-assert(dimensions.scale == 3 and app.PlayerSizeDefault("scale") == 1, "native scale updates cannot change the default")
-assert(dimensions.width == 300 and dimensions.height == 50)
-dimensions.width, dimensions.height = 150, 10
-textPoints = {
-    { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 },
-    { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 },
-}
-app.PlayerSizeLookChanged()
-assert(
-    #textPoints == 2
-        and textPoints[1][3] == "BOTTOMLEFT"
-        and textPoints[2][3] == "BOTTOMRIGHT"
-        and textPoints[1][5] == 13
-        and textPoints[2][5] == 13,
-    "locked bar retains both horizontal anchors"
-)
-assert(dimensions.width == 300 and dimensions.height == 50, "sizes survive a native look change")
-assert(app.PlayerSizeDefault("width") == 208 and app.PlayerSizeDefault("height") == 11)
-assert(app.PlayerSizeDefault("iconSize") == 16, "icon defaults come from the client template, not the live icon")
+-- Geometry getters must never be needed, including after profile changes.
+customPlayerBar.GetWidth = function()
+    error("measured width")
+end
+customPlayerBar.GetHeight = function()
+    error("measured height")
+end
+customPlayerBar.GetScale = function()
+    error("measured scale")
+end
+customPlayerBar.Text.GetPoint = function()
+    error("read live text anchor")
+end
 local originalProfile = app.db.profile
 app.db.profile = { player = {} }
 app.ApplyPlayerSize()
-assert(dimensions.width == 150 and dimensions.height == 10, "removing overrides restores native dimensions")
-assert(dimensions.scale == 1.5, "removing overrides restores native scale")
-assert(iconSize.width == 20 and iconSize.height == 20, "removing overrides restores native icon size")
-assert(textPoints[1][3] == "TOPLEFT" and textPoints[1][5] == 3, "removing overrides restores native text anchors")
+assert(dimensions.width == 208 and dimensions.height == 11 and dimensions.scale == 1)
+assert(iconSize.width == 16 and iconSize.height == 16, "missing values use declared defaults")
+assert(textPoints[1][3] == "BOTTOM" and textPoints[1][5] == 1)
+customPlayerBar.classicStyleCastBar = true
+app.ApplyPlayerSize()
+assert(textPoints[1][5] == 18, "classic text uses the client's declared bottom offset")
+customPlayerBar.classicStyleCastBar = nil
 app.db.profile = originalProfile
 app.ApplyPlayerSize()
 enabled = false
+app.db.profile.player.width = 123
 app.ApplyPlayerSize()
-assert(dimensions.width == 150 and dimensions.height == 10, "addon disable restores native dimensions")
-assert(dimensions.scale == 1.5, "addon disable restores native scale")
-assert(iconSize.width == 20 and iconSize.height == 20, "disabling restores native icon size")
-assert(textPoints[2][3] == "TOPRIGHT" and textPoints[2][5] == 3, "disabling restores native text anchors")
-enabled = true
--- A native SetLook can expose secret text geometry. Never partially capture or
--- clear anchors; a subsequent readable refresh must capture the complete layout.
-for field = 1, 5 do
-    local first = { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 }
-    local restrictedPoint = { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 }
-    restrictedPoint[field] = secret
-    textPoints = { first, restrictedPoint }
-    app.PlayerSizeLookChanged()
-    assert(textPoints[1] == first and textPoints[2] == restrictedPoint, "secret anchors stay untouched")
-    textPoints = {
-        { "TOPLEFT", PlayerCastingBarFrame, "TOPLEFT", 0, 3 },
-        { "TOPRIGHT", PlayerCastingBarFrame, "TOPRIGHT", 0, 3 },
-    }
-    app.ApplyPlayerSize()
-    assert(#textPoints == 2 and textPoints[2][3] == "BOTTOMRIGHT", "readable anchors are retried in full")
-end
-enabled = false
-app.ApplyPlayerSize()
+assert(dimensions.width == 300, "disabled custom bar needs no restoration writes")
 enabled = true
 app.db.profile.player.width, app.db.profile.player.height = nil, nil
 app.db.profile.player.scale = nil

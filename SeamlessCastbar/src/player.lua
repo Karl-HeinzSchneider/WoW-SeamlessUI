@@ -30,10 +30,10 @@ function app.RefreshPlayerBar(force)
     local lookChanged = look ~= lastLook
     if lookChanged then
         bar:SetLook(look)
-        app.PlayerSizeLookChanged(bar)
+        app.ApplyPlayerSize()
         lastLook = look
     elseif force then
-        app.ApplyPlayerSize(bar)
+        app.ApplyPlayerSize()
     end
     -- User scale is applied directly, with no frame-scale inheritance.
     local scale = app.db.profile.player.scale or app.PlayerSizeDefault("scale")

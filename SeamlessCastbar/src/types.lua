@@ -25,9 +25,7 @@
 ---@field BarKey fun(bar: StatusBar): string?
 ---@field Settings fun(bar: StatusBar): table?
 ---@field PlayerSizeDefault fun(axis: string): number?
----@field ApplyPlayerSize fun(bar?: StatusBar)
----@field PlayerSizeLookChanged fun(bar?: StatusBar)
----@field PlayerScaleChanged fun(bar?: StatusBar)
+---@field ApplyPlayerSize fun()
 ---@field castTimeFormats table<string, string>
 ---@field castTimeFormatOrder string[]
 ---@field Known fun(value: any): boolean

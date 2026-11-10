@@ -21,7 +21,6 @@ for _, method in ipairs({
     "UpdateTicks",
     "UpdateIcon",
     "HideTicks",
-    "PlayerSizeLookChanged",
     "ApplyPlayerSize",
 }) do
     app[method] = function()
@@ -151,45 +150,98 @@ bar:HandleCastStart("UNIT_SPELLCAST_CHANNEL_START")
 assert(calls.UpdateName == 2)
 print("PASS: independent player castbar lifecycle, method dispatch and profile refresh")
 
--- Both player bars share settings but must retain their own restoration dimensions.
+-- Sizing resolves only the custom frame and never reads native geometry.
 assert(loadfile("SeamlessCastbar/src/size.lua"))("SeamlessCastbar", app)
-local function sizedBar(width, height, scale)
-    return {
-        GetWidth = function()
-            return width
-        end,
-        GetHeight = function()
-            return height
-        end,
-        GetScale = function()
-            return scale
-        end,
-        SetWidth = function(_, value)
-            width = value
-        end,
-        SetHeight = function(_, value)
-            height = value
-        end,
-        SetScale = function(_, value)
-            scale = value
-        end,
-    }
+local dimensions = {}
+bar.SetWidth = function(_, value)
+    dimensions.width = value
 end
-local original = sizedBar(208, 11, 1)
-local custom = sizedBar(150, 10, 0.8)
-PlayerCastingBarFrame = original
+bar.SetHeight = function(_, value)
+    dimensions.height = value
+end
+bar.SetScale = function(_, value)
+    dimensions.scale = value
+end
+app.dbDefaults = { profile = { player = { width = 208, height = 11, scale = 1, iconSize = 16 } } }
 app.db.profile.player.width = 250
 app.db.profile.player.height = 20
 app.db.profile.player.scale = 1.5
 app.ApplyPlayerSize()
-app.ApplyPlayerSize(custom)
-assert(original:GetWidth() == 250 and custom:GetWidth() == 250)
-assert(original:GetHeight() == 20 and custom:GetHeight() == 20)
-assert(original:GetScale() == 1.5 and custom:GetScale() == 1.5)
+assert(dimensions.width == 250 and dimensions.height == 20 and dimensions.scale == 1.5)
+app.db.profile = { player = {} }
+app.RefreshPlayerBar(true)
+assert(dimensions.width == 208 and dimensions.height == 11 and dimensions.scale == 1)
 active = false
+app.db.profile.player.width = 300
 app.ApplyPlayerSize()
-app.ApplyPlayerSize(custom)
-assert(original:GetWidth() == 208 and custom:GetWidth() == 150)
-assert(original:GetHeight() == 11 and custom:GetHeight() == 10)
-assert(original:GetScale() == 1 and custom:GetScale() == 0.8)
-print("PASS: both player bars share dimensions and restore independently")
+assert(dimensions.width == 208, "disabled sizing does not mutate the hidden frame")
+print("PASS: custom player sizing uses current profile and defaults without native geometry")
+
+-- Core must never hook native appearance or include the native player in feature refreshes.
+local nativeShown = true
+PlayerCastingBarFrame = setmetatable({
+    showCastbar = true,
+    SetAndUpdateShowCastbar = function(_, shown)
+        nativeShown = shown
+    end,
+    Hide = function() end,
+}, {
+    __index = function(_, key)
+        error("read native appearance: " .. key)
+    end,
+})
+local hooks = {}
+local addon = {
+    SecureHook = function(_, frame, method)
+        if frame == PlayerCastingBarFrame then
+            assert(method == "SetAndUpdateShowCastbar", "native appearance must not be hooked")
+            hooks[method] = true
+        end
+    end,
+    SecureHookScript = function(_, frame, script)
+        assert(frame == PlayerCastingBarFrame and script == "OnShow")
+    end,
+    UnhookAll = function() end,
+}
+local core = { RefreshEditModeSystemOptions = function() end }
+LibStub = function()
+    return {
+        GetAddon = function()
+            return core
+        end,
+        NewAddon = function()
+            return addon
+        end,
+    }
+end
+assert(loadfile("SeamlessCastbar/src/core.lua"))("SeamlessCastbar", app)
+app.position = { Enable = function() end, Disable = function() end }
+for _, method in ipairs({
+    "RegisterPreviews",
+    "EnablePlayerBar",
+    "RegisterPlayerEditMode",
+    "DisablePlayerBar",
+    "UpdatePlayerPreview",
+    "UpdatePreviews",
+    "RestoreCastTime",
+    "RestoreName",
+    "HideTicks",
+    "RestoreIcon",
+    "RestoreHold",
+}) do
+    app[method] = function(frame)
+        assert(frame ~= PlayerCastingBarFrame, "native bar included in feature restoration")
+    end
+end
+addon.Refresh = function() end
+wipe = function(t)
+    for key in pairs(t) do
+        t[key] = nil
+    end
+end
+addon:OnEnable()
+assert(hooks.SetAndUpdateShowCastbar and not nativeShown)
+assert(app.BarKey(PlayerCastingBarFrame) == nil and app.BarKey(bar) == "player")
+addon:OnDisable()
+assert(nativeShown, "disable restores native display eligibility")
+print("PASS: native player is only suppressed, never hooked for appearance")

@@ -1,9 +1,8 @@
 # SeamlessCastbar
 
-Optional addon requiring Seamless that adds information to the game's own player, target and focus
-cast bars without replacing them: cast time text, the spell rank in the name, channel tick marks,
-the spell icon on the detached player bar and how long a bar stays after a cast. It also makes
-the target and focus bars movable and the player bar resizable.
+Optional addon requiring Seamless with an independent player cast bar and enhancements to the
+game's target and focus bars: cast time text, spell ranks, channel tick marks and hold times.
+It also makes the target and focus bars movable and the custom player bar resizable.
 
 ## What the client already does (don't duplicate)
 
@@ -29,17 +28,18 @@ system, so they are not part of this addon.
   hooks and `app.Settings(bar)`. All three bars follow the addon lifecycle; there are no per-bar
   Enable switches. Individual feature switches remain independent.
 - `src/text.lua`: cast-time formatting, spell ranks and detached player icon; restore native
-  text when disabled. Both player bars use inherited cast-time text; our player uses profile.player.showCastTime for visibility; target/focus get
+  text when disabled. The custom player bar uses inherited cast-time text and profile.player.showCastTime for visibility; target/focus get
   addon-owned font strings.
 - `src/ticks.lua`: channel intervals by first-rank spell ID, matched by name.
 - `src/hold.lua`: animation delays, retaining native values for restoration.
 - `src/size.lua`: player bar size. The Player tab's Position and Size groups are Core's native group
   for the custom preview; position is stored per layout with UIParent as its only anchor. The player's Size controls override that group's
   Scale placeholder: Scale (0.5–3), Width and Height use `profile.player` and apply directly to the
-  native and addon-owned frames. It retains per-frame values for restoration and reapplies overrides after style
-  updates. Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size
+  addon-owned frame only. It reads the current profile with declared defaults and applies a fixed
+  bottom-relative text anchor from the client's CLASSIC look; it never measures live frame geometry. Actual sizing defaults live in the Player page schema: 208 × 11, scale 1 and icon size
   16, from the client's player/base casting bar templates and default Bar Size. Tooltips and Reset
-  To Default Size use that schema; captured live frame values are only for disabling overrides.
+  To Default Size use that schema. The original player bar has no visual-setting hooks; only its
+  display suppression is restored when the addon is disabled.
 - `src/position.lua`, `app.position`: target/focus positions per Edit Mode layout name in
   `profile.positions[key][layout]` (point, relativeTo, relativePoint, x, y in the bar's scale),
   following layout copies, renames and deletes. A layout without one keeps the client's anchor.
@@ -70,7 +70,7 @@ system, so they are not part of this addon.
 `lua src/tests/castbar.lua` from the repository root checks formats, rank, icon, ticks, hold and the
 Edit Mode rows, target/focus previews and positions.
 `lua src/tests/player-castbar.lua` checks the custom player's independent lifecycle, inherited
-method dispatch and current-profile refresh. Player visual settings affect both player bars;
+method dispatch and current-profile refresh. Player visual settings affect only the custom bar;
 the player preview supplies independent positioning.
 
 `lua src/tests/crafting-castbar.lua` checks batch timing, gaps, changed durations, duplicate and reordered events, synchronous first casts, interruption and cancellation.

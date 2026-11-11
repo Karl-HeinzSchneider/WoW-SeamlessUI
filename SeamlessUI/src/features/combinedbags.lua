@@ -10,6 +10,7 @@ local lib = app.core:GetEditModeLibrary()
 local anchor
 local hooked = false
 local showAnchor = false
+local nativeScale
 local nativePoint
 -- The client's placement of the first bag (UpdateContainerFrameAnchors in ContainerFrame.lua):
 -- BOTTOMRIGHT on UIParent, GetInitialContainerFrameOffsetX() to the left (the right action bars'
@@ -79,6 +80,27 @@ local function RestorePosition()
     nativePoint = nil
 end
 
+local function SetBagScale(frame, scale)
+    local previous = frame:GetScale()
+    if previous == scale then
+        return
+    end
+    local point, relative, relativePoint, x, y = frame:GetPoint(1)
+    frame:SetScale(scale)
+    if point then
+        local ratio = previous / scale
+        frame:ClearAllPoints()
+        frame:SetPoint(point, relative, relativePoint, x * ratio, y * ratio)
+    end
+end
+
+local function RestoreScale()
+    if nativeScale and not InCombatLockdown() then
+        SetBagScale(ContainerFrameCombinedBags, nativeScale)
+        nativeScale = nil
+    end
+end
+
 function module:Refresh()
     if not anchor or not self:IsEnabled() then
         return
@@ -92,6 +114,20 @@ function module:Refresh()
         return
     end
     local frame = ContainerFrameCombinedBags
+    local multiplier = app.db.profile.combinedBags.scale or 1
+    if multiplier == 1 then
+        if nativeScale then
+            RestorePosition()
+            RestoreScale()
+        end
+    else
+        nativeScale = nativeScale or frame:GetScale()
+        local scale = nativeScale * multiplier
+        if frame:GetScale() ~= scale then
+            RestorePosition()
+            SetBagScale(frame, scale)
+        end
+    end
     local ratio = frame:GetEffectiveScale() / anchor:GetEffectiveScale()
     local width, height = frame:GetWidth(), frame:GetHeight()
     anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
@@ -99,8 +135,6 @@ function module:Refresh()
     anchor:SetPoint(position.point, relative, position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
     if SavedPosition() then
-        -- Keep the native parent, scale, visibility and item buttons. Offsets are in
-        -- UIParent units, so convert them to the bag's effective scale.
         ApplyPosition(position, relative)
     else
         RestorePosition()
@@ -175,6 +209,7 @@ function module:TryInitialize()
             -- calling it from addon code can taint the container manager's shared caches.
             if ContainerFrameCombinedBags:IsShown() then
                 nativePoint = nil
+                nativeScale = nil
             end
             if not module:IsEnabled() then
                 return
@@ -205,18 +240,20 @@ end
 function module:OnDisable()
     if anchor then
         anchor:Hide()
-        if nativePoint and InCombatLockdown() then
+        if (nativePoint or nativeScale) and InCombatLockdown() then
             -- Ace removes module events on disable; defer native restoration on our own frame.
             anchor:RegisterEvent("PLAYER_REGEN_ENABLED")
             anchor:SetScript("OnEvent", function(self)
                 self:UnregisterEvent("PLAYER_REGEN_ENABLED")
                 if not module:IsEnabled() then
                     RestorePosition()
+                    RestoreScale()
                 end
             end)
         end
     end
     RestorePosition()
+    RestoreScale()
     app.core:RefreshEditModeOptions()
 end
 

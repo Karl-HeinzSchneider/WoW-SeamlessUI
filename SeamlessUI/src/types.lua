@@ -24,7 +24,7 @@
 ---@class SeamlessUI.DBDefaults : AceDB.Schema
 ---@class SeamlessUI.DB.Profile
 ---@field fpsDisplay { layouts: table<string, table>, showLatency: boolean, whiteLatency: boolean, roundFramerate: boolean, hideBlizzard: boolean }
----@field combinedBags { layouts: table<string, table>, positionInCombat: boolean }
+---@field combinedBags { layouts: table<string, table>, positionInCombat: boolean, scale: number }
 ---@field minimap SeamlessUI.MinimapSettings
 ---@field hideMinimapDayNight boolean
 ---@class SeamlessUI.MinimapSettings

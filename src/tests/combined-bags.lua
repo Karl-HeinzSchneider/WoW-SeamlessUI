@@ -32,6 +32,7 @@ local lib = {
 callbacks = {}
 local function frame(scale)
     return {
+        scale = scale,
         width = 400,
         height = 500,
         shown = true,
@@ -44,8 +45,14 @@ local function frame(scale)
         GetHeight = function(self)
             return self.height
         end,
-        GetEffectiveScale = function()
-            return scale
+        GetEffectiveScale = function(self)
+            return self.scale
+        end,
+        GetScale = function(self)
+            return self.scale
+        end,
+        SetScale = function(self, value)
+            self.scale = value
         end,
         GetPoint = function(self)
             if self.point then
@@ -89,7 +96,8 @@ UIParent.width = 1200
 ContainerFrameCombinedBags = frame(0.8)
 local bags = ContainerFrameCombinedBags
 local nativeOffsetX = -10
-local function nativeLayout()
+local function nativeLayout(scale)
+    bags:SetScale(scale or 0.8)
     bags:ClearAllPoints()
     bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", nativeOffsetX, 100)
     if postHook then
@@ -161,7 +169,7 @@ app.core.GetCustomEditModeVisibility = support.customVisibility
 app.core.GetEditModeButtonSection = support.buttonSection
 app.core.GetEditModePositionButton = support.positionButton
 app.core.GetPositionOptions = function()
-    return {}
+    return {}, { args = {} }
 end
 app.core.RefreshOptions = function() end
 assert(loadfile("SeamlessUI/src/options/combinedBags.lua"))("SeamlessUI", app)
@@ -257,4 +265,29 @@ module:OnDisable()
 combat = false
 anchor.onEvent(anchor)
 assert(bags.point[4] == -10, "disable during combat defers restoration")
+enabled = true
+module:OnEnable()
+module:ResetPosition()
+local scaleOption = app.optionPages.combinedBags.config.args.size.args.scale
+assert(scaleOption.get() == 1)
+scaleOption.set(nil, 1.5)
+assert(math.abs(bags:GetScale() - 1.2) < 0.001)
+assert(math.abs(anchor:GetWidth() - 480) < 0.001)
+assert(math.abs(bags.point[4] * bags:GetScale() - -8) < 0.001, "scale preserves native anchor offsets")
+nativeLayout(1)
+assert(bags:GetScale() == 1.5, "scale follows Blizzard's latest native scale")
+combat = true
+scaleOption.set(nil, 2)
+assert(scaleOption.get() == 1.5)
+combat = false
+scaleOption.set(nil, 1)
+assert(bags:GetScale() == 1 and bags.point[4] == -10, "default restores the latest native scale and anchor")
+scaleOption.set(nil, 1.5)
+combat = true
+enabled = false
+module:OnDisable()
+assert(bags:GetScale() == 1.5)
+combat = false
+anchor.onEvent(anchor)
+assert(bags:GetScale() == 1, "disable during combat defers scale restoration")
 print("combined-bags: all tests passed")

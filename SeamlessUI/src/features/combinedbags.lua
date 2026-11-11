@@ -151,8 +151,7 @@ local function GetBagFrames()
             end
         end
     end
-    local preview = usingCombined and ContainerFrameCombinedBags or allocated[1]
-    return frames, preview or ContainerFrameCombinedBags
+    return frames
 end
 
 local function RestoreScales(keep)
@@ -187,7 +186,7 @@ function module:Refresh(fromNativeLayout)
     if not anchor or not self:IsEnabled() then
         return
     end
-    local frames, preview = GetBagFrames()
+    local frames = GetBagFrames()
     -- Blizzard chains all other bags and columns to the first shown container.
     local first = frames[1]
     local position = CurrentPosition()
@@ -204,13 +203,6 @@ function module:Refresh(fromNativeLayout)
     end
     RestorePositions()
     RefreshScales(frames, multiplier)
-    local frame = first or preview
-    local effectiveScale = frame:GetEffectiveScale()
-    local width, height = frame:GetWidth(), frame:GetHeight()
-    if not IsSecret(effectiveScale) and not IsSecret(width) and not IsSecret(height) then
-        local ratio = effectiveScale / anchor:GetEffectiveScale()
-        anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
-    end
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, relative, position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
@@ -268,7 +260,8 @@ function module:TryInitialize()
         return
     end
     anchor = CreateFrame("Frame", nil, UIParent)
-    anchor:SetSize(400, 500)
+    -- A drag target at the configured anchor point, independent of bag dimensions.
+    anchor:SetSize(96, 36)
     anchor:SetClampedToScreen(true)
     anchor:Hide()
     UpdateDefaults()

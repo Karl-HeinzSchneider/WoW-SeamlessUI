@@ -104,17 +104,20 @@ local function RefreshSeparateBagScales(multiplier)
     -- Read the allocated frames directly. The native enumerators and GetBagsShown can
     -- initialize shared caches, which must remain owned by Blizzard.
     local frames = ContainerFrameContainer and ContainerFrameContainer.ContainerFrames or {}
-    for frame, scale in pairs(separateBagScales) do
-        if multiplier == 1 or not frame:IsShown() or not IsSeparateCombinedBag(frame) then
-            SetBagScale(frame, scale)
-            separateBagScales[frame] = nil
+    local inCombat = InCombatLockdown()
+    if not inCombat then
+        for frame, scale in pairs(separateBagScales) do
+            if multiplier == 1 or not frame:IsShown() or not IsSeparateCombinedBag(frame) then
+                SetBagScale(frame, scale)
+                separateBagScales[frame] = nil
+            end
         end
     end
     if multiplier == 1 then
         return
     end
     for _, frame in pairs(frames) do
-        if frame:IsShown() and IsSeparateCombinedBag(frame) then
+        if frame:IsShown() and (not inCombat or not frame:IsProtected()) and IsSeparateCombinedBag(frame) then
             separateBagScales[frame] = separateBagScales[frame] or frame:GetScale()
             SetBagScale(frame, separateBagScales[frame] * multiplier)
         end
@@ -132,35 +135,47 @@ local function RestoreScale()
     end
 end
 
-function module:Refresh()
+local function ApplyScale(frame, multiplier)
+    if multiplier == 1 then
+        if nativeScale and not InCombatLockdown() then
+            RestorePosition()
+            RestoreScale()
+        end
+        return
+    end
+    nativeScale = nativeScale or frame:GetScale()
+    local scale = nativeScale * multiplier
+    if frame:GetScale() ~= scale then
+        RestorePosition()
+        SetBagScale(frame, scale)
+    end
+end
+
+function module:Refresh(fromNativeLayout)
     if not anchor or not self:IsEnabled() then
         return
     end
     local position = CurrentPosition()
     local relative = RelativeFrame(position.relativeTo)
+    local frame = ContainerFrameCombinedBags
+    local multiplier = app.db.profile.combinedBags.scale or 1
+    local usingCombinedBags = ContainerFrameSettingsManager and ContainerFrameSettingsManager:IsUsingCombinedBags()
+    local separateMultiplier = usingCombinedBags and multiplier or 1
     if InCombatLockdown() then
+        if fromNativeLayout then
+            -- The native layout just rewrote the anchors and scale for every shown bag.
+            if frame:IsShown() and not frame:IsProtected() then
+                ApplyScale(frame, multiplier)
+            end
+            RefreshSeparateBagScales(separateMultiplier)
+        end
         if SavedPosition() then
             ApplyPosition(position, relative)
         end
         return
     end
-    local frame = ContainerFrameCombinedBags
-    local multiplier = app.db.profile.combinedBags.scale or 1
-    if multiplier == 1 then
-        if nativeScale then
-            RestorePosition()
-            RestoreScale()
-        end
-    else
-        nativeScale = nativeScale or frame:GetScale()
-        local scale = nativeScale * multiplier
-        if frame:GetScale() ~= scale then
-            RestorePosition()
-            SetBagScale(frame, scale)
-        end
-    end
-    local usingCombinedBags = ContainerFrameSettingsManager and ContainerFrameSettingsManager:IsUsingCombinedBags()
-    RefreshSeparateBagScales(usingCombinedBags and multiplier or 1)
+    ApplyScale(frame, multiplier)
+    RefreshSeparateBagScales(separateMultiplier)
     local ratio = frame:GetEffectiveScale() / anchor:GetEffectiveScale()
     local width, height = frame:GetWidth(), frame:GetHeight()
     anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
@@ -253,7 +268,7 @@ function module:TryInitialize()
                 return
             end
             if InCombatLockdown() then
-                module:Refresh()
+                module:Refresh(true)
                 return
             end
             UpdateDefaults()

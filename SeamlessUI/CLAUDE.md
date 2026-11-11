@@ -112,7 +112,8 @@ It registers an addon-owned selection outline for the native combined bags windo
 Frames checkbox defaults off and controls only that outline; inventory visibility, parenting and item logic remain native. The Size slider multiplies the scale Blizzard chooses to
 fit its bags on screen, including the separate keyring and reagent bag in combined bag
 mode. Read allocated container frames directly to avoid initializing native bag caches.
-The default multiplier is 1. Scale changes and restoration wait until
+The default multiplier is 1. After native layouts in combat, reapply the selected scale to
+shown, unprotected bag frames. Defer protected frames, slider edits and scale restoration until
 out of combat. Positions live in profile `combinedBags.layouts`, with layout
 copy/rename/delete support. A secure post-hook on `UpdateContainerFrameAnchors` reapplies saved
 positions to the shown combined bag, converting offsets for its native scale. Never call the native

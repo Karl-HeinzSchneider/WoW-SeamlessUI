@@ -332,7 +332,13 @@ module:Refresh()
 combat = true
 scaleOption.set(nil, 2)
 assert(scaleOption.get() == 1.5)
+reagent.protected = true
+nativeLayout(1)
+assert(bags:GetScale() == 1.5 and keyring:GetScale() == 1.5, "opening bags in combat preserves their scale")
+assert(reagent:GetScale() == 1, "protected bags defer scale changes")
 combat = false
+onRegen()
+assert(reagent:GetScale() == 1.5, "protected bags catch up after combat")
 scaleOption.set(nil, 1)
 assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "default restores separate bags")
 assert(bags:GetScale() == 1 and bags.point[4] == -10, "default restores the latest native scale and anchor")

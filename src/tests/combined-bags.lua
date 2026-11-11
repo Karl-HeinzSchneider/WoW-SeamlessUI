@@ -351,4 +351,25 @@ combat = false
 anchor.onEvent(anchor)
 assert(bags:GetScale() == 1, "disable during combat defers scale restoration")
 assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "deferred disable restores separate bags")
+enabled = true
+module:OnEnable()
+local secret = setmetatable({}, {
+    __mul = function()
+        error("secret offset used in arithmetic")
+    end,
+})
+function issecretvalue(value)
+    return rawequal(value, secret)
+end
+scaleOption.set(nil, 1)
+local setScale = bags.SetScale
+bags.SetScale = function()
+    error("scale changed while the bag anchor was secret")
+end
+bags.point[4] = secret
+scaleOption.set(nil, 1.5)
+bags.SetScale = setScale
+assert(bags:GetScale() == 1, "secret anchors leave the bag untouched")
+nativeLayout(1)
+assert(bags:GetScale() == 1.5, "a readable native layout allows scaling again")
 print("combined-bags: all tests passed")

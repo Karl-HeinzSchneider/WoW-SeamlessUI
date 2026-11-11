@@ -53,18 +53,47 @@ local function RelativeFrame(name)
     return UIParent
 end
 
+local function IsSecret(value)
+    return issecretvalue and issecretvalue(value)
+end
+
+local function IsShown(frame)
+    local shown = frame:IsShown()
+    return not IsSecret(shown) and shown
+end
+
+local function CanChangeInCombat(frame)
+    local protected = frame:IsProtected()
+    return not IsSecret(protected) and not protected
+end
+
+local function ReadAnchor(frame)
+    local point, relative, relativePoint, x, y = frame:GetPoint(1)
+    if IsSecret(point) or IsSecret(relative) or IsSecret(relativePoint) or IsSecret(x) or IsSecret(y) then
+        return nil
+    end
+    return { point, relative, relativePoint, x, y }
+end
+
 local function ApplyPosition(position, relative)
     local frame = ContainerFrameCombinedBags
-    if not frame:IsShown() then
+    if not IsShown(frame) then
         return
     end
     if InCombatLockdown() then
-        if not app.db.profile.combinedBags.positionInCombat or frame:IsProtected() then
+        if not app.db.profile.combinedBags.positionInCombat or not CanChangeInCombat(frame) then
             return
         end
     end
-    nativePoint = nativePoint or { frame:GetPoint(1) }
-    local scale = UIParent:GetEffectiveScale() / frame:GetEffectiveScale()
+    local parentScale, frameScale = UIParent:GetEffectiveScale(), frame:GetEffectiveScale()
+    if IsSecret(parentScale) or IsSecret(frameScale) then
+        return
+    end
+    nativePoint = nativePoint or ReadAnchor(frame)
+    if not nativePoint then
+        return
+    end
+    local scale = parentScale / frameScale
     frame:ClearAllPoints()
     frame:SetPoint(position.point, relative, position.relativePoint, position.x * scale, position.y * scale)
 end
@@ -76,28 +105,35 @@ local function RestorePosition()
     local frame = ContainerFrameCombinedBags
     frame:ClearAllPoints()
     if nativePoint[1] then
-        frame:SetPoint(unpack(nativePoint))
+        frame:SetPoint(unpack(nativePoint, 1, 5))
     end
     nativePoint = nil
 end
 
 local function SetBagScale(frame, scale)
     local previous = frame:GetScale()
-    if previous == scale then
-        return
+    if IsSecret(previous) then
+        return false
     end
-    local point, relative, relativePoint, x, y = frame:GetPoint(1)
+    if previous == scale then
+        return true
+    end
+    local point = ReadAnchor(frame)
+    if not point then
+        return false
+    end
     frame:SetScale(scale)
-    if point then
+    if point[1] then
         local ratio = previous / scale
         frame:ClearAllPoints()
-        frame:SetPoint(point, relative, relativePoint, x * ratio, y * ratio)
+        frame:SetPoint(point[1], point[2], point[3], point[4] * ratio, point[5] * ratio)
     end
+    return true
 end
 
 local function IsSeparateCombinedBag(frame)
     local id = frame:GetBagID()
-    return id == Enum.BagIndex.Keyring or ContainerFrame_IsReagentBag(id)
+    return not IsSecret(id) and (id == Enum.BagIndex.Keyring or ContainerFrame_IsReagentBag(id))
 end
 
 local function RefreshSeparateBagScales(multiplier)
@@ -107,9 +143,10 @@ local function RefreshSeparateBagScales(multiplier)
     local inCombat = InCombatLockdown()
     if not inCombat then
         for frame, scale in pairs(separateBagScales) do
-            if multiplier == 1 or not frame:IsShown() or not IsSeparateCombinedBag(frame) then
-                SetBagScale(frame, scale)
-                separateBagScales[frame] = nil
+            if multiplier == 1 or not IsShown(frame) or not IsSeparateCombinedBag(frame) then
+                if SetBagScale(frame, scale) then
+                    separateBagScales[frame] = nil
+                end
             end
         end
     end
@@ -117,9 +154,11 @@ local function RefreshSeparateBagScales(multiplier)
         return
     end
     for _, frame in pairs(frames) do
-        if frame:IsShown() and (not inCombat or not frame:IsProtected()) and IsSeparateCombinedBag(frame) then
-            separateBagScales[frame] = separateBagScales[frame] or frame:GetScale()
-            SetBagScale(frame, separateBagScales[frame] * multiplier)
+        if IsShown(frame) and (not inCombat or CanChangeInCombat(frame)) and IsSeparateCombinedBag(frame) then
+            local scale = separateBagScales[frame] or frame:GetScale()
+            if not IsSecret(scale) and SetBagScale(frame, scale * multiplier) then
+                separateBagScales[frame] = scale
+            end
         end
     end
 end
@@ -129,8 +168,7 @@ local function RestoreScale()
         return
     end
     RefreshSeparateBagScales(1)
-    if nativeScale then
-        SetBagScale(ContainerFrameCombinedBags, nativeScale)
+    if nativeScale and SetBagScale(ContainerFrameCombinedBags, nativeScale) then
         nativeScale = nil
     end
 end
@@ -143,11 +181,17 @@ local function ApplyScale(frame, multiplier)
         end
         return
     end
-    nativeScale = nativeScale or frame:GetScale()
-    local scale = nativeScale * multiplier
-    if frame:GetScale() ~= scale then
+    local current = frame:GetScale()
+    if IsSecret(current) then
+        return
+    end
+    local base = nativeScale or current
+    local scale = base * multiplier
+    if current ~= scale then
         RestorePosition()
-        SetBagScale(frame, scale)
+        if SetBagScale(frame, scale) then
+            nativeScale = base
+        end
     end
 end
 
@@ -164,7 +208,7 @@ function module:Refresh(fromNativeLayout)
     if InCombatLockdown() then
         if fromNativeLayout then
             -- The native layout just rewrote the anchors and scale for every shown bag.
-            if frame:IsShown() and not frame:IsProtected() then
+            if IsShown(frame) and CanChangeInCombat(frame) then
                 ApplyScale(frame, multiplier)
             end
             RefreshSeparateBagScales(separateMultiplier)
@@ -176,9 +220,12 @@ function module:Refresh(fromNativeLayout)
     end
     ApplyScale(frame, multiplier)
     RefreshSeparateBagScales(separateMultiplier)
-    local ratio = frame:GetEffectiveScale() / anchor:GetEffectiveScale()
+    local effectiveScale = frame:GetEffectiveScale()
     local width, height = frame:GetWidth(), frame:GetHeight()
-    anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
+    if not IsSecret(effectiveScale) and not IsSecret(width) and not IsSecret(height) then
+        local ratio = effectiveScale / anchor:GetEffectiveScale()
+        anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
+    end
     anchor:ClearAllPoints()
     anchor:SetPoint(position.point, relative, position.relativePoint, position.x, position.y)
     anchor:SetShown(lib:IsInEditMode() and showAnchor)
@@ -255,12 +302,12 @@ function module:TryInitialize()
         hooksecurefunc("UpdateContainerFrameAnchors", function()
             -- Blizzard just placed every shown bag. Leave its layout routine to the client:
             -- calling it from addon code can taint the container manager's shared caches.
-            if ContainerFrameCombinedBags:IsShown() then
+            if IsShown(ContainerFrameCombinedBags) then
                 nativePoint = nil
                 nativeScale = nil
             end
             for frame in pairs(separateBagScales) do
-                if frame:IsShown() then
+                if IsShown(frame) then
                     separateBagScales[frame] = nil
                 end
             end

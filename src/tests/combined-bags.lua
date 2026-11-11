@@ -32,6 +32,7 @@ local lib = {
 callbacks = {}
 local function frame(scale)
     return {
+        scale = scale,
         width = 400,
         height = 500,
         shown = true,
@@ -44,8 +45,14 @@ local function frame(scale)
         GetHeight = function(self)
             return self.height
         end,
-        GetEffectiveScale = function()
-            return scale
+        GetEffectiveScale = function(self)
+            return self.scale
+        end,
+        GetScale = function(self)
+            return self.scale
+        end,
+        SetScale = function(self, value)
+            self.scale = value
         end,
         GetPoint = function(self)
             if self.point then
@@ -88,8 +95,36 @@ UIParent = frame(1)
 UIParent.width = 1200
 ContainerFrameCombinedBags = frame(0.8)
 local bags = ContainerFrameCombinedBags
+Enum = { BagIndex = { Keyring = -2 } }
+function ContainerFrame_IsReagentBag(id)
+    return id == 5
+end
+local function separateBag(id)
+    local bag = frame(0.8)
+    bag.bagID = id
+    bag.GetBagID = function(self)
+        return self.bagID
+    end
+    bag:SetPoint("BOTTOMRIGHT", bags, "BOTTOMLEFT", -11, 0)
+    return bag
+end
+local keyring, reagent, regular = separateBag(-2), separateBag(5), separateBag(1)
+ContainerFrameContainer = { ContainerFrames = { keyring, reagent, regular } }
+local usingCombinedBags = true
+ContainerFrameSettingsManager = {
+    IsUsingCombinedBags = function()
+        return usingCombinedBags
+    end,
+}
 local nativeOffsetX = -10
-local function nativeLayout()
+local function nativeLayout(scale)
+    bags:SetScale(scale or 0.8)
+    for _, bag in ipairs(ContainerFrameContainer.ContainerFrames) do
+        if bag:IsShown() then
+            bag:SetScale(scale or 0.8)
+            bag:SetPoint("BOTTOMRIGHT", bags, "BOTTOMLEFT", -11, 0)
+        end
+    end
     bags:ClearAllPoints()
     bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", nativeOffsetX, 100)
     if postHook then
@@ -161,7 +196,7 @@ app.core.GetCustomEditModeVisibility = support.customVisibility
 app.core.GetEditModeButtonSection = support.buttonSection
 app.core.GetEditModePositionButton = support.positionButton
 app.core.GetPositionOptions = function()
-    return {}
+    return {}, { args = {} }
 end
 app.core.RefreshOptions = function() end
 assert(loadfile("SeamlessUI/src/options/combinedBags.lua"))("SeamlessUI", app)
@@ -257,4 +292,84 @@ module:OnDisable()
 combat = false
 anchor.onEvent(anchor)
 assert(bags.point[4] == -10, "disable during combat defers restoration")
+enabled = true
+module:OnEnable()
+module:ResetPosition()
+local scaleOption = app.optionPages.combinedBags.config.args.size.args.scale
+assert(scaleOption.get() == 1)
+scaleOption.set(nil, 1.5)
+assert(math.abs(bags:GetScale() - 1.2) < 0.001)
+assert(math.abs(anchor:GetWidth() - 480) < 0.001)
+assert(math.abs(keyring:GetScale() - 1.2) < 0.001 and math.abs(reagent:GetScale() - 1.2) < 0.001)
+assert(regular:GetScale() == 0.8, "other containers keep their native scale")
+module:Refresh()
+assert(math.abs(keyring:GetScale() - 1.2) < 0.001, "refresh does not compound separate bag scaling")
+assert(math.abs(bags.point[4] * bags:GetScale() - -8) < 0.001, "scale preserves native anchor offsets")
+nativeLayout(1)
+assert(bags:GetScale() == 1.5, "scale follows Blizzard's latest native scale")
+assert(keyring:GetScale() == 1.5 and reagent:GetScale() == 1.5, "native layouts reapply scale to separate bags")
+keyring.shown = false
+module:Refresh()
+assert(keyring:GetScale() == 1, "hidden container restores before reuse")
+keyring.shown = true
+nativeLayout(1)
+assert(keyring:GetScale() == 1.5, "reopened keyring inherits the selected scale")
+reagent.bagID = 1
+module:Refresh()
+assert(reagent:GetScale() == 1, "a container reused for another bag restores its native scale")
+reagent.bagID = 5
+module:Refresh()
+assert(reagent:GetScale() == 1.5)
+bags.shown = false
+module:Refresh()
+assert(keyring:GetScale() == 1.5, "a separate bag can open on its own in combined mode")
+usingCombinedBags = false
+module:Refresh()
+assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "individual bag mode restores native scale")
+usingCombinedBags = true
+bags.shown = true
+module:Refresh()
+combat = true
+scaleOption.set(nil, 2)
+assert(scaleOption.get() == 1.5)
+reagent.protected = true
+nativeLayout(1)
+assert(bags:GetScale() == 1.5 and keyring:GetScale() == 1.5, "opening bags in combat preserves their scale")
+assert(reagent:GetScale() == 1, "protected bags defer scale changes")
+combat = false
+onRegen()
+assert(reagent:GetScale() == 1.5, "protected bags catch up after combat")
+scaleOption.set(nil, 1)
+assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "default restores separate bags")
+assert(bags:GetScale() == 1 and bags.point[4] == -10, "default restores the latest native scale and anchor")
+scaleOption.set(nil, 1.5)
+combat = true
+enabled = false
+module:OnDisable()
+assert(bags:GetScale() == 1.5)
+combat = false
+anchor.onEvent(anchor)
+assert(bags:GetScale() == 1, "disable during combat defers scale restoration")
+assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "deferred disable restores separate bags")
+enabled = true
+module:OnEnable()
+local secret = setmetatable({}, {
+    __mul = function()
+        error("secret offset used in arithmetic")
+    end,
+})
+function issecretvalue(value)
+    return rawequal(value, secret)
+end
+scaleOption.set(nil, 1)
+local setScale = bags.SetScale
+bags.SetScale = function()
+    error("scale changed while the bag anchor was secret")
+end
+bags.point[4] = secret
+scaleOption.set(nil, 1.5)
+bags.SetScale = setScale
+assert(bags:GetScale() == 1, "secret anchors leave the bag untouched")
+nativeLayout(1)
+assert(bags:GetScale() == 1.5, "a readable native layout allows scaling again")
 print("combined-bags: all tests passed")

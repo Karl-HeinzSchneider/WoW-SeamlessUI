@@ -3,8 +3,31 @@ local _, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 local position, size = app.core:GetPositionOptions(app.combinedBags:GetPositionBinding())
+-- ContainerFrame.lua starts at native scale and may shrink bags to fit the screen.
+-- This setting multiplies that native scale.
+size.args.scale = {
+    type = "range",
+    name = L["Scale"],
+    order = 1,
+    min = 0.5,
+    max = 2,
+    step = 0.05,
+    default = 1,
+    disabled = InCombatLockdown,
+    get = function()
+        return app.db.profile.combinedBags.scale or 1
+    end,
+    set = function(_, value)
+        if not InCombatLockdown() then
+            app.db.profile.combinedBags.scale = value
+            app.combinedBags:Refresh()
+            app.core:RefreshOptions("SeamlessUI")
+        end
+    end,
+}
+
 app.optionPages.combinedBags = {
-    defaults = { profile = { combinedBags = { layouts = {}, positionInCombat = false } } },
+    defaults = { profile = { combinedBags = { layouts = {}, positionInCombat = false, scale = 1 } } },
     config = {
         type = "group",
         name = L["Combined bags"],

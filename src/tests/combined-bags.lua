@@ -95,7 +95,8 @@ UIParent = frame(1)
 UIParent.width = 1200
 ContainerFrameCombinedBags = frame(0.8)
 local bags = ContainerFrameCombinedBags
-Enum = { BagIndex = { Keyring = -2 } }
+Enum = { BagIndex = { Backpack = 0, Keyring = -2 } }
+NUM_TOTAL_BAG_FRAMES = 5
 function ContainerFrame_IsReagentBag(id)
     return id == 5
 end
@@ -109,7 +110,7 @@ local function separateBag(id)
     return bag
 end
 local keyring, reagent, regular = separateBag(-2), separateBag(5), separateBag(1)
-ContainerFrameContainer = { ContainerFrames = { keyring, reagent, regular } }
+ContainerFrameContainer = { ContainerFrames = { regular, keyring, reagent } }
 local usingCombinedBags = true
 ContainerFrameSettingsManager = {
     IsUsingCombinedBags = function()
@@ -229,7 +230,7 @@ assert(profile.combinedBags.layouts.Modern.relativeTo == nil, "drag clears the p
 assert(bags.point[4] == 250 and bags.point[5] == -100, "position offsets account for native bag scale")
 nativeLayout()
 assert(bags.point[4] == 250, "native relayout preserves the custom position")
-assert(anchor.width == 320 and anchor.height == 400, "selection fits the scaled bag")
+assert(anchor.width == 288 and anchor.height == 108, "selection uses a compact drag target")
 combat = true
 nativeLayout()
 assert(bags.point[4] == -10, "post-hook makes no position writes in combat")
@@ -299,7 +300,7 @@ local scaleOption = app.optionPages.combinedBags.config.args.size.args.scale
 assert(scaleOption.get() == 1)
 scaleOption.set(nil, 1.5)
 assert(math.abs(bags:GetScale() - 1.2) < 0.001)
-assert(math.abs(anchor:GetWidth() - 480) < 0.001)
+assert(anchor:GetWidth() == 288 and anchor:GetHeight() == 108, "the drag target stays compact at any bag scale")
 assert(math.abs(keyring:GetScale() - 1.2) < 0.001 and math.abs(reagent:GetScale() - 1.2) < 0.001)
 assert(regular:GetScale() == 0.8, "other containers keep their native scale")
 module:Refresh()
@@ -324,11 +325,25 @@ bags.shown = false
 module:Refresh()
 assert(keyring:GetScale() == 1.5, "a separate bag can open on its own in combined mode")
 usingCombinedBags = false
-module:Refresh()
-assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "individual bag mode restores native scale")
+regular:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", -10, 100)
+keyring:SetPoint("BOTTOMRIGHT", regular, "BOTTOMLEFT", -11, 0)
+reagent:SetPoint("BOTTOMRIGHT", keyring, "TOPRIGHT", 0, 4)
+move(anchor, layout, "CENTER", 90, 45)
+assert(regular:GetScale() == 1.5, "individual inventory bags use the scale")
+assert(keyring:GetScale() == 1.5 and reagent:GetScale() == 1.5, "separate bags also scale in individual mode")
+assert(
+    regular.point[1] == "CENTER" and regular.point[2] == UIParent,
+    "saved anchor applies to the first individual bag"
+)
+assert(keyring.point[2] == regular and reagent.point[2] == keyring, "the native layout stays chained to the first bag")
+assert(bags:GetScale() == 1, "the inactive combined backpack restores its scale")
 usingCombinedBags = true
+regular.shown = false
 bags.shown = true
-module:Refresh()
+nativeLayout(1)
+assert(bags.point[1] == "CENTER", "switching modes uses the same saved anchor")
+assert(regular.point[1] == "BOTTOMRIGHT" and regular:GetScale() == 1, "switching restores the inactive root")
+module:ResetPosition()
 combat = true
 scaleOption.set(nil, 2)
 assert(scaleOption.get() == 1.5)

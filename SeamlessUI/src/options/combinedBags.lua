@@ -30,7 +30,7 @@ app.optionPages.combinedBags = {
     defaults = { profile = { combinedBags = { layouts = {}, positionInCombat = false, scale = 1 } } },
     config = {
         type = "group",
-        name = L["Combined bags"],
+        name = L["Bags"],
         order = 20,
         editModeVisibility = app.core:GetCustomEditModeVisibility("SeamlessUI.combinedBags", function()
             return app.combinedBags:EditModeVisibility()
@@ -50,9 +50,26 @@ app.optionPages.combinedBags = {
             },
         }),
         args = {
-            positionInCombat = {
+            useCombinedBags = {
                 type = "toggle",
                 order = 1,
+                name = L["Combined bags"],
+                default = function()
+                    return app.core:GetCVarOptionInfo("combinedBags")
+                end,
+                disabled = function()
+                    return InCombatLockdown() or (InputUtil and InputUtil.IsGamepadUIEnabled())
+                end,
+                get = function()
+                    return GetCVarBool("combinedBags")
+                end,
+                set = function(_, value)
+                    SetCVar("combinedBags", value)
+                end,
+            },
+            positionInCombat = {
+                type = "toggle",
+                order = 2,
                 name = L["Keep position in combat"],
                 default = false,
                 get = function()

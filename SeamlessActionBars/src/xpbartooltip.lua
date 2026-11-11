@@ -131,11 +131,9 @@ function module:ShowTooltip(tick)
         local now = GetTime()
         if sampledAt then
             local seconds = levelPlayed + math.floor(now - sampledAt)
-            addValue(
-                tooltip,
-                L["Time played at this level:"],
-                TIME_DAYHOURMINUTESECOND:format(ChatFrameUtil.TimeBreakDown(seconds))
-            )
+            local days, hours, minutes, remainder = ChatFrameUtil.TimeBreakDown(seconds)
+            addValue(tooltip, L["Time played at this level:"], L["%dd %dh"]:format(days, hours))
+            addValue(tooltip, "", L["%dm %ds"]:format(minutes, remainder))
         elseif tick then
             pendingTick = tick
             if not requestedAt or now - requestedAt >= 10 then

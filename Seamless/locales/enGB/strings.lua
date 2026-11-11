@@ -10,6 +10,8 @@ end
 -- L["\n(Default: |cff8080ff%s|r)"] = "\n(Default: |cff8080ff%s|r)"
 -- L["|cff8080ff[Per-character setting]|r"] = "|cff8080ff[Per-character setting]|r"
 -- L["%dd %dh %dm"] = "%dd %dh %dm"
+-- L["%dd %dh"] = "%dd %dh"
+-- L["%dm %ds"] = "%dm %ds"
 -- L["Accept"] = "Accept"
 -- L["Apply this change?"] = "Apply this change?"
 -- L["Background"] = "Background"

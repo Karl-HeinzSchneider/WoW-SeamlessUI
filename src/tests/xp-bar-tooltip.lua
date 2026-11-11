@@ -80,6 +80,40 @@ assert(loadfile("SeamlessActionBars/src/options/xpbartooltip.lua"))("SeamlessAct
 local options = app.XPBarTooltipOptions()
 assert(options.args.restedXPCap and options.args.restedXPRate)
 assert(options.settings() == profile)
+assert(options.args.levelPlaytime)
+local now = 100
+local requests = 0
+function GetTime()
+    return now
+end
+function RequestTimePlayed()
+    requests = requests + 1
+end
+ChatFrameUtil = {
+    TimeBreakDown = function(seconds)
+        return 0, math.floor(seconds / 3600), math.floor(seconds / 60) % 60, seconds % 60
+    end,
+}
+local tick = {}
+profile.levelPlaytime = true
+module:ShowTooltip(tick)
+module:ShowTooltip(tick)
+assert(requests == 1)
+function tooltip:IsShown()
+    return false
+end
+module:TIME_PLAYED_MSG("TIME_PLAYED_MSG", 123456, 3660)
+now = 105
+module:ShowTooltip(tick)
+assert(rows["Time played at this level:"] == "0d 1h" and rows[""] == "1m 5s")
+module:PLAYER_LEVEL_UP()
+module:ShowTooltip(tick)
+assert(rows["Time played at this level:"] == "0d 0h" and rows[""] == "0m 0s")
+profile.levelPlaytime = false
+rows["Time played at this level:"], rows[""] = nil, nil
+module:ShowTooltip(tick)
+assert(not rows["Time played at this level:"] and not rows[""] and requests == 1)
+
 -- Every purchased rank changes both values; staged preview ranks are ignored.
 Constants = { LegacyConsts = { LEGACY_TREE_ADVENTURE_ID = 1188 } }
 local rank = 0

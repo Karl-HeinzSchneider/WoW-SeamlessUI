@@ -20,6 +20,7 @@ app.optionPages.statusBar1 = {
             xpBarTooltip = {
                 enabled = true,
                 completedQuests = true,
+                levelPlaytime = true,
                 automaticRestedXP = true,
                 restedXPCap = 150,
                 restedXPRate = 5,

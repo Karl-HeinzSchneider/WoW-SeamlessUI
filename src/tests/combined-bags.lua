@@ -95,9 +95,36 @@ UIParent = frame(1)
 UIParent.width = 1200
 ContainerFrameCombinedBags = frame(0.8)
 local bags = ContainerFrameCombinedBags
+Enum = { BagIndex = { Keyring = -2 } }
+function ContainerFrame_IsReagentBag(id)
+    return id == 5
+end
+local function separateBag(id)
+    local bag = frame(0.8)
+    bag.bagID = id
+    bag.GetBagID = function(self)
+        return self.bagID
+    end
+    bag:SetPoint("BOTTOMRIGHT", bags, "BOTTOMLEFT", -11, 0)
+    return bag
+end
+local keyring, reagent, regular = separateBag(-2), separateBag(5), separateBag(1)
+ContainerFrameContainer = { ContainerFrames = { keyring, reagent, regular } }
+local usingCombinedBags = true
+ContainerFrameSettingsManager = {
+    IsUsingCombinedBags = function()
+        return usingCombinedBags
+    end,
+}
 local nativeOffsetX = -10
 local function nativeLayout(scale)
     bags:SetScale(scale or 0.8)
+    for _, bag in ipairs(ContainerFrameContainer.ContainerFrames) do
+        if bag:IsShown() then
+            bag:SetScale(scale or 0.8)
+            bag:SetPoint("BOTTOMRIGHT", bags, "BOTTOMLEFT", -11, 0)
+        end
+    end
     bags:ClearAllPoints()
     bags:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT", nativeOffsetX, 100)
     if postHook then
@@ -273,14 +300,41 @@ assert(scaleOption.get() == 1)
 scaleOption.set(nil, 1.5)
 assert(math.abs(bags:GetScale() - 1.2) < 0.001)
 assert(math.abs(anchor:GetWidth() - 480) < 0.001)
+assert(math.abs(keyring:GetScale() - 1.2) < 0.001 and math.abs(reagent:GetScale() - 1.2) < 0.001)
+assert(regular:GetScale() == 0.8, "other containers keep their native scale")
+module:Refresh()
+assert(math.abs(keyring:GetScale() - 1.2) < 0.001, "refresh does not compound separate bag scaling")
 assert(math.abs(bags.point[4] * bags:GetScale() - -8) < 0.001, "scale preserves native anchor offsets")
 nativeLayout(1)
 assert(bags:GetScale() == 1.5, "scale follows Blizzard's latest native scale")
+assert(keyring:GetScale() == 1.5 and reagent:GetScale() == 1.5, "native layouts reapply scale to separate bags")
+keyring.shown = false
+module:Refresh()
+assert(keyring:GetScale() == 1, "hidden container restores before reuse")
+keyring.shown = true
+nativeLayout(1)
+assert(keyring:GetScale() == 1.5, "reopened keyring inherits the selected scale")
+reagent.bagID = 1
+module:Refresh()
+assert(reagent:GetScale() == 1, "a container reused for another bag restores its native scale")
+reagent.bagID = 5
+module:Refresh()
+assert(reagent:GetScale() == 1.5)
+bags.shown = false
+module:Refresh()
+assert(keyring:GetScale() == 1.5, "a separate bag can open on its own in combined mode")
+usingCombinedBags = false
+module:Refresh()
+assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "individual bag mode restores native scale")
+usingCombinedBags = true
+bags.shown = true
+module:Refresh()
 combat = true
 scaleOption.set(nil, 2)
 assert(scaleOption.get() == 1.5)
 combat = false
 scaleOption.set(nil, 1)
+assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "default restores separate bags")
 assert(bags:GetScale() == 1 and bags.point[4] == -10, "default restores the latest native scale and anchor")
 scaleOption.set(nil, 1.5)
 combat = true
@@ -290,4 +344,5 @@ assert(bags:GetScale() == 1.5)
 combat = false
 anchor.onEvent(anchor)
 assert(bags:GetScale() == 1, "disable during combat defers scale restoration")
+assert(keyring:GetScale() == 1 and reagent:GetScale() == 1, "deferred disable restores separate bags")
 print("combined-bags: all tests passed")

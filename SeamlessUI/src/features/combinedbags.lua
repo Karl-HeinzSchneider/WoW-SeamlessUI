@@ -11,6 +11,7 @@ local anchor
 local hooked = false
 local showAnchor = false
 local nativeScale
+local separateBagScales = {}
 local nativePoint
 -- The client's placement of the first bag (UpdateContainerFrameAnchors in ContainerFrame.lua):
 -- BOTTOMRIGHT on UIParent, GetInitialContainerFrameOffsetX() to the left (the right action bars'
@@ -94,8 +95,38 @@ local function SetBagScale(frame, scale)
     end
 end
 
+local function IsSeparateCombinedBag(frame)
+    local id = frame:GetBagID()
+    return id == Enum.BagIndex.Keyring or ContainerFrame_IsReagentBag(id)
+end
+
+local function RefreshSeparateBagScales(multiplier)
+    -- Read the allocated frames directly. The native enumerators and GetBagsShown can
+    -- initialize shared caches, which must remain owned by Blizzard.
+    local frames = ContainerFrameContainer and ContainerFrameContainer.ContainerFrames or {}
+    for frame, scale in pairs(separateBagScales) do
+        if multiplier == 1 or not frame:IsShown() or not IsSeparateCombinedBag(frame) then
+            SetBagScale(frame, scale)
+            separateBagScales[frame] = nil
+        end
+    end
+    if multiplier == 1 then
+        return
+    end
+    for _, frame in pairs(frames) do
+        if frame:IsShown() and IsSeparateCombinedBag(frame) then
+            separateBagScales[frame] = separateBagScales[frame] or frame:GetScale()
+            SetBagScale(frame, separateBagScales[frame] * multiplier)
+        end
+    end
+end
+
 local function RestoreScale()
-    if nativeScale and not InCombatLockdown() then
+    if InCombatLockdown() then
+        return
+    end
+    RefreshSeparateBagScales(1)
+    if nativeScale then
         SetBagScale(ContainerFrameCombinedBags, nativeScale)
         nativeScale = nil
     end
@@ -128,6 +159,8 @@ function module:Refresh()
             SetBagScale(frame, scale)
         end
     end
+    local usingCombinedBags = ContainerFrameSettingsManager and ContainerFrameSettingsManager:IsUsingCombinedBags()
+    RefreshSeparateBagScales(usingCombinedBags and multiplier or 1)
     local ratio = frame:GetEffectiveScale() / anchor:GetEffectiveScale()
     local width, height = frame:GetWidth(), frame:GetHeight()
     anchor:SetSize((width > 0 and width or 400) * ratio, (height > 0 and height or 500) * ratio)
@@ -211,6 +244,11 @@ function module:TryInitialize()
                 nativePoint = nil
                 nativeScale = nil
             end
+            for frame in pairs(separateBagScales) do
+                if frame:IsShown() then
+                    separateBagScales[frame] = nil
+                end
+            end
             if not module:IsEnabled() then
                 return
             end
@@ -240,7 +278,7 @@ end
 function module:OnDisable()
     if anchor then
         anchor:Hide()
-        if (nativePoint or nativeScale) and InCombatLockdown() then
+        if (nativePoint or nativeScale or next(separateBagScales)) and InCombatLockdown() then
             -- Ace removes module events on disable; defer native restoration on our own frame.
             anchor:RegisterEvent("PLAYER_REGEN_ENABLED")
             anchor:SetScript("OnEvent", function(self)

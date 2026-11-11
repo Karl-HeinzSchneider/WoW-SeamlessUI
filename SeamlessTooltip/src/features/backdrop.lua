@@ -33,12 +33,23 @@ function feature:OnEnable()
             local backdrop = backdrops[tooltip]
             if not backdrop then
                 backdrop = CreateFrame("Frame", nil, tooltip, "BackdropTemplate")
+                local setupTextureCoordinates = backdrop.SetupTextureCoordinates
+                function backdrop:SetupTextureCoordinates()
+                    -- The tooltip can pass secret dimensions down through SetAllPoints.
+                    -- Keep the native NineSlice visible until tiling can be calculated again.
+                    local restricted =
+                        app.features.AnySecret(self:GetWidth(), self:GetHeight(), self:GetEffectiveScale())
+                    self:SetAlpha(restricted and 0 or 1)
+                    tooltip.NineSlice:SetAlpha(restricted and 1 or 0)
+                    if not restricted then
+                        setupTextureCoordinates(self)
+                    end
+                end
                 backdrop:SetAllPoints()
                 -- Same level as the tooltip, like its NineSlice: drawn behind the text.
                 backdrop:SetUsingParentLevel(true)
                 backdrops[tooltip] = backdrop
             end
-            tooltip.NineSlice:SetAlpha(0)
             backdrop:Show()
         end
     end
@@ -51,6 +62,7 @@ function feature:OnDisable()
     LSM.UnregisterCallback(self, "LibSharedMedia_Registered")
     for tooltip, backdrop in pairs(backdrops) do
         app.border.SetFrame(tooltip, nil)
+        backdrop:SetBackdrop(nil)
         backdrop:Hide()
         tooltip.NineSlice:SetAlpha(1)
     end
@@ -85,6 +97,8 @@ function feature:ApplySettings()
     }
     local bg, border = settings.backgroundColor, settings.borderColor
     for tooltip, backdrop in pairs(backdrops) do
+        -- With both textures set to None, SetBackdrop clears without laying out textures.
+        tooltip.NineSlice:SetAlpha(0)
         backdrop:SetBackdrop(info)
         backdrop:SetBackdropColor(bg.r, bg.g, bg.b, bg.a)
         backdrop:SetBackdropBorderColor(border.r, border.g, border.b, border.a)

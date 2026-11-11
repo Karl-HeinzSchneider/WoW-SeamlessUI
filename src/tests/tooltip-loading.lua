@@ -158,4 +158,67 @@ for _, owner in ipairs({ unitFrame, secureUnitFrame, forbiddenOwner }) do
     cursorAnchor:AnchorToCursor(tooltip, owner)
 end
 assert(#calls == 0, "Unit frames, forbidden owners and absent owners keep the default anchor")
-print("Tooltip runtime feature loading, page quality choices, border behavior and cursor anchoring OK")
+
+-- Exercise both entry points Blizzard uses to lay out the backdrop: applying media and resizing.
+local secret = {}
+issecretvalue = function(value)
+    return value == secret
+end
+local width, height = secret, 40
+local layouts = 0
+local function setAlpha(self, alpha)
+    self.alpha = alpha
+end
+GameTooltip = { NineSlice = { SetAlpha = setAlpha } }
+local backdrop = {
+    GetWidth = function()
+        return width
+    end,
+    GetHeight = function()
+        return height
+    end,
+    GetEffectiveScale = function()
+        return 1
+    end,
+    SetupTextureCoordinates = function()
+        local aspect = width / height
+        assert(aspect > 0)
+        layouts = layouts + 1
+    end,
+    SetBackdrop = function(self, info)
+        self.backdropInfo = info
+        if info then
+            self:SetupTextureCoordinates()
+        end
+    end,
+    SetAlpha = setAlpha,
+    SetAllPoints = function() end,
+    SetUsingParentLevel = function() end,
+    SetBackdropColor = function() end,
+    SetBackdropBorderColor = function() end,
+    Show = function() end,
+    Hide = function() end,
+}
+function CreateFrame(_, _, parent, template)
+    assert(parent == GameTooltip and template == "BackdropTemplate")
+    return backdrop
+end
+app.media.LSM.RegisterCallback = function() end
+app.media.LSM.UnregisterCallback = function() end
+app.media.Fetch = function(_, key)
+    return key
+end
+app.border.SetFrame = function() end
+app.db.profile.features.Backdrop = app.optionPages.general.defaults.profile.features.Backdrop
+local backdropFeature = app.features:GetModule("Backdrop")
+backdropFeature:OnEnable()
+assert(layouts == 0 and backdrop.alpha == 0 and GameTooltip.NineSlice.alpha == 1)
+width = 80
+backdrop:SetupTextureCoordinates()
+assert(layouts == 1 and backdrop.alpha == 1 and GameTooltip.NineSlice.alpha == 0)
+height = secret
+backdrop:SetupTextureCoordinates()
+assert(layouts == 1 and backdrop.alpha == 0 and GameTooltip.NineSlice.alpha == 1)
+backdropFeature:OnDisable()
+assert(backdrop.backdropInfo == nil and GameTooltip.NineSlice.alpha == 1)
+print("Tooltip runtime feature loading, page quality choices, border behavior, cursor anchoring and backdrop OK")

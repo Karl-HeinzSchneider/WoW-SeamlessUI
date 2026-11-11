@@ -107,7 +107,7 @@ end
 function feature:Layout()
     local settings = self:Settings()
     bar:ClearAllPoints()
-    if settings.inside and bar:IsShown() then
+    if settings.inside and bar:IsShown() and not app.features:GetModule("HideHealthBar"):Settings().enabled then
         local inset = settings.inset
         bar:SetPoint("BOTTOMLEFT", GameTooltip, "BOTTOMLEFT", inset, inset)
         bar:SetPoint("BOTTOMRIGHT", GameTooltip, "BOTTOMRIGHT", -inset, inset)

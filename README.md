@@ -17,7 +17,7 @@ instead of replacing it: each part is a separate addon you can switch on or off.
   shared Default, Beta or Beta (rounded) layout and movable target of target frames.
 - **SeamlessTooltip**: 23 switchable tooltip enhancements, including cursor or action button
   anchoring, scale, backgrounds and borders, player and NPC text, status tags and raid markers,
-  targets and "targeted by", health bars, item level, IDs, stack sizes, vendor prices, spell IDs
+  targets and "targeted by", customizable and hideable health bars, item level, IDs, stack sizes, vendor prices, spell IDs
   and aura casters.
 - **SeamlessChat**: the same chat setup (windows, channels, message types, colors) on every
   character, input history, timestamps, saved message history, copy and searchable log windows,

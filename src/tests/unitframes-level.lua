@@ -21,6 +21,9 @@ local function region()
         Show = function(self)
             self.shown = true
         end,
+        SetText = function(self, value)
+            self.text = value
+        end,
         SetAlpha = function(self, value)
             self.alpha = value
         end,
@@ -37,6 +40,17 @@ local function region()
 end
 local function target()
     return {
+        CheckLevel = function(self, level)
+            local content = self.TargetFrameContent
+            local levelText = content.TargetFrameContentMain.LevelText
+            content.TargetFrameContentContextual.HighLevelTexture.shown = level == nil
+            if level then
+                levelText:SetText(level)
+                levelText.shown = true
+            else
+                levelText.shown = false
+            end
+        end,
         CheckBattlePet = function(self, isPet)
             if isPet then
                 local main = self.TargetFrameContent.TargetFrameContentMain
@@ -153,4 +167,19 @@ assert(math.abs(playerCircle.point[5] * playerCircle.scale - 26.5) < 0.0001)
 assert(focusCircle.point[3] == "BOTTOMRIGHT")
 assert(math.abs(focusCircle.point[4] * focusCircle.scale + 32.5) < 0.0001)
 assert(math.abs(focusCircle.point[5] * focusCircle.scale - 26.5) < 0.0001)
+for _, frame in ipairs({ TargetFrame, FocusFrame }) do
+    local levelText = frame.TargetFrameContent.TargetFrameContentMain.LevelText
+    frame:CheckLevel(25)
+    assert(levelText.text == 25 and levelText.shown)
+    combat = true
+    frame:CheckLevel()
+    assert(levelText.text == "" and not levelText.shown)
+    combat = false
+    frame:CheckLevel(26)
+    assert(levelText.text == 26 and levelText.shown)
+    enabled = false
+    frame:CheckLevel()
+    assert(levelText.text == 26)
+    enabled = true
+end
 print("unitframes-level: OK")

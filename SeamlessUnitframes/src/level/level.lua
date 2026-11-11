@@ -10,6 +10,17 @@ app.levelDisplay = app.addon:NewModule("LevelDisplay", module, "AceEvent-3.0")
 local changed = {}
 local hooked = {}
 
+local function ClearLevelTextForSkull(frame)
+    local content = frame.TargetFrameContent
+    local skull = content.TargetFrameContentContextual.HighLevelTexture
+    local skullShown = skull:IsShown()
+    if (not canaccessvalue or canaccessvalue(skullShown)) and skullShown then
+        -- Blizzard hides the number but leaves its previous text on the region.
+        -- Clear it in skull mode. CheckLevel writes the number on the next known-level update.
+        content.TargetFrameContentMain.LevelText:SetText("")
+    end
+end
+
 local function RestoreCircle(frame)
     local content = frame.TargetFrameContent
     local main = content.TargetFrameContentMain
@@ -83,13 +94,21 @@ end
 function module:OnEnable()
     for _, key in ipairs({ "target", "focus" }) do
         local frame = _G[app.unitFrames:Get(key).frameName]
-        if frame and not hooked[frame] and frame.CheckBattlePet then
+        if frame and not hooked[frame] and frame.CheckLevel and frame.CheckBattlePet then
+            hooksecurefunc(frame, "CheckLevel", function()
+                if self:IsEnabled() and app.addon:IsEnabled() then
+                    ClearLevelTextForSkull(frame)
+                end
+            end)
             hooksecurefunc(frame, "CheckBattlePet", function()
                 if self:IsEnabled() and app.addon:IsEnabled() then
                     RestoreCircle(frame)
                 end
             end)
             hooked[frame] = true
+        end
+        if hooked[frame] then
+            ClearLevelTextForSkull(frame)
         end
     end
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "Refresh")

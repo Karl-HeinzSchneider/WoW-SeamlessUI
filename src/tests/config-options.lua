@@ -425,7 +425,7 @@ for _, pageKey in ipairs({ "statusBar1", "statusBar2" }) do
     assert(#sizes[1].options == 2 and sizes[1].options[1].key == "scale", "Scale replaces the placeholder")
     assert(sizes[1].options[2].key == "width", "Native Width shares the Size header")
     assert(style and #style.options == 1 and style.options[1].setting.path[3] == "alwaysShowText")
-    assert(#tooltips == 1 and #tooltips[1].options == 5, "Each page supplies the shared XP tooltip controls once")
+    assert(#tooltips == 1 and #tooltips[1].options == 6, "Each page supplies the shared XP tooltip controls once")
     xpSections = tooltips
 end
 local xpRows = {}
@@ -434,6 +434,7 @@ for _, row in ipairs(xpSections[1].options) do
     xpRows[key] = row
     assert(row.default() == bars.dbDefaults.profile.xpBarTooltip[key])
 end
+assert(xpRows.levelPlaytime.default() == true)
 xpRows.automaticRestedXP.set(false)
 assert(bars.db.profile.xpBarTooltip.automaticRestedXP == false)
 assert(not xpRows.restedXPCap.disabled())

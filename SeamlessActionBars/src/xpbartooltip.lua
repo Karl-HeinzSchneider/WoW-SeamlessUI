@@ -12,6 +12,11 @@ local module = app.addon:NewModule("XPBarTooltip", "AceEvent-3.0", "AceHook-3.0"
 app.xpBarTooltip = module
 module:SetEnabledState(false)
 
+local levelPlayed
+local sampledAt
+local requestedAt
+local pendingTick
+
 local function settings()
     return app.db.profile.xpBarTooltip
 end
@@ -110,7 +115,7 @@ end
 -- Runs after ExhaustionTickMixin:ExhaustionToolTipText, which both the bar's and the tick's
 -- OnEnter call. Re-anchoring clears the default lines so the tooltip is rebuilt
 -- from scratch without replacing the secure method.
-function module:ShowTooltip()
+function module:ShowTooltip(tick)
     local tooltip = GetAppropriateTooltip()
     GameTooltip_SetDefaultAnchor(tooltip, UIParent)
     local stateID, stateName, multiplier = GetRestState()
@@ -122,10 +127,51 @@ function module:ShowTooltip()
     end
 
     addXPLines(tooltip)
+    if settings().levelPlaytime then
+        local now = GetTime()
+        if sampledAt then
+            local seconds = levelPlayed + math.floor(now - sampledAt)
+            addValue(
+                tooltip,
+                L["Time played at this level:"],
+                TIME_DAYHOURMINUTESECOND:format(ChatFrameUtil.TimeBreakDown(seconds))
+            )
+        elseif tick then
+            pendingTick = tick
+            if not requestedAt or now - requestedAt >= 10 then
+                requestedAt = now
+                RequestTimePlayed()
+            end
+        end
+    end
     if settings().completedQuests then
         addQuestLines(tooltip)
     end
     tooltip:Show()
+end
+
+function module:TIME_PLAYED_MSG(_, _, seconds)
+    levelPlayed = seconds
+    sampledAt = GetTime()
+    requestedAt = nil
+
+    local tick = pendingTick
+    pendingTick = nil
+    local tooltip = tick and GetAppropriateTooltip()
+    if
+        tooltip
+        and settings().levelPlaytime
+        and tooltip:IsShown()
+        and tooltip:IsOwned(UIParent)
+        and (tick:IsMouseOver() or tick:GetParent():IsMouseOver())
+    then
+        self:ShowTooltip(tick)
+    end
+end
+
+function module:PLAYER_LEVEL_UP()
+    levelPlayed = 0
+    sampledAt = GetTime()
 end
 
 function module:InstallHooks()
@@ -147,9 +193,15 @@ end
 
 -- AceHook deactivates the hooks on disable, which leaves the default tooltip.
 function module:OnEnable()
+    self:RegisterEvent("TIME_PLAYED_MSG")
+    self:RegisterEvent("PLAYER_LEVEL_UP")
     self:RegisterEvent("ADDON_LOADED", "InstallHooks")
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "InstallHooks")
     self:InstallHooks()
+end
+
+function module:OnDisable()
+    levelPlayed, sampledAt, requestedAt, pendingTick = nil, nil, nil, nil
 end
 
 function module:OnProfileRefresh()

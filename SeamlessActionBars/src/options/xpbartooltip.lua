@@ -15,6 +15,12 @@ do
         desc = L["Replaces the XP bar tooltip with a detailed one: rest state, XP and XP left, rested XP and the time to max rested. Detect Well Rested automatically or configure the rested XP cap and accumulation rate below."],
         order = 20,
         args = {
+            levelPlaytime = {
+                type = "toggle",
+                order = 12,
+                width = "full",
+                name = L["Show time played at this level"],
+            },
             automaticRestedXP = {
                 type = "toggle",
                 order = 15,

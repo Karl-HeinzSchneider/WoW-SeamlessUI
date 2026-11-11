@@ -35,7 +35,7 @@ instead of replacing it: each part is a separate addon you can switch on or off.
 - **SeamlessActionBars**: action button icons turn red when out of range and blue when you lack
   mana, rage or energy (both colors configurable), and keybind labels get shorter (`SM4`, `N5`,
   `WU`). It also adds endcap scale and textures, micro menu and bag bar options (hiding, a
-  retail-style bag bar, free bag slots) and a fuller XP bar tooltip with rested details.
+  retail-style bag bar, free bag slots) and a fuller XP bar tooltip with rested details and time played at the current level.
 - **SeamlessCastbar**: cast time on the player, target and focus cast bars, the spell rank in the
   spell name, tick marks on channeled spells, the spell icon on the detached player bar, a
   configurable hold time after a cast, player bar size and movable target and focus bars, with

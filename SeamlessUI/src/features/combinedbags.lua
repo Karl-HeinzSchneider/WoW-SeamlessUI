@@ -261,7 +261,7 @@ function module:TryInitialize()
     end
     anchor = CreateFrame("Frame", nil, UIParent)
     -- A drag target at the configured anchor point, independent of bag dimensions.
-    anchor:SetSize(96, 36)
+    anchor:SetSize(288, 108)
     anchor:SetClampedToScreen(true)
     anchor:Hide()
     UpdateDefaults()

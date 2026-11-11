@@ -230,7 +230,7 @@ assert(profile.combinedBags.layouts.Modern.relativeTo == nil, "drag clears the p
 assert(bags.point[4] == 250 and bags.point[5] == -100, "position offsets account for native bag scale")
 nativeLayout()
 assert(bags.point[4] == 250, "native relayout preserves the custom position")
-assert(anchor.width == 96 and anchor.height == 36, "selection uses a compact drag target")
+assert(anchor.width == 288 and anchor.height == 108, "selection uses a compact drag target")
 combat = true
 nativeLayout()
 assert(bags.point[4] == -10, "post-hook makes no position writes in combat")
@@ -300,7 +300,7 @@ local scaleOption = app.optionPages.combinedBags.config.args.size.args.scale
 assert(scaleOption.get() == 1)
 scaleOption.set(nil, 1.5)
 assert(math.abs(bags:GetScale() - 1.2) < 0.001)
-assert(anchor:GetWidth() == 96 and anchor:GetHeight() == 36, "the drag target stays compact at any bag scale")
+assert(anchor:GetWidth() == 288 and anchor:GetHeight() == 108, "the drag target stays compact at any bag scale")
 assert(math.abs(keyring:GetScale() - 1.2) < 0.001 and math.abs(reagent:GetScale() - 1.2) < 0.001)
 assert(regular:GetScale() == 0.8, "other containers keep their native scale")
 module:Refresh()

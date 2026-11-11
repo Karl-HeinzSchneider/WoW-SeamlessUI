@@ -6,6 +6,7 @@ local media = app.media
 local LSM = media.LSM
 local creatureFamily = app.features:GetModule("CreatureFamily")
 local healthBar = app.features:GetModule("HealthBar")
+local hideHealthBar = app.features:GetModule("HideHealthBar")
 local hideTitle = app.features:GetModule("HideTitle")
 local hideUnits = app.features:GetModule("HideUnits")
 local npcText = app.features:GetModule("NpcText")
@@ -39,6 +40,9 @@ app.optionPages.units = {
                     texture = "Blizzard",
                     backgroundColor = { r = 0, g = 0, b = 0, a = 0.5 },
                     text = "VALUE_MAX",
+                },
+                HideHealthBar = {
+                    enabled = false, -- GameTooltip shows its StatusBar for units and objects.
                 },
                 HideTitle = {
                     enabled = false,
@@ -191,6 +195,20 @@ app.optionPages.units = {
                         sorting = { "NONE", "PERCENT", "VALUE", "VALUE_MAX", "VALUE_PERCENT" },
                     },
                 },
+            },
+            HideHealthBar = {
+                type = "group",
+                feature = true,
+                name = L["Hide the health bar"],
+                desc = L["Hides the health bar on unit and object tooltips."],
+                order = 31,
+                settings = function()
+                    return hideHealthBar:Settings()
+                end,
+                toggled = function()
+                    hideHealthBar:Refresh()
+                end,
+                args = {},
             },
             HideTitle = {
                 type = "group",

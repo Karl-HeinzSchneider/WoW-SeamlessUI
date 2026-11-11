@@ -33,6 +33,7 @@ src\features\targetline.lua
 src\features\targetedby.lua
 src\features\creaturefamily.lua
 src\features\healthbar.lua
+src\features\hidehealthbar.lua
 src\features\unitborder.lua
 src\features\hideunits.lua
 src\features\itemids.lua

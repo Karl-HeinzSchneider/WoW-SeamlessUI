@@ -78,7 +78,7 @@ for line in toc:lines() do
     end
 end
 toc:close()
-assert(count == 23 and app.db == nil, "All runtime features load before AceDB")
+assert(count == 24 and app.db == nil, "All runtime features load before AceDB")
 dofile("src/tests/settings-support.lua").pages("SeamlessTooltip", app)
 local quality = app.optionPages.items.config.args.QualityBorder.args.minQuality
 assert(#quality.sorting == 8 and quality.sorting[1] == 0 and quality.sorting[8] == 7)

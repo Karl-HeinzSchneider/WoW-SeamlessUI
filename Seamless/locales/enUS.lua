@@ -878,6 +878,9 @@ L["Level display"] = true
 L["Name display"] = true
 L["Name"] = true
 L["Numeric Value"] = true
+L["Off"] = true
+L["On (small)"] = true
+L["On"] = true
 L["Percentage"] = true
 L["Portrait dragon"] = true
 L["Portrait"] = true
@@ -891,6 +894,7 @@ L["Shown on your player frame when Override is selected. Saved separately for ea
 L["Shows a player character's class icon instead of the portrait. NPCs keep their portrait."] = true
 L["Shows a slay icon on the target frame for unfinished kill objectives, or a loot icon for other unfinished quest objectives the target's tooltip reports."] = true
 L["Shows the game's threat percentage badge above the target frame. This client-wide game setting also affects other frames that support it."] = true
+L["Shows party members' levels on standard party frames. On (small) uses 70% of the normal size. Changes made during combat apply when combat ends."] = true
 L["Smaller"] = true
 L["Status Text"] = true
 L["Surname only"] = true

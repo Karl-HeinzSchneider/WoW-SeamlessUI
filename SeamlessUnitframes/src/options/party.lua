@@ -31,7 +31,13 @@ app.optionPages.party = {
     defaults = {
         profile = {
             unitFrames = {
-                party = { healthBarColor = "class", nameDisplay = "full", classIcon = false, hidePvPIcon = false },
+                party = {
+                    healthBarColor = "class",
+                    nameDisplay = "full",
+                    classIcon = false,
+                    hidePvPIcon = false,
+                    levelDisplay = "off", -- Blizzard_UnitFrame's PartyMemberFrameTemplate has no level text.
+                },
             },
         },
     },
@@ -122,6 +128,22 @@ app.optionPages.party = {
                         set = function(_, value)
                             app.db.profile.unitFrames[key].hidePvPIcon = value
                             app.pvpIcon:Refresh()
+                            changed()
+                        end,
+                    },
+                    party_levelDisplay = {
+                        order = 50,
+                        type = "select",
+                        name = L["Level display"],
+                        desc = L["Shows party members' levels on standard party frames. On (small) uses 70% of the normal size. Changes made during combat apply when combat ends."],
+                        values = { off = L["Off"], on = L["On"], smaller = L["On (small)"] },
+                        sorting = { "off", "on", "smaller" },
+                        get = function()
+                            return app.db.profile.unitFrames[key].levelDisplay
+                        end,
+                        set = function(_, value)
+                            app.db.profile.unitFrames[key].levelDisplay = value
+                            app.levelDisplay:Refresh()
                             changed()
                         end,
                     },

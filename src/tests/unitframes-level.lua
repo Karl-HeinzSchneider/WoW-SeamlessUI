@@ -21,6 +21,9 @@ local function region()
         Show = function(self)
             self.shown = true
         end,
+        Hide = function(self)
+            self.shown = false
+        end,
         SetText = function(self, value)
             self.text = value
         end,
@@ -37,6 +40,14 @@ local function region()
             self.point = { point, parent, relativePoint, x, y }
         end,
     }
+end
+MAX_PARTY_MEMBERS = 4
+PartyFrame = {
+    UpdatePartyFrames = function() end,
+}
+local levels = { party1 = 23, player = 42 }
+UnitLevel = function(unit)
+    return levels[unit] or 0
 end
 local function target()
     return {
@@ -92,6 +103,7 @@ local app = {
                 player = { levelDisplay = "hidden" },
                 target = { levelDisplay = "smaller" },
                 focus = { levelDisplay = "default" },
+                party = { levelDisplay = "off" },
             },
         },
     },
@@ -182,4 +194,52 @@ for _, frame in ipairs({ TargetFrame, FocusFrame }) do
     assert(levelText.text == 26)
     enabled = true
 end
+local partyLabel
+PartyFrame.MemberFrame1 = {
+    unit = "party1",
+    Portrait = {},
+    UpdateMember = function(self, unit)
+        self.unit = unit
+    end,
+    CreateFontString = function()
+        assert(not partyLabel)
+        partyLabel = region()
+        return partyLabel
+    end,
+}
+PartyFrame:UpdatePartyFrames()
+assert(not partyLabel)
+app.db.profile.unitFrames.party.levelDisplay = "on"
+module:Refresh()
+assert(partyLabel.shown and partyLabel.scale == 1 and partyLabel.text == 23)
+levels.party1 = 24
+module:RefreshParty()
+assert(partyLabel.text == 24)
+PartyFrame.MemberFrame1:UpdateMember("player")
+assert(partyLabel.text == 42)
+PartyFrame.MemberFrame1:UpdateMember("party2")
+assert(not partyLabel.shown)
+PartyFrame.MemberFrame1:UpdateMember("party1")
+combat = true
+app.db.profile.unitFrames.party.levelDisplay = "smaller"
+module:Refresh()
+assert(partyLabel.scale == 1)
+combat = false
+module:Refresh()
+assert(partyLabel.shown and partyLabel.scale == 0.7 and partyLabel.text == 24)
+canaccessvalue = function(value)
+    return value ~= 24
+end
+module:RefreshParty()
+assert(not partyLabel.shown)
+canaccessvalue = nil
+module:RefreshParty()
+assert(partyLabel.shown)
+enabled = false
+module:OnDisable()
+assert(not partyLabel.shown)
+enabled = true
+app.db.profile.unitFrames.party = { levelDisplay = "off" }
+module:OnProfileRefresh()
+assert(not partyLabel.shown)
 print("unitframes-level: OK")

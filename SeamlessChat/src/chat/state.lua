@@ -241,6 +241,51 @@ local function sameLayout(window, other)
         and near(window.height, other.height, 1)
 end
 
+-- An existing window can take appearance and floating geometry changes without rebuilding the dock.
+local function applyWindowDetails(id, current, window)
+    local frame = FCF_GetChatFrameByID(id)
+    local renamed = current.name ~= window.name
+    if renamed then
+        FCF_SetWindowName(frame, window.name or "")
+    end
+    if current.size ~= window.size and window.size then
+        FCF_SetChatWindowFontSize(nil, frame, window.size)
+    end
+    if not (near(current.r, window.r) and near(current.g, window.g) and near(current.b, window.b)) then
+        FCF_SetWindowColor(frame, window.r, window.g, window.b)
+    end
+    if not near(current.a, window.a) then
+        FCF_SetWindowAlpha(frame, window.a)
+    end
+    if current.uninteractable ~= window.uninteractable then
+        FCF_SetUninteractable(frame, window.uninteractable)
+    end
+    if not window.docked then
+        if current.locked ~= window.locked then
+            FCF_SetLocked(frame, window.locked)
+        end
+        local positionChanged = window.point
+            and (
+                current.point ~= window.point
+                or not near(current.x, window.x, 0.001)
+                or not near(current.y, window.y, 0.001)
+            )
+        local sizeChanged = window.width
+            and window.height
+            and (not near(current.width, window.width, 1) or not near(current.height, window.height, 1))
+        if positionChanged then
+            SetChatWindowSavedPosition(id, window.point, window.x, window.y)
+        end
+        if sizeChanged then
+            SetChatWindowSavedDimensions(id, window.width, window.height)
+        end
+        if positionChanged or sizeChanged then
+            FCF_RestorePositionAndDimensions(frame)
+        end
+    end
+    return renamed and window.docked ~= nil
+end
+
 ---@param window SeamlessChat.Window
 ---@param other SeamlessChat.Window
 local function sameContent(window, other)
@@ -270,19 +315,22 @@ end
 
 -- Opens, closes, docks and styles the windows like `stored`. The settings are written where the game
 -- keeps them, then Blizzard's own FloatingChatFrame_Update applies them, as it does at login.
----@param stored table<integer, SeamlessChat.Window>
-local function applyLayout(stored)
+---@param stored table<integer, SeamlessChat.Window> windows to open, close or move in the dock
+---@param rebuildDock boolean
+local function applyLayout(stored, rebuildDock)
     local dock = GENERAL_CHAT_DOCK
     local selected = FCFDock_GetSelectedWindow(dock)
 
     -- FCF_DockFrame ignores a window that is already docked, so the stored tab order can only be
     -- restored by taking the windows out of the dock first.
-    local dockedFrames = FCFDock_GetChatFrames(dock)
-    for i = #dockedFrames, 1, -1 do
-        local frame = dockedFrames[i]
-        local id = frame:GetID()
-        if frame ~= DEFAULT_CHAT_FRAME and stored[id] and isSynced(id) then
-            FCF_UnDockFrame(frame)
+    if rebuildDock then
+        local dockedFrames = FCFDock_GetChatFrames(dock)
+        for i = #dockedFrames, 1, -1 do
+            local frame = dockedFrames[i]
+            local id = frame:GetID()
+            if frame ~= DEFAULT_CHAT_FRAME and stored[id] and isSynced(id) then
+                FCF_UnDockFrame(frame)
+            end
         end
     end
 
@@ -322,11 +370,16 @@ local function applyLayout(stored)
         end
     end
 
-    if not (selected and selected.isDocked) then
-        selected = DEFAULT_CHAT_FRAME
+    if rebuildDock then
+        if not (selected and selected.isDocked) then
+            selected = DEFAULT_CHAT_FRAME
+        end
+        if selected ~= FCFDock_GetSelectedWindow(dock) then
+            FCFDock_SelectWindow(dock, selected)
+        else
+            FCFDock_UpdateTabs(dock)
+        end
     end
-    FCFDock_SelectWindow(dock, selected)
-    FCF_DockUpdate()
 end
 
 -- Sets the message types and channels a window shows. Returns whether they changed.
@@ -371,15 +424,30 @@ function state.ApplyWindows(stored)
     local current = state.CaptureWindows()
     local changed = false
 
-    local layoutDiffers = not sameList(dockOrder(current, stored), dockOrder(stored, current))
-    for id, window in pairs(stored) do
-        if current[id] and not sameLayout(current[id], window) then
-            layoutDiffers = true
-        end
-    end
-    if layoutDiffers then
-        applyLayout(stored)
+    local rebuildDock = not sameList(dockOrder(current, stored), dockOrder(stored, current))
+    if rebuildDock then
+        applyLayout(stored, true)
         changed = true
+    else
+        local dockNeedsResize = false
+        local openingOrClosing = {}
+        for id, window in pairs(stored) do
+            local existing = current[id]
+            if existing and not sameLayout(existing, window) then
+                if isOpen(existing) ~= isOpen(window) then
+                    openingOrClosing[id] = window
+                else
+                    dockNeedsResize = applyWindowDetails(id, existing, window) or dockNeedsResize
+                end
+                changed = true
+            end
+        end
+        if next(openingOrClosing) then
+            applyLayout(openingOrClosing, false)
+        end
+        if dockNeedsResize then
+            FCF_DockUpdate()
+        end
     end
 
     ---@type SeamlessChat.MissingChannels

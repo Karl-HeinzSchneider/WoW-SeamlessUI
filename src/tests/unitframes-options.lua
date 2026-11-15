@@ -265,8 +265,15 @@ for _, key in ipairs({ "player", "target", "focus" }) do
     option.set(nil, "smaller")
     assert(option.get() == "smaller" and app.db.profile.unitFrames[key].levelDisplay == "smaller")
 end
-assert(levelRefreshes == 3)
-assert(not find(tabs.pet, "pet_levelDisplay") and not find(tabs.party, "party_levelDisplay"))
+local partyLevel = find(tabs.party, "party_levelDisplay")
+assert(partyLevel.type == "select" and table.concat(partyLevel.sorting, ",") == "off,on,smaller")
+assert(app.optionPages.party.defaults.profile.unitFrames.party.levelDisplay == "off")
+for _, mode in ipairs(partyLevel.sorting) do
+    partyLevel.set(nil, mode)
+    assert(partyLevel.get() == mode and app.db.profile.unitFrames.party.levelDisplay == mode)
+end
+assert(levelRefreshes == 6)
+assert(not find(tabs.pet, "pet_levelDisplay"))
 -- Every page wraps the same native setting, including both CVars and live external changes.
 for _, key in ipairs({ "player", "pet", "target", "focus", "targettarget", "focustarget", "party" }) do
     local option = find(tabs[key], "statusText")

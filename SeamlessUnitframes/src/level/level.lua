@@ -5,10 +5,11 @@ local _, app = ...
 local module = {}
 app.levelDisplay = app.addon:NewModule("LevelDisplay", module, "AceEvent-3.0")
 
--- All layouts retain the client's level regions. The size setting uses alpha
+-- Player, target and focus retain the client's level regions. The size setting uses alpha
 -- to hide them while preserving the client's choice of number or skull.
 local changed = {}
 local hooked = {}
+local partyText = {}
 
 local function ClearLevelTextForSkull(frame)
     local content = frame.TargetFrameContent
@@ -67,6 +68,54 @@ local function Apply(region, mode, parent, side)
     end
 end
 
+local function UpdatePartyLevel(frame, mode)
+    local label = partyText[frame]
+    local unit = frame.unit
+    local level
+    if (mode == "on" or mode == "smaller") and (not canaccessvalue or canaccessvalue(unit)) and unit then
+        level = UnitLevel(unit)
+    end
+    if (canaccessvalue and not canaccessvalue(level)) or not level or level <= 0 then
+        if label then
+            label:Hide()
+        end
+        return
+    end
+
+    if not label then
+        label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        label:SetPoint("CENTER", frame.Portrait, "BOTTOM", 0, 3)
+        partyText[frame] = label
+    end
+    label:SetScale(mode == "smaller" and 0.7 or 1)
+    label:SetText(level)
+    label:Show()
+end
+
+function module:RefreshParty()
+    if InCombatLockdown() then
+        return
+    end
+    local settings = app.db.profile.unitFrames.party
+    local mode = app.addon:IsEnabled() and self:IsEnabled() and settings and settings.levelDisplay
+    if PartyFrame then
+        for i = 1, MAX_PARTY_MEMBERS do
+            local frame = PartyFrame["MemberFrame" .. i]
+            if (not canaccessvalue or canaccessvalue(frame)) and frame then
+                if not hooked[frame] then
+                    hooksecurefunc(frame, "UpdateMember", function()
+                        if self:IsEnabled() and app.addon:IsEnabled() then
+                            self:RefreshParty()
+                        end
+                    end)
+                    hooked[frame] = true
+                end
+                UpdatePartyLevel(frame, mode)
+            end
+        end
+    end
+end
+
 function module:Refresh()
     if InCombatLockdown() then
         return
@@ -89,6 +138,7 @@ function module:Refresh()
             end
         end
     end
+    self:RefreshParty()
 end
 
 function module:OnEnable()
@@ -113,6 +163,16 @@ function module:OnEnable()
     end
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "Refresh")
     self:RegisterEvent("PLAYER_REGEN_ENABLED", "Refresh")
+    self:RegisterEvent("UNIT_LEVEL", "RefreshParty")
+    if PartyFrame and not hooked[PartyFrame] then
+        -- The client creates the member frames lazily when the party frame first shows.
+        hooksecurefunc(PartyFrame, "UpdatePartyFrames", function()
+            if self:IsEnabled() and app.addon:IsEnabled() then
+                self:RefreshParty()
+            end
+        end)
+        hooked[PartyFrame] = true
+    end
     self:Refresh()
 end
 

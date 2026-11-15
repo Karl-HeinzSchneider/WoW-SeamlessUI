@@ -73,7 +73,7 @@ end
 -- Wraps a chat frame's AddMessage once. The wrapper stays for the session; transforms that are
 -- switched off just return the line unchanged.
 function lines:HookFrame(frame)
-    if not frame or self.hooked[frame] then
+    if not frame or self.hooked[frame] or IsCombatLog(frame) then
         return
     end
     self.hooked[frame] = true

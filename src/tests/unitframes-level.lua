@@ -231,7 +231,8 @@ module:Refresh()
 assert(partyBadge.shown and partyBadge.scale == 0.6 and partyLabel.text == 23)
 assert(partyCircle.point[2] == partyBadge and partyLabel.point[2] == partyCircle)
 assert(partyLabel.point[5] == -0.5)
-assert(partyBadge.point[2] == PartyFrame.MemberFrame1.Portrait and partyBadge.point[3] == "BOTTOM")
+assert(partyBadge.point[2] == PartyFrame.MemberFrame1.Portrait and partyBadge.point[3] == "BOTTOMLEFT")
+assert(partyBadge.point[4] * partyBadge.scale == 8)
 assert(partyBadge.point[5] * partyBadge.scale == 3)
 levels.party1 = 24
 module:RefreshParty()
@@ -248,6 +249,7 @@ assert(partyBadge.scale == 0.6)
 combat = false
 module:Refresh()
 assert(partyBadge.shown and partyBadge.scale == 0.42 and partyLabel.text == 24)
+assert(partyBadge.point[4] * partyBadge.scale == 8)
 assert(partyBadge.point[5] * partyBadge.scale == 3)
 canaccessvalue = function(value)
     return value ~= 24

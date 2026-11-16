@@ -96,7 +96,7 @@ local function UpdatePartyLevel(frame, mode)
     end
     local scale = mode == "smaller" and 0.42 or 0.6
     badge:SetScale(scale)
-    badge:SetPoint("CENTER", frame.Portrait, "BOTTOM", 0, 3 / scale)
+    badge:SetPoint("CENTER", frame.Portrait, "BOTTOMLEFT", 8 / scale, 3 / scale)
     badge.label:SetText(level)
     badge:Show()
 end

@@ -194,52 +194,74 @@ for _, frame in ipairs({ TargetFrame, FocusFrame }) do
     assert(levelText.text == 26)
     enabled = true
 end
-local partyLabel
+local partyBadge, partyLabel, partyCircle
 PartyFrame.MemberFrame1 = {
     unit = "party1",
     Portrait = {},
     UpdateMember = function(self, unit)
         self.unit = unit
     end,
-    CreateFontString = function()
-        assert(not partyLabel)
+}
+CreateFrame = function(frameType, name, parent)
+    assert(frameType == "Frame" and name == nil and parent == PartyFrame.MemberFrame1)
+    assert(not partyBadge)
+    partyBadge = region()
+    partyBadge.SetSize = function(_, width, height)
+        assert(width == 39 and height == 39)
+    end
+    partyBadge.CreateTexture = function(_, _, layer)
+        assert(layer == "ARTWORK")
+        partyCircle = region()
+        partyCircle.SetAtlas = function(_, atlas, useAtlasSize)
+            assert(atlas == "UI-HUD-UnitFrame-SmallCircle" and useAtlasSize)
+        end
+        return partyCircle
+    end
+    partyBadge.CreateFontString = function(_, _, layer, font)
+        assert(layer == "OVERLAY" and font == "WhiteLargeNumberFont")
         partyLabel = region()
         return partyLabel
-    end,
-}
+    end
+    return partyBadge
+end
 PartyFrame:UpdatePartyFrames()
-assert(not partyLabel)
+assert(not partyBadge)
 app.db.profile.unitFrames.party.levelDisplay = "on"
 module:Refresh()
-assert(partyLabel.shown and partyLabel.scale == 1 and partyLabel.text == 23)
+assert(partyBadge.shown and partyBadge.scale == 0.6 and partyLabel.text == 23)
+assert(partyCircle.point[2] == partyBadge and partyLabel.point[2] == partyCircle)
+assert(partyLabel.point[5] == -0.5)
+assert(partyBadge.point[2] == PartyFrame.MemberFrame1.Portrait and partyBadge.point[3] == "BOTTOM")
+assert(partyBadge.point[5] * partyBadge.scale == 3)
 levels.party1 = 24
 module:RefreshParty()
 assert(partyLabel.text == 24)
 PartyFrame.MemberFrame1:UpdateMember("player")
 assert(partyLabel.text == 42)
 PartyFrame.MemberFrame1:UpdateMember("party2")
-assert(not partyLabel.shown)
+assert(not partyBadge.shown)
 PartyFrame.MemberFrame1:UpdateMember("party1")
 combat = true
 app.db.profile.unitFrames.party.levelDisplay = "smaller"
 module:Refresh()
-assert(partyLabel.scale == 1)
+assert(partyBadge.scale == 0.6)
 combat = false
 module:Refresh()
-assert(partyLabel.shown and partyLabel.scale == 0.7 and partyLabel.text == 24)
+assert(partyBadge.shown and partyBadge.scale == 0.42 and partyLabel.text == 24)
+assert(partyBadge.point[5] * partyBadge.scale == 3)
 canaccessvalue = function(value)
     return value ~= 24
 end
 module:RefreshParty()
-assert(not partyLabel.shown)
+assert(not partyBadge.shown)
 canaccessvalue = nil
 module:RefreshParty()
-assert(partyLabel.shown)
+assert(partyBadge.shown)
 enabled = false
 module:OnDisable()
-assert(not partyLabel.shown)
+assert(not partyBadge.shown)
 enabled = true
 app.db.profile.unitFrames.party = { levelDisplay = "off" }
 module:OnProfileRefresh()
-assert(not partyLabel.shown)
+assert(not partyBadge.shown)
 print("unitframes-level: OK")

@@ -9,7 +9,7 @@ app.levelDisplay = app.addon:NewModule("LevelDisplay", module, "AceEvent-3.0")
 -- to hide them while preserving the client's choice of number or skull.
 local changed = {}
 local hooked = {}
-local partyText = {}
+local partyBadges = {}
 
 local function ClearLevelTextForSkull(frame)
     local content = frame.TargetFrameContent
@@ -69,27 +69,36 @@ local function Apply(region, mode, parent, side)
 end
 
 local function UpdatePartyLevel(frame, mode)
-    local label = partyText[frame]
+    local badge = partyBadges[frame]
     local unit = frame.unit
     local level
     if (mode == "on" or mode == "smaller") and (not canaccessvalue or canaccessvalue(unit)) and unit then
         level = UnitLevel(unit)
     end
     if (canaccessvalue and not canaccessvalue(level)) or not level or level <= 0 then
-        if label then
-            label:Hide()
+        if badge then
+            badge:Hide()
         end
         return
     end
 
-    if not label then
-        label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-        label:SetPoint("CENTER", frame.Portrait, "BOTTOM", 0, 3)
-        partyText[frame] = label
+    if not badge then
+        badge = CreateFrame("Frame", nil, frame)
+        -- Use the Camelot player level art and font at a size that fits the party portrait.
+        badge:SetSize(39, 39)
+        local circle = badge:CreateTexture(nil, "ARTWORK")
+        circle:SetAtlas("UI-HUD-UnitFrame-SmallCircle", true)
+        circle:SetPoint("CENTER", badge)
+        local label = badge:CreateFontString(nil, "OVERLAY", "WhiteLargeNumberFont")
+        label:SetPoint("CENTER", circle, "CENTER", 0, -0.5)
+        badge.label = label
+        partyBadges[frame] = badge
     end
-    label:SetScale(mode == "smaller" and 0.7 or 1)
-    label:SetText(level)
-    label:Show()
+    local scale = mode == "smaller" and 0.42 or 0.6
+    badge:SetScale(scale)
+    badge:SetPoint("CENTER", frame.Portrait, "BOTTOM", 0, 3 / scale)
+    badge.label:SetText(level)
+    badge:Show()
 end
 
 function module:RefreshParty()

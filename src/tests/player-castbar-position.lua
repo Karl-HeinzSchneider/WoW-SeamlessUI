@@ -131,14 +131,25 @@ local function frame()
     function value:ShouldShowCastBar()
         return true
     end
-    for _, name in ipairs({ "Text", "CastTimeText", "Icon" }) do
+    for _, name in ipairs({ "Text", "CastTimeText", "TextBorder", "Icon" }) do
         value[name] = {
             SetText = function() end,
             SetShown = function() end,
             SetTexture = function() end,
             SetSize = function() end,
-            ClearAllPoints = function() end,
-            SetPoint = function() end,
+            SetWidth = function() end,
+            SetJustifyH = function() end,
+            SetFontObject = function() end,
+            GetFontObject = function()
+                return "GameFontHighlightSmall"
+            end,
+            points = {},
+            ClearAllPoints = function(self)
+                self.points = {}
+            end,
+            SetPoint = function(self, point, relative, relativePoint, x, y)
+                self.points[point] = { relative, relativePoint, x, y }
+            end,
         }
     end
     return value
@@ -188,6 +199,7 @@ local app = {
     },
 }
 assert(loadfile("SeamlessCastbar/src/playerposition.lua"))("SeamlessCastbar", app)
+assert(loadfile("SeamlessCastbar/src/size.lua"))("SeamlessCastbar", app)
 app.InitializePlayerSettings()
 assert(app.db.profile.player.showCastTime)
 shared.systems[1].settings[1].value = 0
@@ -204,6 +216,21 @@ app.RegisterPlayerEditMode()
 editMode = true
 callbacks.enter()
 assert(app.GetPlayerPreview().shown and not real.shown)
+local preview = app.GetPlayerPreview()
+app.db.profile.player.compactLayout = true
+app.UpdatePlayerPreview()
+assert(preview.Text.points.LEFT[2] == "BOTTOMLEFT")
+assert(preview.Text.points.RIGHT[1] == preview.CastTimeText, "name leaves space for the timer")
+assert(preview.CastTimeText.points.RIGHT[2] == "BOTTOMRIGHT")
+assert(preview.TextBorder.points.BOTTOMRIGHT[4] == -16)
+app.db.profile.player.showCastTime = false
+app.UpdatePlayerPreview()
+assert(preview.Text.points.RIGHT[1] == preview, "name can use the full row with the timer off")
+app.db.profile.player.compactLayout = false
+app.UpdatePlayerPreview()
+assert(preview.Text.points.TOP[2] == "BOTTOM" and not preview.Text.points.LEFT)
+assert(preview.CastTimeText.points.LEFT[2] == "RIGHT" and not preview.CastTimeText.points.RIGHT)
+assert(preview.TextBorder.points.BOTTOMRIGHT[4] == -12)
 moved(nil, nil, "TOPRIGHT", -50, -70)
 assert(real.position.point == "TOPRIGHT" and real.position.x == -50)
 spec.set("relativeTo", "PlayerFrame")

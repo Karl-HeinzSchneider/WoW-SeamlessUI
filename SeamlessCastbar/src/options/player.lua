@@ -121,6 +121,7 @@ app.optionPages.player = {
                 iconSize = 16,
                 -- EditModePresetLayouts.lua: native ShowCastTime checkbox defaults to 0.
                 showCastTime = false,
+                compactLayout = false,
                 castTime = { enabled = true, format = "ELAPSED_TOTAL", decimals = 1 },
                 rank = { enabled = true },
                 ticks = { enabled = true },
@@ -142,6 +143,19 @@ app.optionPages.player = {
         name = L["Player"],
         order = 10,
         args = {
+            compactLayout = {
+                type = "toggle",
+                name = L["Compact layout"],
+                desc = L["Place the spell name on the left and the cast time on the right below the bar."],
+                order = 8,
+                get = function()
+                    return app.db.profile.player.compactLayout
+                end,
+                set = function(_, value)
+                    app.db.profile.player.compactLayout = value
+                    refresh()
+                end,
+            },
             showCastTime = {
                 type = "toggle",
                 name = L["Show cast time"],

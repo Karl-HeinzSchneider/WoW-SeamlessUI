@@ -409,6 +409,8 @@ PlayerCastingBarFrame = {
 local customPlayerBar = PlayerCastingBarFrame
 local textPoints = {}
 PlayerCastingBarFrame.Text = {
+    SetWidth = function() end,
+    SetJustifyH = function() end,
     GetNumPoints = function()
         return #textPoints
     end,

@@ -220,12 +220,13 @@ local preview = app.GetPlayerPreview()
 app.db.profile.player.compactLayout = true
 app.UpdatePlayerPreview()
 assert(preview.Text.points.LEFT[2] == "BOTTOMLEFT")
-assert(preview.Text.points.RIGHT[1] == preview.CastTimeText, "name leaves space for the timer")
+assert(preview.Text.points.RIGHT[1] == preview, "name and timer anchor directly to the addon-owned bar")
+assert(preview.Text.points.RIGHT[3] < preview.CastTimeText.points.RIGHT[3], "name leaves space for the timer")
 assert(preview.CastTimeText.points.RIGHT[2] == "BOTTOMRIGHT")
 assert(preview.TextBorder.points.BOTTOMRIGHT[4] == -16)
 app.db.profile.player.showCastTime = false
 app.UpdatePlayerPreview()
-assert(preview.Text.points.RIGHT[1] == preview, "name can use the full row with the timer off")
+assert(preview.Text.points.RIGHT[3] == -5, "name can use the full row with the timer off")
 app.db.profile.player.compactLayout = false
 app.UpdatePlayerPreview()
 assert(preview.Text.points.TOP[2] == "BOTTOM" and not preview.Text.points.LEFT)

@@ -20,18 +20,25 @@ function app.ApplyPlayerTextLayout(bar)
         border:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, settings.compactLayout and -16 or -12)
     end
     if settings.compactLayout then
+        local width = settings.width or app.PlayerSizeDefault("width")
+        local inset = math.min(5, width * 0.1)
         name:SetWidth(0)
         name:SetJustifyH("LEFT")
-        name:SetPoint("LEFT", bar, "BOTTOMLEFT", 5, -8)
+        name:SetPoint("LEFT", bar, "BOTTOMLEFT", inset, -8)
+        local nameRight = inset
         if time then
             time:SetFontObject(name:GetFontObject())
-            time:SetPoint("RIGHT", bar, "BOTTOMRIGHT", -5, -8)
+            time:SetJustifyH("RIGHT")
+            time:SetPoint("RIGHT", bar, "BOTTOMRIGHT", -inset, -8)
+            -- The timer's rendered width can be secret. Size both columns from the
+            -- profile and anchor them directly to our bar.
+            local timeWidth = math.min(100, width * 0.45)
+            time:SetWidth(timeWidth)
+            if settings.showCastTime then
+                nameRight = inset * 2 + timeWidth
+            end
         end
-        if time and settings.showCastTime then
-            name:SetPoint("RIGHT", time, "LEFT", -4, 0)
-        else
-            name:SetPoint("RIGHT", bar, "BOTTOMRIGHT", -5, -8)
-        end
+        name:SetPoint("RIGHT", bar, "BOTTOMRIGHT", -nameRight, -8)
     else
         -- CastingBarFrame.lua SetLook("CLASSIC") and CastingBarFrameTemplate in the client XML.
         -- Keep the name bottom-relative when the configured bar height changes.
@@ -39,6 +46,8 @@ function app.ApplyPlayerTextLayout(bar)
         name:SetJustifyH("CENTER")
         name:SetPoint("TOP", bar, "BOTTOM", 0, bar.classicStyleCastBar and 18 or 1)
         if time then
+            time:SetWidth(0)
+            time:SetJustifyH("CENTER")
             time:SetFontObject("GameFontHighlightLarge")
             time:SetPoint("LEFT", bar, "RIGHT", 10, 0)
         end

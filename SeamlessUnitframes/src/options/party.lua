@@ -118,7 +118,7 @@ app.optionPages.party = {
                         end,
                     },
                     party_hidePvPIcon = {
-                        order = 40,
+                        order = 60,
                         type = "toggle",
                         name = L["Hide PvP icon"],
                         desc = L["Hides the faction or free-for-all PvP icon on the frame."],

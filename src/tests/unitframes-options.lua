@@ -311,7 +311,9 @@ assert(not find(tabs.pet, "pet_nameDisplay") and not find(tabs.pet, "pet_classIc
 assert(not find(tabs.pet, "pet_hidePvPIcon") and not find(tabs.targettarget, "targettarget_hidePvPIcon"))
 find(tabs.player, "player_classIcon").set(nil, true)
 assert(app.db.profile.unitFrames.player.classIcon == true and counts.classIcons == 1)
-find(tabs.party, "party_hidePvPIcon").set(nil, true)
+local partyHidePvP = find(tabs.party, "party_hidePvPIcon")
+assert(partyHidePvP.order > find(tabs.party, "party_levelDisplay").order)
+partyHidePvP.set(nil, true)
 assert(app.db.profile.unitFrames.party.hidePvPIcon == true and counts.pvpIcons == 1)
 
 local threat = find(tabs.target, "threatPercentage")
@@ -638,7 +640,16 @@ end
 TargetFrame.GetPvPIndicatorElements = function()
     return { pvpIcon = targetIcon }
 end
-member.PartyMemberOverlay = { PVPIcon = partyIcon }
+function PartyFrame:UpdatePartyFrames()
+    member.PartyMemberOverlay = { PVPIcon = partyIcon }
+end
+hooksecurefunc = function(object, method, callback)
+    local original = object[method]
+    object[method] = function(self, ...)
+        original(self, ...)
+        callback(self, ...)
+    end
+end
 local legacyCircle = Icon()
 app.legacyLayout = {
     PvPBackground = function(_, icon)
@@ -650,7 +661,12 @@ app.db.profile.unitFrames.party.hidePvPIcon = true
 app.db.profile.unitFrames.target.hidePvPIcon = false
 loadfile("SeamlessUnitframes/src/pvpicon/pvpicon.lua")("SeamlessUnitframes", app)
 modules.PvPIcon.RegisterEvent = function() end
+modules.PvPIcon.IsEnabled = function()
+    return enabled
+end
 modules.PvPIcon:OnEnable()
+assert(partyIcon.alpha == 1)
+PartyFrame:UpdatePartyFrames()
 assert(playerIcon.alpha == 0 and partyIcon.alpha == 0 and targetIcon.alpha == 1)
 assert(legacyCircle.alpha == 0, "the Legacy layout's circle hides with its icon")
 app.db.profile.unitFrames.player.hidePvPIcon = false

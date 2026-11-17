@@ -11,6 +11,7 @@ local changed = {}
 local hooked = {}
 local partyBadges = {}
 local movedPartyPvPIcons = {}
+local movedPartyPortraitIndicators = {}
 
 local function ClearLevelTextForSkull(frame)
     local content = frame.TargetFrameContent
@@ -69,6 +70,22 @@ local function Apply(region, mode, parent, side)
     end
 end
 
+local function PositionPartyPortraitIndicator(region, portrait, showLevels, point, parent, x, y)
+    if (canaccessvalue and not canaccessvalue(region)) or not region then
+        return
+    end
+    if showLevels == (movedPartyPortraitIndicators[region] == true) then
+        return
+    end
+    region:ClearAllPoints()
+    if showLevels then
+        region:SetPoint("CENTER", portrait, "TOP", 0, 0)
+    else
+        region:SetPoint(point, parent, point, x, y)
+    end
+    movedPartyPortraitIndicators[region] = showLevels or nil
+end
+
 local function UpdatePartyLevel(frame, mode)
     local showLevels = mode == "on" or mode == "smaller"
     local overlay = frame.PartyMemberOverlay
@@ -80,6 +97,14 @@ local function UpdatePartyLevel(frame, mode)
             pvpIcon:ClearAllPoints()
             pvpIcon:SetPoint("CENTER", overlay, "TOPLEFT", showLevels and -20 or 24, -68)
             movedPartyPvPIcons[pvpIcon] = showLevels or nil
+        end
+    end
+    -- Restore the native anchors from PartyFrameTemplates.xml when Level display is off.
+    local portrait = frame.Portrait
+    if (not canaccessvalue or canaccessvalue(portrait)) and portrait then
+        PositionPartyPortraitIndicator(frame.ReadyCheck, portrait, showLevels, "CENTER", portrait, 0, -2)
+        if (not canaccessvalue or canaccessvalue(overlay)) and overlay then
+            PositionPartyPortraitIndicator(overlay.Disconnect, portrait, showLevels, "LEFT", overlay, -7, -1)
         end
     end
 

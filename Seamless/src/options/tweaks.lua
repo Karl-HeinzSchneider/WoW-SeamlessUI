@@ -8,15 +8,7 @@ app.optionPages.tweaks = {
         return app.dbDefaults.profile.tweaks[path[#path]]
     end,
     defaults = {
-        profile = {
-            tweaks = {
-                quickKeybindShortcut = true,
-                reloadShortcut = true,
-                showFramerateOnStartup = false,
-                -- Blizzard_LFGVanilla_Listing.lua starts without a selected playstyle.
-                rememberListingPlaystyle = false,
-            },
-        },
+        profile = { tweaks = { quickKeybindShortcut = true, reloadShortcut = true, showFramerateOnStartup = false } },
     },
     config = {
         type = "group",
@@ -50,14 +42,6 @@ app.optionPages.tweaks = {
                         width = "full",
                         name = L["/kb starts Quick Keybind Mode"],
                         desc = L["Type /kb in chat to bind keys by hovering over action buttons, like the Quick Keybind Mode button in the Keybindings settings."],
-                        descStyle = "inline",
-                    },
-                    rememberListingPlaystyle = {
-                        type = "toggle",
-                        order = 30,
-                        width = "full",
-                        name = L["Remember Group Finder playstyle"],
-                        desc = L["Reuse the last playstyle you selected when creating a Group Finder listing."],
                         descStyle = "inline",
                     },
                 },

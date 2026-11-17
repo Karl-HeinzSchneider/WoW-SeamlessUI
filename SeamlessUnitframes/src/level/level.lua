@@ -10,6 +10,7 @@ app.levelDisplay = app.addon:NewModule("LevelDisplay", module, "AceEvent-3.0")
 local changed = {}
 local hooked = {}
 local partyBadges = {}
+local movedPartyPvPIcons = {}
 
 local function ClearLevelTextForSkull(frame)
     local content = frame.TargetFrameContent
@@ -69,10 +70,23 @@ local function Apply(region, mode, parent, side)
 end
 
 local function UpdatePartyLevel(frame, mode)
+    local showLevels = mode == "on" or mode == "smaller"
+    local overlay = frame.PartyMemberOverlay
+    local pvpIcon = (not canaccessvalue or canaccessvalue(overlay)) and overlay and overlay.PVPIcon
+    if (not canaccessvalue or canaccessvalue(pvpIcon)) and pvpIcon then
+        if showLevels ~= (movedPartyPvPIcons[pvpIcon] == true) then
+            -- PartyFrameTemplates.xml anchors this 0.6-scale texture at (24, -68).
+            -- Reserve the lower-left corner for the level badge while Level display is enabled.
+            pvpIcon:ClearAllPoints()
+            pvpIcon:SetPoint("CENTER", overlay, "TOPLEFT", showLevels and -20 or 24, -68)
+            movedPartyPvPIcons[pvpIcon] = showLevels or nil
+        end
+    end
+
     local badge = partyBadges[frame]
     local unit = frame.unit
     local level
-    if (mode == "on" or mode == "smaller") and (not canaccessvalue or canaccessvalue(unit)) and unit then
+    if showLevels and (not canaccessvalue or canaccessvalue(unit)) and unit then
         level = UnitLevel(unit)
     end
     if (canaccessvalue and not canaccessvalue(level)) or not level or level <= 0 then

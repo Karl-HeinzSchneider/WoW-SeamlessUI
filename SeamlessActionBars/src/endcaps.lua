@@ -4,7 +4,7 @@ local appName, app = ...
 local L = LibStub("AceLocale-3.0"):GetLocale("Seamless")
 
 -- The main action bar's two gryphons are Blizzard Edit Mode systems: their position and Hidden
--- setting live in the Edit Mode layout. They have no size setting, so their Scale stays disabled.
+-- setting live in the Edit Mode layout. Scale is saved in the Seamless profile.
 ---@type SeamlessActionBars.EndCap[]
 app.endCaps = {
     { key = "left", index = "EndCapLeft", parentKey = "LeftEndCap", name = L["Left endcap"] },
@@ -21,6 +21,60 @@ end
 
 local function settings(entry)
     return app.db.profile.endCaps[entry.key]
+end
+
+-- Blizzard_ActionBar/Camelot/MainMenuBarEndCaps.xml uses the UI.xsd default scale.
+local nativeScale = 1
+local scaleEvents
+local function applyScales(restore)
+    if InCombatLockdown() then
+        if not scaleEvents then
+            scaleEvents = CreateFrame("Frame")
+            scaleEvents:SetScript("OnEvent", function(self)
+                self:UnregisterEvent("PLAYER_REGEN_ENABLED")
+                applyScales(not app.addon:IsEnabled())
+            end)
+        end
+        scaleEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return
+    end
+    for _, entry in ipairs(app.endCaps) do
+        local frame = app.EndCapFrame(entry)
+        local scale = not restore and settings(entry).scale or nativeScale
+        if frame and math.abs(frame:GetScale() - scale) > 1e-4 then
+            -- The Edit Mode override adjusts anchor offsets for the new scale.
+            frame:SetScale(scale)
+            frame:UpdateVisibility()
+        end
+    end
+end
+
+---@param entry SeamlessActionBars.EndCap
+---@return table
+function app.EndCapScaleOption(entry)
+    return {
+        type = "range",
+        name = L["Scale"],
+        order = 0,
+        min = 0.5,
+        max = 2,
+        step = 0.01,
+        default = nativeScale,
+        disabled = InCombatLockdown,
+        get = function()
+            return settings(entry).scale or nativeScale
+        end,
+        set = function(_, value)
+            if InCombatLockdown() then
+                return
+            end
+            settings(entry).scale = value
+            if app.addon:IsEnabled() then
+                applyScales()
+            end
+            app.core:RefreshOptions(appName)
+        end,
+    }
 end
 
 -- Capture only textures we override, so Default leaves the client's artwork untouched.
@@ -66,9 +120,10 @@ function app.EndCapTextureOption(entry)
     }
 end
 
----Apply the profile's textures, or restore the game's when `restore` is set.
+---Apply the profile's textures and scales, or restore the game's when `restore` is set.
 ---@param restore? boolean
 function app.ApplyEndCaps(restore)
+    applyScales(restore)
     for _, entry in ipairs(app.endCaps) do
         applyTexture(entry, restore)
     end

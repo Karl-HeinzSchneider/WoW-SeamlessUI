@@ -10,6 +10,8 @@ app.levelDisplay = app.addon:NewModule("LevelDisplay", module, "AceEvent-3.0")
 local changed = {}
 local hooked = {}
 local partyBadges = {}
+local movedPartyPvPIcons = {}
+local movedPartyPortraitIndicators = {}
 
 local function ClearLevelTextForSkull(frame)
     local content = frame.TargetFrameContent
@@ -68,11 +70,48 @@ local function Apply(region, mode, parent, side)
     end
 end
 
+local function PositionPartyPortraitIndicator(region, portrait, showLevels, point, parent, x, y)
+    if (canaccessvalue and not canaccessvalue(region)) or not region then
+        return
+    end
+    if showLevels == (movedPartyPortraitIndicators[region] == true) then
+        return
+    end
+    region:ClearAllPoints()
+    if showLevels then
+        region:SetPoint("CENTER", portrait, "TOP", 0, 0)
+    else
+        region:SetPoint(point, parent, point, x, y)
+    end
+    movedPartyPortraitIndicators[region] = showLevels or nil
+end
+
 local function UpdatePartyLevel(frame, mode)
+    local showLevels = mode == "on" or mode == "smaller"
+    local overlay = frame.PartyMemberOverlay
+    local pvpIcon = (not canaccessvalue or canaccessvalue(overlay)) and overlay and overlay.PVPIcon
+    if (not canaccessvalue or canaccessvalue(pvpIcon)) and pvpIcon then
+        if showLevels ~= (movedPartyPvPIcons[pvpIcon] == true) then
+            -- PartyFrameTemplates.xml anchors this 0.6-scale texture at (24, -68).
+            -- Reserve the lower-left corner for the level badge while Level display is enabled.
+            pvpIcon:ClearAllPoints()
+            pvpIcon:SetPoint("CENTER", overlay, "TOPLEFT", showLevels and -20 or 24, -68)
+            movedPartyPvPIcons[pvpIcon] = showLevels or nil
+        end
+    end
+    -- Restore the native anchors from PartyFrameTemplates.xml when Level display is off.
+    local portrait = frame.Portrait
+    if (not canaccessvalue or canaccessvalue(portrait)) and portrait then
+        PositionPartyPortraitIndicator(frame.ReadyCheck, portrait, showLevels, "CENTER", portrait, 0, -2)
+        if (not canaccessvalue or canaccessvalue(overlay)) and overlay then
+            PositionPartyPortraitIndicator(overlay.Disconnect, portrait, showLevels, "LEFT", overlay, -7, -1)
+        end
+    end
+
     local badge = partyBadges[frame]
     local unit = frame.unit
     local level
-    if (mode == "on" or mode == "smaller") and (not canaccessvalue or canaccessvalue(unit)) and unit then
+    if showLevels and (not canaccessvalue or canaccessvalue(unit)) and unit then
         level = UnitLevel(unit)
     end
     if (canaccessvalue and not canaccessvalue(level)) or not level or level <= 0 then
@@ -96,7 +135,7 @@ local function UpdatePartyLevel(frame, mode)
     end
     local scale = mode == "smaller" and 0.42 or 0.6
     badge:SetScale(scale)
-    badge:SetPoint("CENTER", frame.Portrait, "BOTTOM", 0, 3 / scale)
+    badge:SetPoint("CENTER", frame.Portrait, "BOTTOMLEFT", 8 / scale, 3 / scale)
     badge.label:SetText(level)
     badge:Show()
 end

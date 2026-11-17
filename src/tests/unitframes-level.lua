@@ -195,9 +195,14 @@ for _, frame in ipairs({ TargetFrame, FocusFrame }) do
     enabled = true
 end
 local partyBadge, partyLabel, partyCircle
+local partyOverlay = { PVPIcon = region(), Disconnect = region() }
+local partyPvPIcon = partyOverlay.PVPIcon
+local partyReadyCheck = region()
 PartyFrame.MemberFrame1 = {
     unit = "party1",
     Portrait = {},
+    PartyMemberOverlay = partyOverlay,
+    ReadyCheck = partyReadyCheck,
     UpdateMember = function(self, unit)
         self.unit = unit
     end,
@@ -225,14 +230,21 @@ CreateFrame = function(frameType, name, parent)
     return partyBadge
 end
 PartyFrame:UpdatePartyFrames()
-assert(not partyBadge)
+assert(not partyBadge and not partyPvPIcon.point)
 app.db.profile.unitFrames.party.levelDisplay = "on"
 module:Refresh()
 assert(partyBadge.shown and partyBadge.scale == 0.6 and partyLabel.text == 23)
 assert(partyCircle.point[2] == partyBadge and partyLabel.point[2] == partyCircle)
 assert(partyLabel.point[5] == -0.5)
-assert(partyBadge.point[2] == PartyFrame.MemberFrame1.Portrait and partyBadge.point[3] == "BOTTOM")
+assert(partyBadge.point[2] == PartyFrame.MemberFrame1.Portrait and partyBadge.point[3] == "BOTTOMLEFT")
+assert(partyBadge.point[4] * partyBadge.scale == 8)
 assert(partyBadge.point[5] * partyBadge.scale == 3)
+assert(partyPvPIcon.point[2] == partyOverlay and partyPvPIcon.point[3] == "TOPLEFT")
+assert(partyPvPIcon.point[4] == -20 and partyPvPIcon.point[5] == -68)
+for _, indicator in ipairs({ partyReadyCheck, partyOverlay.Disconnect }) do
+    assert(indicator.point[1] == "CENTER" and indicator.point[2] == PartyFrame.MemberFrame1.Portrait)
+    assert(indicator.point[3] == "TOP" and indicator.point[4] == 0 and indicator.point[5] == 0)
+end
 levels.party1 = 24
 module:RefreshParty()
 assert(partyLabel.text == 24)
@@ -248,7 +260,9 @@ assert(partyBadge.scale == 0.6)
 combat = false
 module:Refresh()
 assert(partyBadge.shown and partyBadge.scale == 0.42 and partyLabel.text == 24)
+assert(partyBadge.point[4] * partyBadge.scale == 8)
 assert(partyBadge.point[5] * partyBadge.scale == 3)
+assert(partyPvPIcon.point[4] == -20)
 canaccessvalue = function(value)
     return value ~= 24
 end
@@ -260,6 +274,11 @@ assert(partyBadge.shown)
 enabled = false
 module:OnDisable()
 assert(not partyBadge.shown)
+assert(partyPvPIcon.point[4] == 24 and partyPvPIcon.point[5] == -68)
+assert(partyReadyCheck.point[3] == "CENTER" and partyReadyCheck.point[5] == -2)
+local disconnectPoint = partyOverlay.Disconnect.point
+assert(disconnectPoint[1] == "LEFT" and disconnectPoint[2] == partyOverlay and disconnectPoint[3] == "LEFT")
+assert(disconnectPoint[4] == -7 and disconnectPoint[5] == -1)
 enabled = true
 app.db.profile.unitFrames.party = { levelDisplay = "off" }
 module:OnProfileRefresh()

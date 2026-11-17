@@ -6,8 +6,7 @@ local unitFrames = app.unitFrames
 
 -- Hides the PvP icon of the player, target, focus and party frames, chosen per unit frame
 -- (profile.unitFrames[key].hidePvPIcon). The game shows and hides the icon itself; this only sets
--- its alpha, which the game never changes, so no update needs hooking and nothing is shown that
--- the game hid.
+-- its alpha, which the game never changes, and leaves native visibility in place.
 ---@class SeamlessUnitframes.PvPIcon : AceModule, AceEvent-3.0
 local module = {}
 app.pvpIcon = addon:NewModule("PvPIcon", module, "AceEvent-3.0") --[[@as SeamlessUnitframes.PvPIcon]]
@@ -15,6 +14,7 @@ app.pvpIcon = addon:NewModule("PvPIcon", module, "AceEvent-3.0") --[[@as Seamles
 -- The icons we made transparent.
 ---@type table<Texture, boolean>
 local hidden = {}
+local partyHooked
 
 -- False for nil and for a secret value.
 local function Readable(value)
@@ -66,6 +66,14 @@ end
 
 function module:OnEnable()
     -- The party member frames are created when the party frame first shows.
+    if PartyFrame and PartyFrame.UpdatePartyFrames and not partyHooked then
+        hooksecurefunc(PartyFrame, "UpdatePartyFrames", function()
+            if self:IsEnabled() and addon:IsEnabled() then
+                self:Refresh()
+            end
+        end)
+        partyHooked = true
+    end
     self:RegisterEvent("GROUP_ROSTER_UPDATE", "Refresh")
     self:RegisterEvent("PLAYER_ENTERING_WORLD", "Refresh")
     self:Refresh()

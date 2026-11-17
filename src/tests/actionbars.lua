@@ -265,7 +265,11 @@ local function EndCap(index)
         return self.scale
     end
     function cap:SetScale(value)
+        assert(not combat)
         self.scale, self.scaleCalls = value, self.scaleCalls + 1
+    end
+    function cap:UpdateVisibility()
+        self.visibilityScale = self.scale
     end
     cap.Texture = { atlas = "native-" .. index, calls = 0 }
     function cap.Texture:GetAtlas()
@@ -322,7 +326,12 @@ app.dbDefaults = { profile = { endCaps = { left = {}, right = {} } } }
 app.db.profile.endCaps = { left = {}, right = {} }
 load("endcaps.lua")
 app.ApplyEndCaps()
-assert(left.scaleCalls == 0 and right.scaleCalls == 0, "the endcaps' scale is never changed")
+assert(left.scaleCalls == 0 and right.scaleCalls == 0, "default leaves native scale untouched")
+local scale = app.EndCapScaleOption(app.endCaps[1])
+assert(scale.get() == 1 and scale.default == 1 and not scale.disabled())
+scale.set(nil, 1.25)
+assert(left.scale == 1.25 and left.visibilityScale == 1.25 and right.scale == 1)
+assert(scale.get() == 1.25 and refreshed == 1)
 assert(left.Texture.calls == 0 and right.Texture.calls == 0, "default leaves native art untouched")
 local texture = app.EndCapTextureOption(app.endCaps[1])
 texture.set(nil, "ally")
@@ -335,30 +344,52 @@ assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
 texture.set(nil, "default")
 assert(left.Texture.atlas == "native-1", "Default restores original atlas")
 app.ApplyEndCaps(true)
+assert(left.scale == 1 and scale.get() == 1.25, "disable restores native scale without changing the profile")
 assert(right.Texture.atlas == "native-2", "disable restores original atlas")
 app.ApplyEndCaps()
+assert(left.scale == 1.25, "enable reapplies the profile scale")
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right", "enable reapplies profile")
-app.db.profile.endCaps = { left = { texture = "horde" }, right = { texture = "default" } }
+local scaleEvent = {}
+function scaleEvent:SetScript(_, callback)
+    self.callback = callback
+end
+function scaleEvent:RegisterEvent(event)
+    self.event = event
+end
+function scaleEvent:UnregisterEvent(event)
+    assert(self.event == event)
+    self.event = nil
+end
+CreateFrame = function()
+    return scaleEvent
+end
+combat = true
+assert(scale.disabled())
+scale.set(nil, 2)
+assert(scale.get() == 1.25)
+app.db.profile.endCaps = { left = { texture = "horde" }, right = { texture = "default", scale = 0.8 } }
 app.ApplyEndCaps()
+assert(left.scale == 1.25 and right.scale == 1 and scaleEvent.event == "PLAYER_REGEN_ENABLED")
+combat = false
+scaleEvent:callback()
+assert(left.scale == 1 and right.scale == 0.8 and not scaleEvent.event, "combat end applies the current profile")
 assert(
     left.Texture.atlas == "ui-hud-actionbar-wyvern-left" and right.Texture.atlas == "native-2",
     "profile refresh switches artwork"
 )
-app.optionPages = {
-    endCapLeft = {
-        config = {
-            type = "group",
-            name = "Left",
-            args = {
-                hidden = app.EndCapHiddenOption(app.endCaps[1]),
-                texture = app.EndCapTextureOption(app.endCaps[1]),
-            },
-        },
-    },
-    endCapRight = {
-        config = { type = "group", name = "Right", args = { texture = app.EndCapTextureOption(app.endCaps[2]) } },
-    },
-}
+function app.core:GetNativePositionOptions()
+    return { type = "group", args = {}, editModePosition = {} }, {
+        type = "group",
+        name = "Size",
+        args = {},
+        editModeSize = true,
+    }
+end
+function app.core:GetEditModeButtonSection() end
+function app.core:GetEditModePositionButton() end
+app.optionPages = {}
+load("options/endCapLeft.lua")
+load("options/endCapRight.lua")
 app.RegisterEndCapEditMode()
 local leftStyle = styleSections["SeamlessActionBars:endCap:left:style"]
 local rightStyle = styleSections["SeamlessActionBars:endCap:right:style"]
@@ -366,18 +397,32 @@ assert(leftStyle.system == 26 and leftStyle.systemIndex == 1 and rightStyle.syst
 assert(leftStyle.page.key == "endCapLeft" and rightStyle.page.key == "endCapRight")
 leftStyle.options = pageRows("endCapLeft")
 rightStyle.options = pageRows("endCapRight")
-assert(#leftStyle.options == 1, "Blizzard's dialog keeps the native Hide endcap setting")
-local row = leftStyle.options[1]
+assert(
+    #leftStyle.options == 2 and not leftStyle.options.hidden,
+    "Blizzard's dialog keeps the native Hide endcap setting"
+)
+local scaleRow = rightStyle.options.scale
+assert(scaleRow.type == "range" and scaleRow.get() == 0.8 and scaleRow.default() == 1)
+assert(scaleRow.step() == 0.05 and leftStyle.options.scale.step() == 0.05)
+scaleRow.set(1.5)
+assert(right.scale == 1.5 and left.scale == 1, "Edit Mode scales each side independently")
+local row = leftStyle.options.texture
 assert(row.type == "select" and row.default() == "default" and #row.values() == 3)
 local values = row.values()
 assert(values[1].value == "default" and values[2].value == "ally" and values[3].value == "horde")
 row.set("ally")
 assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
-assert(rightStyle.options[1].get() == "default", "Edit Mode controls each side independently")
+assert(rightStyle.options.texture.get() == "default", "Edit Mode controls each side independently")
 row.set("default")
 assert(left.Texture.atlas == "native-1")
 enabled = false
 assert(not leftStyle.enabled() and not rightStyle.enabled())
+combat = true
+app.ApplyEndCaps(true)
+assert(right.scale == 1.5)
+combat = false
+scaleEvent:callback()
+assert(right.scale == 1, "combat end restores native scale after disable")
 enabled = true
 local toggle = app.EndCapHiddenOption(app.endCaps[2])
 assert(toggle.type == "toggle" and toggle.layoutStored and not toggle.editMode and toggle.name == L["Hide endcap"])

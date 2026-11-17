@@ -200,8 +200,8 @@ for _, addon in ipairs({
         end,
     }
     app.endCaps = { { key = "left", name = "Left endcap" }, { key = "right", name = "Right endcap" } }
-    app.EndCapScale = function()
-        return {}
+    app.EndCapScaleOption = function()
+        return { type = "range", name = "Scale", default = 1 }
     end
     app.EndCapTextureOption = function()
         return { type = "select", name = "Texture", values = {}, default = "default" }

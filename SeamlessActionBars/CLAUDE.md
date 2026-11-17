@@ -15,16 +15,15 @@ labels, endcaps, the micro menu, the bag bar and the XP bar tooltip. Settings li
   `RestoreHotkey`; skip range dots and gamepad bindings and retain original text for restoration.
 - `src/endcaps.lua`: the main action bar's gryphons (`MainActionBar.EndCaps.LeftEndCap`/
   `RightEndCap`, Edit Mode system `MainActionBarEndCap`, no global names). Their position and Hidden
-  setting are native layout settings; they have no size setting, so their Scale is Core's dead
-  placeholder. The Texture setting reaches SeamlessUI's Edit Mode window through a page
-  registration (`RegisterEditModeSystemOptions` with `page`). Profile
-  `endCaps.left`/`endCaps.right`: `texture` (default `"default"`; an old saved `scale` is no longer
-  applied).
+  setting are native layout settings. Profile `endCaps.left`/`endCaps.right` store `texture`
+  (default `"default"`) and `scale` (default 1, range 0.5–2). Scale uses the frame's Edit Mode
+  SetScale override to preserve anchor offsets. Scale changes and restoration defer during combat.
+  Both controls reach SeamlessUI's Edit Mode window through the existing page registration.
 - `src/options/`: page defaults and declarations. On General, a Show action bars button opening the
   game's Action Bars settings (`Settings.OpenToCategory(Settings.ACTION_BAR_CATEGORY_ID)`), then the
   feature groups; then one tab per native Edit Mode frame (action bars 1-8, both XP / reputation
   bars, pet action bar, leave vehicle button, micro menu, bags, left and right endcap) holding
-  Core's native Position and Size groups (Scale is Core's dead placeholder). The endcap tabs also
+  Core's Position and Size groups. Each endcap has an independent Scale slider. The endcap tabs also
   have Hide endcap, bound to the native Hidden setting, and independent Texture selectors (Default
   leaves native art unchanged, Alliance uses gryphons, Horde uses wyverns). Texture overrides reuse
   the native atlases and restore the original atlas on Default or disable. Hide endcap is

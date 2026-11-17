@@ -174,8 +174,6 @@ end
 -- L["Performance profiling"] = "Performance profiling"
 -- L["Performance: top %d of %d entries since reload; inclusive times overlap."] = "Performance: top %d of %d entries since reload; inclusive times overlap."
 -- L["Quick anchor to frame"] = "Quick anchor to frame"
--- L["Remember Group Finder playstyle"] = "Remember Group Finder playstyle"
--- L["Reuse the last playstyle you selected when creating a Group Finder listing."] = "Reuse the last playstyle you selected when creating a Group Finder listing."
 -- L["Right-click: config"] = "Right-click: config"
 -- L["Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."] = "Seamless keeps an account Edit Mode layout named %s as a starting point and adds it again whenever it is missing. Choose it in Edit Mode, or copy it to make your own."
 -- L["Seamless"] = "Seamless"

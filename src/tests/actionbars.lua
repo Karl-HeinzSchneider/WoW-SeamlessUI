@@ -403,6 +403,7 @@ assert(
 )
 local scaleRow = rightStyle.options.scale
 assert(scaleRow.type == "range" and scaleRow.get() == 0.8 and scaleRow.default() == 1)
+assert(scaleRow.step() == 0.05 and leftStyle.options.scale.step() == 0.05)
 scaleRow.set(1.5)
 assert(right.scale == 1.5 and left.scale == 1, "Edit Mode scales each side independently")
 local row = leftStyle.options.texture

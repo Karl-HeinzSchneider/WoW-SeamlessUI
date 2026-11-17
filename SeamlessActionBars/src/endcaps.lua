@@ -58,7 +58,7 @@ function app.EndCapScaleOption(entry)
         order = 0,
         min = 0.5,
         max = 2,
-        step = 0.01,
+        step = 0.05,
         default = nativeScale,
         disabled = InCombatLockdown,
         get = function()

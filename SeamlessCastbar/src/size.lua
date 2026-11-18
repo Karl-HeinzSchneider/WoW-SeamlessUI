@@ -60,9 +60,23 @@ function app.ApplyPlayerSize()
         return
     end
     local settings = app.db.profile.player
+    local width = settings.width or app.PlayerSizeDefault("width")
     bar:SetScale(settings.scale or app.PlayerSizeDefault("scale"))
-    bar:SetWidth(settings.width or app.PlayerSizeDefault("width"))
+    bar:SetWidth(width)
     bar:SetHeight(settings.height or app.PlayerSizeDefault("height"))
+    if bar.BorderMask then
+        -- The native mask clips the cast trail but has a fixed width (CastingBarFrame.xml).
+        bar.BorderMask:SetWidth(width)
+    end
+    if bar.InterruptGlow then
+        -- The native InterruptGlow uses a fixed atlas size and half scale.
+        -- Fit it to the resized bar with a small margin for the glow.
+        local glow = bar.InterruptGlow
+        glow:SetScale(1)
+        glow:ClearAllPoints()
+        glow:SetPoint("TOPLEFT", bar, "TOPLEFT", -4, 4)
+        glow:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 4, -4)
+    end
     if bar.Icon then
         local size = settings.iconSize or app.PlayerSizeDefault("iconSize")
         bar.Icon:SetSize(size, size)

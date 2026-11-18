@@ -569,7 +569,7 @@ for _, row in ipairs(registeredSize.options) do
     rows[row.name] = row
 end
 local player = app.db.profile.player
-assert(rows.Width.min() == 10 and rows.Width.max() == 300 and rows.Width.step() == 1)
+assert(rows.Width.min() == 100 and rows.Width.max() == 300 and rows.Width.step() == 1)
 assert(rows.Height.min() == 8 and rows.Height.max() == 32 and rows.Height.step() == 1)
 assert(rows["Icon size"].min() == 8 and rows["Icon size"].max() == 64 and rows["Icon size"].step() == 1)
 sizeEditMode = true
@@ -587,10 +587,10 @@ rows.Scale.set(3)
 app.ApplyPlayerSize()
 assert(dimensions.scale == 3)
 player.scale = nil
-rows.Width.set(10)
+rows.Width.set(100)
 rows.Height.set(8)
 app.ApplyPlayerSize()
-assert(player.width == 10 and player.height == 8 and dimensions.width == 10 and dimensions.height == 8)
+assert(player.width == 100 and player.height == 8 and dimensions.width == 100 and dimensions.height == 8)
 player.width, player.height = nil, nil
 app.ApplyPlayerSize()
 refreshes, optionRefreshes = 0, 0

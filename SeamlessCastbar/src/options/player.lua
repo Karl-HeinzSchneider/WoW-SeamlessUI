@@ -41,7 +41,7 @@ size.args.width = {
     type = "range",
     order = 6,
     name = L["Width"],
-    min = 10,
+    min = 100,
     max = 300,
     step = 1,
     get = function()
@@ -143,18 +143,6 @@ app.optionPages.player = {
         name = L["Player"],
         order = 10,
         args = {
-            showCastTime = {
-                type = "toggle",
-                name = L["Show cast time"],
-                order = 9,
-                get = function()
-                    return app.db.profile.player.showCastTime
-                end,
-                set = function(_, value)
-                    app.db.profile.player.showCastTime = value
-                    refresh()
-                end,
-            },
             position = position,
             size = size,
             icon = {
@@ -182,6 +170,24 @@ app.optionPages.player = {
                 order = 10,
                 name = L["Cast time"],
                 args = {
+                    showCastTime = {
+                        type = "toggle",
+                        name = L["Show cast time"],
+                        order = 0,
+                        default = function()
+                            return app.dbDefaults.profile.player.showCastTime
+                        end,
+                        disabled = function()
+                            return false
+                        end,
+                        get = function()
+                            return app.db.profile.player.showCastTime
+                        end,
+                        set = function(_, value)
+                            app.db.profile.player.showCastTime = value
+                            refresh()
+                        end,
+                    },
                     format = {
                         type = "select",
                         order = 1,

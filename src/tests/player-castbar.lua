@@ -156,6 +156,11 @@ local dimensions = {}
 bar.SetWidth = function(_, value)
     dimensions.width = value
 end
+bar.BorderMask = {
+    SetWidth = function(_, value)
+        dimensions.maskWidth = value
+    end,
+}
 bar.SetHeight = function(_, value)
     dimensions.height = value
 end
@@ -163,14 +168,16 @@ bar.SetScale = function(_, value)
     dimensions.scale = value
 end
 app.dbDefaults = { profile = { player = { width = 208, height = 11, scale = 1, iconSize = 16 } } }
-app.db.profile.player.width = 250
+app.db.profile.player.width = 100
 app.db.profile.player.height = 20
 app.db.profile.player.scale = 1.5
 app.ApplyPlayerSize()
-assert(dimensions.width == 250 and dimensions.height == 20 and dimensions.scale == 1.5)
+assert(dimensions.width == 100 and dimensions.height == 20 and dimensions.scale == 1.5)
+assert(dimensions.maskWidth == dimensions.width, "the cast trail mask follows the narrow bar")
 app.db.profile = { player = {} }
 app.RefreshPlayerBar(true)
 assert(dimensions.width == 208 and dimensions.height == 11 and dimensions.scale == 1)
+assert(dimensions.maskWidth == dimensions.width, "the cast trail mask follows profile changes")
 active = false
 app.db.profile.player.width = 300
 app.ApplyPlayerSize()

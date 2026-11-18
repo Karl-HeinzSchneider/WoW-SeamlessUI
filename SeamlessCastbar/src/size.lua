@@ -63,6 +63,15 @@ function app.ApplyPlayerSize()
     bar:SetScale(settings.scale or app.PlayerSizeDefault("scale"))
     bar:SetWidth(settings.width or app.PlayerSizeDefault("width"))
     bar:SetHeight(settings.height or app.PlayerSizeDefault("height"))
+    if bar.InterruptGlow then
+        -- The native InterruptGlow uses a fixed atlas size and half scale.
+        -- Fit it to the resized bar with a small margin for the glow.
+        local glow = bar.InterruptGlow
+        glow:SetScale(1)
+        glow:ClearAllPoints()
+        glow:SetPoint("TOPLEFT", bar, "TOPLEFT", -4, 4)
+        glow:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 4, -4)
+    end
     if bar.Icon then
         local size = settings.iconSize or app.PlayerSizeDefault("iconSize")
         bar.Icon:SetSize(size, size)

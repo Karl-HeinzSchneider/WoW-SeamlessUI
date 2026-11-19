@@ -77,8 +77,15 @@ function app.EndCapScaleOption(entry)
     }
 end
 
+-- Pixel bounds in Interface/HUD/UIActionBar2x.blp (512 x 2048), measured from the alpha channel.
+local dragonflightArt = {
+    dragonflightAlly = { left = { 40, 352, 219, 525 }, right = { 0, 309, 555, 861 } },
+    dragonflightHorde = { left = { 42, 351, 882, 1197 }, right = { 2, 311, 1218, 1533 } },
+}
+
 -- Capture only textures we override, so Default leaves the client's artwork untouched.
 local originalAtlases = {}
+local originalPoints = {}
 local function applyTexture(entry, restore)
     local frame = app.EndCapFrame(entry)
     local texture = frame and frame.Texture
@@ -87,10 +94,46 @@ local function applyTexture(entry, restore)
     end
     local choice = not restore and settings(entry).texture or "default"
     local creature = choice == "ally" and "gryphon" or choice == "horde" and "wyvern"
-    if creature then
-        if not originalAtlases[texture] then
-            originalAtlases[texture] = texture:GetAtlas()
+    local art = dragonflightArt[choice]
+    if (art or creature) and not originalAtlases[texture] then
+        originalAtlases[texture] = texture:GetAtlas()
+    end
+    if art then
+        if not originalPoints[texture] then
+            local points = {}
+            for index = 1, texture:GetNumPoints() do
+                points[index] = { texture:GetPoint(index) }
+            end
+            originalPoints[texture] = points
         end
+        local left, right, top, bottom = unpack(art[entry.key])
+        texture:SetTexture("Interface\\HUD\\UIActionBar2x")
+        texture:SetTexCoord(left / 512, right / 512, top / 2048, bottom / 2048)
+
+        -- Match the artwork height and inner edge of Blizzard's Edit Mode selection rectangle.
+        -- Anchor the texture independently so the native frame and its saved position stay intact.
+        local height = 88
+        local width = height * (right - left) / (bottom - top)
+        texture:ClearAllPoints()
+        if entry.key == "left" then
+            texture:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 2)
+            texture:SetPoint("TOPLEFT", frame, "BOTTOMRIGHT", -34 - width, 2 + height)
+        else
+            texture:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 2)
+            texture:SetPoint("TOPRIGHT", frame, "BOTTOMLEFT", 34 + width, 2 + height)
+        end
+        return
+    end
+
+    local points = originalPoints[texture]
+    if points then
+        texture:ClearAllPoints()
+        for _, point in ipairs(points) do
+            texture:SetPoint(unpack(point, 1, 5))
+        end
+        originalPoints[texture] = nil
+    end
+    if creature then
         texture:SetAtlas("ui-hud-actionbar-" .. creature .. "-" .. entry.key)
     elseif originalAtlases[texture] then
         texture:SetAtlas(originalAtlases[texture])
@@ -106,8 +149,14 @@ function app.EndCapTextureOption(entry)
         name = L["Texture"],
         order = 6,
         default = "default",
-        values = { default = L["Default"], ally = L["Alliance (Gryphon)"], horde = L["Horde (Wyvern)"] },
-        sorting = { "default", "ally", "horde" },
+        values = {
+            default = L["Default"],
+            ally = L["Alliance (Gryphon)"],
+            horde = L["Horde (Wyvern)"],
+            dragonflightAlly = L["Dragonflight Gryphon"],
+            dragonflightHorde = L["Dragonflight Wyvern"],
+        },
+        sorting = { "default", "ally", "horde", "dragonflightAlly", "dragonflightHorde" },
         get = function()
             return settings(entry).texture
         end,

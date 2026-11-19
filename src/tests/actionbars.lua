@@ -1,4 +1,5 @@
 -- Run from the repository root: lua src/tests/actionbars.lua
+unpack = unpack or table.unpack
 local root = "SeamlessActionBars/src/"
 
 local secret = setmetatable({}, {
@@ -271,12 +272,31 @@ local function EndCap(index)
     function cap:UpdateVisibility()
         self.visibilityScale = self.scale
     end
-    cap.Texture = { atlas = "native-" .. index, calls = 0 }
+    cap.Texture = { atlas = "native-" .. index, calls = 0, points = { { "CENTER", cap, "CENTER", 0, 0 } } }
     function cap.Texture:GetAtlas()
         return self.atlas
     end
     function cap.Texture:SetAtlas(atlas)
         self.atlas, self.calls = atlas, self.calls + 1
+        self.path, self.coords = nil, nil
+    end
+    function cap.Texture:SetTexture(path)
+        self.path, self.atlas = path, nil
+    end
+    function cap.Texture:SetTexCoord(...)
+        self.coords = { ... }
+    end
+    function cap.Texture:GetNumPoints()
+        return #self.points
+    end
+    function cap.Texture:GetPoint(index)
+        return unpack(self.points[index])
+    end
+    function cap.Texture:ClearAllPoints()
+        self.points = {}
+    end
+    function cap.Texture:SetPoint(...)
+        self.points[#self.points + 1] = { ... }
     end
     return cap
 end
@@ -339,10 +359,17 @@ assert(left.Texture.atlas == "ui-hud-actionbar-gryphon-left" and right.Texture.c
 texture.set(nil, "horde")
 assert(left.Texture.atlas == "ui-hud-actionbar-wyvern-left")
 local rightTexture = app.EndCapTextureOption(app.endCaps[2])
+texture.set(nil, "dragonflightAlly")
+rightTexture.set(nil, "dragonflightHorde")
+assert(left.Texture.path == "Interface\\HUD\\UIActionBar2x" and right.Texture.path == left.Texture.path)
+assert(left.Texture.coords[3] == 219 / 2048 and right.Texture.coords[3] == 1218 / 2048)
+assert(left.Texture.points[1][1] == "BOTTOMRIGHT" and right.Texture.points[1][1] == "BOTTOMLEFT")
 rightTexture.set(nil, "horde")
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
+assert(right.Texture.points[1][1] == "CENTER" and #right.Texture.points == 1)
 texture.set(nil, "default")
 assert(left.Texture.atlas == "native-1", "Default restores original atlas")
+assert(left.Texture.points[1][1] == "CENTER" and #left.Texture.points == 1)
 app.ApplyEndCaps(true)
 assert(left.scale == 1 and scale.get() == 1.25, "disable restores native scale without changing the profile")
 assert(right.Texture.atlas == "native-2", "disable restores original atlas")
@@ -407,9 +434,10 @@ assert(scaleRow.step() == 0.05 and leftStyle.options.scale.step() == 0.05)
 scaleRow.set(1.5)
 assert(right.scale == 1.5 and left.scale == 1, "Edit Mode scales each side independently")
 local row = leftStyle.options.texture
-assert(row.type == "select" and row.default() == "default" and #row.values() == 3)
+assert(row.type == "select" and row.default() == "default" and #row.values() == 5)
 local values = row.values()
 assert(values[1].value == "default" and values[2].value == "ally" and values[3].value == "horde")
+assert(values[4].value == "dragonflightAlly" and values[5].value == "dragonflightHorde")
 row.set("ally")
 assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
 assert(rightStyle.options.texture.get() == "default", "Edit Mode controls each side independently")

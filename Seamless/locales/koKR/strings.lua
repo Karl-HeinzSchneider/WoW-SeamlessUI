@@ -213,6 +213,8 @@ end
 -- L["Detect Well Rested automatically"] = "Detect Well Rested automatically"
 -- L["Down Arrow (short)"] = "Dn"
 -- L["Down"] = "Down"
+-- L["Dragonflight Gryphon"] = "Dragonflight Gryphon"
+-- L["Dragonflight Wyvern"] = "Dragonflight Wyvern"
 -- L["End (short)"] = "End"
 -- L["Enter (short)"] = "Ent"
 -- L["Escape (short)"] = "Esc"

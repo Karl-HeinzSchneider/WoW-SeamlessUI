@@ -86,6 +86,31 @@ local dragonflightArt = {
 -- Capture only textures we override, so Default leaves the client's artwork untouched.
 local originalAtlases = {}
 local originalPoints = {}
+
+local function applyDragonflightCrop(texture, bounds)
+    local left, right, top, bottom = unpack(bounds)
+    texture:SetTexture("Interface\\HUD\\UIActionBar2x")
+    texture:SetTexCoord(left / 512, right / 512, top / 2048, bottom / 2048)
+end
+
+function app.HookEndCapTextures()
+    if not MainActionBar or not MainActionBar.UpdateEndCaps then
+        return
+    end
+    app.addon:SecureHook(MainActionBar, "UpdateEndCaps", function()
+        -- The native refresh can replace the atlas coordinates while our anchors still apply.
+        for _, entry in ipairs(app.endCaps) do
+            local frame = app.EndCapFrame(entry)
+            local texture = frame and frame.Texture
+            local art = dragonflightArt[settings(entry).texture]
+            if texture and art and originalPoints[texture] then
+                originalAtlases[texture] = texture:GetAtlas() or originalAtlases[texture]
+                applyDragonflightCrop(texture, art[entry.key])
+            end
+        end
+    end)
+end
+
 local function applyTexture(entry, restore)
     local frame = app.EndCapFrame(entry)
     local texture = frame and frame.Texture
@@ -107,8 +132,7 @@ local function applyTexture(entry, restore)
             originalPoints[texture] = points
         end
         local left, right, top, bottom = unpack(art[entry.key])
-        texture:SetTexture("Interface\\HUD\\UIActionBar2x")
-        texture:SetTexCoord(left / 512, right / 512, top / 2048, bottom / 2048)
+        applyDragonflightCrop(texture, art[entry.key])
 
         -- Match the artwork height and inner edge of Blizzard's Edit Mode selection rectangle.
         -- Anchor the texture independently so the native frame and its saved position stay intact.

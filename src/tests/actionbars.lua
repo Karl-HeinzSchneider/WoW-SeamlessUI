@@ -364,11 +364,30 @@ rightTexture.set(nil, "dragonflightHorde")
 assert(left.Texture.path == "Interface\\HUD\\UIActionBar2x" and right.Texture.path == left.Texture.path)
 assert(left.Texture.coords[3] == 219 / 2048 and right.Texture.coords[3] == 1218 / 2048)
 assert(left.Texture.points[1][1] == "BOTTOMRIGHT" and right.Texture.points[1][1] == "BOTTOMLEFT")
+function MainActionBar:UpdateEndCaps()
+    left.Texture:SetAtlas("native-1-refreshed")
+    right.Texture:SetAtlas("native-2")
+end
+function addon:SecureHook(target, method, callback)
+    local original = target[method]
+    target[method] = function(self)
+        original(self)
+        callback(self)
+    end
+end
+app.HookEndCapTextures()
+local leftPoints, rightPoints = left.Texture.points, right.Texture.points
+MainActionBar:UpdateEndCaps()
+assert(left.Texture.coords[3] == 219 / 2048 and right.Texture.coords[3] == 1218 / 2048, "native refresh restores crops")
+assert(
+    left.Texture.points == leftPoints and right.Texture.points == rightPoints,
+    "refresh leaves artwork anchors intact"
+)
 rightTexture.set(nil, "horde")
 assert(right.Texture.atlas == "ui-hud-actionbar-wyvern-right")
 assert(right.Texture.points[1][1] == "CENTER" and #right.Texture.points == 1)
 texture.set(nil, "default")
-assert(left.Texture.atlas == "native-1", "Default restores original atlas")
+assert(left.Texture.atlas == "native-1-refreshed", "Default restores the latest native atlas")
 assert(left.Texture.points[1][1] == "CENTER" and #left.Texture.points == 1)
 app.ApplyEndCaps(true)
 assert(left.scale == 1 and scale.get() == 1.25, "disable restores native scale without changing the profile")
@@ -442,7 +461,7 @@ row.set("ally")
 assert(row.get() == "ally" and left.Texture.atlas == "ui-hud-actionbar-gryphon-left")
 assert(rightStyle.options.texture.get() == "default", "Edit Mode controls each side independently")
 row.set("default")
-assert(left.Texture.atlas == "native-1")
+assert(left.Texture.atlas == "native-1-refreshed")
 enabled = false
 assert(not leftStyle.enabled() and not rightStyle.enabled())
 combat = true

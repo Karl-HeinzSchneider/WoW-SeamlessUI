@@ -13,6 +13,7 @@
 ---@field RestoreHotkey fun(button: CheckButton)
 ---@field endCaps SeamlessActionBars.EndCap[]
 ---@field EndCapFrame fun(entry: SeamlessActionBars.EndCap): table?
+---@field HookEndCapTextures fun()
 ---@field ApplyEndCaps fun(restore?: boolean)
 ---@field EndCapTextureOption fun(entry: SeamlessActionBars.EndCap): table
 ---@field EndCapScaleOption fun(entry: SeamlessActionBars.EndCap): table

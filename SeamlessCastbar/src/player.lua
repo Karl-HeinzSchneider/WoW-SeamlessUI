@@ -5,6 +5,25 @@ local bar
 local lastLook, lastShowTime
 local lastScale
 
+local function getInterruptText(_, interruptedBy)
+    if not app.Known(interruptedBy) then
+        return INTERRUPTED
+    end
+
+    -- A readable GUID can still resolve to a secret name or class.
+    local unitName = UnitNameFromGUID(interruptedBy)
+    if not app.Known(unitName) or unitName == "" then
+        return INTERRUPTED
+    end
+
+    local _, classFilename = UnitClassFromGUID(interruptedBy)
+    local classColor = app.Known(classFilename) and RAID_CLASS_COLORS[classFilename]
+    if classColor then
+        unitName = classColor:WrapTextInColorCode(unitName)
+    end
+    return SPELL_INTERRUPTED_BY:format(unitName)
+end
+
 function app.GetPlayerBar()
     return bar
 end
@@ -58,6 +77,7 @@ function app.EnablePlayerBar()
         bar:Hide()
         bar:SetFrameStrata("HIGH")
         bar.playCastFX = true
+        bar.GetInterruptText = getInterruptText
         app.ApplyPlayerPosition()
         local shouldShow = bar.ShouldShowCastBar
         bar.ShouldShowCastBar = function(self)

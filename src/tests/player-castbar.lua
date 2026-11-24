@@ -119,6 +119,42 @@ assert(loadfile("SeamlessCastbar/src/player.lua"))("SeamlessCastbar", app)
 app.EnablePlayerBar()
 local bar = app.GetPlayerBar()
 assert(bar.unit == "player" and bar.look == "CLASSIC" and bar.timeShown)
+local secret = setmetatable({}, {
+    __len = function()
+        error("measured secret name")
+    end,
+})
+app.Known = function(value)
+    return value ~= secret and value ~= nil
+end
+INTERRUPTED = "Interrupted"
+SPELL_INTERRUPTED_BY = "Interrupted by %s"
+local name, class = secret, "MAGE"
+UnitNameFromGUID = function(guid)
+    assert(guid == "interrupting-unit")
+    return name
+end
+UnitClassFromGUID = function()
+    assert(name ~= secret, "secret names should use generic text before looking up the class")
+    return nil, class
+end
+RAID_CLASS_COLORS = {
+    MAGE = {
+        WrapTextInColorCode = function(_, value)
+            return "<mage>" .. value
+        end,
+    },
+}
+assert(bar:GetInterruptText(nil) == "Interrupted")
+assert(bar:GetInterruptText(secret) == "Interrupted")
+assert(bar:GetInterruptText("interrupting-unit") == "Interrupted")
+name = ""
+assert(bar:GetInterruptText("interrupting-unit") == "Interrupted")
+name = "Caster"
+assert(bar:GetInterruptText("interrupting-unit") == "Interrupted by <mage>Caster")
+class = secret
+assert(bar:GetInterruptText("interrupting-unit") == "Interrupted by Caster")
+
 bar:HandleCastStart("UNIT_SPELLCAST_START")
 assert(bar.lastArgument == "UNIT_SPELLCAST_START" and calls.UpdateName == 1 and calls.UpdateTicks == 1)
 bar:HandleChannelUpdateDelayed()

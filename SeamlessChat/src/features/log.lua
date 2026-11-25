@@ -44,34 +44,26 @@ local DAY = 24 * 60 * 60
 -- directly). CHAT_MSG_ADDON isn't chat and isn't among them.
 local EXTRA_EVENTS = { "CHAT_MSG_COMMUNITIES_CHANNEL" }
 
--- `value` unless it is a secret value, which tainted code can't even test for truth.
-local function readable(value)
-    if issecretvalue and issecretvalue(value) then
-        return nil
-    end
-    return value
-end
-
 -- Whether the sender is this character or in its party or raid. By GUID; by name when the event
 -- has none. What the game won't tell (secret values) counts as no.
 ---@param playerName string?
 ---@param guid string?
 local function isSelfOrGroup(playerName, guid)
     if guid then
-        if guid == readable(UnitGUID("player")) then
+        if guid == app.lines:Readable(UnitGUID("player")) then
             return true
         end
         local ok, inGroup = pcall(C_PartyInfo.IsGUIDInGroup, guid)
-        return ok and readable(inGroup) == true
+        return ok and app.lines:Readable(inGroup) == true
     end
     if playerName then
-        if playerName:match("^[^-]+") == readable(UnitName("player")) then
+        if playerName:match("^[^-]+") == app.lines:Readable(UnitName("player")) then
             return true
         end
         local ok, inParty, inRaid = pcall(function()
             return UnitInParty(playerName), UnitInRaid(playerName)
         end)
-        return ok and (readable(inParty) == true or readable(inRaid) ~= nil)
+        return ok and (app.lines:Readable(inParty) == true or app.lines:Readable(inRaid) ~= nil)
     end
     return false
 end
@@ -92,7 +84,8 @@ end
 
 -- `value` if it can be stored: not secret, not an empty string.
 local function storable(value)
-    if value == nil or (issecretvalue and issecretvalue(value)) or value == "" then
+    value = app.lines:Readable(value)
+    if value == "" then
         return nil
     end
     return value
@@ -103,7 +96,8 @@ local function battleTag(bnSenderID)
         return nil
     end
     local ok, info = pcall(C_BattleNet.GetAccountInfoByID, bnSenderID)
-    return ok and info and storable(info.battleTag) or nil
+    info = ok and app.lines:Readable(info)
+    return info and storable(info.battleTag) or nil
 end
 
 local function classOf(guid)

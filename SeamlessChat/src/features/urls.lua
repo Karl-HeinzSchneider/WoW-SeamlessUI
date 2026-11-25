@@ -67,6 +67,7 @@ function module:Linkify(text)
 end
 
 function module:OnSetItemRef(link)
+    link = app.lines:Readable(link)
     local url = type(link) == "string" and link:match(LINK_PATTERN)
     if url then
         app.copy:CopyToChatInput(url)

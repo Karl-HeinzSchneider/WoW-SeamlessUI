@@ -76,16 +76,18 @@ function module:Capture()
         local chatFrame = chatWindow(id)
         if chatFrame then
             local lines = {}
-            local total = chatFrame:GetNumMessages()
+            local total = app.lines:Readable(chatFrame:GetNumMessages()) or 0
             -- GetMessageInfo(1) is the oldest line.
             for i = math.max(1, total - count + 1), total do
                 local message, r, g, b = chatFrame:GetMessageInfo(i)
-                if
-                    type(message) == "string"
-                    and not (issecretvalue and issecretvalue(message))
-                    and not self.dividers[message]
-                then
-                    lines[#lines + 1] = { message, r or 1, g or 1, b or 1 }
+                message = app.lines:Readable(message)
+                if type(message) == "string" and not self.dividers[message] then
+                    lines[#lines + 1] = {
+                        message,
+                        app.lines:Readable(r) or 1,
+                        app.lines:Readable(g) or 1,
+                        app.lines:Readable(b) or 1,
+                    }
                 end
             end
             if #lines > 0 then
@@ -143,7 +145,7 @@ function module:Save()
     if ok then
         SeamlessChatHistoryDB = result
     else
-        SeamlessChatHistoryDB = { savedAt = time(), windows = {}, error = tostring(result) }
+        SeamlessChatHistoryDB = { savedAt = time(), windows = {}, error = tostring(app.lines:Readable(result)) }
     end
 end
 
@@ -181,7 +183,7 @@ function module:OnEnable()
         if ok then
             log:debug(L["Restored %d messages from the last session"], result)
         else
-            log:warn(L["Restoring the chat of the last session failed: %s"], tostring(result))
+            log:warn(L["Restoring the chat of the last session failed: %s"], tostring(app.lines:Readable(result)))
         end
     end
 end

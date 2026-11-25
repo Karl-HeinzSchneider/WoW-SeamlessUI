@@ -36,8 +36,12 @@ local OWN_LINK = "|H" .. LINK_PREFIX .. "%d+|h(.-)|h"
 local function plainText(message)
     if C_StringUtil and C_StringUtil.StripHyperlinks then
         local ok, text = pcall(C_StringUtil.StripHyperlinks, message, false, true, true, false, false)
-        if ok and text then
-            return tostring(text)
+        if ok and app.lines:Readable(text) ~= nil then
+            -- StripHyperlinks returns a stringView. Convert it only if it is readable.
+            local converted, stripped = pcall(tostring, text)
+            if converted and app.lines:Readable(stripped) ~= nil then
+                return stripped
+            end
         end
     end
     local text = message
@@ -115,6 +119,7 @@ end
 
 ---@param link string
 local function linkId(link)
+    link = app.lines:Readable(link)
     return type(link) == "string" and tonumber(link:match(LINK_PATTERN)) or nil
 end
 
@@ -127,13 +132,10 @@ local function findLine(chatFrame, link)
         return nil
     end
     local wanted = "|H" .. link .. "|h"
-    for i = chatFrame:GetNumMessages(), 1, -1 do
-        local message = chatFrame:GetMessageInfo(i)
-        if
-            type(message) == "string"
-            and not (issecretvalue and issecretvalue(message))
-            and message:find(wanted, 1, true)
-        then
+    local total = app.lines:Readable(chatFrame:GetNumMessages()) or 0
+    for i = total, 1, -1 do
+        local message = app.lines:Readable(chatFrame:GetMessageInfo(i))
+        if type(message) == "string" and message:find(wanted, 1, true) then
             return message
         end
     end
@@ -170,6 +172,7 @@ function module:OnSetItemRef(link, _, _, chatFrame)
     if not id then
         return
     end
+    chatFrame = app.lines:Readable(chatFrame)
     local message = self:FindLine(id, link, chatFrame)
     if not message then
         log:chat(L["That line is no longer in a chat window, so it can't be copied."])
@@ -185,11 +188,11 @@ end
 ---@param count integer
 function module:GetRecentText(chatFrame, count)
     local lines = {}
-    local total = chatFrame:GetNumMessages()
+    local total = app.lines:Readable(chatFrame:GetNumMessages()) or 0
     -- GetMessageInfo(1) is the oldest line.
     for i = math.max(1, total - count + 1), total do
-        local message = chatFrame:GetMessageInfo(i)
-        if type(message) == "string" and not (issecretvalue and issecretvalue(message)) then
+        local message = app.lines:Readable(chatFrame:GetMessageInfo(i))
+        if type(message) == "string" then
             lines[#lines + 1] = plainText(message)
         end
     end

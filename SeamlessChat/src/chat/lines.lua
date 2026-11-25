@@ -35,17 +35,25 @@ function lines:Register(order, func, secretSafe)
     end)
 end
 
+local function isSecret(value)
+    return issecretvalue and issecretvalue(value) or false
+end
+
+-- Filter game values before comparing, converting or saving them.
+function lines:Readable(value)
+    if isSecret(value) then
+        return nil
+    end
+    return value
+end
+
 -- Chat type of a line from AddMessage's extra arguments: chat messages pass (r, g, b, infoID,
 -- accessID, typeID, event, ...); the event names the type exactly (PARTY_LEADER, not just PARTY).
 local function chatTypeOf(...)
-    local event = select(7, ...)
+    local event = lines:Readable((select(7, ...)))
     if type(event) == "string" and event:sub(1, 9) == "CHAT_MSG_" then
         return event:sub(10)
     end
-end
-
-local function isSecret(value)
-    return issecretvalue and issecretvalue(value) or false
 end
 
 -- `message` after every transform that applies. A failing transform is skipped: it must never
@@ -62,8 +70,12 @@ function lines:Transform(chatFrame, message, ...)
     for _, transform in ipairs(self.transforms) do
         if not secret or transform.secretSafe then
             local ok, changed = pcall(transform.func, chatFrame, message, chatType)
-            if ok and changed ~= nil then
-                message = changed
+            if ok then
+                local changedIsSecret = isSecret(changed)
+                if changedIsSecret or type(changed) == "string" then
+                    message = changed
+                    secret = changedIsSecret
+                end
             end
         end
     end

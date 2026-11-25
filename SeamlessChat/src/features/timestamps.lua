@@ -98,8 +98,9 @@ function module:Backfill(since)
         if frame.ForEachMessage and not IsCombatLog(frame) then
             local changed = false
             frame:ForEachMessage(function(entry)
-                if entry.timestamp and entry.timestamp >= since then
-                    local arrived = now - math.floor(clock - entry.timestamp + 0.5)
+                local timestamp = app.lines:Readable(entry.timestamp)
+                if timestamp and timestamp >= since then
+                    local arrived = now - math.floor(clock - timestamp + 0.5)
                     local ok, stamped = pcall(stamp, self, entry.message, arrived)
                     if ok then
                         entry.message = stamped
